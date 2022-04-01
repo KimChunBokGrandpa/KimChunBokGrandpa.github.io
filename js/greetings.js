@@ -1,5 +1,6 @@
 const loginForm = document.getElementById("login-form")
 const loginInput = loginForm.querySelector("input")
+const middleBody = document.getElementById("Middle")
 const title = document.querySelector("#hello")
 
 const HIDDEN_CLASSNAME = "displayNone"
@@ -12,6 +13,7 @@ function disableForm(value)
 {
     loginForm.classList.add(HIDDEN_CLASSNAME)
     title.classList.remove(HIDDEN_CLASSNAME)
+    middleBody.classList.remove(HIDDEN_CLASSNAME)
     title.innerText = `Hello ${value}`;
 }
 

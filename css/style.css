@@ -4,7 +4,12 @@ body{
     font-family: DungGeunMo;
     color:white;
     text-shadow: 4px 4px 4px #4ebb9b;
-    font-size:200%
+    font-size:200%;
+    align-items: center;
+    justify-content: center;
+    width: auto;
+    height: auto;
+    margin: 0 auto;
 }
 
 h1{
@@ -16,7 +21,12 @@ div{
     color:rgb(255, 255, 255);
     font-size:150%;
     opacity: 0.8;
-    
+}
+
+#box{
+    width: 100vh;
+    height: 100vh;
+    text-align: center;
 }
 
 .displayNone{
