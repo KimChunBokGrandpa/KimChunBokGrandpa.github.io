@@ -12,4 +12,5 @@ const selectionImage = images[Math.floor(Math.random() * images.length)]
 //스타일덮어쓰기
 document.body.style.backgroundImage = `url("img/${selectionImage}")`
 document.body.style.backgroundSize = "cover"
+document.body.style.height = "100vh"
 
