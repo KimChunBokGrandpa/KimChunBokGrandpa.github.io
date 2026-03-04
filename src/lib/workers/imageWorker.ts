@@ -1,4 +1,6 @@
 import { applyPixelationAndPalette } from "../utils/colorQuantizer";
+import { applyGlitch, type GlitchType } from "../utils/glitchEngine";
+import { applyScaling, type RenderMode } from "../utils/scaleEngine";
 
 export interface ImageWorkerMessage {
   id: string;
@@ -7,6 +9,9 @@ export interface ImageWorkerMessage {
   height: number;
   pixelSize: number;
   palette: string;
+  glitchType?: string;
+  glitchIntensity?: number;
+  renderMode?: string;
 }
 
 export interface ImageWorkerResponse {
@@ -16,7 +21,17 @@ export interface ImageWorkerResponse {
 }
 
 onmessage = (e: MessageEvent<ImageWorkerMessage>) => {
-  const { id, imageBitmap, width, height, pixelSize, palette } = e.data;
+  const {
+    id,
+    imageBitmap,
+    width,
+    height,
+    pixelSize,
+    palette,
+    glitchType,
+    glitchIntensity,
+    renderMode,
+  } = e.data;
 
   try {
     const canvas = new OffscreenCanvas(width, height);
@@ -27,11 +42,23 @@ onmessage = (e: MessageEvent<ImageWorkerMessage>) => {
     const sourceData = ctx.getImageData(0, 0, width, height);
     imageBitmap.close(); // Release memory
 
-    const processedData = applyPixelationAndPalette(
+    let processedData = applyPixelationAndPalette(
       sourceData,
       pixelSize,
       palette,
     );
+
+    if (glitchType && glitchType !== "none") {
+      processedData = applyGlitch(
+        processedData,
+        glitchType as GlitchType,
+        glitchIntensity || 1,
+      );
+    }
+
+    if (renderMode && renderMode === "hqx") {
+      processedData = applyScaling(processedData, renderMode as RenderMode);
+    }
 
     const response: ImageWorkerResponse = { id, processedData };
     postMessage(response, { transfer: [processedData.data.buffer] });

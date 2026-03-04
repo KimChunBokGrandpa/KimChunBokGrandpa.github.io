@@ -7,6 +7,9 @@ export interface ProcessSettings {
   pixelSize: number;
   palette: string;
   crtEffect: boolean;
+  glitchType: string;
+  glitchIntensity: number;
+  renderMode: string;
 }
 
 /**
@@ -52,6 +55,11 @@ class ImageProcessorService {
             processedData.width,
             processedData.height,
           );
+
+          // Canvas 크기를 처리된 데이터에 맞게 조정 (HQx 등으로 인해 해상도가 커졌을 수 있음)
+          pending.canvas.width = processedData.width;
+          pending.canvas.height = processedData.height;
+
           pending.ctx.putImageData(safeData, 0, 0);
           // Use toBlob + createObjectURL instead of toDataURL for memory efficiency
           pending.canvas.toBlob((blob) => {
@@ -106,7 +114,12 @@ class ImageProcessorService {
     this.pendingResolvers.clear();
 
     // Early return: no processing needed — still convert to data URL for save compatibility
-    if (settings.pixelSize <= 1 && settings.palette === "original") {
+    if (
+      settings.pixelSize <= 1 &&
+      settings.palette === "original" &&
+      (!settings.glitchType || settings.glitchType === "none") &&
+      (!settings.renderMode || settings.renderMode !== "hqx")
+    ) {
       const img = await this.loadImage(imageSrc);
       if (this.currentRequestId !== requestId) return null;
       const c = document.createElement("canvas");
@@ -149,6 +162,9 @@ class ImageProcessorService {
         height: img.height,
         pixelSize: settings.pixelSize,
         palette: settings.palette,
+        glitchType: settings.glitchType,
+        glitchIntensity: settings.glitchIntensity,
+        renderMode: settings.renderMode,
       };
 
       this.ensureWorker().postMessage(message, [bitmap]);

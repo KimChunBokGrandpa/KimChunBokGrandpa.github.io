@@ -27,6 +27,9 @@
     pixelSize: 1,
     palette: 'original',
     crtEffect: false,
+    glitchType: 'none',
+    glitchIntensity: 1,
+    renderMode: 'pixel_perfect'
   });
 
   // ─── Dialog State ───
@@ -231,7 +234,7 @@
               <img
                 src={processedImageSrc}
                 alt="Processed Pixel Art"
-                style="max-width:100%; max-height:100%; width:100%; height:100%; image-rendering:pixelated; object-fit:contain;"
+                style="max-width:100%; max-height:100%; width:100%; height:100%; image-rendering:{processingSettings.renderMode === 'bilinear' ? 'auto' : 'pixelated'}; object-fit:contain;"
               />
             {/snippet}
           </CrtDisplay>

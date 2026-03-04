@@ -22,4 +22,7 @@ export interface ProcessingSettings {
   pixelSize: number;
   palette: string;
   crtEffect: boolean;
+  glitchType: string; // none, rgb_split, noise, wave, slice
+  glitchIntensity: number; // 1, 2, 3
+  renderMode: string; // pixel_perfect, bilinear, hqx
 }
