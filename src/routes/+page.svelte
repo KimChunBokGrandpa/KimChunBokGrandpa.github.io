@@ -379,7 +379,7 @@
   .desktop {
     background-color: #008080;
     width: 100vw;
-    height: calc(100vh - 32px);
+    height: calc(100vh - 30px);
     position: relative;
     overflow: hidden;
     box-sizing: border-box;

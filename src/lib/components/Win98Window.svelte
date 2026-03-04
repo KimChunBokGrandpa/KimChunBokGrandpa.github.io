@@ -51,7 +51,7 @@
   // Drag listeners
   $effect(() => {
     if (!isDragging) return;
-    const desktopH = window.innerHeight - 32; // taskbar height
+    const desktopH = window.innerHeight - 30; // taskbar height
     const onMove = (e: MouseEvent) => {
       x = Math.max(-50, e.clientX - dragOffsetX);
       y = Math.max(0, e.clientY - dragOffsetY);
@@ -215,7 +215,7 @@
 {#if snapPreview}
   <div
     class="snap-preview"
-    style="left:{snapPreview === 'left' ? '0' : '50%'}; top:0; width:50vw; height:calc(100vh - 32px);"
+    style="left:{snapPreview === 'left' ? '0' : '50%'}; top:0; width:50vw; height:calc(100vh - 30px);"
   ></div>
 {/if}
 
