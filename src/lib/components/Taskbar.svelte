@@ -34,8 +34,17 @@
 
   onMount(() => {
     updateTime();
-    const interval = setInterval(updateTime, 1000);
-    return () => clearInterval(interval);
+    // Align to next minute boundary, then update every 60s
+    const msToNextMinute = 60000 - (Date.now() % 60000);
+    const firstTimeout = setTimeout(() => {
+      updateTime();
+      interval = setInterval(updateTime, 60000);
+    }, msToNextMinute);
+    let interval: ReturnType<typeof setInterval>;
+    return () => {
+      clearTimeout(firstTimeout);
+      clearInterval(interval);
+    };
   });
 
   let visibleWindows = $derived(windows.filter(w => w.mode !== 'closed'));
@@ -51,13 +60,15 @@
     {/if}
 
     {#each visibleWindows as win}
-      <!-- svelte-ignore a11y_click_events_have_key_events -->
-      <!-- svelte-ignore a11y_no_static_element_interactions -->
       <div
         class="tb-item"
         class:tb-active={win.focused && win.mode !== 'minimized'}
         class:tb-dim={win.mode === 'minimized'}
         onclick={() => onWindowClick(win.id)}
+        onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onWindowClick(win.id); } }}
+        role="button"
+        tabindex="0"
+        aria-label="{win.title} window"
       >
         <span class="tb-icon">{win.icon}</span>
         <span class="tb-label">{win.title}</span>
@@ -65,6 +76,7 @@
           class="tb-x"
           title="Close {win.title}"
           onclick={(e) => { e.stopPropagation(); onWindowClose(win.id); }}
+          aria-label="Close {win.title}"
         ></button>
       </div>
     {/each}
@@ -165,7 +177,12 @@
     opacity: 0.65;
   }
 
-  .tb-icon { font-size: 14px; flex-shrink: 0; }
+  .tb-icon {
+    font-size: 14px;
+    flex-shrink: 0;
+    font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+    color: initial;
+  }
   .tb-label {
     overflow: hidden;
     text-overflow: ellipsis;
@@ -183,7 +200,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 7px;
+    width: 3.5px;
     height: 14px;
     padding: 0;
     font-size: 0;

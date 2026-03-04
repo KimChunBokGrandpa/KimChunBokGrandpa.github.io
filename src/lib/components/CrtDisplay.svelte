@@ -53,7 +53,8 @@
     background-size: 100% 4px;
     pointer-events: none;
     z-index: 10;
-    animation: flicker 0.15s infinite;
+    will-change: opacity;
+    animation: flicker 0.3s infinite;
   }
 
   .glare {

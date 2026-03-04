@@ -1,6 +1,7 @@
 <script lang="ts">
-  let { onImageSelected }: {
+  let { onImageSelected, onError }: {
     onImageSelected: (file: File) => void;
+    onError?: (message: string) => void;
   } = $props();
 
   let isDragging = $state(false);
@@ -24,7 +25,7 @@
       if (file.type.startsWith('image/')) {
         onImageSelected(file);
       } else {
-        alert("Please drop an image file.");
+        onError?.("Please drop an image file.");
       }
     }
   }

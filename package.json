@@ -1,7 +1,7 @@
 {
-  "name": "tauri-app",
+  "name": "retro-pixel-converter",
   "version": "0.1.0",
-  "description": "",
+  "description": "Transform images into retro pixel art with classic palettes",
   "type": "module",
   "scripts": {
     "dev": "vite dev",

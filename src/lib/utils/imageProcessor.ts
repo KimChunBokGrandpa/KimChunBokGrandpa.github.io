@@ -29,6 +29,7 @@ class ImageProcessorService {
     }
   >();
   private imageCache = new Map<string, HTMLImageElement>();
+  private lastBlobUrl: string | null = null;
 
   private ensureWorker(): Worker {
     if (!this.worker) {
@@ -52,7 +53,17 @@ class ImageProcessorService {
             processedData.height,
           );
           pending.ctx.putImageData(safeData, 0, 0);
-          pending.resolve(pending.canvas.toDataURL("image/png"));
+          // Use toBlob + createObjectURL instead of toDataURL for memory efficiency
+          pending.canvas.toBlob((blob) => {
+            if (blob) {
+              if (this.lastBlobUrl) URL.revokeObjectURL(this.lastBlobUrl);
+              const url = URL.createObjectURL(blob);
+              this.lastBlobUrl = url;
+              pending.resolve(url);
+            } else {
+              pending.reject(new Error("Failed to create image blob"));
+            }
+          }, "image/png");
         }
       };
       this.worker.onerror = (err) => {
@@ -103,7 +114,18 @@ class ImageProcessorService {
       c.height = img.height;
       const ctx = c.getContext("2d")!;
       ctx.drawImage(img, 0, 0);
-      return c.toDataURL("image/png");
+      return new Promise<string>((resolve, reject) => {
+        c.toBlob((blob) => {
+          if (blob) {
+            if (this.lastBlobUrl) URL.revokeObjectURL(this.lastBlobUrl);
+            const url = URL.createObjectURL(blob);
+            this.lastBlobUrl = url;
+            resolve(url);
+          } else {
+            reject(new Error("Failed to create image blob"));
+          }
+        }, "image/png");
+      });
     }
 
     const img = await this.loadImage(imageSrc);
@@ -146,6 +168,10 @@ class ImageProcessorService {
     this.worker = null;
     this.currentRequestId = null;
     this.imageCache.clear();
+    if (this.lastBlobUrl) {
+      URL.revokeObjectURL(this.lastBlobUrl);
+      this.lastBlobUrl = null;
+    }
   }
 }
 

@@ -79,6 +79,10 @@
     <legend>Pixelation Size: {settings.pixelSize}px</legend>
     <div class="field-row" style="display: flex; align-items: center; gap: 8px;">
       <span style="font-size: 10px; flex-shrink: 0;">1</span>
+      <button
+        style="min-width: 24px; padding: 0;"
+        onclick={() => { settings.pixelSize = Math.max(1, settings.pixelSize - 1); update(); }}
+      >-</button>
       <input
         type="range"
         min="1"
@@ -88,6 +92,10 @@
         oninput={update}
         style="flex: 1;"
       />
+      <button
+        style="min-width: 24px; padding: 0;"
+        onclick={() => { settings.pixelSize = Math.min(10, settings.pixelSize + 1); update(); }}
+      >+</button>
       <span style="font-size: 10px; flex-shrink: 0;">10</span>
     </div>
   </fieldset>

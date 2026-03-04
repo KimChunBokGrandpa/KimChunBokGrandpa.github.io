@@ -13,8 +13,7 @@
         { "path": "$DOWNLOAD/**" },
         { "path": "$DESKTOP/**" },
         { "path": "$DOCUMENT/**" },
-        { "path": "$PICTURE/**" },
-        { "path": "**" }
+        { "path": "$PICTURE/**" }
       ]
     },
     {
@@ -23,8 +22,7 @@
         { "path": "$DOWNLOAD/**" },
         { "path": "$DESKTOP/**" },
         { "path": "$DOCUMENT/**" },
-        { "path": "$PICTURE/**" },
-        { "path": "**" }
+        { "path": "$PICTURE/**" }
       ]
     },
     "dialog:default"

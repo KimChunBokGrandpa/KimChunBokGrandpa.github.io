@@ -8,17 +8,22 @@
   import PaletteGallery from '$lib/components/PaletteGallery.svelte';
   import MessageDialog from '$lib/components/MessageDialog.svelte';
   import { processorService } from '$lib/utils/imageProcessor';
+  import { createWindowStore, WINDOW_CONFIGS } from '$lib/stores/windowStore.svelte';
   import type { TaskbarWindowInfo } from '$lib/components/Taskbar.svelte';
+  import type { ProcessingSettings } from '$lib/types';
 
-  // Tauri 환경 검증 (IDE window 타입 경고 우회)
+  // Tauri 환경 검증
   const isTauri = typeof window !== 'undefined' && !!(window as any).__TAURI__;
+
+  // ─── Window Manager ───
+  const wm = createWindowStore();
 
   // ─── Image & Processing State ───
   let originalImageSrc: string | null = $state(null);
   let currentObjectUrl: string | null = null;
   let processedImageSrc: string | null = $state(null);
   let isProcessing = $state(false);
-  let processingSettings = $state({
+  let processingSettings = $state<ProcessingSettings>({
     pixelSize: 1,
     palette: 'original',
     crtEffect: false,
@@ -31,78 +36,16 @@
   // ─── Desktop icon selection ───
   let selectedIcon = $state<string | null>(null);
 
-  // ─── Window State Management ───
-  type WindowMode = 'windowed' | 'maximized' | 'minimized' | 'closed';
-
-  interface WindowState {
-    mode: WindowMode;
-    x: number;
-    y: number;
-    w: number;
-    h: number;
-    z: number;
-    defaults: { x: number; y: number; w: number; h: number };
-  }
-
-  let wins = $state<Record<string, WindowState>>({
-    settings: { mode: 'windowed', x: 30, y: 30, w: 340, h: 480, z: 10, defaults: { x: 30, y: 30, w: 340, h: 480 } },
-    preview: { mode: 'closed', x: 400, y: 30, w: 600, h: 500, z: 9, defaults: { x: 400, y: 30, w: 600, h: 500 } },
-    gallery: { mode: 'closed', x: 100, y: 60, w: 480, h: 460, z: 8, defaults: { x: 100, y: 60, w: 480, h: 460 } },
-  });
-
-  let focusedWindow = $state<string>('settings');
-
-  function focusWindow(id: string) {
-    const order = ['settings', 'preview', 'gallery'];
-    const sorted = order.slice().sort((a, b) => wins[a].z - wins[b].z);
-    const rest = sorted.filter(w => w !== id);
-    const final = [...rest, id];
-    final.forEach((w, i) => {
-      wins[w].z = 10 + i;
-    });
-    focusedWindow = id;
-  }
-
-  function openWindow(id: string) {
-    const mode = wins[id].mode;
-    if (mode === 'closed' || mode === 'minimized') {
-      wins[id].mode = 'windowed';
-    }
-    focusWindow(id);
-  }
-
-  /** 태스크바 X 버튼: 닫기 + 위치/크기를 기본값으로 리셋 */
-  function closeAndResetWindow(id: string) {
-    wins[id].mode = 'closed';
-    const def = wins[id].defaults;
-    wins[id].x = def.x;
-    wins[id].y = def.y;
-    wins[id].w = def.w;
-    wins[id].h = def.h;
-  }
-
-  /** 윈도우 타이틀바 X 버튼: 위치/크기 유지하고 닫기만 */
-  function closeWindow(id: string) {
-    wins[id].mode = 'closed';
-  }
-
-  function handleTaskbarClick(id: string) {
-    const mode = wins[id].mode;
-    if (mode === 'minimized') {
-      openWindow(id);
-    } else if (focusedWindow === id) {
-      wins[id].mode = 'minimized';
-    } else {
-      focusWindow(id);
-    }
-  }
-
   // ─── Taskbar window info ───
-  let taskbarWindows = $derived<TaskbarWindowInfo[]>([
-    { id: 'settings', title: 'Settings', icon: '⚙️', mode: wins.settings.mode, focused: focusedWindow === 'settings' },
-    { id: 'preview', title: 'Preview', icon: '🖼️', mode: wins.preview.mode, focused: focusedWindow === 'preview' },
-    { id: 'gallery', title: 'Palette Gallery', icon: '🎨', mode: wins.gallery.mode, focused: focusedWindow === 'gallery' },
-  ]);
+  let taskbarWindows = $derived<TaskbarWindowInfo[]>(
+    WINDOW_CONFIGS.map(c => ({
+      id: c.id,
+      title: c.title,
+      icon: c.icon,
+      mode: wm.wins[c.id].mode,
+      focused: wm.focusedWindow === c.id,
+    }))
+  );
 
   // ─── Processing Logic ───
   let debounceTimer: ReturnType<typeof setTimeout> | null = null;
@@ -115,10 +58,10 @@
     currentObjectUrl = URL.createObjectURL(file);
     originalImageSrc = currentObjectUrl;
     processImmediate();
-    openWindow('preview');
+    wm.openWindow('preview');
   }
 
-  function handleSettingsChange(newSettings: typeof processingSettings) {
+  function handleSettingsChange(newSettings: ProcessingSettings) {
     processingSettings = { ...newSettings };
     applyProcessingDebounced();
   }
@@ -148,10 +91,6 @@
     }, 150);
   }
 
-  function handleOpenGallery() {
-    openWindow('gallery');
-  }
-
   function handleGallerySelect(paletteId: string) {
     processingSettings.palette = paletteId;
     processImmediate();
@@ -166,10 +105,8 @@
     if (!processedImageSrc) return;
     try {
       if (isTauri) {
-        // Desktop (Tauri) Native File Save
         const { save } = await import('@tauri-apps/plugin-dialog');
         const { writeFile } = await import('@tauri-apps/plugin-fs');
-        
         const filePath = await save({
           filters: [{ name: 'Image', extensions: ['png'] }],
           defaultPath: `retro_pixel_${Date.now()}.png`
@@ -182,7 +119,6 @@
           showDialog('File saved successfully!');
         }
       } else {
-        // Web Browser Fallback Download
         const a = document.createElement('a');
         a.href = processedImageSrc;
         a.download = `retro_pixel_${Date.now()}.png`;
@@ -207,18 +143,9 @@
     processedImageSrc = null;
   }
 
-  function handleIconClick(id: string) {
-    selectedIcon = id;
-  }
-
-  function handleIconDblClick(id: string) {
-    selectedIcon = null;
-    openWindow(id);
-  }
-
-  function handleDesktopClick() {
-    selectedIcon = null;
-  }
+  function handleIconClick(id: string) { selectedIcon = id; }
+  function handleIconDblClick(id: string) { selectedIcon = null; wm.openWindow(id); }
+  function handleDesktopClick() { selectedIcon = null; }
 
   onDestroy(() => {
     if (debounceTimer) clearTimeout(debounceTimer);
@@ -233,55 +160,37 @@
 <div class="desktop" onclick={handleDesktopClick}>
 
   <!-- Desktop Icons -->
-  <div class="desktop-icons">
-    <!-- svelte-ignore a11y_no_static_element_interactions -->
-    <div
-      class="desktop-icon"
-      class:icon-selected={selectedIcon === 'settings'}
-      onclick={(e) => { e.stopPropagation(); handleIconClick('settings'); }}
-      ondblclick={() => handleIconDblClick('settings')}
-    >
-      <div class="icon-img">⚙️</div>
-      <div class="icon-label">Settings</div>
-    </div>
-    <!-- svelte-ignore a11y_no_static_element_interactions -->
-    <div
-      class="desktop-icon"
-      class:icon-selected={selectedIcon === 'preview'}
-      onclick={(e) => { e.stopPropagation(); handleIconClick('preview'); }}
-      ondblclick={() => handleIconDblClick('preview')}
-    >
-      <div class="icon-img">🖼️</div>
-      <div class="icon-label">Preview</div>
-    </div>
-    <!-- svelte-ignore a11y_no_static_element_interactions -->
-    <div
-      class="desktop-icon"
-      class:icon-selected={selectedIcon === 'gallery'}
-      onclick={(e) => { e.stopPropagation(); handleIconClick('gallery'); }}
-      ondblclick={() => handleIconDblClick('gallery')}
-    >
-      <div class="icon-img">🎨</div>
-      <div class="icon-label">Palette Gallery</div>
-    </div>
+  <div class="desktop-icons" role="toolbar" aria-label="Desktop shortcuts">
+    {#each WINDOW_CONFIGS as cfg}
+      <button
+        class="desktop-icon"
+        class:icon-selected={selectedIcon === cfg.id}
+        onclick={(e) => { e.stopPropagation(); handleIconClick(cfg.id); }}
+        ondblclick={() => handleIconDblClick(cfg.id)}
+        aria-label="Open {cfg.title}"
+      >
+        <span class="icon-img" aria-hidden="true">{cfg.icon}</span>
+        <span class="icon-label">{cfg.title}</span>
+      </button>
+    {/each}
   </div>
 
   <!-- ═══ Settings Window ═══ -->
-  {#if wins.settings.mode !== 'closed'}
+  {#if wm.wins.settings.mode !== 'closed'}
     <Win98Window
       title="Settings"
       icon="⚙️"
-      bind:mode={wins.settings.mode}
-      bind:x={wins.settings.x}
-      bind:y={wins.settings.y}
-      bind:width={wins.settings.w}
-      bind:height={wins.settings.h}
-      zIndex={wins.settings.z}
-      onClose={() => closeWindow('settings')}
-      onFocus={() => focusWindow('settings')}
+      bind:mode={wm.wins.settings.mode}
+      bind:x={wm.wins.settings.x}
+      bind:y={wm.wins.settings.y}
+      bind:width={wm.wins.settings.w}
+      bind:height={wm.wins.settings.h}
+      zIndex={wm.wins.settings.z}
+      onClose={() => wm.close('settings')}
+      onFocus={() => wm.focusWindow('settings')}
     >
       {#if !originalImageSrc}
-        <ImageDropZone onImageSelected={handleImageSelected} />
+        <ImageDropZone onImageSelected={handleImageSelected} onError={(msg) => showDialog(msg, 'Error')} />
       {:else}
         <div style="padding: 4px; overflow-y: auto; flex: 1;">
           <button
@@ -294,7 +203,7 @@
             bind:settings={processingSettings}
             onChange={handleSettingsChange}
             onSave={handleSave}
-            onOpenGallery={handleOpenGallery}
+            onOpenGallery={() => wm.openWindow('gallery')}
           />
         </div>
       {/if}
@@ -302,18 +211,18 @@
   {/if}
 
   <!-- ═══ Preview Window ═══ -->
-  {#if wins.preview.mode !== 'closed'}
+  {#if wm.wins.preview.mode !== 'closed'}
     <Win98Window
       title="Preview - {isProcessing ? 'Rendering...' : 'Ready'}"
       icon="🖼️"
-      bind:mode={wins.preview.mode}
-      bind:x={wins.preview.x}
-      bind:y={wins.preview.y}
-      bind:width={wins.preview.w}
-      bind:height={wins.preview.h}
-      zIndex={wins.preview.z}
-      onClose={() => closeWindow('preview')}
-      onFocus={() => focusWindow('preview')}
+      bind:mode={wm.wins.preview.mode}
+      bind:x={wm.wins.preview.x}
+      bind:y={wm.wins.preview.y}
+      bind:width={wm.wins.preview.w}
+      bind:height={wm.wins.preview.h}
+      zIndex={wm.wins.preview.z}
+      onClose={() => wm.close('preview')}
+      onFocus={() => wm.focusWindow('preview')}
     >
       <div class="preview-body">
         {#if processedImageSrc}
@@ -338,18 +247,18 @@
   {/if}
 
   <!-- ═══ Gallery Window ═══ -->
-  {#if wins.gallery.mode !== 'closed'}
+  {#if wm.wins.gallery.mode !== 'closed'}
     <Win98Window
       title="Palette Gallery"
       icon="🎨"
-      bind:mode={wins.gallery.mode}
-      bind:x={wins.gallery.x}
-      bind:y={wins.gallery.y}
-      bind:width={wins.gallery.w}
-      bind:height={wins.gallery.h}
-      zIndex={wins.gallery.z}
-      onClose={() => closeWindow('gallery')}
-      onFocus={() => focusWindow('gallery')}
+      bind:mode={wm.wins.gallery.mode}
+      bind:x={wm.wins.gallery.x}
+      bind:y={wm.wins.gallery.y}
+      bind:width={wm.wins.gallery.w}
+      bind:height={wm.wins.gallery.h}
+      zIndex={wm.wins.gallery.z}
+      onClose={() => wm.close('gallery')}
+      onFocus={() => wm.focusWindow('gallery')}
     >
       <PaletteGallery
         selectedPaletteId={processingSettings.palette}
@@ -362,8 +271,8 @@
 <!-- ═══ Taskbar ═══ -->
 <Taskbar
   windows={taskbarWindows}
-  onWindowClick={handleTaskbarClick}
-  onWindowClose={closeAndResetWindow}
+  onWindowClick={wm.handleTaskbarClick}
+  onWindowClose={wm.closeAndReset}
 />
 
 <!-- ═══ Dialog ═══ -->
@@ -406,16 +315,33 @@
     border: 1px solid transparent;
     border-radius: 2px;
     user-select: none;
+    background: transparent;
+    font-family: inherit;
+    /* 버튼 스타일 초기화 */
+    min-width: 0;
+    min-height: 0;
+    box-shadow: none;
+    box-sizing: border-box;
+    /* 클릭 시 내려가는 98.css 기본 효과 방지 */
+  }
+  .desktop-icon:active {
+    padding: 4px;
   }
   .desktop-icon:hover {
     background: rgba(255, 255, 255, 0.1);
     border-color: rgba(255, 255, 255, 0.2);
   }
+  .desktop-icon:focus-visible {
+    outline: 1px dotted #fff;
+    outline-offset: -1px;
+  }
 
-  /* Icon selected state (#3) */
+  /* Icon selected state */
   .desktop-icon.icon-selected {
-    background: rgba(0, 0, 128, 0.5);
     border-color: rgba(255, 255, 255, 0.5);
+  }
+  .desktop-icon.icon-selected .icon-img {
+    filter: contrast(0.5) sepia(1) hue-rotate(180deg) saturate(4);
   }
   .desktop-icon.icon-selected .icon-label {
     background: #000080;
@@ -424,6 +350,8 @@
 
   .icon-img {
     font-size: 32px;
+    font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+    color: initial;
     filter: drop-shadow(1px 1px 2px rgba(0,0,0,0.5));
   }
 

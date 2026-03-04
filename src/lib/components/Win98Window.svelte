@@ -41,6 +41,7 @@
   let resizeStartW = 0;
   let resizeStartH = 0;
   let resizeStartLeft = 0;
+  let resizeStartTop = 0;
   let savedPos = { x: 0, y: 0, w: 0, h: 0 };
 
   // Snap state
@@ -86,7 +87,7 @@
     };
   });
 
-  // Resize listeners
+  // Resize listeners (8-direction)
   $effect(() => {
     if (!isResizing) return;
     const onMove = (e: MouseEvent) => {
@@ -99,11 +100,17 @@
       if (resizeDir.includes('b')) {
         height = Math.max(minHeight, resizeStartH + dy);
       }
-      if (resizeDir === 'l' || resizeDir === 'lb') {
+      if (resizeDir.includes('l')) {
         const newW = Math.max(minWidth, resizeStartW - dx);
         const actualDx = resizeStartW - newW;
         x = resizeStartLeft + actualDx;
         width = newW;
+      }
+      if (resizeDir.includes('t')) {
+        const newH = Math.max(minHeight, resizeStartH - dy);
+        const actualDy = resizeStartH - newH;
+        y = resizeStartTop + actualDy;
+        height = newH;
       }
     };
     const onUp = () => { isResizing = false; };
@@ -143,6 +150,7 @@
     resizeStartW = width;
     resizeStartH = height;
     resizeStartLeft = x;
+    resizeStartTop = y;
     onFocus?.();
     e.preventDefault();
     e.stopPropagation();
@@ -185,7 +193,9 @@
   >
     <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div class="title-bar" onmousedown={startDrag} ondblclick={handleTitleDblClick}>
-      <div class="title-bar-text">{icon} {title}</div>
+      <div class="title-bar-text">
+        <span class="window-icon">{icon}</span> {title}
+      </div>
       <div class="title-bar-controls">
         <button aria-label="Minimize" onclick={handleMinimize}></button>
         <button aria-label="Maximize" onclick={handleMaximize}></button>
@@ -196,16 +206,22 @@
       {@render children()}
     </div>
 
-    <!-- Resize handles (only in windowed mode) -->
+    <!-- Resize handles: 8-direction (only in windowed mode) -->
     {#if mode === 'windowed'}
+      <!-- svelte-ignore a11y_no_static_element_interactions -->
+      <div class="resize-handle rh-top" onmousedown={(e) => startResize('t', e)}></div>
       <!-- svelte-ignore a11y_no_static_element_interactions -->
       <div class="resize-handle rh-right" onmousedown={(e) => startResize('r', e)}></div>
       <!-- svelte-ignore a11y_no_static_element_interactions -->
       <div class="resize-handle rh-bottom" onmousedown={(e) => startResize('b', e)}></div>
       <!-- svelte-ignore a11y_no_static_element_interactions -->
+      <div class="resize-handle rh-left" onmousedown={(e) => startResize('l', e)}></div>
+      <!-- svelte-ignore a11y_no_static_element_interactions -->
+      <div class="resize-handle rh-corner-rt" onmousedown={(e) => startResize('rt', e)}></div>
+      <!-- svelte-ignore a11y_no_static_element_interactions -->
       <div class="resize-handle rh-corner-rb" onmousedown={(e) => startResize('rb', e)}></div>
       <!-- svelte-ignore a11y_no_static_element_interactions -->
-      <div class="resize-handle rh-left" onmousedown={(e) => startResize('l', e)}></div>
+      <div class="resize-handle rh-corner-lt" onmousedown={(e) => startResize('lt', e)}></div>
       <!-- svelte-ignore a11y_no_static_element_interactions -->
       <div class="resize-handle rh-corner-lb" onmousedown={(e) => startResize('lb', e)}></div>
     {/if}
@@ -248,13 +264,21 @@
 
   .title-bar { cursor: grab; flex-shrink: 0; }
   .interacting .title-bar { cursor: grabbing; }
+  .window-icon {
+    font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+    color: initial;
+    margin-right: 4px;
+  }
 
-  /* ===== Resize Handles ===== */
+  /* ===== Resize Handles (8-direction) ===== */
   .resize-handle { position: absolute; z-index: 100; }
+  .rh-top { top: 0; left: 0; width: 100%; height: 5px; cursor: ns-resize; }
   .rh-right { right: 0; top: 0; width: 5px; height: 100%; cursor: ew-resize; }
   .rh-bottom { bottom: 0; left: 0; width: 100%; height: 5px; cursor: ns-resize; }
-  .rh-corner-rb { right: 0; bottom: 0; width: 14px; height: 14px; cursor: nwse-resize; }
   .rh-left { left: 0; top: 0; width: 5px; height: 100%; cursor: ew-resize; }
+  .rh-corner-rt { right: 0; top: 0; width: 14px; height: 14px; cursor: nesw-resize; }
+  .rh-corner-rb { right: 0; bottom: 0; width: 14px; height: 14px; cursor: nwse-resize; }
+  .rh-corner-lt { left: 0; top: 0; width: 14px; height: 14px; cursor: nwse-resize; }
   .rh-corner-lb { left: 0; bottom: 0; width: 14px; height: 14px; cursor: nesw-resize; }
 
   @media (max-width: 550px) {

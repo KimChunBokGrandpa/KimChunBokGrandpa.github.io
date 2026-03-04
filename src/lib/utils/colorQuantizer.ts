@@ -20,13 +20,14 @@ function colorDistance(c1: RGB, r: number, g: number, b: number): number {
   return 2 * dr * dr + 4 * dg * dg + 3 * db * db;
 }
 
+const CACHE_MAX = 50000;
+
 function findNearestColor(
   r: number,
   g: number,
   b: number,
   paletteName: string,
 ): RGB {
-  // Check cache
   let cache = paletteCaches.get(paletteName);
   if (!cache) {
     cache = new Map<number, RGB>();
@@ -35,7 +36,12 @@ function findNearestColor(
 
   const cacheKey = (r << 16) | (g << 8) | b;
   const cached = cache.get(cacheKey);
-  if (cached) return cached;
+  if (cached) {
+    // LRU: move to end by re-inserting
+    cache.delete(cacheKey);
+    cache.set(cacheKey, cached);
+    return cached;
+  }
 
   const palette = PALETTES[paletteName] || PALETTES["win256"];
 
@@ -45,11 +51,7 @@ function findNearestColor(
   for (let i = 0; i < palette.length; i++) {
     const d2 = colorDistance(palette[i], r, g, b);
     if (d2 === 0) {
-      if (cache.size >= 50000) {
-        const firstKey = cache.keys().next().value;
-        if (firstKey !== undefined) cache.delete(firstKey);
-      }
-      cache.set(cacheKey, palette[i]);
+      cacheSet(cache, cacheKey, palette[i]);
       return palette[i];
     }
     if (d2 < minDistanceSq) {
@@ -59,12 +61,21 @@ function findNearestColor(
   }
 
   const result = palette[nearestIndex];
-  if (cache.size >= 50000) {
-    const firstKey = cache.keys().next().value;
-    if (firstKey !== undefined) cache.delete(firstKey);
-  }
-  cache.set(cacheKey, result);
+  cacheSet(cache, cacheKey, result);
   return result;
+}
+
+/** LRU eviction: when cache is full, delete the oldest 25% in bulk */
+function cacheSet(cache: Map<number, RGB>, key: number, value: RGB) {
+  if (cache.size >= CACHE_MAX) {
+    const evictCount = CACHE_MAX >> 2; // 25%
+    const iter = cache.keys();
+    for (let i = 0; i < evictCount; i++) {
+      const k = iter.next().value;
+      if (k !== undefined) cache.delete(k);
+    }
+  }
+  cache.set(key, value);
 }
 
 export function applyPixelationAndPalette(
