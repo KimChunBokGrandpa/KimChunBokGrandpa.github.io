@@ -4,11 +4,30 @@
   // O(1) 상수 시간 검색을 위한 팔레트 이름 맵
   const paletteNameMap = new Map<string, string>([
     ['original', 'Full Color (Original)'],
-    ['highcolor', '16-bit High Color'],
     ['win256', '8-bit Windows 256'],
     ['monochrome', '2-bit Monochrome'],
     ...PALETTE_GROUPS.flatMap(g => g.palettes).map(p => [p.id, p.name] as [string, string]),
   ]);
+
+  // 추천 프리셋 정의
+  interface Preset {
+    id: string;
+    label: string;
+    pixelSize: number;
+    palette: string;
+    crtEffect: boolean;
+  }
+
+  const PRESETS: Preset[] = [
+    { id: 'retro_crt',  label: '📺 Retro CRT',    pixelSize: 3, palette: 'win256',     crtEffect: true },
+    { id: 'gameboy',    label: '🎮 Gameboy',       pixelSize: 4, palette: 'dmg',        crtEffect: false },
+    { id: 'nes',        label: '🕹️ NES',           pixelSize: 3, palette: 'nes',        crtEffect: false },
+    { id: 'pico8',      label: '👾 PICO-8',        pixelSize: 4, palette: 'pico8',      crtEffect: false },
+    { id: 'pastel',     label: '🌸 Pastel',        pixelSize: 2, palette: 'pastel8',    crtEffect: false },
+    { id: 'cyberpunk',  label: '🌃 Cyberpunk',     pixelSize: 2, palette: 'cyberpunk16', crtEffect: true },
+    { id: 'monochrome', label: '⬛ Mono',           pixelSize: 3, palette: 'monochrome', crtEffect: false },
+    { id: 'original',   label: '🖼️ Original',      pixelSize: 1, palette: 'original',   crtEffect: false },
+  ];
 
   let {
     settings = $bindable({ pixelSize: 1, palette: 'original', crtEffect: false }),
@@ -26,16 +45,8 @@
     onChange(settings);
   }
 
-  function applyPreset(preset: string) {
-    if (preset === 'Win95') {
-      settings = { pixelSize: 3, palette: 'win256', crtEffect: true };
-    } else if (preset === 'Win98') {
-      settings = { pixelSize: 2, palette: 'highcolor', crtEffect: false };
-    } else if (preset === 'WinXP') {
-      settings = { pixelSize: 1, palette: 'original', crtEffect: false };
-    } else if (preset === 'Gameboy') {
-      settings = { pixelSize: 4, palette: 'dmg', crtEffect: false };
-    }
+  function applyPreset(preset: Preset) {
+    settings = { pixelSize: preset.pixelSize, palette: preset.palette, crtEffect: preset.crtEffect };
     update();
   }
 
@@ -43,39 +54,41 @@
     return paletteNameMap.get(id) ?? id;
   }
 
-  function matchesPreset(preset: string): boolean {
-    if (preset === 'Win95') return settings.pixelSize === 3 && settings.palette === 'win256' && settings.crtEffect;
-    if (preset === 'Win98') return settings.pixelSize === 2 && settings.palette === 'highcolor' && !settings.crtEffect;
-    if (preset === 'WinXP') return settings.pixelSize === 1 && settings.palette === 'original' && !settings.crtEffect;
-    if (preset === 'Gameboy') return settings.pixelSize === 4 && settings.palette === 'dmg' && !settings.crtEffect;
-    return false;
+  function matchesPreset(preset: Preset): boolean {
+    return settings.pixelSize === preset.pixelSize
+      && settings.palette === preset.palette
+      && settings.crtEffect === preset.crtEffect;
   }
 </script>
 
 <div class="cp-root">
   <fieldset>
-    <legend>OS Presets</legend>
-    <div class="field-row" style="display: flex; flex-wrap: wrap; gap: 5px; justify-content: flex-start;">
-      {#each ['Win95', 'Win98', 'WinXP', 'Gameboy'] as preset}
+    <legend>Recommended Presets</legend>
+    <div class="field-row" style="display: flex; flex-wrap: wrap; gap: 4px; justify-content: flex-start;">
+      {#each PRESETS as preset}
         <button
           class:preset-active={matchesPreset(preset)}
+          style="font-size: 11px; padding: 2px 6px;"
           onclick={() => applyPreset(preset)}
-        >{preset === 'Win95' ? 'Win 95' : preset === 'Win98' ? 'Win 98' : preset === 'WinXP' ? 'Win XP' : preset}</button>
+        >{preset.label}</button>
       {/each}
     </div>
   </fieldset>
 
   <fieldset style="margin-top: 8px;">
-    <legend>Pixelation Size</legend>
-    <div class="field-row" style="display: flex; flex-wrap: wrap; gap: 4px;">
-      {#each [1, 2, 3, 4, 5, 10] as size}
-        <button
-          style={settings.pixelSize === size ? "font-weight: bold; padding: 2px 5px;" : "padding: 2px 5px;"}
-          onclick={() => { settings.pixelSize = size; update(); }}
-        >
-          {size}px
-        </button>
-      {/each}
+    <legend>Pixelation Size: {settings.pixelSize}px</legend>
+    <div class="field-row" style="display: flex; align-items: center; gap: 8px;">
+      <span style="font-size: 10px; flex-shrink: 0;">1</span>
+      <input
+        type="range"
+        min="1"
+        max="10"
+        step="1"
+        bind:value={settings.pixelSize}
+        oninput={update}
+        style="flex: 1;"
+      />
+      <span style="font-size: 10px; flex-shrink: 0;">10</span>
     </div>
   </fieldset>
 

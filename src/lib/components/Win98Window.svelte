@@ -33,7 +33,7 @@
 
   let isDragging = $state(false);
   let isResizing = $state(false);
-  let resizeDir = ''; // 'r','b','rb','l','lb'
+  let resizeDir = '';
   let dragOffsetX = 0;
   let dragOffsetY = 0;
   let resizeStartX = 0;
@@ -43,14 +43,41 @@
   let resizeStartLeft = 0;
   let savedPos = { x: 0, y: 0, w: 0, h: 0 };
 
+  // Snap state
+  const SNAP_THRESHOLD = 20;
+  let snapPreview = $state<'left' | 'right' | null>(null);
+  let preSnapPos: { x: number; y: number; w: number; h: number } | null = null;
+
   // Drag listeners
   $effect(() => {
     if (!isDragging) return;
+    const desktopH = window.innerHeight - 32; // taskbar height
     const onMove = (e: MouseEvent) => {
       x = Math.max(-50, e.clientX - dragOffsetX);
       y = Math.max(0, e.clientY - dragOffsetY);
+      // Snap preview detection
+      if (e.clientX <= SNAP_THRESHOLD) {
+        snapPreview = 'left';
+      } else if (e.clientX >= window.innerWidth - SNAP_THRESHOLD) {
+        snapPreview = 'right';
+      } else {
+        snapPreview = null;
+      }
     };
-    const onUp = () => { isDragging = false; };
+    const onUp = (e: MouseEvent) => {
+      isDragging = false;
+      // Apply snap
+      if (snapPreview) {
+        preSnapPos = { x, y, w: width, h: height };
+        const halfW = Math.floor(window.innerWidth / 2);
+        if (snapPreview === 'left') {
+          x = 0; y = 0; width = halfW; height = desktopH;
+        } else {
+          x = halfW; y = 0; width = window.innerWidth - halfW; height = desktopH;
+        }
+        snapPreview = null;
+      }
+    };
     document.addEventListener('mousemove', onMove);
     document.addEventListener('mouseup', onUp);
     return () => {
@@ -91,6 +118,15 @@
   function startDrag(e: MouseEvent) {
     if (mode !== 'windowed' || e.button !== 0) return;
     if ((e.target as HTMLElement).closest('.title-bar-controls')) return;
+    // If currently snapped, unsnap and adjust drag offset for smooth move
+    if (preSnapPos) {
+      const ratioX = e.clientX / width;
+      width = preSnapPos.w;
+      height = preSnapPos.h;
+      y = e.clientY - dragOffsetY;
+      x = e.clientX - Math.floor(preSnapPos.w * ratioX);
+      preSnapPos = null;
+    }
     isDragging = true;
     dragOffsetX = e.clientX - x;
     dragOffsetY = e.clientY - y;
@@ -176,6 +212,13 @@
   </div>
 {/if}
 
+{#if snapPreview}
+  <div
+    class="snap-preview"
+    style="left:{snapPreview === 'left' ? '0' : '50%'}; top:0; width:50vw; height:calc(100vh - 32px);"
+  ></div>
+{/if}
+
 <style>
   .win98-window {
     display: flex;
@@ -222,5 +265,15 @@
       top: 0 !important;
     }
     .resize-handle { display: none; }
+  }
+
+  /* ===== Snap Preview ===== */
+  .snap-preview {
+    position: fixed;
+    background: rgba(0, 0, 128, 0.18);
+    border: 2px solid rgba(0, 0, 128, 0.5);
+    z-index: 8999;
+    pointer-events: none;
+    transition: opacity 0.1s;
   }
 </style>

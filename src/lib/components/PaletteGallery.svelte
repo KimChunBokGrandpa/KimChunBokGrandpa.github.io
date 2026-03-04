@@ -22,7 +22,6 @@
 
   const coreItems: PalItem[] = [
     { id: 'original', name: 'Original (Full Color)', colors: null, desc: 'No color quantization — keep all original colors' },
-    { id: 'highcolor', name: '★ 16-bit High Color', colors: null, desc: 'RGB 5-6-5 quantization (65,536 colors) — smooth gradients' },
     { id: 'win256', name: '★ Windows 256', colors: PALETTES['win256'] || null, desc: '8-bit Windows default (216 web-safe + extras)' },
   ];
 
@@ -124,21 +123,6 @@
                   title="rgb({c.r}, {c.g}, {c.b})"
                 ></span>
               {/each}
-            </div>
-          {:else if detailItem.id === 'highcolor'}
-            <div class="pg-info-box">
-              <p>RGB 5-6-5 bit quantization</p>
-              <div class="pg-hc-demo">
-                {#each Array(32) as _, i}
-                  <span class="pg-swatch" style="background:rgb({i*8},0,0)"></span>
-                {/each}
-                {#each Array(32) as _, i}
-                  <span class="pg-swatch" style="background:rgb(0,{i*8},0)"></span>
-                {/each}
-                {#each Array(32) as _, i}
-                  <span class="pg-swatch" style="background:rgb(0,0,{i*8})"></span>
-                {/each}
-              </div>
             </div>
           {:else}
             <div class="pg-info-box">
@@ -324,11 +308,6 @@
     border: 1px inset;
   }
   .pg-info-box p { margin: 0 0 6px 0; }
-  .pg-hc-demo {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0;
-  }
 
   .pg-hint {
     color: #888;

@@ -115,8 +115,7 @@
     currentObjectUrl = URL.createObjectURL(file);
     originalImageSrc = currentObjectUrl;
     processImmediate();
-    if (wins.preview.mode === 'closed') wins.preview.mode = 'windowed';
-    focusWindow('preview');
+    openWindow('preview');
   }
 
   function handleSettingsChange(newSettings: typeof processingSettings) {
@@ -150,8 +149,7 @@
   }
 
   function handleOpenGallery() {
-    if (wins.gallery.mode === 'closed' || wins.gallery.mode === 'minimized') wins.gallery.mode = 'windowed';
-    focusWindow('gallery');
+    openWindow('gallery');
   }
 
   function handleGallerySelect(paletteId: string) {

@@ -147,10 +147,11 @@
   .tb-item.tb-active {
     box-shadow: inset -1px -1px #fff, inset 1px 1px #0a0a0a,
                 inset -2px -2px #dfdfdf, inset 2px 2px grey;
-    background: linear-gradient(180deg, #d4d0c8 0%, #c0c0c0 100%);
+    background: linear-gradient(180deg, #e8e4dc 0%, #d4d0c8 100%);
+    border-left: 2px solid #000080;
   }
   .tb-item.tb-dim {
-    opacity: 0.75;
+    opacity: 0.65;
   }
 
   .tb-main {

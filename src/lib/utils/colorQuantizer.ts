@@ -26,15 +26,6 @@ function findNearestColor(
   b: number,
   paletteName: string,
 ): RGB {
-  // Special algorithmic case: 16-bit high color (RGB 5-6-5)
-  if (paletteName === "highcolor") {
-    return {
-      r: Math.round(r / 8) * 8,
-      g: Math.round(g / 4) * 4,
-      b: Math.round(b / 8) * 8,
-    };
-  }
-
   // Check cache
   let cache = paletteCaches.get(paletteName);
   if (!cache) {
