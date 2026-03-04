@@ -71,6 +71,7 @@
     focusWindow(id);
   }
 
+  /** 태스크바 X 버튼: 닫기 + 위치/크기를 기본값으로 리셋 */
   function closeAndResetWindow(id: string) {
     wins[id].mode = 'closed';
     const def = wins[id].defaults;
@@ -80,6 +81,7 @@
     wins[id].h = def.h;
   }
 
+  /** 윈도우 타이틀바 X 버튼: 위치/크기 유지하고 닫기만 */
   function closeWindow(id: string) {
     wins[id].mode = 'closed';
   }

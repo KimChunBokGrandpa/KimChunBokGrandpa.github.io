@@ -300,8 +300,6 @@ export const PALETTES: Record<string, RGB[]> = {
     hexToRgb("#005324"), // ForestGreen
     hexToRgb("#003c76"), // NavyBlue
     hexToRgb("#000000"), // Black
-    hexToRgb("#000000"), // Black2
-    hexToRgb("#000000"), // Black3
     hexToRgb("#ababab"), // LightGrey
     hexToRgb("#0d57ff"), // BrightBlue
     hexToRgb("#4b30ff"), // BrightViolet
@@ -315,9 +313,6 @@ export const PALETTES: Record<string, RGB[]> = {
     hexToRgb("#00a300"), // BrightGreen
     hexToRgb("#009942"), // SeaGreen
     hexToRgb("#007db4"), // SteelBlue
-    hexToRgb("#000000"), // Black4
-    hexToRgb("#000000"), // Black5
-    hexToRgb("#000000"), // Black6
     hexToRgb("#ffffff"), // White
     hexToRgb("#53aeff"), // LightBlue
     hexToRgb("#9085ff"), // LightViolet
@@ -332,8 +327,6 @@ export const PALETTES: Record<string, RGB[]> = {
     hexToRgb("#1ed9a4"), // Mint
     hexToRgb("#38d5f9"), // Cyan
     hexToRgb("#4e4e4e"), // DarkGrey
-    hexToRgb("#000000"), // Black7
-    hexToRgb("#000000"), // Black8
     hexToRgb("#ffffff"), // White2
     hexToRgb("#c0dfff"), // PaleBlue
     hexToRgb("#d3d2ff"), // PalePurple

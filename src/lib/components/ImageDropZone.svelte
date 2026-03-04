@@ -48,7 +48,7 @@
     class="window-body {isDragging ? 'dragging' : ''}"
     style="flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; border: 2px dashed #808080; margin: 8px; background-color: #fff; overflow: hidden;"
     ondragenter={handleDragEnter}
-    ondragover={handleDragEnter}
+    ondragover={(e) => e.preventDefault()}
     ondragleave={handleDragLeave}
     ondrop={handleDrop}
     role="button"

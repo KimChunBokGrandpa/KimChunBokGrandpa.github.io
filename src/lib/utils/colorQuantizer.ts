@@ -5,6 +5,10 @@ import { PALETTES, type RGB } from "./palettes";
 // Cache for nearest color lookups per palette
 const paletteCaches = new Map<string, Map<number, RGB>>();
 
+// Endianness check for Uint32Array color packing (computed once at module load)
+const IS_LITTLE_ENDIAN =
+  new Uint8Array(new Uint32Array([0x11223344]).buffer)[0] === 0x44;
+
 /**
  * Weighted Euclidean distance — accounts for human color perception.
  * Green channel has the highest weight (human eyes are most sensitive to green).
@@ -51,7 +55,8 @@ function findNearestColor(
     const d2 = colorDistance(palette[i], r, g, b);
     if (d2 === 0) {
       if (cache.size >= 50000) {
-        cache.delete(cache.keys().next().value!);
+        const firstKey = cache.keys().next().value;
+        if (firstKey !== undefined) cache.delete(firstKey);
       }
       cache.set(cacheKey, palette[i]);
       return palette[i];
@@ -64,7 +69,8 @@ function findNearestColor(
 
   const result = palette[nearestIndex];
   if (cache.size >= 50000) {
-    cache.delete(cache.keys().next().value!);
+    const firstKey = cache.keys().next().value;
+    if (firstKey !== undefined) cache.delete(firstKey);
   }
   cache.set(cacheKey, result);
   return result;
@@ -88,10 +94,6 @@ export function applyPixelationAndPalette(
   const outData = new ImageData(width, height);
   const outPixels = outData.data;
   const outPixels32 = new Uint32Array(outPixels.buffer);
-
-  // Endianness check for Uint32Array color packing
-  const isLittleEndian =
-    new Uint8Array(new Uint32Array([0x11223344]).buffer)[0] === 0x44;
 
   for (let y = 0; y < height; y += effectivePixelSize) {
     for (let x = 0; x < width; x += effectivePixelSize) {
@@ -131,7 +133,7 @@ export function applyPixelationAndPalette(
       const packedColor =
         a < 128
           ? 0
-          : isLittleEndian
+          : IS_LITTLE_ENDIAN
             ? (255 << 24) |
               (finalColor.b << 16) |
               (finalColor.g << 8) |

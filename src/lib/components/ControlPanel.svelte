@@ -2,9 +2,13 @@
   import { PALETTE_GROUPS } from '../utils/palettes';
 
   // O(1) 상수 시간 검색을 위한 팔레트 이름 맵
-  const paletteNameMap = new Map(
-    PALETTE_GROUPS.flatMap(g => g.palettes).map(p => [p.id, p.name])
-  );
+  const paletteNameMap = new Map<string, string>([
+    ['original', 'Full Color (Original)'],
+    ['highcolor', '16-bit High Color'],
+    ['win256', '8-bit Windows 256'],
+    ['monochrome', '2-bit Monochrome'],
+    ...PALETTE_GROUPS.flatMap(g => g.palettes).map(p => [p.id, p.name] as [string, string]),
+  ]);
 
   let {
     settings = $bindable({ pixelSize: 1, palette: 'original', crtEffect: false }),
@@ -36,10 +40,6 @@
   }
 
   function getPaletteName(id: string) {
-    if (id === 'original') return 'Full Color (Original)';
-    if (id === 'highcolor') return '16-bit High Color';
-    if (id === 'win256') return '8-bit Windows 256';
-    if (id === 'monochrome') return '2-bit Monochrome';
     return paletteNameMap.get(id) ?? id;
   }
 
