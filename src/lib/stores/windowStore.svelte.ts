@@ -128,5 +128,7 @@ export function createWindowStore() {
     closeAndReset,
     close,
     handleTaskbarClick,
+    /** Persist current layout to localStorage (call after drag/resize) */
+    persistLayout() { saveLayout(wins); },
   };
 }

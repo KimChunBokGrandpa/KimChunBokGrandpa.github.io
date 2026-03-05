@@ -54,12 +54,13 @@
     pointer-events: none;
     z-index: 10;
     will-change: opacity;
-    animation: flicker 0.3s infinite;
+    animation: flicker 4s ease-in-out infinite;
   }
 
   @media (prefers-reduced-motion: reduce) {
     .scanlines {
       animation: none;
+      will-change: auto;
       opacity: 0.5;
     }
   }

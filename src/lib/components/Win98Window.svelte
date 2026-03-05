@@ -15,6 +15,7 @@
     mobileSlot = null,
     onClose,
     onFocus,
+    onLayoutChange,
     children,
   }: {
     title?: string;
@@ -30,6 +31,7 @@
     mobileSlot?: { top: string; height: string } | null;
     onClose?: () => void;
     onFocus?: () => void;
+    onLayoutChange?: () => void;
     children: Snippet;
   } = $props();
 
@@ -80,6 +82,7 @@
         }
         snapPreview = null;
       }
+      onLayoutChange?.();
     };
     document.addEventListener('mousemove', onMove);
     document.addEventListener('mouseup', onUp);
@@ -115,7 +118,7 @@
         height = newH;
       }
     };
-    const onUp = () => { isResizing = false; };
+    const onUp = () => { isResizing = false; onLayoutChange?.(); };
     document.addEventListener('mousemove', onMove);
     document.addEventListener('mouseup', onUp);
     return () => {

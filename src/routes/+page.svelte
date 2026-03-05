@@ -121,15 +121,13 @@
   function handleDesktopClick() { selectedIcon = null; }
 
   function handleKeydown(e: KeyboardEvent) {
-    if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
-      e.preventDefault();
-      ip.undo();
-    }
     if ((e.ctrlKey || e.metaKey) && e.key === 'z' && e.shiftKey) {
       e.preventDefault();
       ip.redo();
-    }
-    if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+    } else if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+      e.preventDefault();
+      ip.undo();
+    } else if ((e.ctrlKey || e.metaKey) && e.key === 's') {
       e.preventDefault();
       handleSave();
     }
@@ -175,17 +173,26 @@
       mobileSlot={getMobileSlot('settings')}
       onClose={() => wm.close('settings')}
       onFocus={() => wm.focusWindow('settings')}
+      onLayoutChange={wm.persistLayout}
     >
       {#if !originalImageSrc}
         <ImageDropZone onImageSelected={handleImageSelected} onError={(msg) => showDialog(msg, 'Error')} />
       {:else}
         <div class="settings-body">
-          <button
-            class="load-new-btn"
-            onclick={handleLoadNewImage}
-          >
-            📂 Load New Image...
-          </button>
+          <div class="settings-toolbar">
+            <button
+              class="load-new-btn"
+              onclick={handleLoadNewImage}
+            >
+              📂 Load New Image...
+            </button>
+            <button
+              class="load-new-btn"
+              onclick={(e) => { e.stopPropagation(); wm.openWindow('preview'); }}
+            >
+              🖼️ Preview
+            </button>
+          </div>
           <ControlPanel
             bind:settings={processingSettings}
             {saveFormat}
@@ -215,6 +222,7 @@
       mobileSlot={getMobileSlot('preview')}
       onClose={() => wm.close('preview')}
       onFocus={() => wm.focusWindow('preview')}
+      onLayoutChange={wm.persistLayout}
     >
       <!-- svelte-ignore a11y_no_static_element_interactions -->
       <div
@@ -258,6 +266,8 @@
           {/if}
           <!-- Zoom Controls -->
           <div class="zoom-controls">
+            <button class="zoom-btn" onclick={(e) => { e.stopPropagation(); wm.openWindow('settings'); }} title="Open Settings">⚙️</button>
+            <div class="zoom-sep"></div>
             <button class="zoom-btn" onclick={zp.zoomIn} title="Zoom In">+</button>
             <button class="zoom-btn zoom-label" onclick={zp.resetZoom} title="Reset Zoom">{Math.round(zp.zoomLevel * 100)}%</button>
             <button class="zoom-btn" onclick={zp.zoomOut} title="Zoom Out">−</button>
@@ -298,6 +308,7 @@
       mobileSlot={getMobileSlot('gallery')}
       onClose={() => wm.close('gallery')}
       onFocus={() => wm.focusWindow('gallery')}
+      onLayoutChange={wm.persistLayout}
     >
       <PaletteGallery
         selectedPaletteId={processingSettings.palette}
@@ -478,11 +489,15 @@
     overflow-y: auto;
     flex: 1;
   }
-  .load-new-btn {
+  .settings-toolbar {
+    display: flex;
+    gap: 4px;
     margin-bottom: 6px;
+  }
+  .load-new-btn {
     padding: 4px;
     font-weight: bold;
-    width: 100%;
+    flex: 1;
     text-align: left;
   }
 
@@ -521,6 +536,13 @@
   }
   .zoom-btn:active {
     box-shadow: inset -1px -1px #fff, inset 1px 1px #0a0a0a;
+  }
+  .zoom-sep {
+    width: 1px;
+    height: 14px;
+    background: #808080;
+    border-right: 1px solid #fff;
+    align-self: center;
   }
   .zoom-label {
     min-width: 40px;

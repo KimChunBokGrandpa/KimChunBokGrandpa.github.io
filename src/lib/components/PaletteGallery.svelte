@@ -13,6 +13,33 @@
   let activeGroup = $state<string>('core');
   let hoveredPalette = $state<string | null>(null);
 
+  // ─── Favorites ───
+  const FAV_STORAGE_KEY = 'retro-pixel-favorites';
+  let favorites = $state<Set<string>>(loadFavorites());
+
+  function loadFavorites(): Set<string> {
+    try {
+      const raw = localStorage.getItem(FAV_STORAGE_KEY);
+      return raw ? new Set(JSON.parse(raw)) : new Set();
+    } catch { return new Set(); }
+  }
+
+  function saveFavorites() {
+    try { localStorage.setItem(FAV_STORAGE_KEY, JSON.stringify([...favorites])); }
+    catch { /* ignore */ }
+  }
+
+  function toggleFavorite(id: string, e: MouseEvent) {
+    e.stopPropagation();
+    if (favorites.has(id)) {
+      favorites.delete(id);
+    } else {
+      favorites.add(id);
+    }
+    favorites = new Set(favorites); // trigger reactivity
+    saveFavorites();
+  }
+
   interface PalItem {
     id: string;
     name: string;
@@ -26,21 +53,10 @@
   ];
 
   const groupTabs = [
+    { id: 'favorites', label: '⭐ Favorites' },
     { id: 'core', label: '📁 Core' },
     ...PALETTE_GROUPS.map(g => ({ id: g.groupId, label: `📁 ${g.groupName}` })),
   ];
-
-  let activeItems = $derived.by<PalItem[]>(() => {
-    if (activeGroup === 'core') return coreItems;
-    const group = PALETTE_GROUPS.find(g => g.groupId === activeGroup);
-    if (!group) return [];
-    return group.palettes.map(p => ({
-      id: p.id,
-      name: p.name,
-      colors: PALETTES[p.id] || null,
-      desc: `${(PALETTES[p.id] || []).length} colors`,
-    }));
-  });
 
   const paletteLookup = new Map<string, PalItem>();
   coreItems.forEach(i => paletteLookup.set(i.id, i));
@@ -51,6 +67,21 @@
       desc: `${(PALETTES[p.id] || []).length} colors`,
     });
   }));
+
+  let activeItems = $derived.by<PalItem[]>(() => {
+    if (activeGroup === 'favorites') {
+      return [...favorites].map(id => paletteLookup.get(id)).filter(Boolean) as PalItem[];
+    }
+    if (activeGroup === 'core') return coreItems;
+    const group = PALETTE_GROUPS.find(g => g.groupId === activeGroup);
+    if (!group) return [];
+    return group.palettes.map(p => ({
+      id: p.id,
+      name: p.name,
+      colors: PALETTES[p.id] || null,
+      desc: `${(PALETTES[p.id] || []).length} colors`,
+    }));
+  });
 
   // Detail panel for hovered or selected palette
   let detailItem = $derived.by<PalItem | null>(() => {
@@ -103,6 +134,13 @@
             {#if selectedPaletteId === item.id}
               <span class="pg-check">✓</span>
             {/if}
+            <button
+              class="pg-fav-btn"
+              class:fav-active={favorites.has(item.id)}
+              onclick={(e) => toggleFavorite(item.id, e)}
+              title={favorites.has(item.id) ? 'Remove from favorites' : 'Add to favorites'}
+              aria-label="Toggle favorite"
+            >{favorites.has(item.id) ? '★' : '☆'}</button>
           </div>
         {/each}
       </div>
@@ -255,6 +293,25 @@
     color: #0a0;
   }
   .pg-item.sel .pg-check { color: #8f8; }
+
+  /* ── Favorite button ── */
+  .pg-fav-btn {
+    flex-shrink: 0;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 13px;
+    padding: 0 2px;
+    color: #ccc;
+    min-width: 0;
+    min-height: 0;
+    box-shadow: none;
+    line-height: 1;
+  }
+  .pg-fav-btn:hover { color: #e8a000; }
+  .pg-fav-btn.fav-active { color: #e8a000; }
+  .pg-item.sel .pg-fav-btn { color: #aaa; }
+  .pg-item.sel .pg-fav-btn.fav-active { color: #ffd700; }
 
   /* ── Detail panel ── */
   .pg-detail {
