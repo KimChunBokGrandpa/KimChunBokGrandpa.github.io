@@ -7,8 +7,7 @@ export interface ProcessSettings {
   pixelSize: number;
   palette: string;
   crtEffect: boolean;
-  glitchType: string;
-  glitchIntensity: number;
+  glitchFilters: Array<{ type: string; intensity: number }>;
   renderMode: string;
 }
 
@@ -32,7 +31,11 @@ class ImageProcessorService {
     }
   >();
   private imageCache = new Map<string, HTMLImageElement>();
+  private activeBlobUrls = new Set<string>();
   private lastBlobUrl: string | null = null;
+
+  /** Maximum processing dimension to prevent OOM on large images */
+  private readonly MAX_DIMENSION = 2048;
 
   private ensureWorker(): Worker {
     if (!this.worker) {
@@ -64,9 +67,13 @@ class ImageProcessorService {
           // Use toBlob + createObjectURL instead of toDataURL for memory efficiency
           pending.canvas.toBlob((blob) => {
             if (blob) {
-              if (this.lastBlobUrl) URL.revokeObjectURL(this.lastBlobUrl);
+              if (this.lastBlobUrl) {
+                this.activeBlobUrls.delete(this.lastBlobUrl);
+                URL.revokeObjectURL(this.lastBlobUrl);
+              }
               const url = URL.createObjectURL(blob);
               this.lastBlobUrl = url;
+              this.activeBlobUrls.add(url);
               pending.resolve(url);
             } else {
               pending.reject(new Error("Failed to create image blob"));
@@ -117,7 +124,7 @@ class ImageProcessorService {
     if (
       settings.pixelSize <= 1 &&
       settings.palette === "original" &&
-      (!settings.glitchType || settings.glitchType === "none") &&
+      (!settings.glitchFilters || settings.glitchFilters.length === 0) &&
       (!settings.renderMode || settings.renderMode !== "hqx")
     ) {
       const img = await this.loadImage(imageSrc);
@@ -130,9 +137,13 @@ class ImageProcessorService {
       return new Promise<string>((resolve, reject) => {
         c.toBlob((blob) => {
           if (blob) {
-            if (this.lastBlobUrl) URL.revokeObjectURL(this.lastBlobUrl);
+            if (this.lastBlobUrl) {
+              this.activeBlobUrls.delete(this.lastBlobUrl);
+              URL.revokeObjectURL(this.lastBlobUrl);
+            }
             const url = URL.createObjectURL(blob);
             this.lastBlobUrl = url;
+            this.activeBlobUrls.add(url);
             resolve(url);
           } else {
             reject(new Error("Failed to create image blob"));
@@ -144,26 +155,40 @@ class ImageProcessorService {
     const img = await this.loadImage(imageSrc);
     if (this.currentRequestId !== requestId) return null;
 
+    // Constrain to MAX_DIMENSION for performance
+    let procWidth = img.width;
+    let procHeight = img.height;
+    if (procWidth > this.MAX_DIMENSION || procHeight > this.MAX_DIMENSION) {
+      const scale = this.MAX_DIMENSION / Math.max(procWidth, procHeight);
+      procWidth = Math.round(procWidth * scale);
+      procHeight = Math.round(procHeight * scale);
+    }
+
     // Use createImageBitmap to decode off-thread and transfer to worker
-    const bitmap = await createImageBitmap(img);
+    const bitmap = await createImageBitmap(img, {
+      resizeWidth: procWidth,
+      resizeHeight: procHeight,
+    });
 
     return new Promise<string | null>((resolve, reject) => {
       // Create canvas for the final export
       const canvas = document.createElement("canvas");
-      canvas.width = img.width;
-      canvas.height = img.height;
+      canvas.width = procWidth;
+      canvas.height = procHeight;
       const ctx = canvas.getContext("2d")!;
       this.pendingResolvers.set(requestId, { resolve, reject, canvas, ctx });
 
       const message: ImageWorkerMessage = {
         id: requestId,
         imageBitmap: bitmap,
-        width: img.width,
-        height: img.height,
+        width: procWidth,
+        height: procHeight,
         pixelSize: settings.pixelSize,
         palette: settings.palette,
-        glitchType: settings.glitchType,
-        glitchIntensity: settings.glitchIntensity,
+        glitchFilters: settings.glitchFilters.map((f) => ({
+          type: f.type,
+          intensity: f.intensity,
+        })),
         renderMode: settings.renderMode,
       };
 
@@ -184,10 +209,12 @@ class ImageProcessorService {
     this.worker = null;
     this.currentRequestId = null;
     this.imageCache.clear();
-    if (this.lastBlobUrl) {
-      URL.revokeObjectURL(this.lastBlobUrl);
-      this.lastBlobUrl = null;
+    // Release all tracked blob URLs
+    for (const url of this.activeBlobUrls) {
+      URL.revokeObjectURL(url);
     }
+    this.activeBlobUrls.clear();
+    this.lastBlobUrl = null;
   }
 }
 

@@ -244,6 +244,7 @@
                 inset -2px -2px grey, inset 2px 2px #fff,
                 4px 4px 12px rgba(0,0,0,0.4);
     user-select: none;
+    animation: windowOpen 0.12s ease-out;
   }
   .win98-window.maximized {
     box-shadow: inset -1px -1px #0a0a0a, inset 1px 1px #dfdfdf,
@@ -299,5 +300,17 @@
     z-index: 8999;
     pointer-events: none;
     transition: opacity 0.1s;
+  }
+
+  /* ===== Window Animations ===== */
+  @keyframes windowOpen {
+    from {
+      opacity: 0;
+      transform: scale(0.92);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
   }
 </style>

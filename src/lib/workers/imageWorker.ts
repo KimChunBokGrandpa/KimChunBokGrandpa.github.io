@@ -1,4 +1,7 @@
-import { applyPixelationAndPalette } from "../utils/colorQuantizer";
+import {
+  applyPixelationAndPalette,
+  clearPaletteCachesExcept,
+} from "../utils/colorQuantizer";
 import { applyGlitch, type GlitchType } from "../utils/glitchEngine";
 import { applyScaling, type RenderMode } from "../utils/scaleEngine";
 
@@ -9,8 +12,7 @@ export interface ImageWorkerMessage {
   height: number;
   pixelSize: number;
   palette: string;
-  glitchType?: string;
-  glitchIntensity?: number;
+  glitchFilters?: Array<{ type: string; intensity: number }>;
   renderMode?: string;
 }
 
@@ -28,8 +30,7 @@ onmessage = (e: MessageEvent<ImageWorkerMessage>) => {
     height,
     pixelSize,
     palette,
-    glitchType,
-    glitchIntensity,
+    glitchFilters,
     renderMode,
   } = e.data;
 
@@ -48,12 +49,19 @@ onmessage = (e: MessageEvent<ImageWorkerMessage>) => {
       palette,
     );
 
-    if (glitchType && glitchType !== "none") {
-      processedData = applyGlitch(
-        processedData,
-        glitchType as GlitchType,
-        glitchIntensity || 1,
-      );
+    // Clear cached color lookups for unused palettes
+    clearPaletteCachesExcept(palette);
+
+    if (glitchFilters && glitchFilters.length > 0) {
+      for (const filter of glitchFilters) {
+        if (filter.type && filter.type !== "none") {
+          processedData = applyGlitch(
+            processedData,
+            filter.type as GlitchType,
+            filter.intensity || 1,
+          );
+        }
+      }
     }
 
     if (renderMode && renderMode === "hqx") {

@@ -27,8 +27,7 @@
     pixelSize: 1,
     palette: 'original',
     crtEffect: false,
-    glitchType: 'none',
-    glitchIntensity: 1,
+    glitchFilters: [],
     renderMode: 'pixel_perfect'
   });
 
@@ -38,6 +37,14 @@
 
   // ─── Desktop icon selection ───
   let selectedIcon = $state<string | null>(null);
+
+  // ─── Zoom & Pan State ───
+  let zoomLevel = $state(1);
+  let panX = $state(0);
+  let panY = $state(0);
+  let isPanning = $state(false);
+  let panStartX = 0;
+  let panStartY = 0;
 
   // ─── Taskbar window info ───
   let taskbarWindows = $derived<TaskbarWindowInfo[]>(
@@ -107,6 +114,25 @@
   async function handleSave() {
     if (!processedImageSrc) return;
     try {
+      // Load image into canvas to get raw blob data (avoids blob: URL fetch issues in Tauri)
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      const blobData = await new Promise<Blob>((resolve, reject) => {
+        img.onload = () => {
+          const c = document.createElement('canvas');
+          c.width = img.naturalWidth;
+          c.height = img.naturalHeight;
+          const ctx = c.getContext('2d')!;
+          ctx.drawImage(img, 0, 0);
+          c.toBlob(blob => {
+            if (blob) resolve(blob);
+            else reject(new Error('Failed to create blob'));
+          }, 'image/png');
+        };
+        img.onerror = () => reject(new Error('Failed to load image for save'));
+        img.src = processedImageSrc!;
+      });
+
       if (isTauri) {
         const { save } = await import('@tauri-apps/plugin-dialog');
         const { writeFile } = await import('@tauri-apps/plugin-fs');
@@ -115,19 +141,20 @@
           defaultPath: `retro_pixel_${Date.now()}.png`
         });
         if (filePath) {
-          const response = await fetch(processedImageSrc);
-          const arrayBuffer = await response.arrayBuffer();
+          const arrayBuffer = await blobData.arrayBuffer();
           const bytes = new Uint8Array(arrayBuffer);
           await writeFile(filePath, bytes);
           showDialog('File saved successfully!');
         }
       } else {
+        const url = URL.createObjectURL(blobData);
         const a = document.createElement('a');
-        a.href = processedImageSrc;
+        a.href = url;
         a.download = `retro_pixel_${Date.now()}.png`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
+        URL.revokeObjectURL(url);
         showDialog('Image downloaded successfully!');
       }
     } catch (err) {
@@ -149,6 +176,38 @@
   function handleIconClick(id: string) { selectedIcon = id; }
   function handleIconDblClick(id: string) { selectedIcon = null; wm.openWindow(id); }
   function handleDesktopClick() { selectedIcon = null; }
+
+  // ─── Zoom & Pan Handlers ───
+  function handlePreviewWheel(e: WheelEvent) {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? -0.15 : 0.15;
+    zoomLevel = Math.min(8, Math.max(0.25, zoomLevel + delta));
+    if (zoomLevel <= 1) { panX = 0; panY = 0; }
+  }
+
+  function handlePreviewMouseDown(e: MouseEvent) {
+    if (zoomLevel <= 1 || e.button !== 0) return;
+    isPanning = true;
+    panStartX = e.clientX - panX;
+    panStartY = e.clientY - panY;
+    e.preventDefault();
+  }
+
+  function handlePreviewMouseMove(e: MouseEvent) {
+    if (!isPanning) return;
+    panX = e.clientX - panStartX;
+    panY = e.clientY - panStartY;
+  }
+
+  function handlePreviewMouseUp() { isPanning = false; }
+
+  function resetZoom() { zoomLevel = 1; panX = 0; panY = 0; }
+  function zoomToFit() { zoomLevel = 1; panX = 0; panY = 0; }
+  function zoomIn() { zoomLevel = Math.min(8, zoomLevel + 0.5); }
+  function zoomOut() {
+    zoomLevel = Math.max(0.25, zoomLevel - 0.5);
+    if (zoomLevel <= 1) { panX = 0; panY = 0; }
+  }
 
   onDestroy(() => {
     if (debounceTimer) clearTimeout(debounceTimer);
@@ -227,20 +286,53 @@
       onClose={() => wm.close('preview')}
       onFocus={() => wm.focusWindow('preview')}
     >
-      <div class="preview-body">
+      <!-- svelte-ignore a11y_no_static_element_interactions -->
+      <div
+        class="preview-body"
+        class:panning={isPanning}
+        onwheel={handlePreviewWheel}
+        onmousedown={handlePreviewMouseDown}
+        onmousemove={handlePreviewMouseMove}
+        onmouseup={handlePreviewMouseUp}
+        onmouseleave={handlePreviewMouseUp}
+      >
         {#if processedImageSrc}
           <CrtDisplay active={processingSettings.crtEffect}>
             {#snippet children()}
               <img
                 src={processedImageSrc}
                 alt="Processed Pixel Art"
-                style="max-width:100%; max-height:100%; width:100%; height:100%; image-rendering:{processingSettings.renderMode === 'bilinear' ? 'auto' : 'pixelated'}; object-fit:contain;"
+                style="max-width:100%; max-height:100%; width:100%; height:100%; image-rendering:{processingSettings.renderMode === 'bilinear' ? 'auto' : 'pixelated'}; object-fit:contain; transform: scale({zoomLevel}) translate({panX / zoomLevel}px, {panY / zoomLevel}px); transform-origin: center center; transition: {isPanning ? 'none' : 'transform 0.1s ease'};"
+                draggable="false"
               />
             {/snippet}
           </CrtDisplay>
+          {#if isProcessing}
+            <div class="processing-overlay">
+              <div class="processing-indicator">
+                <div class="progress-container">
+                  <div class="progress-bar"></div>
+                </div>
+                <span class="processing-text">Rendering...</span>
+              </div>
+            </div>
+          {/if}
+          <!-- Zoom Controls -->
+          <div class="zoom-controls">
+            <button class="zoom-btn" onclick={zoomIn} title="Zoom In">+</button>
+            <button class="zoom-btn zoom-label" onclick={resetZoom} title="Reset Zoom">{Math.round(zoomLevel * 100)}%</button>
+            <button class="zoom-btn" onclick={zoomOut} title="Zoom Out">−</button>
+            <button class="zoom-btn" onclick={zoomToFit} title="Fit to Window">⊡</button>
+          </div>
         {:else if originalImageSrc}
-          <div class="status-bar" style="position:absolute; bottom:0; width:100%;">
-            <p class="status-bar-field">Processing image...</p>
+          <div class="initial-processing">
+            <div class="processing-indicator">
+              <span style="font-size: 24px; margin-bottom: 8px;">⏳</span>
+              <div class="progress-container" style="width: 200px;">
+                <div class="progress-bar"></div>
+              </div>
+              <span class="processing-text">Processing image...</span>
+            </div>
           </div>
         {:else}
           <p style="color:#fff; font-weight:bold; text-shadow:1px 1px 0 #000;">No Image Loaded</p>
@@ -290,6 +382,10 @@
 <style>
   .desktop {
     background-color: #008080;
+    background-image:
+      radial-gradient(circle at 20px 20px, rgba(255,255,255,0.03) 1px, transparent 1px),
+      radial-gradient(circle at 10px 10px, rgba(0,0,0,0.04) 1px, transparent 1px);
+    background-size: 20px 20px;
     width: 100vw;
     height: calc(100vh - 30px);
     position: relative;
@@ -379,6 +475,112 @@
     background-color: #000;
     overflow: hidden;
     min-height: 0;
+    cursor: default;
+  }
+  .preview-body.panning {
+    cursor: grabbing;
+  }
+
+  /* ===== Zoom Controls ===== */
+  .zoom-controls {
+    position: absolute;
+    bottom: 6px;
+    right: 6px;
+    display: flex;
+    gap: 2px;
+    z-index: 6;
+  }
+  .zoom-btn {
+    min-width: 22px;
+    height: 20px;
+    padding: 0 4px;
+    font-size: 11px;
+    font-weight: bold;
+    font-family: inherit;
+    background: #c0c0c0;
+    border: none;
+    cursor: pointer;
+    box-shadow: inset 1px 1px #fff, inset -1px -1px #0a0a0a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .zoom-btn:active {
+    box-shadow: inset -1px -1px #fff, inset 1px 1px #0a0a0a;
+  }
+  .zoom-label {
+    min-width: 40px;
+    font-size: 10px;
+    font-weight: normal;
+  }
+
+  /* ===== Processing Overlay ===== */
+  .processing-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 5;
+    animation: fadeIn 0.15s ease;
+  }
+
+  .initial-processing {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+  }
+
+  .processing-indicator {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 12px 20px;
+    background: #c0c0c0;
+    border: 2px solid;
+    border-color: #dfdfdf #808080 #808080 #dfdfdf;
+    box-shadow: 1px 1px 0 #000;
+  }
+
+  .processing-text {
+    font-size: 11px;
+    color: #000;
+    font-weight: bold;
+  }
+
+  .progress-container {
+    width: 140px;
+    height: 16px;
+    background: #fff;
+    border: 2px solid;
+    border-color: #808080 #dfdfdf #dfdfdf #808080;
+    padding: 1px;
+    overflow: hidden;
+  }
+
+  .progress-bar {
+    height: 100%;
+    background: repeating-linear-gradient(
+      90deg,
+      #000080 0px, #000080 8px,
+      transparent 8px, transparent 10px
+    );
+    animation: progressSlide 1.5s linear infinite;
+    width: 200%;
+  }
+
+  @keyframes progressSlide {
+    from { transform: translateX(-50%); }
+    to { transform: translateX(0); }
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
   }
 
   /* ===== Mobile ===== */

@@ -78,6 +78,15 @@ function cacheSet(cache: Map<number, RGB>, key: number, value: RGB) {
   cache.set(key, value);
 }
 
+/** Clear caches for palettes not currently in use */
+export function clearPaletteCachesExcept(activePalette: string) {
+  for (const [key] of paletteCaches) {
+    if (key !== activePalette) {
+      paletteCaches.delete(key);
+    }
+  }
+}
+
 export function applyPixelationAndPalette(
   imageData: ImageData,
   pixelSize: number,

@@ -200,7 +200,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 3.5px;
+    min-width: 18px;
+    width: 14px;
     height: 14px;
     padding: 0;
     font-size: 0;
@@ -245,9 +246,10 @@
     padding: 0 8px;
     box-shadow: inset -1px -1px #fff, inset 1px 1px #808080;
     font-size: 11px;
+    font-family: 'Segoe UI', 'MS Sans Serif', Arial, sans-serif;
   }
-  .tray-ico { font-size: 13px; }
-  .tray-clock { cursor: default; white-space: nowrap; }
+  .tray-ico { font-size: 13px; font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif; }
+  .tray-clock { cursor: default; white-space: nowrap; letter-spacing: 0; font-variant-numeric: tabular-nums; }
 
   /* ── Mobile ── */
   @media (max-width: 400px) {

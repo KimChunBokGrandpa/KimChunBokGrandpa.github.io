@@ -1,5 +1,6 @@
 <script lang="ts">
   import { PALETTE_GROUPS } from '../utils/palettes';
+  import type { GlitchFilter } from '../types';
 
   // O(1) 상수 시간 검색을 위한 팔레트 이름 맵
   const paletteNameMap = new Map<string, string>([
@@ -9,6 +10,14 @@
     ...PALETTE_GROUPS.flatMap(g => g.palettes).map(p => [p.id, p.name] as [string, string]),
   ]);
 
+  // 글리치 필터 옵션 정의
+  const GLITCH_OPTIONS = [
+    { id: 'rgb_split', icon: '🔴', label: 'RGB Split' },
+    { id: 'wave',      icon: '📺', label: 'Wave' },
+    { id: 'noise',     icon: '🧩', label: 'Noise' },
+    { id: 'slice',     icon: '🔪', label: 'Slice' },
+  ] as const;
+
   // 추천 프리셋 정의
   interface Preset {
     id: string;
@@ -16,31 +25,31 @@
     pixelSize: number;
     palette: string;
     crtEffect: boolean;
-    glitchType: string;
-    glitchIntensity: number;
+    glitchFilters: GlitchFilter[];
     renderMode: string;
   }
 
   const PRESETS: Preset[] = [
-    { id: 'retro_crt',  label: '📺 CRT',         pixelSize: 3, palette: 'win256',     crtEffect: true,  glitchType: 'none',      glitchIntensity: 1, renderMode: 'pixel_perfect' },
-    { id: 'gameboy',    label: '🎮 Gameboy',     pixelSize: 4, palette: 'dmg',        crtEffect: false, glitchType: 'none',      glitchIntensity: 1, renderMode: 'pixel_perfect' },
-    { id: 'nes',        label: '🕹️ NES',         pixelSize: 3, palette: 'nes',        crtEffect: false, glitchType: 'none',      glitchIntensity: 1, renderMode: 'pixel_perfect' },
-    { id: 'pico8',      label: '👾 PICO-8',      pixelSize: 4, palette: 'pico8',      crtEffect: false, glitchType: 'none',      glitchIntensity: 1, renderMode: 'pixel_perfect' },
-    { id: 'broken_vhs', label: '📼 Broken VHS',  pixelSize: 2, palette: 'win256',     crtEffect: true,  glitchType: 'wave',      glitchIntensity: 2, renderMode: 'pixel_perfect' },
-    { id: 'cyberpunk',  label: '🌃 Cyberpunk',   pixelSize: 2, palette: 'cyberpunk16', crtEffect: true,  glitchType: 'rgb_split', glitchIntensity: 2, renderMode: 'pixel_perfect' },
-    { id: 'glitch_art', label: '☠️ Glitch Art',  pixelSize: 3, palette: 'c64',        crtEffect: true,  glitchType: 'noise',     glitchIntensity: 3, renderMode: 'pixel_perfect' },
-    { id: 'smooth_hqx', label: '✨ Smooth HQx',  pixelSize: 2, palette: 'win256',     crtEffect: false, glitchType: 'none',      glitchIntensity: 1, renderMode: 'hqx' },
-    { id: 'original',   label: '🖼️ Original',    pixelSize: 1, palette: 'original',   crtEffect: false, glitchType: 'none',      glitchIntensity: 1, renderMode: 'pixel_perfect' },
+    { id: 'retro_crt',  label: '📺 CRT',         pixelSize: 3, palette: 'win256',      crtEffect: true,  glitchFilters: [],                                                                   renderMode: 'pixel_perfect' },
+    { id: 'gameboy',    label: '🎮 Gameboy',     pixelSize: 4, palette: 'dmg',          crtEffect: false, glitchFilters: [],                                                                   renderMode: 'pixel_perfect' },
+    { id: 'nes',        label: '🕹️ NES',         pixelSize: 3, palette: 'nes',          crtEffect: false, glitchFilters: [],                                                                   renderMode: 'pixel_perfect' },
+    { id: 'pico8',      label: '👾 PICO-8',      pixelSize: 4, palette: 'pico8',        crtEffect: false, glitchFilters: [],                                                                   renderMode: 'pixel_perfect' },
+    { id: 'broken_vhs', label: '📼 Broken VHS',  pixelSize: 2, palette: 'win256',       crtEffect: true,  glitchFilters: [{ type: 'wave', intensity: 2 }],                                      renderMode: 'pixel_perfect' },
+    { id: 'cyberpunk',  label: '🌃 Cyberpunk',   pixelSize: 2, palette: 'cyberpunk16',  crtEffect: true,  glitchFilters: [{ type: 'rgb_split', intensity: 2 }],                                  renderMode: 'pixel_perfect' },
+    { id: 'glitch_art', label: '☠️ Glitch Art',  pixelSize: 3, palette: 'c64',          crtEffect: true,  glitchFilters: [{ type: 'noise', intensity: 3 }],                                     renderMode: 'pixel_perfect' },
+    { id: 'chaos',      label: '🔥 Chaos',       pixelSize: 2, palette: 'win256',       crtEffect: true,  glitchFilters: [{ type: 'rgb_split', intensity: 3 }, { type: 'wave', intensity: 2 }, { type: 'noise', intensity: 3 }], renderMode: 'pixel_perfect' },
+    { id: 'smooth_hqx', label: '✨ Smooth HQx',  pixelSize: 2, palette: 'win256',       crtEffect: false, glitchFilters: [],                                                                   renderMode: 'hqx' },
+    { id: 'original',   label: '🖼️ Original',    pixelSize: 1, palette: 'original',     crtEffect: false, glitchFilters: [],                                                                   renderMode: 'pixel_perfect' },
   ];
 
   let {
-    settings = $bindable({ pixelSize: 1, palette: 'original', crtEffect: false, glitchType: 'none', glitchIntensity: 1, renderMode: 'pixel_perfect' }),
+    settings = $bindable({ pixelSize: 1, palette: 'original', crtEffect: false, glitchFilters: [] as GlitchFilter[], renderMode: 'pixel_perfect' }),
     onChange,
     onSave,
     onOpenGallery,
   }: {
-    settings: { pixelSize: number; palette: string; crtEffect: boolean; glitchType: string; glitchIntensity: number; renderMode: string };
-    onChange: (settings: { pixelSize: number; palette: string; crtEffect: boolean; glitchType: string; glitchIntensity: number; renderMode: string }) => void;
+    settings: { pixelSize: number; palette: string; crtEffect: boolean; glitchFilters: GlitchFilter[]; renderMode: string };
+    onChange: (settings: { pixelSize: number; palette: string; crtEffect: boolean; glitchFilters: GlitchFilter[]; renderMode: string }) => void;
     onSave: () => void;
     onOpenGallery: () => void;
   } = $props();
@@ -54,8 +63,7 @@
       pixelSize: preset.pixelSize,
       palette: preset.palette,
       crtEffect: preset.crtEffect,
-      glitchType: preset.glitchType,
-      glitchIntensity: preset.glitchIntensity,
+      glitchFilters: preset.glitchFilters.map(f => ({ ...f })),
       renderMode: preset.renderMode
     };
     update();
@@ -66,24 +74,61 @@
   }
 
   function matchesPreset(preset: Preset): boolean {
-    return settings.pixelSize === preset.pixelSize
-      && settings.palette === preset.palette
-      && settings.crtEffect === preset.crtEffect
-      && settings.glitchType === preset.glitchType
-      && settings.glitchIntensity === preset.glitchIntensity
-      && settings.renderMode === preset.renderMode;
+    if (settings.pixelSize !== preset.pixelSize) return false;
+    if (settings.palette !== preset.palette) return false;
+    if (settings.crtEffect !== preset.crtEffect) return false;
+    if (settings.renderMode !== preset.renderMode) return false;
+    if (settings.glitchFilters.length !== preset.glitchFilters.length) return false;
+    return preset.glitchFilters.every(pf =>
+      settings.glitchFilters.some(sf => sf.type === pf.type && sf.intensity === pf.intensity)
+    );
+  }
+
+  // 필터 토글: 없으면 intensity 1로 추가, 있으면 제거
+  function toggleGlitch(filterId: string) {
+    const idx = settings.glitchFilters.findIndex(f => f.type === filterId);
+    if (idx >= 0) {
+      settings.glitchFilters = settings.glitchFilters.filter((_, i) => i !== idx);
+    } else {
+      settings.glitchFilters = [...settings.glitchFilters, { type: filterId, intensity: 1 }];
+    }
+    update();
+  }
+
+  // 개별 필터의 강도 변경
+  function setFilterIntensity(filterId: string, intensity: number) {
+    settings.glitchFilters = settings.glitchFilters.map(f =>
+      f.type === filterId ? { ...f, intensity } : { ...f }
+    );
+    update();
+  }
+
+  // 특정 필터가 활성화되어 있는지
+  function isFilterActive(filterId: string): boolean {
+    return settings.glitchFilters.some(f => f.type === filterId);
+  }
+
+  // 특정 필터의 현재 강도
+  function getFilterIntensity(filterId: string): number {
+    return settings.glitchFilters.find(f => f.type === filterId)?.intensity ?? 1;
+  }
+
+  function clearAllGlitch() {
+    settings.glitchFilters = [];
+    update();
   }
 </script>
 
 <div class="cp-root">
   <fieldset>
     <legend>Recommended Presets</legend>
-    <div class="field-row" style="display: flex; flex-wrap: wrap; gap: 4px; justify-content: flex-start;">
+    <div class="field-row preset-grid">
       {#each PRESETS as preset}
         <button
           class:preset-active={matchesPreset(preset)}
-          style="font-size: 11px; padding: 2px 6px;"
+          class="preset-btn"
           onclick={() => applyPreset(preset)}
+          title="Pixel: {preset.pixelSize}px | Palette: {getPaletteName(preset.palette)}"
         >{preset.label}</button>
       {/each}
     </div>
@@ -133,20 +178,24 @@
       <input type="checkbox" id="crt-effect" bind:checked={settings.crtEffect} onchange={update} />
       <label for="crt-effect">CRT Scanlines</label>
     </div>
-    
-    <div style="margin-top: 8px; font-size: 11px; margin-bottom: 2px;">Glitch Filter:</div>
-    <div class="field-row" style="display: flex; flex-wrap: wrap; gap: 4px;">
-      {#each [
-        { id: 'none', icon: '🚫', label: 'None' },
-        { id: 'rgb_split', icon: '🔴', label: 'RGB Split' },
-        { id: 'wave', icon: '📺', label: 'Wave' },
-        { id: 'noise', icon: '🧩', label: 'Noise' },
-        { id: 'slice', icon: '🔪', label: 'Slice' }
-      ] as opt}
+
+    <div style="margin-top: 8px; font-size: 11px; margin-bottom: 2px;">
+      Glitch Filters <span style="color:#808080; font-size:9px;">(multi-select)</span>:
+    </div>
+    <div class="field-row glitch-toggles">
+      <button
+        class:preset-active={settings.glitchFilters.length === 0}
+        class="glitch-toggle-btn"
+        onclick={clearAllGlitch}
+        title="None"
+      >
+        🚫 <span class="hide-on-small">None</span>
+      </button>
+      {#each GLITCH_OPTIONS as opt}
         <button
-          class:preset-active={settings.glitchType === opt.id}
-          style="font-size: 11px; padding: 2px 4px; flex: 1; text-align: center;"
-          onclick={() => { settings.glitchType = opt.id; update(); }}
+          class:preset-active={isFilterActive(opt.id)}
+          class="glitch-toggle-btn"
+          onclick={() => toggleGlitch(opt.id)}
           aria-label="{opt.label} Glitch Filter"
           title="{opt.label}"
         >
@@ -155,17 +204,25 @@
       {/each}
     </div>
 
-    {#if settings.glitchType !== 'none'}
-    <div style="margin-top: 6px; font-size: 11px; margin-bottom: 2px;">Glitch Intensity:</div>
-    <div class="field-row" style="display: flex; gap: 4px;">
-      {#each [1, 2, 3] as intensity}
-        <button
-          class:preset-active={settings.glitchIntensity === intensity}
-          style="font-size: 10px; padding: 1px 0; flex: 1; text-align: center;"
-          onclick={() => { settings.glitchIntensity = intensity; update(); }}
-        >
-          Lv {intensity}
-        </button>
+    <!-- 활성 필터별 개별 강도 슬라이더 -->
+    {#if settings.glitchFilters.length > 0}
+    <div class="glitch-intensity-panel">
+      {#each GLITCH_OPTIONS.filter(o => isFilterActive(o.id)) as opt}
+        <div class="glitch-intensity-row">
+          <span class="glitch-intensity-label">{opt.icon} {opt.label}</span>
+          <div class="glitch-intensity-btns">
+            {#each [1, 2, 3] as lv}
+              <button
+                class:preset-active={getFilterIntensity(opt.id) === lv}
+                class="intensity-btn"
+                onclick={() => setFilterIntensity(opt.id, lv)}
+                title="Level {lv}"
+              >
+                {lv}
+              </button>
+            {/each}
+          </div>
+        </div>
       {/each}
     </div>
     {/if}
@@ -189,8 +246,22 @@
     </div>
   </fieldset>
 
+  <!-- Current Settings Summary -->
+  <fieldset style="margin-top: 8px; background: #f8f8f0;">
+    <legend>Current Settings</legend>
+    <div class="settings-summary">
+      <span>📌 {settings.pixelSize}px</span>
+      <span>🎨 {getPaletteName(settings.palette)}</span>
+      {#if settings.crtEffect}<span>📺 CRT</span>{/if}
+      {#each settings.glitchFilters as f}
+        <span>⚡ {f.type} Lv{f.intensity}</span>
+      {/each}
+      <span>🔍 {settings.renderMode === 'pixel_perfect' ? 'Pixel' : settings.renderMode === 'bilinear' ? 'Smooth' : 'HQx'}</span>
+    </div>
+  </fieldset>
+
   <div class="field-row" style="margin-top: 10px; justify-content: flex-end;">
-    <button style="font-weight: bold;" onclick={onSave}>Save As...</button>
+    <button class="save-btn" onclick={onSave}>💾 Save As...</button>
   </div>
 </div>
 
@@ -201,7 +272,92 @@
   .cp-root :global(.preset-active) {
     box-shadow: inset -1px -1px #fff, inset 1px 1px #0a0a0a, inset -2px -2px #dfdfdf, inset 2px 2px #808080;
     font-weight: bold;
-    background: #e0e0e0;
+    background: #d0d8e0;
+    border-color: #000080;
+  }
+  .preset-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    justify-content: flex-start;
+  }
+  .preset-btn {
+    font-size: 11px;
+    padding: 3px 8px;
+    transition: background 0.1s;
+  }
+  .preset-btn:hover {
+    background: #e8e8e0;
+  }
+
+  /* ===== Glitch Filter Toggle Buttons ===== */
+  .glitch-toggles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  .glitch-toggle-btn {
+    font-size: 11px;
+    padding: 2px 4px;
+    flex: 1;
+    text-align: center;
+    min-width: 0;
+  }
+
+  /* ===== Per-Filter Intensity Panel ===== */
+  .glitch-intensity-panel {
+    margin-top: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    background: #e8e8e0;
+    border: 1px solid #c0c0c0;
+    padding: 4px;
+  }
+  .glitch-intensity-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 4px;
+  }
+  .glitch-intensity-label {
+    font-size: 10px;
+    white-space: nowrap;
+    min-width: 70px;
+  }
+  .glitch-intensity-btns {
+    display: flex;
+    gap: 2px;
+  }
+  .intensity-btn {
+    font-size: 9px;
+    padding: 1px 6px;
+    min-width: 22px;
+    text-align: center;
+  }
+
+  /* ===== Settings Summary ===== */
+  .settings-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    font-size: 10px;
+    color: #444;
+  }
+  .settings-summary span {
+    background: #e8e4dc;
+    padding: 1px 5px;
+    border: 1px solid #c0c0c0;
+    white-space: nowrap;
+  }
+  .save-btn {
+    font-weight: bold;
+    padding: 4px 12px;
+    font-size: 12px;
+    background: #c0c0c0;
+  }
+  .save-btn:hover {
+    background: #d0d0d0;
   }
   @media (max-width: 400px) {
     .hide-on-small { display: none; }
