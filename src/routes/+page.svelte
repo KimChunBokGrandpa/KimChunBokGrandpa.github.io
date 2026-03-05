@@ -9,8 +9,18 @@
   import MessageDialog from '$lib/components/MessageDialog.svelte';
   import { processorService } from '$lib/utils/imageProcessor';
   import { createWindowStore, WINDOW_CONFIGS } from '$lib/stores/windowStore.svelte';
+  import { PALETTE_GROUPS } from '$lib/utils/palettes';
   import type { TaskbarWindowInfo } from '$lib/components/Taskbar.svelte';
   import type { ProcessingSettings } from '$lib/types';
+
+  // ─── Palette name lookup ───
+  const paletteNameMap = new Map<string, string>([
+    ['original', 'Full Color (Original)'],
+    ['win256', '8-bit Windows 256'],
+    ['monochrome', '2-bit Monochrome'],
+    ...PALETTE_GROUPS.flatMap(g => g.palettes).map(p => [p.id, p.name] as [string, string]),
+  ]);
+  function getPaletteName(id: string) { return paletteNameMap.get(id) ?? id; }
 
   // Tauri 환경 검증
   const isTauri = typeof window !== 'undefined' && !!(window as any).__TAURI__;
@@ -92,6 +102,7 @@
 
   // ─── Processing Logic ───
   let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+  let processingGeneration = 0; // 동시 호출 시 isProcessing 경합 방지
 
   function handleImageSelected(file: File) {
     if (currentObjectUrl) {
@@ -122,12 +133,13 @@
   async function processImmediate() {
     if (!originalImageSrc) return;
     if (debounceTimer) { clearTimeout(debounceTimer); debounceTimer = null; }
+    const gen = ++processingGeneration;
     isProcessing = true;
     try {
       const result = await processorService.processImage(originalImageSrc, processingSettings, handleDimensionCapped);
       if (result !== null) processedImageSrc = result;
     } catch (err) { console.error(err); }
-    finally { isProcessing = false; }
+    finally { if (gen === processingGeneration) isProcessing = false; }
   }
 
   function applyProcessingDebounced() {
@@ -136,18 +148,18 @@
     isProcessing = true;
     debounceTimer = setTimeout(async () => {
       debounceTimer = null;
+      const gen = ++processingGeneration;
       try {
         const result = await processorService.processImage(originalImageSrc!, processingSettings, handleDimensionCapped);
         if (result !== null) processedImageSrc = result;
       } catch (err) { console.error(err); }
-      finally { isProcessing = false; }
+      finally { if (gen === processingGeneration) isProcessing = false; }
     }, 150);
   }
 
   function handleGallerySelect(paletteId: string) {
     processingSettings.palette = paletteId;
     processImmediate();
-    wm.close('gallery');
   }
 
   function showDialog(message: string, title = 'Retro Pixel Converter') {
@@ -431,6 +443,7 @@
                   <div class="progress-bar"></div>
                 </div>
                 <span class="processing-text">Rendering...</span>
+                <span class="processing-palette">🎨 {getPaletteName(processingSettings.palette)}</span>
               </div>
             </div>
           {/if}
@@ -669,6 +682,17 @@
     font-size: 11px;
     color: #000;
     font-weight: bold;
+  }
+
+  .processing-palette {
+    font-size: 10px;
+    color: #444;
+    margin-top: 2px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 180px;
+    text-align: center;
   }
 
   .progress-container {

@@ -111,11 +111,17 @@ class ImageProcessorService {
     const requestId = crypto.randomUUID();
     this.currentRequestId = requestId;
 
-    // Cancel previous pending requests
-    for (const [, pending] of this.pendingResolvers) {
-      pending.resolve(null);
+    // Cancel previous pending requests and kill stale worker processing
+    if (this.pendingResolvers.size > 0) {
+      for (const [, pending] of this.pendingResolvers) {
+        pending.resolve(null);
+      }
+      this.pendingResolvers.clear();
+      // Terminate the worker to kill queued/in-progress stale work,
+      // so the new request starts immediately on a fresh worker.
+      this.worker?.terminate();
+      this.worker = null;
     }
-    this.pendingResolvers.clear();
 
     // Early return: no processing needed — still convert to data URL for save compatibility
     if (
