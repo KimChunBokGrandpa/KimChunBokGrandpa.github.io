@@ -35,12 +35,12 @@
   onMount(() => {
     updateTime();
     // Align to next minute boundary, then update every 60s
+    let interval: ReturnType<typeof setInterval>;
     const msToNextMinute = 60000 - (Date.now() % 60000);
     const firstTimeout = setTimeout(() => {
       updateTime();
       interval = setInterval(updateTime, 60000);
     }, msToNextMinute);
-    let interval: ReturnType<typeof setInterval>;
     return () => {
       clearTimeout(firstTimeout);
       clearInterval(interval);

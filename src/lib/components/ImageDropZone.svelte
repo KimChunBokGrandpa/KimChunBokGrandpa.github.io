@@ -24,7 +24,7 @@
 
     if (e.dataTransfer?.files && e.dataTransfer.files.length > 0) {
       const file = e.dataTransfer.files[0];
-      if (file.type.startsWith('image/')) {
+      if (ACCEPTED_TYPES.includes(file.type)) {
         onImageSelected(file);
       } else {
         onError?.("Please drop an image file (PNG, JPEG, GIF, BMP, WebP).");

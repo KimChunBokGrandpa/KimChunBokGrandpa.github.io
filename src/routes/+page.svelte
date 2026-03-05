@@ -38,6 +38,9 @@
   // ─── Desktop icon selection ───
   let selectedIcon = $state<string | null>(null);
 
+  // ─── Mobile detection ───
+  const isMobile = typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0);
+
   // ─── Zoom & Pan State ───
   let zoomLevel = $state(1);
   let panX = $state(0);
@@ -45,6 +48,36 @@
   let isPanning = $state(false);
   let panStartX = 0;
   let panStartY = 0;
+
+  // ─── Touch State ───
+  let lastTouchDist = 0;
+  let lastTouchCenter = { x: 0, y: 0 };
+  let isTouchPanning = $state(false);
+
+  // ─── Preview container & image refs ───
+  let previewContainer: HTMLDivElement | undefined = $state();
+  let previewImg: HTMLImageElement | undefined = $state();
+
+  // ─── Dimension cap notification (show only once per image) ───
+  let dimensionCapShown = false;
+
+  // ─── Mobile split layout ───
+  const WINDOW_ORDER = ['settings', 'preview', 'gallery'] as const;
+  let mobileVisibleIds = $derived(
+    WINDOW_ORDER.filter(id => wm.wins[id].mode !== 'closed' && wm.wins[id].mode !== 'minimized')
+  );
+
+  function getMobileSlot(id: string): { top: string; height: string } | null {
+    if (!isMobile) return null;
+    const idx = mobileVisibleIds.indexOf(id as typeof WINDOW_ORDER[number]);
+    if (idx === -1) return null;
+    const count = mobileVisibleIds.length;
+    const heightPct = 100 / count;
+    return {
+      top: `${idx * heightPct}%`,
+      height: `${heightPct}%`,
+    };
+  }
 
   // ─── Taskbar window info ───
   let taskbarWindows = $derived<TaskbarWindowInfo[]>(
@@ -67,6 +100,7 @@
     }
     currentObjectUrl = URL.createObjectURL(file);
     originalImageSrc = currentObjectUrl;
+    dimensionCapShown = false;
     processImmediate();
     wm.openWindow('preview');
   }
@@ -76,12 +110,21 @@
     applyProcessingDebounced();
   }
 
+  function handleDimensionCapped(original: { w: number; h: number }, capped: { w: number; h: number }) {
+    if (dimensionCapShown) return;
+    dimensionCapShown = true;
+    showDialog(
+      `Image resized: ${original.w}×${original.h} → ${capped.w}×${capped.h}px (max 2048px)`,
+      'Image Resized'
+    );
+  }
+
   async function processImmediate() {
     if (!originalImageSrc) return;
     if (debounceTimer) { clearTimeout(debounceTimer); debounceTimer = null; }
     isProcessing = true;
     try {
-      const result = await processorService.processImage(originalImageSrc, processingSettings);
+      const result = await processorService.processImage(originalImageSrc, processingSettings, handleDimensionCapped);
       if (result !== null) processedImageSrc = result;
     } catch (err) { console.error(err); }
     finally { isProcessing = false; }
@@ -94,7 +137,7 @@
     debounceTimer = setTimeout(async () => {
       debounceTimer = null;
       try {
-        const result = await processorService.processImage(originalImageSrc!, processingSettings);
+        const result = await processorService.processImage(originalImageSrc!, processingSettings, handleDimensionCapped);
         if (result !== null) processedImageSrc = result;
       } catch (err) { console.error(err); }
       finally { isProcessing = false; }
@@ -104,6 +147,7 @@
   function handleGallerySelect(paletteId: string) {
     processingSettings.palette = paletteId;
     processImmediate();
+    wm.close('gallery');
   }
 
   function showDialog(message: string, title = 'Retro Pixel Converter') {
@@ -173,11 +217,19 @@
     processedImageSrc = null;
   }
 
-  function handleIconClick(id: string) { selectedIcon = id; }
+  function handleIconClick(id: string) {
+    if (isMobile) {
+      // 모바일: 싱글 탭으로 바로 열기 (분할화면으로 자동 배치)
+      selectedIcon = null;
+      wm.openWindow(id);
+    } else {
+      selectedIcon = id;
+    }
+  }
   function handleIconDblClick(id: string) { selectedIcon = null; wm.openWindow(id); }
   function handleDesktopClick() { selectedIcon = null; }
 
-  // ─── Zoom & Pan Handlers ───
+  // ─── Zoom & Pan Handlers (Mouse) ───
   function handlePreviewWheel(e: WheelEvent) {
     e.preventDefault();
     const delta = e.deltaY > 0 ? -0.15 : 0.15;
@@ -201,8 +253,66 @@
 
   function handlePreviewMouseUp() { isPanning = false; }
 
+  // ─── Touch Handlers (Pinch Zoom + Pan) ───
+  function handleTouchStart(e: TouchEvent) {
+    if (e.touches.length === 2) {
+      e.preventDefault();
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      lastTouchDist = Math.hypot(dx, dy);
+      lastTouchCenter = {
+        x: (e.touches[0].clientX + e.touches[1].clientX) / 2,
+        y: (e.touches[0].clientY + e.touches[1].clientY) / 2,
+      };
+      isTouchPanning = false;
+    } else if (e.touches.length === 1 && zoomLevel > 1) {
+      isTouchPanning = true;
+      panStartX = e.touches[0].clientX - panX;
+      panStartY = e.touches[0].clientY - panY;
+    }
+  }
+
+  function handleTouchMove(e: TouchEvent) {
+    if (e.touches.length === 2) {
+      e.preventDefault();
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      const dist = Math.hypot(dx, dy);
+      if (lastTouchDist > 0) {
+        const scale = dist / lastTouchDist;
+        zoomLevel = Math.min(8, Math.max(0.25, zoomLevel * scale));
+        if (zoomLevel <= 1) { panX = 0; panY = 0; }
+      }
+      lastTouchDist = dist;
+    } else if (e.touches.length === 1 && isTouchPanning) {
+      panX = e.touches[0].clientX - panStartX;
+      panY = e.touches[0].clientY - panStartY;
+    }
+  }
+
+  function handleTouchEnd(e: TouchEvent) {
+    if (e.touches.length < 2) {
+      lastTouchDist = 0;
+    }
+    if (e.touches.length === 0) {
+      isTouchPanning = false;
+    }
+  }
+
   function resetZoom() { zoomLevel = 1; panX = 0; panY = 0; }
-  function zoomToFit() { zoomLevel = 1; panX = 0; panY = 0; }
+  function zoomToFit() {
+    if (previewContainer && previewImg && previewImg.naturalWidth > 0) {
+      const containerW = previewContainer.clientWidth;
+      const containerH = previewContainer.clientHeight;
+      const imgW = previewImg.naturalWidth;
+      const imgH = previewImg.naturalHeight;
+      zoomLevel = Math.min(containerW / imgW, containerH / imgH, 8);
+    } else {
+      zoomLevel = 1;
+    }
+    panX = 0;
+    panY = 0;
+  }
   function zoomIn() { zoomLevel = Math.min(8, zoomLevel + 0.5); }
   function zoomOut() {
     zoomLevel = Math.max(0.25, zoomLevel - 0.5);
@@ -248,6 +358,7 @@
       bind:width={wm.wins.settings.w}
       bind:height={wm.wins.settings.h}
       zIndex={wm.wins.settings.z}
+      mobileSlot={getMobileSlot('settings')}
       onClose={() => wm.close('settings')}
       onFocus={() => wm.focusWindow('settings')}
     >
@@ -265,7 +376,7 @@
             bind:settings={processingSettings}
             onChange={handleSettingsChange}
             onSave={handleSave}
-            onOpenGallery={() => wm.openWindow('gallery')}
+            onOpenGallery={() => { setTimeout(() => wm.openWindow('gallery'), 0); }}
           />
         </div>
       {/if}
@@ -283,6 +394,7 @@
       bind:width={wm.wins.preview.w}
       bind:height={wm.wins.preview.h}
       zIndex={wm.wins.preview.z}
+      mobileSlot={getMobileSlot('preview')}
       onClose={() => wm.close('preview')}
       onFocus={() => wm.focusWindow('preview')}
     >
@@ -290,19 +402,24 @@
       <div
         class="preview-body"
         class:panning={isPanning}
+        bind:this={previewContainer}
         onwheel={handlePreviewWheel}
         onmousedown={handlePreviewMouseDown}
         onmousemove={handlePreviewMouseMove}
         onmouseup={handlePreviewMouseUp}
         onmouseleave={handlePreviewMouseUp}
+        ontouchstart={handleTouchStart}
+        ontouchmove={handleTouchMove}
+        ontouchend={handleTouchEnd}
       >
         {#if processedImageSrc}
           <CrtDisplay active={processingSettings.crtEffect}>
             {#snippet children()}
               <img
+                bind:this={previewImg}
                 src={processedImageSrc}
                 alt="Processed Pixel Art"
-                style="max-width:100%; max-height:100%; width:100%; height:100%; image-rendering:{processingSettings.renderMode === 'bilinear' ? 'auto' : 'pixelated'}; object-fit:contain; transform: scale({zoomLevel}) translate({panX / zoomLevel}px, {panY / zoomLevel}px); transform-origin: center center; transition: {isPanning ? 'none' : 'transform 0.1s ease'};"
+                style="max-width:100%; max-height:100%; width:100%; height:100%; image-rendering:{processingSettings.renderMode === 'bilinear' ? 'auto' : 'pixelated'}; object-fit:contain; transform: scale({zoomLevel}) translate({panX / zoomLevel}px, {panY / zoomLevel}px); transform-origin: center center; transition: {isPanning || isTouchPanning ? 'none' : 'transform 0.1s ease'};"
                 draggable="false"
               />
             {/snippet}
@@ -352,6 +469,7 @@
       bind:width={wm.wins.gallery.w}
       bind:height={wm.wins.gallery.h}
       zIndex={wm.wins.gallery.z}
+      mobileSlot={getMobileSlot('gallery')}
       onClose={() => wm.close('gallery')}
       onFocus={() => wm.focusWindow('gallery')}
     >
@@ -476,6 +594,7 @@
     overflow: hidden;
     min-height: 0;
     cursor: default;
+    touch-action: none;
   }
   .preview-body.panning {
     cursor: grabbing;

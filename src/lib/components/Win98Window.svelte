@@ -12,6 +12,7 @@
     zIndex = 1,
     minWidth = 200,
     minHeight = 150,
+    mobileSlot = null,
     onClose,
     onFocus,
     children,
@@ -26,6 +27,7 @@
     zIndex?: number;
     minWidth?: number;
     minHeight?: number;
+    mobileSlot?: { top: string; height: string } | null;
     onClose?: () => void;
     onFocus?: () => void;
     children: Snippet;
@@ -186,9 +188,12 @@
     class="window win98-window"
     class:maximized={mode === 'maximized'}
     class:interacting={isDragging || isResizing}
-    style={mode === 'maximized'
-      ? `z-index:${zIndex}; position:absolute; inset:0;`
-      : `z-index:${zIndex}; position:absolute; left:${x}px; top:${y}px; width:${width}px; height:${height}px;`}
+    style={(() => {
+      const mobileVars = mobileSlot ? `--mobile-t:${mobileSlot.top}; --mobile-h:${mobileSlot.height};` : '';
+      return mode === 'maximized'
+        ? `z-index:${zIndex}; position:absolute; inset:0; ${mobileVars}`
+        : `z-index:${zIndex}; position:absolute; left:${x}px; top:${y}px; width:${width}px; height:${height}px; ${mobileVars}`;
+    })()}
     onclick={handleWindowClick}
   >
     <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -285,9 +290,9 @@
   @media (max-width: 550px) {
     .win98-window {
       width: 100% !important;
-      height: 100% !important;
+      height: var(--mobile-h, 100%) !important;
       left: 0 !important;
-      top: 0 !important;
+      top: var(--mobile-t, 0) !important;
     }
     .resize-handle { display: none; }
   }

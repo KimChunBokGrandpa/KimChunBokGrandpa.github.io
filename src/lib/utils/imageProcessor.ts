@@ -2,14 +2,7 @@ import type {
   ImageWorkerMessage,
   ImageWorkerResponse,
 } from "../workers/imageWorker";
-
-export interface ProcessSettings {
-  pixelSize: number;
-  palette: string;
-  crtEffect: boolean;
-  glitchFilters: Array<{ type: string; intensity: number }>;
-  renderMode: string;
-}
+import type { ProcessingSettings } from "../types";
 
 /**
  * Singleton-based image processing service.
@@ -109,7 +102,11 @@ class ImageProcessorService {
 
   async processImage(
     imageSrc: string,
-    settings: ProcessSettings,
+    settings: ProcessingSettings,
+    onDimensionCapped?: (
+      original: { w: number; h: number },
+      capped: { w: number; h: number },
+    ) => void,
   ): Promise<string | null> {
     const requestId = crypto.randomUUID();
     this.currentRequestId = requestId;
@@ -162,6 +159,10 @@ class ImageProcessorService {
       const scale = this.MAX_DIMENSION / Math.max(procWidth, procHeight);
       procWidth = Math.round(procWidth * scale);
       procHeight = Math.round(procHeight * scale);
+      onDimensionCapped?.(
+        { w: img.width, h: img.height },
+        { w: procWidth, h: procHeight },
+      );
     }
 
     // Use createImageBitmap to decode off-thread and transfer to worker
@@ -185,10 +186,12 @@ class ImageProcessorService {
         height: procHeight,
         pixelSize: settings.pixelSize,
         palette: settings.palette,
-        glitchFilters: settings.glitchFilters.map((f) => ({
-          type: f.type,
-          intensity: f.intensity,
-        })),
+        glitchFilters: settings.glitchFilters.map(
+          (f: { type: string; intensity: number }) => ({
+            type: f.type,
+            intensity: f.intensity,
+          }),
+        ),
         renderMode: settings.renderMode,
       };
 
