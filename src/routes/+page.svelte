@@ -7,64 +7,25 @@
   import Taskbar from '$lib/components/Taskbar.svelte';
   import PaletteGallery from '$lib/components/PaletteGallery.svelte';
   import MessageDialog from '$lib/components/MessageDialog.svelte';
-  import { processorService } from '$lib/utils/imageProcessor';
+  import ToastNotification from '$lib/components/ToastNotification.svelte';
   import { createWindowStore, WINDOW_CONFIGS } from '$lib/stores/windowStore.svelte';
   import { createZoomPan } from '$lib/stores/zoomPanStore.svelte';
+  import { createImageProcessingStore } from '$lib/stores/imageProcessingStore.svelte';
   import { getPaletteName } from '$lib/utils/palettes';
-  import { saveImage } from '$lib/services/saveService';
   import type { SaveFormat } from '$lib/services/saveService';
   import type { TaskbarWindowInfo } from '$lib/components/Taskbar.svelte';
   import type { ProcessingSettings } from '$lib/types';
+  import { isTauri } from '$lib/utils/env';
 
-  // ─── Constants ───
-  const DEBOUNCE_MS = 150;
-
-  // Tauri 환경 검증
-  const isTauri = typeof window !== 'undefined' && '__TAURI__' in window;
-
-  // ─── Window Manager ───
+  // ─── Stores ───
   const wm = createWindowStore();
-
-  // ─── Zoom & Pan ───
   const zp = createZoomPan();
+  const ip = createImageProcessingStore();
 
-  // ─── Image & Processing State ───
-  let originalImageSrc: string | null = $state(null);
-  let currentObjectUrl: string | null = null;
-  let processedImageSrc: string | null = $state(null);
-  let isProcessing = $state(false);
-  let processingSettings = $state<ProcessingSettings>({
-    pixelSize: 1,
-    palette: 'original',
-    crtEffect: false,
-    glitchFilters: [],
-    renderMode: 'pixel_perfect',
-    glitchSeed: null
-  });
-
-  // ─── Save Format State ───
-  let saveFormat = $state<SaveFormat>('png');
-  let saveQuality = $state(0.92);
-
-  // ─── Undo History ───
-  const MAX_HISTORY = 20;
-  let settingsHistory: ProcessingSettings[] = [];
-
-  function pushHistory(s: ProcessingSettings) {
-    settingsHistory.push({ ...s, glitchFilters: s.glitchFilters.map(f => ({ ...f })) });
-    if (settingsHistory.length > MAX_HISTORY) settingsHistory.shift();
-  }
-
-  function handleUndo() {
-    if (settingsHistory.length === 0) return;
-    const prev = settingsHistory.pop()!;
-    processingSettings = prev;
-    applyProcessingDebounced();
-  }
-
-  // ─── Dialog State ───
+  // ─── Dialog & Toast State ───
   let dialogMessage: string | null = $state(null);
   let dialogTitle = $state('Message');
+  let toastMessage: string | null = $state(null);
 
   // ─── Desktop icon selection ───
   let selectedIcon = $state<string | null>(null);
@@ -72,8 +33,13 @@
   // ─── Mobile detection ───
   const isMobile = typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0);
 
-  // ─── Dimension cap notification (show only once per image) ───
-  let dimensionCapShown = false;
+  // ─── Dimension cap callback ───
+  ip.setDimensionCapCallback((original, capped) => {
+    showDialog(
+      `Image resized: ${original.w}×${original.h} → ${capped.w}×${capped.h}px (max 2048px)`,
+      'Image Resized'
+    );
+  });
 
   // ─── Mobile split layout ───
   const WINDOW_ORDER = ['preview', 'settings', 'gallery'] as const;
@@ -87,84 +53,37 @@
     if (idx === -1) return null;
     const count = mobileVisibleIds.length;
     const heightPct = 100 / count;
-    return {
-      top: `${idx * heightPct}%`,
-      height: `${heightPct}%`,
-    };
+    return { top: `${idx * heightPct}%`, height: `${heightPct}%` };
   }
 
   // ─── Taskbar window info ───
   let taskbarWindows = $derived<TaskbarWindowInfo[]>(
     WINDOW_CONFIGS.map(c => ({
-      id: c.id,
-      title: c.title,
-      icon: c.icon,
-      mode: wm.wins[c.id].mode,
-      focused: wm.focusedWindow === c.id,
+      id: c.id, title: c.title, icon: c.icon,
+      mode: wm.wins[c.id].mode, focused: wm.focusedWindow === c.id,
     }))
   );
 
-  // ─── Processing Logic ───
-  let debounceTimer: ReturnType<typeof setTimeout> | null = null;
-  let processingGeneration = 0; // 동시 호출 시 isProcessing 경합 방지
+  // ─── Convenience aliases for template ───
+  let originalImageSrc = $derived(ip.originalImageSrc);
+  let processedImageSrc = $derived(ip.processedImageSrc);
+  let isProcessing = $derived(ip.isProcessing);
+  let processingSettings = $derived(ip.settings);
+  let saveFormat = $derived(ip.saveFormat);
+  let saveQuality = $derived(ip.saveQuality);
 
+  // ─── Event Handlers ───
   function handleImageSelected(file: File) {
-    if (currentObjectUrl) {
-      URL.revokeObjectURL(currentObjectUrl);
-      processorService.clearImageCache();
-    }
-    currentObjectUrl = URL.createObjectURL(file);
-    originalImageSrc = currentObjectUrl;
-    dimensionCapShown = false;
-    processImmediate();
+    ip.loadImage(file);
     wm.openWindow('preview');
   }
 
   function handleSettingsChange(newSettings: ProcessingSettings) {
-    pushHistory(processingSettings);
-    processingSettings = { ...newSettings };
-    applyProcessingDebounced();
-  }
-
-  function handleDimensionCapped(original: { w: number; h: number }, capped: { w: number; h: number }) {
-    if (dimensionCapShown) return;
-    dimensionCapShown = true;
-    showDialog(
-      `Image resized: ${original.w}×${original.h} → ${capped.w}×${capped.h}px (max 2048px)`,
-      'Image Resized'
-    );
-  }
-
-  async function processImmediate() {
-    if (!originalImageSrc) return;
-    if (debounceTimer) { clearTimeout(debounceTimer); debounceTimer = null; }
-    const gen = ++processingGeneration;
-    isProcessing = true;
-    try {
-      const result = await processorService.processImage(originalImageSrc, processingSettings, handleDimensionCapped);
-      if (result !== null) processedImageSrc = result;
-    } catch (err) { console.error(err); }
-    finally { if (gen === processingGeneration) isProcessing = false; }
-  }
-
-  function applyProcessingDebounced() {
-    if (!originalImageSrc) return;
-    if (debounceTimer) clearTimeout(debounceTimer);
-    isProcessing = true;
-    debounceTimer = setTimeout(async () => {
-      debounceTimer = null;
-      const gen = ++processingGeneration;
-      try {
-        const result = await processorService.processImage(originalImageSrc!, processingSettings, handleDimensionCapped);
-        if (result !== null) processedImageSrc = result;
-      } catch (err) { console.error(err); }
-      finally { if (gen === processingGeneration) isProcessing = false; }
-    }, DEBOUNCE_MS);
+    ip.updateSettings(newSettings);
   }
 
   function handleGallerySelect(paletteId: string) {
-    processingSettings.palette = paletteId;
-    processImmediate();
+    ip.selectPalette(paletteId);
     wm.openWindow('preview');
   }
 
@@ -174,37 +93,24 @@
   }
 
   async function handleSave() {
-    if (!processedImageSrc) return;
     try {
-      const message = await saveImage(processedImageSrc, { format: saveFormat, quality: saveQuality });
-      if (message) showDialog(message);
+      const message = await ip.save();
+      if (message) toastMessage = message;
     } catch (err) {
       console.error('Failed to save file:', err);
       showDialog('Error saving file. Please try again.', 'Error');
     }
   }
 
-  function handleFormatChange(format: SaveFormat) {
-    saveFormat = format;
-  }
-
-  function handleQualityChange(quality: number) {
-    saveQuality = quality;
-  }
+  function handleFormatChange(format: SaveFormat) { ip.setFormat(format); }
+  function handleQualityChange(quality: number) { ip.setQuality(quality); }
 
   function handleLoadNewImage() {
-    if (currentObjectUrl) {
-      URL.revokeObjectURL(currentObjectUrl);
-      currentObjectUrl = null;
-      processorService.clearImageCache();
-    }
-    originalImageSrc = null;
-    processedImageSrc = null;
+    ip.loadNewImage();
   }
 
   function handleIconClick(id: string) {
     if (isMobile) {
-      // 모바일: 싱글 탭으로 바로 열기 (분할화면으로 자동 배치)
       selectedIcon = null;
       wm.openWindow(id);
     } else {
@@ -217,15 +123,11 @@
   function handleKeydown(e: KeyboardEvent) {
     if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
       e.preventDefault();
-      handleUndo();
+      ip.undo();
     }
   }
 
-  onDestroy(() => {
-    if (debounceTimer) clearTimeout(debounceTimer);
-    if (currentObjectUrl) URL.revokeObjectURL(currentObjectUrl);
-    processorService.destroy();
-  });
+  onDestroy(() => { ip.destroy(); });
 </script>
 
 <svelte:window onkeydown={handleKeydown} />
@@ -269,9 +171,9 @@
       {#if !originalImageSrc}
         <ImageDropZone onImageSelected={handleImageSelected} onError={(msg) => showDialog(msg, 'Error')} />
       {:else}
-        <div style="padding: 4px; overflow-y: auto; flex: 1;">
+        <div class="settings-body">
           <button
-            style="margin-bottom:6px; padding:4px; font-weight:bold; width:100%; text-align:left;"
+            class="load-new-btn"
             onclick={handleLoadNewImage}
           >
             📂 Load New Image...
@@ -353,15 +255,19 @@
         {:else if originalImageSrc}
           <div class="initial-processing">
             <div class="processing-indicator">
-              <span style="font-size: 24px; margin-bottom: 8px;">⏳</span>
-              <div class="progress-container" style="width: 200px;">
+              <span class="initial-spinner">⏳</span>
+              <div class="progress-container progress-wide">
                 <div class="progress-bar"></div>
               </div>
               <span class="processing-text">Processing image...</span>
             </div>
           </div>
         {:else}
-          <p style="color:#fff; font-weight:bold; text-shadow:1px 1px 0 #000;">No Image Loaded</p>
+          <div class="empty-preview">
+            <span class="empty-icon">🖼️</span>
+            <p class="empty-title">No Image Loaded</p>
+            <p class="empty-hint">Open an image from Settings window<br/>or drag & drop to start</p>
+          </div>
         {/if}
       </div>
     </Win98Window>
@@ -403,6 +309,14 @@
     message={dialogMessage}
     title={dialogTitle}
     onClose={() => { dialogMessage = null; }}
+  />
+{/if}
+
+<!-- ═══ Toast ═══ -->
+{#if toastMessage}
+  <ToastNotification
+    message={toastMessage}
+    onDone={() => { toastMessage = null; }}
   />
 {/if}
 
@@ -507,6 +421,57 @@
   }
   .preview-body.panning {
     cursor: grabbing;
+  }
+
+  /* ===== Empty Preview State ===== */
+  .empty-preview {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 20px;
+    text-align: center;
+  }
+  .empty-icon {
+    font-size: 40px;
+    opacity: 0.6;
+    font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+  }
+  .empty-title {
+    color: #fff;
+    font-weight: bold;
+    font-size: 14px;
+    text-shadow: 1px 1px 0 #000;
+    margin: 4px 0 2px 0;
+  }
+  .empty-hint {
+    color: #a0a0a0;
+    font-size: 11px;
+    line-height: 1.4;
+    margin: 0;
+  }
+
+  /* ===== Settings Panel Body ===== */
+  .settings-body {
+    padding: 4px;
+    overflow-y: auto;
+    flex: 1;
+  }
+  .load-new-btn {
+    margin-bottom: 6px;
+    padding: 4px;
+    font-weight: bold;
+    width: 100%;
+    text-align: left;
+  }
+
+  /* ===== Initial Processing ===== */
+  .initial-spinner {
+    font-size: 24px;
+    margin-bottom: 8px;
+  }
+  .progress-wide {
+    width: 200px;
   }
 
   /* ===== Zoom Controls ===== */

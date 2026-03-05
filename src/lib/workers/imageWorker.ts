@@ -4,25 +4,16 @@ import {
 } from "../utils/colorQuantizer";
 import { applyGlitch } from "../utils/glitchEngine";
 import { applyScaling } from "../utils/scaleEngine";
-import type { GlitchType, RenderMode } from "../types";
+import type {
+  GlitchType,
+  RenderMode,
+  ImageWorkerMessage,
+  ImageWorkerResponse,
+} from "../types";
 
-export interface ImageWorkerMessage {
-  id: string;
-  imageBitmap: ImageBitmap;
-  width: number;
-  height: number;
-  pixelSize: number;
-  palette: string;
-  glitchFilters?: Array<{ type: GlitchType; intensity: number }>;
-  renderMode?: RenderMode;
-  glitchSeed?: number | null;
-}
+// Re-export for consumers that import from this file
+export type { ImageWorkerMessage, ImageWorkerResponse };
 
-export interface ImageWorkerResponse {
-  id: string;
-  processedData: ImageData;
-  error?: string;
-}
 
 onmessage = (e: MessageEvent<ImageWorkerMessage>) => {
   const {

@@ -80,10 +80,9 @@ function cacheSet(cache: Map<number, RGB>, key: number, value: RGB) {
 
 /** Clear caches for palettes not currently in use */
 export function clearPaletteCachesExcept(activePalette: string) {
-  for (const [key] of paletteCaches) {
-    if (key !== activePalette) {
-      paletteCaches.delete(key);
-    }
+  const toDelete = [...paletteCaches.keys()].filter(k => k !== activePalette);
+  for (const key of toDelete) {
+    paletteCaches.delete(key);
   }
 }
 

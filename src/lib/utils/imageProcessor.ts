@@ -24,11 +24,24 @@ class ImageProcessorService {
     }
   >();
   private imageCache = new Map<string, HTMLImageElement>();
-  private activeBlobUrls = new Set<string>();
   private lastBlobUrl: string | null = null;
 
   /** Maximum processing dimension to prevent OOM on large images */
   private readonly MAX_DIMENSION = 2048;
+  /** HQx doubles resolution, so use stricter limit */
+  private readonly MAX_DIMENSION_HQX = 1024;
+
+  /** Cached last-rendered canvas for save without re-decode */
+  private lastCanvas: HTMLCanvasElement | null = null;
+
+  /** Revoke old blob URL and register new one */
+  private replaceBlobUrl(newUrl: string): string {
+    if (this.lastBlobUrl) {
+      URL.revokeObjectURL(this.lastBlobUrl);
+    }
+    this.lastBlobUrl = newUrl;
+    return newUrl;
+  }
 
   private ensureWorker(): Worker {
     if (!this.worker) {
@@ -57,16 +70,11 @@ class ImageProcessorService {
           pending.canvas.height = processedData.height;
 
           pending.ctx.putImageData(safeData, 0, 0);
+          this.lastCanvas = pending.canvas;
           // Use toBlob + createObjectURL instead of toDataURL for memory efficiency
           pending.canvas.toBlob((blob) => {
             if (blob) {
-              if (this.lastBlobUrl) {
-                this.activeBlobUrls.delete(this.lastBlobUrl);
-                URL.revokeObjectURL(this.lastBlobUrl);
-              }
-              const url = URL.createObjectURL(blob);
-              this.lastBlobUrl = url;
-              this.activeBlobUrls.add(url);
+              const url = this.replaceBlobUrl(URL.createObjectURL(blob));
               pending.resolve(url);
             } else {
               pending.reject(new Error("Failed to create image blob"));
@@ -138,13 +146,7 @@ class ImageProcessorService {
       return new Promise<string>((resolve, reject) => {
         c.toBlob((blob) => {
           if (blob) {
-            if (this.lastBlobUrl) {
-              this.activeBlobUrls.delete(this.lastBlobUrl);
-              URL.revokeObjectURL(this.lastBlobUrl);
-            }
-            const url = URL.createObjectURL(blob);
-            this.lastBlobUrl = url;
-            this.activeBlobUrls.add(url);
+            const url = this.replaceBlobUrl(URL.createObjectURL(blob));
             resolve(url);
           } else {
             reject(new Error("Failed to create image blob"));
@@ -157,10 +159,12 @@ class ImageProcessorService {
     if (this.currentRequestId !== requestId) return null;
 
     // Constrain to MAX_DIMENSION for performance
+    // HQx doubles resolution, so use stricter limit
+    const maxDim = settings.renderMode === 'hqx' ? this.MAX_DIMENSION_HQX : this.MAX_DIMENSION;
     let procWidth = img.width;
     let procHeight = img.height;
-    if (procWidth > this.MAX_DIMENSION || procHeight > this.MAX_DIMENSION) {
-      const scale = this.MAX_DIMENSION / Math.max(procWidth, procHeight);
+    if (procWidth > maxDim || procHeight > maxDim) {
+      const scale = maxDim / Math.max(procWidth, procHeight);
       procWidth = Math.round(procWidth * scale);
       procHeight = Math.round(procHeight * scale);
       onDimensionCapped?.(
@@ -206,6 +210,11 @@ class ImageProcessorService {
     this.imageCache.clear();
   }
 
+  /** Get the last rendered canvas for direct export (avoids re-decoding) */
+  getLastCanvas(): HTMLCanvasElement | null {
+    return this.lastCanvas;
+  }
+
   destroy() {
     for (const [, pending] of this.pendingResolvers) {
       pending.resolve(null);
@@ -215,12 +224,12 @@ class ImageProcessorService {
     this.worker = null;
     this.currentRequestId = null;
     this.imageCache.clear();
-    // Release all tracked blob URLs
-    for (const url of this.activeBlobUrls) {
-      URL.revokeObjectURL(url);
+    // Release tracked blob URL
+    if (this.lastBlobUrl) {
+      URL.revokeObjectURL(this.lastBlobUrl);
+      this.lastBlobUrl = null;
     }
-    this.activeBlobUrls.clear();
-    this.lastBlobUrl = null;
+    this.lastCanvas = null;
   }
 }
 

@@ -78,7 +78,7 @@
       <p class="drop-title">{isDragging ? 'Drop here!' : 'Drag & Drop Image Here'}</p>
       <p class="drop-or">or</p>
       <div class="field-row">
-        <input type="file" accept={ACCEPTED_TYPES.join(',')} id="file-upload" onchange={handleFileInput} style="display: none;" />
+        <input type="file" accept={ACCEPTED_TYPES.join(',')} capture="environment" id="file-upload" onchange={handleFileInput} style="display: none;" />
         <button class="browse-btn" onclick={() => document.getElementById('file-upload')?.click()}>📂 Browse...</button>
       </div>
       <p class="drop-hint">Ctrl+V to paste from clipboard</p>
@@ -163,5 +163,19 @@
   @keyframes bounce {
     from { transform: scale(1.2) translateY(0); }
     to { transform: scale(1.2) translateY(-6px); }
+  }
+
+  /* Mobile: larger browse button, hide drag hint */
+  @media (max-width: 550px) {
+    .browse-btn {
+      padding: 10px 24px;
+      font-size: 14px;
+    }
+    .drop-hint, .drop-or {
+      display: none;
+    }
+    .drop-title {
+      font-size: 12px;
+    }
   }
 </style>

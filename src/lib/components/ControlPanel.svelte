@@ -84,6 +84,9 @@
     );
   }
 
+  // 현재 설정이 어떤 프리셋과도 일치하지 않으면 Custom
+  let isCustom = $derived(!PRESETS.some(p => matchesPreset(p)));
+
   // 필터 토글: 없으면 intensity 1로 추가, 있으면 제거
   function toggleGlitch(filterId: GlitchType) {
     const idx = settings.glitchFilters.findIndex(f => f.type === filterId);
@@ -278,7 +281,7 @@
 
   <!-- Current Settings Summary -->
   <fieldset style="margin-top: 8px; background: #f8f8f0;">
-    <legend>Current Settings</legend>
+    <legend>Current Settings {#if isCustom}<span class="custom-badge">Custom</span>{/if}</legend>
     <div class="settings-summary">
       <span>📌 {settings.pixelSize}px</span>
       <span>🎨 {getPaletteName(settings.palette)}</span>
@@ -407,6 +410,16 @@
     padding: 1px 5px;
     border: 1px solid #c0c0c0;
     white-space: nowrap;
+  }
+  .custom-badge {
+    display: inline-block;
+    background: #000080;
+    color: #fff;
+    font-size: 9px;
+    padding: 0 4px;
+    margin-left: 4px;
+    font-weight: bold;
+    vertical-align: middle;
   }
   .save-btn {
     font-weight: bold;

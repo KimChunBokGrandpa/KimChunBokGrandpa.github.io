@@ -1,24 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { applyPixelationAndPalette } from "./colorQuantizer";
-
-/** Helper: create a solid-color ImageData */
-function solidImageData(
-  w: number,
-  h: number,
-  r: number,
-  g: number,
-  b: number,
-  a = 255,
-): ImageData {
-  const data = new Uint8ClampedArray(w * h * 4);
-  for (let i = 0; i < data.length; i += 4) {
-    data[i] = r;
-    data[i + 1] = g;
-    data[i + 2] = b;
-    data[i + 3] = a;
-  }
-  return new ImageData(data, w, h);
-}
+import { solidImageData } from "./testHelpers";
 
 describe("applyPixelationAndPalette", () => {
   it("returns the same ImageData when pixelSize <= 1 and palette is 'original'", () => {

@@ -34,3 +34,22 @@ export interface ProcessingSettings {
   renderMode: RenderMode;
   glitchSeed: number | null; // null = random each time, number = fixed seed
 }
+
+// ─── Worker Message Types ───
+export interface ImageWorkerMessage {
+  id: string;
+  imageBitmap: ImageBitmap;
+  width: number;
+  height: number;
+  pixelSize: number;
+  palette: string;
+  glitchFilters?: Array<{ type: GlitchType; intensity: number }>;
+  renderMode?: RenderMode;
+  glitchSeed?: number | null;
+}
+
+export interface ImageWorkerResponse {
+  id: string;
+  processedData: ImageData;
+  error?: string;
+}

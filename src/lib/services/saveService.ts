@@ -4,6 +4,8 @@
  * Works in both Tauri (native dialog) and web (download) environments.
  */
 
+import { isTauri } from "../utils/env";
+
 export type SaveFormat = "png" | "jpeg" | "webp";
 
 export interface SaveOptions {
@@ -58,22 +60,42 @@ async function imageSrcToBlob(
 }
 
 /**
+ * Convert a canvas directly to Blob (avoids re-decoding from URL).
+ */
+function canvasToBlob(
+  canvas: HTMLCanvasElement,
+  format: SaveFormat,
+  quality: number,
+): Promise<Blob> {
+  return new Promise<Blob>((resolve, reject) => {
+    const mime = MIME_MAP[format];
+    const q = format === "png" ? undefined : quality;
+    canvas.toBlob(
+      (blob) => {
+        if (blob) resolve(blob);
+        else reject(new Error("Failed to create blob from canvas"));
+      },
+      mime,
+      q,
+    );
+  });
+}
+
+/**
  * Save the processed image.
+ * @param sourceCanvas - Optional pre-rendered canvas to avoid re-decoding.
  * @returns A result message string.
  */
 export async function saveImage(
   processedImageSrc: string,
   options: SaveOptions = { format: "png", quality: 0.92 },
+  sourceCanvas?: HTMLCanvasElement | null,
 ): Promise<string> {
-  const blobData = await imageSrcToBlob(
-    processedImageSrc,
-    options.format,
-    options.quality,
-  );
+  const blobData = sourceCanvas
+    ? await canvasToBlob(sourceCanvas, options.format, options.quality)
+    : await imageSrcToBlob(processedImageSrc, options.format, options.quality);
   const ext = EXT_MAP[options.format];
   const filename = `retro_pixel_${Date.now()}.${ext}`;
-
-  const isTauri = typeof window !== "undefined" && !!(window as any).__TAURI__;
 
   if (isTauri) {
     const { save } = await import("@tauri-apps/plugin-dialog");
