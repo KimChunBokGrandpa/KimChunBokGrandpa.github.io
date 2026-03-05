@@ -50,7 +50,7 @@
   let dimensionCapShown = false;
 
   // ─── Mobile split layout ───
-  const WINDOW_ORDER = ['settings', 'preview', 'gallery'] as const;
+  const WINDOW_ORDER = ['preview', 'settings', 'gallery'] as const;
   let mobileVisibleIds = $derived(
     WINDOW_ORDER.filter(id => wm.wins[id].mode !== 'closed' && wm.wins[id].mode !== 'minimized')
   );

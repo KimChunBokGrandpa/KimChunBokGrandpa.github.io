@@ -2,8 +2,8 @@ import type { WindowState, WindowMode, WindowConfig } from "$lib/types";
 
 /** Desktop window definitions */
 export const WINDOW_CONFIGS: WindowConfig[] = [
-  { id: "settings", title: "Settings", icon: "⚙️" },
   { id: "preview", title: "Preview", icon: "🖼️" },
+  { id: "settings", title: "Settings", icon: "⚙️" },
   { id: "gallery", title: "Palette Gallery", icon: "🎨" },
 ];
 
