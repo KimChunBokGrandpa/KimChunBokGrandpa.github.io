@@ -9,24 +9,19 @@
   import MessageDialog from '$lib/components/MessageDialog.svelte';
   import { processorService } from '$lib/utils/imageProcessor';
   import { createWindowStore, WINDOW_CONFIGS } from '$lib/stores/windowStore.svelte';
-  import { PALETTE_GROUPS } from '$lib/utils/palettes';
+  import { createZoomPan } from '$lib/stores/zoomPanStore.svelte';
+  import { getPaletteName } from '$lib/utils/palettes';
   import type { TaskbarWindowInfo } from '$lib/components/Taskbar.svelte';
   import type { ProcessingSettings } from '$lib/types';
-
-  // ─── Palette name lookup ───
-  const paletteNameMap = new Map<string, string>([
-    ['original', 'Full Color (Original)'],
-    ['win256', '8-bit Windows 256'],
-    ['monochrome', '2-bit Monochrome'],
-    ...PALETTE_GROUPS.flatMap(g => g.palettes).map(p => [p.id, p.name] as [string, string]),
-  ]);
-  function getPaletteName(id: string) { return paletteNameMap.get(id) ?? id; }
 
   // Tauri 환경 검증
   const isTauri = typeof window !== 'undefined' && !!(window as any).__TAURI__;
 
   // ─── Window Manager ───
   const wm = createWindowStore();
+
+  // ─── Zoom & Pan ───
+  const zp = createZoomPan();
 
   // ─── Image & Processing State ───
   let originalImageSrc: string | null = $state(null);
@@ -50,23 +45,6 @@
 
   // ─── Mobile detection ───
   const isMobile = typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0);
-
-  // ─── Zoom & Pan State ───
-  let zoomLevel = $state(1);
-  let panX = $state(0);
-  let panY = $state(0);
-  let isPanning = $state(false);
-  let panStartX = 0;
-  let panStartY = 0;
-
-  // ─── Touch State ───
-  let lastTouchDist = 0;
-  let lastTouchCenter = { x: 0, y: 0 };
-  let isTouchPanning = $state(false);
-
-  // ─── Preview container & image refs ───
-  let previewContainer: HTMLDivElement | undefined = $state();
-  let previewImg: HTMLImageElement | undefined = $state();
 
   // ─── Dimension cap notification (show only once per image) ───
   let dimensionCapShown = false;
@@ -241,95 +219,6 @@
   function handleIconDblClick(id: string) { selectedIcon = null; wm.openWindow(id); }
   function handleDesktopClick() { selectedIcon = null; }
 
-  // ─── Zoom & Pan Handlers (Mouse) ───
-  function handlePreviewWheel(e: WheelEvent) {
-    e.preventDefault();
-    const delta = e.deltaY > 0 ? -0.15 : 0.15;
-    zoomLevel = Math.min(8, Math.max(0.25, zoomLevel + delta));
-    if (zoomLevel <= 1) { panX = 0; panY = 0; }
-  }
-
-  function handlePreviewMouseDown(e: MouseEvent) {
-    if (zoomLevel <= 1 || e.button !== 0) return;
-    isPanning = true;
-    panStartX = e.clientX - panX;
-    panStartY = e.clientY - panY;
-    e.preventDefault();
-  }
-
-  function handlePreviewMouseMove(e: MouseEvent) {
-    if (!isPanning) return;
-    panX = e.clientX - panStartX;
-    panY = e.clientY - panStartY;
-  }
-
-  function handlePreviewMouseUp() { isPanning = false; }
-
-  // ─── Touch Handlers (Pinch Zoom + Pan) ───
-  function handleTouchStart(e: TouchEvent) {
-    if (e.touches.length === 2) {
-      e.preventDefault();
-      const dx = e.touches[0].clientX - e.touches[1].clientX;
-      const dy = e.touches[0].clientY - e.touches[1].clientY;
-      lastTouchDist = Math.hypot(dx, dy);
-      lastTouchCenter = {
-        x: (e.touches[0].clientX + e.touches[1].clientX) / 2,
-        y: (e.touches[0].clientY + e.touches[1].clientY) / 2,
-      };
-      isTouchPanning = false;
-    } else if (e.touches.length === 1 && zoomLevel > 1) {
-      isTouchPanning = true;
-      panStartX = e.touches[0].clientX - panX;
-      panStartY = e.touches[0].clientY - panY;
-    }
-  }
-
-  function handleTouchMove(e: TouchEvent) {
-    if (e.touches.length === 2) {
-      e.preventDefault();
-      const dx = e.touches[0].clientX - e.touches[1].clientX;
-      const dy = e.touches[0].clientY - e.touches[1].clientY;
-      const dist = Math.hypot(dx, dy);
-      if (lastTouchDist > 0) {
-        const scale = dist / lastTouchDist;
-        zoomLevel = Math.min(8, Math.max(0.25, zoomLevel * scale));
-        if (zoomLevel <= 1) { panX = 0; panY = 0; }
-      }
-      lastTouchDist = dist;
-    } else if (e.touches.length === 1 && isTouchPanning) {
-      panX = e.touches[0].clientX - panStartX;
-      panY = e.touches[0].clientY - panStartY;
-    }
-  }
-
-  function handleTouchEnd(e: TouchEvent) {
-    if (e.touches.length < 2) {
-      lastTouchDist = 0;
-    }
-    if (e.touches.length === 0) {
-      isTouchPanning = false;
-    }
-  }
-
-  function resetZoom() { zoomLevel = 1; panX = 0; panY = 0; }
-  function zoomToFit() {
-    if (previewContainer && previewImg && previewImg.naturalWidth > 0) {
-      const containerW = previewContainer.clientWidth;
-      const containerH = previewContainer.clientHeight;
-      const imgW = previewImg.naturalWidth;
-      const imgH = previewImg.naturalHeight;
-      zoomLevel = Math.min(containerW / imgW, containerH / imgH, 8);
-    } else {
-      zoomLevel = 1;
-    }
-    panX = 0;
-    panY = 0;
-  }
-  function zoomIn() { zoomLevel = Math.min(8, zoomLevel + 0.5); }
-  function zoomOut() {
-    zoomLevel = Math.max(0.25, zoomLevel - 0.5);
-    if (zoomLevel <= 1) { panX = 0; panY = 0; }
-  }
 
   onDestroy(() => {
     if (debounceTimer) clearTimeout(debounceTimer);
@@ -413,25 +302,25 @@
       <!-- svelte-ignore a11y_no_static_element_interactions -->
       <div
         class="preview-body"
-        class:panning={isPanning}
-        bind:this={previewContainer}
-        onwheel={handlePreviewWheel}
-        onmousedown={handlePreviewMouseDown}
-        onmousemove={handlePreviewMouseMove}
-        onmouseup={handlePreviewMouseUp}
-        onmouseleave={handlePreviewMouseUp}
-        ontouchstart={handleTouchStart}
-        ontouchmove={handleTouchMove}
-        ontouchend={handleTouchEnd}
+        class:panning={zp.isPanning}
+        bind:this={zp.previewContainer}
+        onwheel={zp.handleWheel}
+        onmousedown={zp.handleMouseDown}
+        onmousemove={zp.handleMouseMove}
+        onmouseup={zp.handleMouseUp}
+        onmouseleave={zp.handleMouseUp}
+        ontouchstart={zp.handleTouchStart}
+        ontouchmove={zp.handleTouchMove}
+        ontouchend={zp.handleTouchEnd}
       >
         {#if processedImageSrc}
           <CrtDisplay active={processingSettings.crtEffect}>
             {#snippet children()}
               <img
-                bind:this={previewImg}
+                bind:this={zp.previewImg}
                 src={processedImageSrc}
                 alt="Processed Pixel Art"
-                style="max-width:100%; max-height:100%; width:100%; height:100%; image-rendering:{processingSettings.renderMode === 'bilinear' ? 'auto' : 'pixelated'}; object-fit:contain; transform: scale({zoomLevel}) translate({panX / zoomLevel}px, {panY / zoomLevel}px); transform-origin: center center; transition: {isPanning || isTouchPanning ? 'none' : 'transform 0.1s ease'};"
+                style="max-width:100%; max-height:100%; width:100%; height:100%; image-rendering:{processingSettings.renderMode === 'bilinear' ? 'auto' : 'pixelated'}; object-fit:contain; transform: scale({zp.zoomLevel}) translate({zp.panX / zp.zoomLevel}px, {zp.panY / zp.zoomLevel}px); transform-origin: center center; transition: {zp.isPanning || zp.isTouchPanning ? 'none' : 'transform 0.1s ease'};"
                 draggable="false"
               />
             {/snippet}
@@ -449,10 +338,10 @@
           {/if}
           <!-- Zoom Controls -->
           <div class="zoom-controls">
-            <button class="zoom-btn" onclick={zoomIn} title="Zoom In">+</button>
-            <button class="zoom-btn zoom-label" onclick={resetZoom} title="Reset Zoom">{Math.round(zoomLevel * 100)}%</button>
-            <button class="zoom-btn" onclick={zoomOut} title="Zoom Out">−</button>
-            <button class="zoom-btn" onclick={zoomToFit} title="Fit to Window">⊡</button>
+            <button class="zoom-btn" onclick={zp.zoomIn} title="Zoom In">+</button>
+            <button class="zoom-btn zoom-label" onclick={zp.resetZoom} title="Reset Zoom">{Math.round(zp.zoomLevel * 100)}%</button>
+            <button class="zoom-btn" onclick={zp.zoomOut} title="Zoom Out">−</button>
+            <button class="zoom-btn" onclick={zp.zoomToFit} title="Fit to Window">⊡</button>
           </div>
         {:else if originalImageSrc}
           <div class="initial-processing">

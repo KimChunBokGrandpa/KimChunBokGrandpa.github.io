@@ -211,24 +211,16 @@
       {@render children()}
     </div>
 
-    <!-- Resize handles: 8-direction (only in windowed mode) -->
+    <!-- Resize handles: 8-direction (only in windowed mode, hidden from screen readers) -->
     {#if mode === 'windowed'}
-      <!-- svelte-ignore a11y_no_static_element_interactions -->
-      <div class="resize-handle rh-top" onmousedown={(e) => startResize('t', e)}></div>
-      <!-- svelte-ignore a11y_no_static_element_interactions -->
-      <div class="resize-handle rh-right" onmousedown={(e) => startResize('r', e)}></div>
-      <!-- svelte-ignore a11y_no_static_element_interactions -->
-      <div class="resize-handle rh-bottom" onmousedown={(e) => startResize('b', e)}></div>
-      <!-- svelte-ignore a11y_no_static_element_interactions -->
-      <div class="resize-handle rh-left" onmousedown={(e) => startResize('l', e)}></div>
-      <!-- svelte-ignore a11y_no_static_element_interactions -->
-      <div class="resize-handle rh-corner-rt" onmousedown={(e) => startResize('rt', e)}></div>
-      <!-- svelte-ignore a11y_no_static_element_interactions -->
-      <div class="resize-handle rh-corner-rb" onmousedown={(e) => startResize('rb', e)}></div>
-      <!-- svelte-ignore a11y_no_static_element_interactions -->
-      <div class="resize-handle rh-corner-lt" onmousedown={(e) => startResize('lt', e)}></div>
-      <!-- svelte-ignore a11y_no_static_element_interactions -->
-      <div class="resize-handle rh-corner-lb" onmousedown={(e) => startResize('lb', e)}></div>
+      <div class="resize-handle rh-top" aria-hidden="true" onmousedown={(e) => startResize('t', e)}></div>
+      <div class="resize-handle rh-right" aria-hidden="true" onmousedown={(e) => startResize('r', e)}></div>
+      <div class="resize-handle rh-bottom" aria-hidden="true" onmousedown={(e) => startResize('b', e)}></div>
+      <div class="resize-handle rh-left" aria-hidden="true" onmousedown={(e) => startResize('l', e)}></div>
+      <div class="resize-handle rh-corner-rt" aria-hidden="true" onmousedown={(e) => startResize('rt', e)}></div>
+      <div class="resize-handle rh-corner-rb" aria-hidden="true" onmousedown={(e) => startResize('rb', e)}></div>
+      <div class="resize-handle rh-corner-lt" aria-hidden="true" onmousedown={(e) => startResize('lt', e)}></div>
+      <div class="resize-handle rh-corner-lb" aria-hidden="true" onmousedown={(e) => startResize('lb', e)}></div>
     {/if}
   </div>
 {/if}

@@ -111,16 +111,14 @@ class ImageProcessorService {
     const requestId = crypto.randomUUID();
     this.currentRequestId = requestId;
 
-    // Cancel previous pending requests and kill stale worker processing
+    // Cancel previous pending requests — resolve as null (stale)
+    // Worker is kept alive; stale results will be discarded in onmessage
+    // because their IDs won't be in pendingResolvers anymore.
     if (this.pendingResolvers.size > 0) {
       for (const [, pending] of this.pendingResolvers) {
         pending.resolve(null);
       }
       this.pendingResolvers.clear();
-      // Terminate the worker to kill queued/in-progress stale work,
-      // so the new request starts immediately on a fresh worker.
-      this.worker?.terminate();
-      this.worker = null;
     }
 
     // Early return: no processing needed — still convert to data URL for save compatibility
@@ -192,12 +190,10 @@ class ImageProcessorService {
         height: procHeight,
         pixelSize: settings.pixelSize,
         palette: settings.palette,
-        glitchFilters: settings.glitchFilters.map(
-          (f: { type: string; intensity: number }) => ({
-            type: f.type,
-            intensity: f.intensity,
-          }),
-        ),
+        glitchFilters: settings.glitchFilters.map((f) => ({
+          type: f.type,
+          intensity: f.intensity,
+        })),
         renderMode: settings.renderMode,
       };
 

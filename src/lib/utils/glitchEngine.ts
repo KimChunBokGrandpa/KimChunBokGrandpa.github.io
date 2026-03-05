@@ -3,7 +3,7 @@
  * Operates purely on pixel arrays for Web Worker compatibility.
  */
 
-export type GlitchType = "none" | "rgb_split" | "noise" | "wave" | "slice";
+import type { GlitchType } from "../types";
 
 export const applyGlitch = (
   imageData: ImageData,
@@ -74,10 +74,10 @@ export const applyGlitch = (
           resultData[i2 + c] = temp;
         }
       } else {
-        // Noise
-        resultData[i1] = Math.random() * 255;
-        resultData[i1 + 1] = Math.random() * 255;
-        resultData[i1 + 2] = Math.random() * 255;
+        // Noise (seeded for deterministic output)
+        resultData[i1] = Math.floor(randomValue(b + 4) * 255);
+        resultData[i1 + 1] = Math.floor(randomValue(b + 5) * 255);
+        resultData[i1 + 2] = Math.floor(randomValue(b + 6) * 255);
       }
     }
   };

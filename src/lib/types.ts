@@ -18,8 +18,11 @@ export interface WindowConfig {
 }
 
 // ─── Processing Types ───
+export type GlitchType = "none" | "rgb_split" | "noise" | "wave" | "slice";
+export type RenderMode = "pixel_perfect" | "bilinear" | "hqx";
+
 export interface GlitchFilter {
-  type: string; // rgb_split, noise, wave, slice
+  type: GlitchType;
   intensity: number; // 1, 2, 3
 }
 
@@ -27,6 +30,6 @@ export interface ProcessingSettings {
   pixelSize: number;
   palette: string;
   crtEffect: boolean;
-  glitchFilters: GlitchFilter[]; // [] = no glitch
-  renderMode: string; // pixel_perfect, bilinear, hqx
+  glitchFilters: GlitchFilter[];
+  renderMode: RenderMode;
 }

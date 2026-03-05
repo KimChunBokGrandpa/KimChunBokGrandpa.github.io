@@ -652,3 +652,17 @@ function generateWebSafePalette(): RGB[] {
 
   return palette;
 }
+
+// ─── Palette Name Lookup (shared, single source of truth) ───
+const paletteNameMap = new Map<string, string>([
+  ["original", "Full Color (Original)"],
+  ["win256", "8-bit Windows 256"],
+  ["monochrome", "2-bit Monochrome"],
+  ...PALETTE_GROUPS.flatMap((g) => g.palettes).map(
+    (p) => [p.id, p.name] as [string, string],
+  ),
+]);
+
+export function getPaletteName(id: string): string {
+  return paletteNameMap.get(id) ?? id;
+}

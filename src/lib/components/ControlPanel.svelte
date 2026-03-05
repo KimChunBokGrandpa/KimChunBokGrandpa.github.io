@@ -1,14 +1,6 @@
 <script lang="ts">
-  import { PALETTE_GROUPS } from '../utils/palettes';
-  import type { GlitchFilter } from '../types';
-
-  // O(1) 상수 시간 검색을 위한 팔레트 이름 맵
-  const paletteNameMap = new Map<string, string>([
-    ['original', 'Full Color (Original)'],
-    ['win256', '8-bit Windows 256'],
-    ['monochrome', '2-bit Monochrome'],
-    ...PALETTE_GROUPS.flatMap(g => g.palettes).map(p => [p.id, p.name] as [string, string]),
-  ]);
+  import { PALETTE_GROUPS, getPaletteName } from '../utils/palettes';
+  import type { GlitchFilter, GlitchType, RenderMode, ProcessingSettings } from '../types';
 
   // 글리치 필터 옵션 정의
   const GLITCH_OPTIONS = [
@@ -26,7 +18,7 @@
     palette: string;
     crtEffect: boolean;
     glitchFilters: GlitchFilter[];
-    renderMode: string;
+    renderMode: RenderMode;
   }
 
   const PRESETS: Preset[] = [
@@ -43,13 +35,13 @@
   ];
 
   let {
-    settings = $bindable({ pixelSize: 1, palette: 'original', crtEffect: false, glitchFilters: [] as GlitchFilter[], renderMode: 'pixel_perfect' }),
+    settings = $bindable({ pixelSize: 1, palette: 'original', crtEffect: false, glitchFilters: [] as GlitchFilter[], renderMode: 'pixel_perfect' as const }),
     onChange,
     onSave,
     onOpenGallery,
   }: {
-    settings: { pixelSize: number; palette: string; crtEffect: boolean; glitchFilters: GlitchFilter[]; renderMode: string };
-    onChange: (settings: { pixelSize: number; palette: string; crtEffect: boolean; glitchFilters: GlitchFilter[]; renderMode: string }) => void;
+    settings: ProcessingSettings;
+    onChange: (settings: ProcessingSettings) => void;
     onSave: () => void;
     onOpenGallery: () => void;
   } = $props();
@@ -69,9 +61,7 @@
     update();
   }
 
-  function getPaletteName(id: string) {
-    return paletteNameMap.get(id) ?? id;
-  }
+
 
   function matchesPreset(preset: Preset): boolean {
     if (settings.pixelSize !== preset.pixelSize) return false;
@@ -85,7 +75,7 @@
   }
 
   // 필터 토글: 없으면 intensity 1로 추가, 있으면 제거
-  function toggleGlitch(filterId: string) {
+  function toggleGlitch(filterId: GlitchType) {
     const idx = settings.glitchFilters.findIndex(f => f.type === filterId);
     if (idx >= 0) {
       settings.glitchFilters = settings.glitchFilters.filter((_, i) => i !== idx);
@@ -96,7 +86,7 @@
   }
 
   // 개별 필터의 강도 변경
-  function setFilterIntensity(filterId: string, intensity: number) {
+  function setFilterIntensity(filterId: GlitchType, intensity: number) {
     settings.glitchFilters = settings.glitchFilters.map(f =>
       f.type === filterId ? { ...f, intensity } : { ...f }
     );
@@ -104,12 +94,12 @@
   }
 
   // 특정 필터가 활성화되어 있는지
-  function isFilterActive(filterId: string): boolean {
+  function isFilterActive(filterId: GlitchType): boolean {
     return settings.glitchFilters.some(f => f.type === filterId);
   }
 
   // 특정 필터의 현재 강도
-  function getFilterIntensity(filterId: string): number {
+  function getFilterIntensity(filterId: GlitchType): number {
     return settings.glitchFilters.find(f => f.type === filterId)?.intensity ?? 1;
   }
 
@@ -237,7 +227,7 @@
         <button
           class:preset-active={settings.renderMode === opt.id}
           style="font-size: 10px; padding: 3px 6px; flex: 1; text-align: center;"
-          onclick={() => { settings.renderMode = opt.id; update(); }}
+          onclick={() => { settings.renderMode = opt.id as RenderMode; update(); }}
           title={opt.title}
         >
           {opt.label}

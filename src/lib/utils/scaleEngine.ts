@@ -3,7 +3,7 @@
  * Operates purely on pixel arrays for Web Worker compatibility.
  */
 
-export type RenderMode = "pixel_perfect" | "bilinear" | "hqx";
+import type { RenderMode } from "../types";
 
 export const applyScaling = (
   imageData: ImageData,

@@ -118,9 +118,13 @@ export function applyPixelationAndPalette(
       const blockH = Math.min(effectivePixelSize, height - y);
       const blockW = Math.min(effectivePixelSize, width - x);
 
-      for (let by = 0; by < blockH; by++) {
-        for (let bx = 0; bx < blockW; bx++) {
-          const idx = ((y + by) * width + (x + bx)) * 4;
+      // For larger blocks (5+), use strided sampling to reduce computation
+      const stride = effectivePixelSize >= 5 ? 2 : 1;
+
+      for (let by = 0; by < blockH; by += stride) {
+        const rowBase = ((y + by) * width + x) * 4;
+        for (let bx = 0; bx < blockW; bx += stride) {
+          const idx = rowBase + bx * 4;
           r += pixels[idx];
           g += pixels[idx + 1];
           b += pixels[idx + 2];
