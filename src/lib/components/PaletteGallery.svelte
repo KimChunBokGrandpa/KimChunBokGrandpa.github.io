@@ -154,6 +154,7 @@
     flex-direction: column;
     background: #c0c0c0;
     min-height: 0;
+    overflow: hidden;
     font-size: 11px;
   }
 
@@ -191,6 +192,7 @@
     gap: 0;
     min-height: 0;
     margin: 3px;
+    overflow: hidden;
   }
 
   /* ── List panel ── */
@@ -317,7 +319,31 @@
   }
 
   @media (max-width: 550px) {
-    .pg-content { flex-direction: column; }
-    .pg-detail { padding: 3px 0 0 0; max-height: 200px; }
+    .pg-content {
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .pg-list-panel {
+      flex: 1;
+      min-height: 60px;
+      overflow: hidden;
+    }
+    .pg-list {
+      overflow-y: auto;
+    }
+    .pg-detail {
+      flex: 0 0 auto;
+      max-height: 140px;
+      overflow-y: auto;
+      padding: 3px 0 0 0;
+    }
+    .pg-toolbar {
+      gap: 0;
+      padding: 1px 2px;
+    }
+    .pg-toolbtn {
+      padding: 2px 4px;
+      font-size: 9px;
+    }
   }
 </style>

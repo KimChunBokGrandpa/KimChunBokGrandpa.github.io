@@ -8,37 +8,61 @@ export const WINDOW_CONFIGS: WindowConfig[] = [
 ];
 
 const WINDOW_IDS = WINDOW_CONFIGS.map((c) => c.id);
+const STORAGE_KEY = "retro-pixel-window-layout";
+
+interface SavedLayout {
+  x: number; y: number; w: number; h: number;
+}
+
+function loadSavedLayout(): Record<string, SavedLayout> | null {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+
+function saveLayout(wins: Record<string, WindowState>) {
+  try {
+    const data: Record<string, SavedLayout> = {};
+    for (const id of WINDOW_IDS) {
+      data[id] = { x: wins[id].x, y: wins[id].y, w: wins[id].w, h: wins[id].h };
+    }
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  } catch { /* ignore storage errors */ }
+}
 
 /**
  * Reactive window manager using Svelte 5 runes.
  * Manages z-ordering, focus, open/close/minimize/maximize state.
  */
 export function createWindowStore() {
+  const saved = loadSavedLayout();
+
   let wins = $state<Record<string, WindowState>>({
     settings: {
       mode: "windowed",
-      x: 30,
-      y: 30,
-      w: 340,
-      h: 480,
+      x: saved?.settings?.x ?? 30,
+      y: saved?.settings?.y ?? 30,
+      w: saved?.settings?.w ?? 340,
+      h: saved?.settings?.h ?? 480,
       z: 10,
       defaults: { x: 30, y: 30, w: 340, h: 480 },
     },
     preview: {
       mode: "closed",
-      x: 400,
-      y: 30,
-      w: 600,
-      h: 500,
+      x: saved?.preview?.x ?? 400,
+      y: saved?.preview?.y ?? 30,
+      w: saved?.preview?.w ?? 600,
+      h: saved?.preview?.h ?? 500,
       z: 9,
       defaults: { x: 400, y: 30, w: 600, h: 500 },
     },
     gallery: {
       mode: "closed",
-      x: 100,
-      y: 60,
-      w: 480,
-      h: 460,
+      x: saved?.gallery?.x ?? 100,
+      y: saved?.gallery?.y ?? 60,
+      w: saved?.gallery?.w ?? 480,
+      h: saved?.gallery?.h ?? 460,
       z: 8,
       defaults: { x: 100, y: 60, w: 480, h: 460 },
     },
@@ -62,6 +86,7 @@ export function createWindowStore() {
       wins[id].mode = "windowed";
     }
     focusWindow(id);
+    saveLayout(wins);
   }
 
   /** Taskbar X button: close + reset position/size to defaults */
@@ -77,6 +102,7 @@ export function createWindowStore() {
   /** Title-bar X button: close only, keep position/size */
   function close(id: string) {
     wins[id].mode = "closed";
+    saveLayout(wins);
   }
 
   function handleTaskbarClick(id: string) {

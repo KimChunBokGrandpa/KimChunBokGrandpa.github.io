@@ -35,8 +35,9 @@ export function createImageProcessingStore() {
   let processingGeneration = 0;
   let dimensionCapShown = false;
 
-  // ─── Undo History ───
+  // ─── Undo / Redo History ───
   let settingsHistory: ProcessingSettings[] = [];
+  let redoHistory: ProcessingSettings[] = [];
 
   function cloneSettings(s: ProcessingSettings): ProcessingSettings {
     return { ...s, glitchFilters: s.glitchFilters.map(f => ({ ...f })) };
@@ -45,6 +46,7 @@ export function createImageProcessingStore() {
   function pushHistory(s: ProcessingSettings) {
     settingsHistory.push(cloneSettings(s));
     if (settingsHistory.length > MAX_HISTORY) settingsHistory.shift();
+    redoHistory.length = 0; // new action clears redo
   }
 
   // ─── Dimension Cap Notification ───
@@ -120,8 +122,17 @@ export function createImageProcessingStore() {
 
   function undo() {
     if (settingsHistory.length === 0) return;
+    redoHistory.push(cloneSettings(settings));
     const prev = settingsHistory.pop()!;
     settings = prev;
+    applyProcessingDebounced();
+  }
+
+  function redo() {
+    if (redoHistory.length === 0) return;
+    settingsHistory.push(cloneSettings(settings));
+    const next = redoHistory.pop()!;
+    settings = next;
     applyProcessingDebounced();
   }
 
@@ -160,6 +171,7 @@ export function createImageProcessingStore() {
     updateSettings,
     selectPalette,
     undo,
+    redo,
     save,
     setFormat,
     setQuality,

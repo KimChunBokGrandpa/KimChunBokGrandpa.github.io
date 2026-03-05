@@ -87,6 +87,9 @@ class ImageProcessorService {
           pending.reject(err);
         }
         this.pendingResolvers.clear();
+        // Reset worker so next call creates a fresh one
+        this.worker?.terminate();
+        this.worker = null;
       };
     }
     return this.worker;
@@ -143,6 +146,7 @@ class ImageProcessorService {
       c.height = img.height;
       const ctx = c.getContext("2d")!;
       ctx.drawImage(img, 0, 0);
+      this.lastCanvas = c;
       return new Promise<string>((resolve, reject) => {
         c.toBlob((blob) => {
           if (blob) {

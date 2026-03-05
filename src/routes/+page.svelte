@@ -125,6 +125,14 @@
       e.preventDefault();
       ip.undo();
     }
+    if ((e.ctrlKey || e.metaKey) && e.key === 'z' && e.shiftKey) {
+      e.preventDefault();
+      ip.redo();
+    }
+    if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+      e.preventDefault();
+      handleSave();
+    }
   }
 
   onDestroy(() => { ip.destroy(); });
@@ -228,8 +236,11 @@
               <img
                 bind:this={zp.previewImg}
                 src={processedImageSrc}
-                alt="Processed Pixel Art"
-                style="max-width:100%; max-height:100%; width:100%; height:100%; image-rendering:{processingSettings.renderMode === 'bilinear' ? 'auto' : 'pixelated'}; object-fit:contain; transform: scale({zp.zoomLevel}) translate({zp.panX / zp.zoomLevel}px, {zp.panY / zp.zoomLevel}px); transform-origin: center center; transition: {zp.isPanning || zp.isTouchPanning ? 'none' : 'transform 0.1s ease'};"
+                alt="Pixel Art - {getPaletteName(processingSettings.palette)}"
+                class="preview-image"
+                style:image-rendering={processingSettings.renderMode === 'bilinear' ? 'auto' : 'pixelated'}
+                style:transform="scale({zp.zoomLevel}) translate({zp.panX / zp.zoomLevel}px, {zp.panY / zp.zoomLevel}px)"
+                style:transition={zp.isPanning || zp.isTouchPanning ? 'none' : 'transform 0.1s ease'}
                 draggable="false"
               />
             {/snippet}
@@ -421,6 +432,16 @@
   }
   .preview-body.panning {
     cursor: grabbing;
+  }
+
+  /* ===== Preview Image ===== */
+  .preview-image {
+    max-width: 100%;
+    max-height: 100%;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    transform-origin: center center;
   }
 
   /* ===== Empty Preview State ===== */
