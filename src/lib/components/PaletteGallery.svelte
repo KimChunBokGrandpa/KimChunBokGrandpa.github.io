@@ -99,7 +99,7 @@
                 <span class="ms" style="background:linear-gradient(90deg,#000,#fff)"></span>
               {/if}
             </div>
-            <span class="pg-item-name" class:recommended={item.name.startsWith('★')}>{item.name}</span>
+            <span class="pg-item-name">{item.name}</span>
             {#if selectedPaletteId === item.id}
               <span class="pg-check">✓</span>
             {/if}
@@ -245,13 +245,7 @@
     white-space: nowrap;
     font-weight: 500;
   }
-  .pg-item-name.recommended {
-    color: #8B6914;
-    font-weight: bold;
-  }
-  .pg-item.sel .pg-item-name.recommended {
-    color: #FFD700;
-  }
+
   .pg-check {
     flex-shrink: 0;
     font-size: 12px;
