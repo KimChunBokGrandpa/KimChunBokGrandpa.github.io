@@ -1,6 +1,7 @@
 <script lang="ts">
   import { PALETTE_GROUPS, getPaletteName } from '../utils/palettes';
   import type { GlitchFilter, GlitchType, RenderMode, ProcessingSettings } from '../types';
+  import type { SaveFormat } from '../services/saveService';
 
   // 글리치 필터 옵션 정의
   const GLITCH_OPTIONS = [
@@ -35,15 +36,23 @@
   ];
 
   let {
-    settings = $bindable({ pixelSize: 1, palette: 'original', crtEffect: false, glitchFilters: [] as GlitchFilter[], renderMode: 'pixel_perfect' as const }),
+    settings = $bindable({ pixelSize: 1, palette: 'original', crtEffect: false, glitchFilters: [] as GlitchFilter[], renderMode: 'pixel_perfect' as const, glitchSeed: null as (number | null) }),
+    saveFormat = 'png' as SaveFormat,
+    saveQuality = 0.92,
     onChange,
     onSave,
     onOpenGallery,
+    onFormatChange,
+    onQualityChange,
   }: {
     settings: ProcessingSettings;
+    saveFormat?: SaveFormat;
+    saveQuality?: number;
     onChange: (settings: ProcessingSettings) => void;
     onSave: () => void;
     onOpenGallery: () => void;
+    onFormatChange?: (format: SaveFormat) => void;
+    onQualityChange?: (quality: number) => void;
   } = $props();
 
   function update() {
@@ -56,7 +65,8 @@
       palette: preset.palette,
       crtEffect: preset.crtEffect,
       glitchFilters: preset.glitchFilters.map(f => ({ ...f })),
-      renderMode: preset.renderMode
+      renderMode: preset.renderMode,
+      glitchSeed: settings.glitchSeed
     };
     update();
   }
@@ -217,6 +227,36 @@
     </div>
     {/if}
 
+    <!-- 글리치 시드 고정/랜덤 토글 -->
+    {#if settings.glitchFilters.length > 0}
+    <div class="glitch-intensity-panel" style="margin-top: 4px;">
+      <div class="glitch-intensity-row">
+        <span class="glitch-intensity-label">🎲 Seed</span>
+        <div class="glitch-intensity-btns">
+          <button
+            class:preset-active={settings.glitchSeed === null}
+            class="intensity-btn"
+            style="min-width: 50px;"
+            onclick={() => { settings.glitchSeed = null; update(); }}
+          >Random</button>
+          <button
+            class:preset-active={settings.glitchSeed !== null}
+            class="intensity-btn"
+            style="min-width: 50px;"
+            onclick={() => { settings.glitchSeed = Math.round(Math.random() * 10000) / 10000; update(); }}
+          >{settings.glitchSeed !== null ? `Fixed (${settings.glitchSeed})` : 'Fix'}</button>
+          {#if settings.glitchSeed !== null}
+            <button
+              class="intensity-btn"
+              title="Re-roll seed"
+              onclick={() => { settings.glitchSeed = Math.round(Math.random() * 10000) / 10000; update(); }}
+            >🔄</button>
+          {/if}
+        </div>
+      </div>
+    </div>
+    {/if}
+
     <div style="margin-top: 8px; font-size: 11px; margin-bottom: 2px;">Scaling / Render Mode:</div>
     <div class="field-row" style="display: flex; flex-wrap: wrap; gap: 4px;">
       {#each [
@@ -248,6 +288,34 @@
       {/each}
       <span>🔍 {settings.renderMode === 'pixel_perfect' ? 'Pixel' : settings.renderMode === 'bilinear' ? 'Smooth' : 'HQx'}</span>
     </div>
+  </fieldset>
+
+  <fieldset style="margin-top: 8px;">
+    <legend>Save Options</legend>
+    <div class="field-row" style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+      <span style="font-size: 11px; flex-shrink: 0;">Format:</span>
+      {#each [{ id: 'png', label: 'PNG' }, { id: 'jpeg', label: 'JPEG' }, { id: 'webp', label: 'WebP' }] as opt}
+        <button
+          class:preset-active={saveFormat === opt.id}
+          style="font-size: 10px; padding: 2px 8px; flex: 1; text-align: center;"
+          onclick={() => onFormatChange?.(opt.id as SaveFormat)}
+        >{opt.label}</button>
+      {/each}
+    </div>
+    {#if saveFormat !== 'png'}
+      <div class="field-row" style="display: flex; align-items: center; gap: 6px;">
+        <span style="font-size: 10px; flex-shrink: 0;">Quality: {Math.round(saveQuality * 100)}%</span>
+        <input
+          type="range"
+          min="0.1"
+          max="1"
+          step="0.05"
+          value={saveQuality}
+          oninput={(e) => onQualityChange?.(parseFloat((e.target as HTMLInputElement).value))}
+          style="flex: 1;"
+        />
+      </div>
+    {/if}
   </fieldset>
 
   <div class="field-row" style="margin-top: 10px; justify-content: flex-end;">

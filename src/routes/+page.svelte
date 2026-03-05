@@ -11,11 +11,16 @@
   import { createWindowStore, WINDOW_CONFIGS } from '$lib/stores/windowStore.svelte';
   import { createZoomPan } from '$lib/stores/zoomPanStore.svelte';
   import { getPaletteName } from '$lib/utils/palettes';
+  import { saveImage } from '$lib/services/saveService';
+  import type { SaveFormat } from '$lib/services/saveService';
   import type { TaskbarWindowInfo } from '$lib/components/Taskbar.svelte';
   import type { ProcessingSettings } from '$lib/types';
 
+  // ─── Constants ───
+  const DEBOUNCE_MS = 150;
+
   // Tauri 환경 검증
-  const isTauri = typeof window !== 'undefined' && !!(window as any).__TAURI__;
+  const isTauri = typeof window !== 'undefined' && '__TAURI__' in window;
 
   // ─── Window Manager ───
   const wm = createWindowStore();
@@ -33,8 +38,29 @@
     palette: 'original',
     crtEffect: false,
     glitchFilters: [],
-    renderMode: 'pixel_perfect'
+    renderMode: 'pixel_perfect',
+    glitchSeed: null
   });
+
+  // ─── Save Format State ───
+  let saveFormat = $state<SaveFormat>('png');
+  let saveQuality = $state(0.92);
+
+  // ─── Undo History ───
+  const MAX_HISTORY = 20;
+  let settingsHistory: ProcessingSettings[] = [];
+
+  function pushHistory(s: ProcessingSettings) {
+    settingsHistory.push({ ...s, glitchFilters: s.glitchFilters.map(f => ({ ...f })) });
+    if (settingsHistory.length > MAX_HISTORY) settingsHistory.shift();
+  }
+
+  function handleUndo() {
+    if (settingsHistory.length === 0) return;
+    const prev = settingsHistory.pop()!;
+    processingSettings = prev;
+    applyProcessingDebounced();
+  }
 
   // ─── Dialog State ───
   let dialogMessage: string | null = $state(null);
@@ -95,6 +121,7 @@
   }
 
   function handleSettingsChange(newSettings: ProcessingSettings) {
+    pushHistory(processingSettings);
     processingSettings = { ...newSettings };
     applyProcessingDebounced();
   }
@@ -132,12 +159,13 @@
         if (result !== null) processedImageSrc = result;
       } catch (err) { console.error(err); }
       finally { if (gen === processingGeneration) isProcessing = false; }
-    }, 150);
+    }, DEBOUNCE_MS);
   }
 
   function handleGallerySelect(paletteId: string) {
     processingSettings.palette = paletteId;
     processImmediate();
+    wm.openWindow('preview');
   }
 
   function showDialog(message: string, title = 'Retro Pixel Converter') {
@@ -148,53 +176,20 @@
   async function handleSave() {
     if (!processedImageSrc) return;
     try {
-      // Load image into canvas to get raw blob data (avoids blob: URL fetch issues in Tauri)
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      const blobData = await new Promise<Blob>((resolve, reject) => {
-        img.onload = () => {
-          const c = document.createElement('canvas');
-          c.width = img.naturalWidth;
-          c.height = img.naturalHeight;
-          const ctx = c.getContext('2d')!;
-          ctx.drawImage(img, 0, 0);
-          c.toBlob(blob => {
-            if (blob) resolve(blob);
-            else reject(new Error('Failed to create blob'));
-          }, 'image/png');
-        };
-        img.onerror = () => reject(new Error('Failed to load image for save'));
-        img.src = processedImageSrc!;
-      });
-
-      if (isTauri) {
-        const { save } = await import('@tauri-apps/plugin-dialog');
-        const { writeFile } = await import('@tauri-apps/plugin-fs');
-        const filePath = await save({
-          filters: [{ name: 'Image', extensions: ['png'] }],
-          defaultPath: `retro_pixel_${Date.now()}.png`
-        });
-        if (filePath) {
-          const arrayBuffer = await blobData.arrayBuffer();
-          const bytes = new Uint8Array(arrayBuffer);
-          await writeFile(filePath, bytes);
-          showDialog('File saved successfully!');
-        }
-      } else {
-        const url = URL.createObjectURL(blobData);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `retro_pixel_${Date.now()}.png`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        showDialog('Image downloaded successfully!');
-      }
+      const message = await saveImage(processedImageSrc, { format: saveFormat, quality: saveQuality });
+      if (message) showDialog(message);
     } catch (err) {
       console.error('Failed to save file:', err);
       showDialog('Error saving file. Please try again.', 'Error');
     }
+  }
+
+  function handleFormatChange(format: SaveFormat) {
+    saveFormat = format;
+  }
+
+  function handleQualityChange(quality: number) {
+    saveQuality = quality;
   }
 
   function handleLoadNewImage() {
@@ -219,6 +214,12 @@
   function handleIconDblClick(id: string) { selectedIcon = null; wm.openWindow(id); }
   function handleDesktopClick() { selectedIcon = null; }
 
+  function handleKeydown(e: KeyboardEvent) {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+      e.preventDefault();
+      handleUndo();
+    }
+  }
 
   onDestroy(() => {
     if (debounceTimer) clearTimeout(debounceTimer);
@@ -226,6 +227,8 @@
     processorService.destroy();
   });
 </script>
+
+<svelte:window onkeydown={handleKeydown} />
 
 <!-- ═══ Desktop ═══ -->
 <!-- svelte-ignore a11y_click_events_have_key_events -->
@@ -275,9 +278,13 @@
           </button>
           <ControlPanel
             bind:settings={processingSettings}
+            {saveFormat}
+            {saveQuality}
             onChange={handleSettingsChange}
             onSave={handleSave}
             onOpenGallery={() => { setTimeout(() => wm.openWindow('gallery'), 0); }}
+            onFormatChange={handleFormatChange}
+            onQualityChange={handleQualityChange}
           />
         </div>
       {/if}

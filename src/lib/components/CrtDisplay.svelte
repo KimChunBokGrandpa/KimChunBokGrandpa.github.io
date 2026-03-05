@@ -57,6 +57,13 @@
     animation: flicker 0.3s infinite;
   }
 
+  @media (prefers-reduced-motion: reduce) {
+    .scanlines {
+      animation: none;
+      opacity: 0.5;
+    }
+  }
+
   .glare {
     position: absolute;
     top: 0; left: 0;

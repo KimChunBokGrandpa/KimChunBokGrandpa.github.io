@@ -62,12 +62,7 @@ export const applyScaling = (
         E2 = P,
         E3 = P;
 
-      if (
-        !isSameColor(C, A) &&
-        !isSameColor(C, D) &&
-        !isSameColor(A, B) &&
-        !isSameColor(B, D)
-      ) {
+      if (!isSameColor(C, B) && !isSameColor(A, D)) {
         if (isSameColor(C, A)) E0 = A;
         if (isSameColor(A, B)) E1 = B;
         if (isSameColor(C, D)) E2 = C;

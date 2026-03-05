@@ -32,4 +32,5 @@ export interface ProcessingSettings {
   crtEffect: boolean;
   glitchFilters: GlitchFilter[];
   renderMode: RenderMode;
+  glitchSeed: number | null; // null = random each time, number = fixed seed
 }

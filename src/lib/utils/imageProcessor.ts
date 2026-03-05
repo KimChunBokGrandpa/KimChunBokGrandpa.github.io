@@ -195,6 +195,7 @@ class ImageProcessorService {
           intensity: f.intensity,
         })),
         renderMode: settings.renderMode,
+        glitchSeed: settings.glitchSeed,
       };
 
       this.ensureWorker().postMessage(message, [bitmap]);

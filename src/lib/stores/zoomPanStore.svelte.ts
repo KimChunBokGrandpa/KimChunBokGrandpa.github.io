@@ -3,6 +3,11 @@
  * Extracts all zoom/pan state and handlers from +page.svelte.
  */
 
+const MIN_ZOOM = 0.25;
+const MAX_ZOOM = 8;
+const ZOOM_STEP_WHEEL = 0.15;
+const ZOOM_STEP_BUTTON = 0.5;
+
 export function createZoomPan() {
   let zoomLevel = $state(1);
   let panX = $state(0);
@@ -22,8 +27,8 @@ export function createZoomPan() {
   // ─── Mouse Handlers ───
   function handleWheel(e: WheelEvent) {
     e.preventDefault();
-    const delta = e.deltaY > 0 ? -0.15 : 0.15;
-    zoomLevel = Math.min(8, Math.max(0.25, zoomLevel + delta));
+    const delta = e.deltaY > 0 ? -ZOOM_STEP_WHEEL : ZOOM_STEP_WHEEL;
+    zoomLevel = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, zoomLevel + delta));
     if (zoomLevel <= 1) {
       panX = 0;
       panY = 0;
@@ -71,7 +76,7 @@ export function createZoomPan() {
       const dist = Math.hypot(dx, dy);
       if (lastTouchDist > 0) {
         const scale = dist / lastTouchDist;
-        zoomLevel = Math.min(8, Math.max(0.25, zoomLevel * scale));
+        zoomLevel = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, zoomLevel * scale));
         if (zoomLevel <= 1) {
           panX = 0;
           panY = 0;
@@ -106,7 +111,7 @@ export function createZoomPan() {
       const containerH = previewContainer.clientHeight;
       const imgW = previewImg.naturalWidth;
       const imgH = previewImg.naturalHeight;
-      zoomLevel = Math.min(containerW / imgW, containerH / imgH, 8);
+      zoomLevel = Math.min(containerW / imgW, containerH / imgH, MAX_ZOOM);
     } else {
       zoomLevel = 1;
     }
@@ -115,11 +120,11 @@ export function createZoomPan() {
   }
 
   function zoomIn() {
-    zoomLevel = Math.min(8, zoomLevel + 0.5);
+    zoomLevel = Math.min(MAX_ZOOM, zoomLevel + ZOOM_STEP_BUTTON);
   }
 
   function zoomOut() {
-    zoomLevel = Math.max(0.25, zoomLevel - 0.5);
+    zoomLevel = Math.max(MIN_ZOOM, zoomLevel - ZOOM_STEP_BUTTON);
     if (zoomLevel <= 1) {
       panX = 0;
       panY = 0;

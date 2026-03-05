@@ -15,6 +15,7 @@ export interface ImageWorkerMessage {
   palette: string;
   glitchFilters?: Array<{ type: GlitchType; intensity: number }>;
   renderMode?: RenderMode;
+  glitchSeed?: number | null;
 }
 
 export interface ImageWorkerResponse {
@@ -33,6 +34,7 @@ onmessage = (e: MessageEvent<ImageWorkerMessage>) => {
     palette,
     glitchFilters,
     renderMode,
+    glitchSeed,
   } = e.data;
 
   try {
@@ -60,6 +62,7 @@ onmessage = (e: MessageEvent<ImageWorkerMessage>) => {
             processedData,
             filter.type,
             filter.intensity || 1,
+            glitchSeed ?? undefined,
           );
         }
       }
