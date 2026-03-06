@@ -128,6 +128,12 @@
             tabindex="0"
             aria-selected={selectedPaletteId === item.id}
             onclick={() => onSelect(item.id)}
+            onkeydown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                onSelect(item.id);
+              }
+            }}
             onmouseenter={() => hoveredPaletteId = item.id}
             onmouseleave={() => hoveredPaletteId = null}
           >
