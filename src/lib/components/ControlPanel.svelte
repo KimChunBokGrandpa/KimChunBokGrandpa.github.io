@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { PALETTE_GROUPS, getPaletteName } from '../utils/palettes';
+  import { getPaletteName } from '../utils/palettes';
   import type { GlitchFilter, GlitchType, RenderMode, ProcessingSettings } from '../types';
   import type { SaveFormat } from '../services/saveService';
 
@@ -9,6 +9,20 @@
     { id: 'wave',      icon: '📺', label: 'Wave' },
     { id: 'noise',     icon: '🧩', label: 'Noise' },
     { id: 'slice',     icon: '🔪', label: 'Slice' },
+  ] as const;
+
+  // 렌더 모드 옵션
+  const RENDER_OPTIONS = [
+    { id: 'pixel_perfect', label: 'Pixel Perfect', title: 'Crisp & sharp dot edges' },
+    { id: 'bilinear', label: 'Bilinear Blur', title: 'Smoothly interpolates for retro CRT feel' },
+    { id: 'hqx', label: 'HQx Upscale', title: 'High quality curve-based edge upscaling' },
+  ] as const;
+
+  // 저장 포맷 옵션
+  const FORMAT_OPTIONS = [
+    { id: 'png', label: 'PNG' },
+    { id: 'jpeg', label: 'JPEG' },
+    { id: 'webp', label: 'WebP' },
   ] as const;
 
   // 추천 프리셋 정의
@@ -257,11 +271,7 @@
 
     <div class="section-label">Scaling / Render Mode:</div>
     <div class="field-row render-row">
-      {#each [
-        { id: 'pixel_perfect', label: 'Pixel Perfect', title: 'Crisp & sharp dot edges' },
-        { id: 'bilinear', label: 'Bilinear Blur', title: 'Smoothly interpolates for retro CRT feel' },
-        { id: 'hqx', label: 'HQx Upscale', title: 'High quality curve-based edge upscaling' }
-      ] as opt}
+      {#each RENDER_OPTIONS as opt}
         <button
           class:preset-active={settings.renderMode === opt.id}
           class="render-btn"
@@ -292,7 +302,7 @@
     <legend>Save Options</legend>
     <div class="field-row format-row">
       <span class="format-label">Format:</span>
-      {#each [{ id: 'png', label: 'PNG' }, { id: 'jpeg', label: 'JPEG' }, { id: 'webp', label: 'WebP' }] as opt}
+      {#each FORMAT_OPTIONS as opt}
         <button
           class:preset-active={saveFormat === opt.id}
           class="format-btn"

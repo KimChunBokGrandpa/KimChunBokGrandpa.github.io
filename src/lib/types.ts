@@ -44,7 +44,7 @@ export interface ImageWorkerMessage {
   height: number;
   pixelSize: number;
   palette: string;
-  glitchFilters?: Array<{ type: GlitchType; intensity: number }>;
+  glitchFilters?: GlitchFilter[];
   renderMode?: RenderMode;
   glitchSeed?: number | null;
 }

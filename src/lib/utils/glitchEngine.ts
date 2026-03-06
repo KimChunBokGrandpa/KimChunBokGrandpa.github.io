@@ -155,10 +155,12 @@ export const applyGlitch = (
     }
   };
 
-  if (glitchType === "rgb_split") applyRgbSplit();
-  else if (glitchType === "noise") applyNoise();
-  else if (glitchType === "wave") applyWave();
-  else if (glitchType === "slice") applySlice();
+  switch (glitchType) {
+    case "rgb_split": applyRgbSplit(); break;
+    case "noise":     applyNoise();    break;
+    case "wave":      applyWave();     break;
+    case "slice":     applySlice();    break;
+  }
 
   return new ImageData(resultData, width, height);
 };

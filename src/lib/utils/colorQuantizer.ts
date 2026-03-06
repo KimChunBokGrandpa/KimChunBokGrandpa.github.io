@@ -68,16 +68,6 @@ function buildLut(paletteName: string): { packed: Uint32Array; colors: RGB[] } {
   return lut;
 }
 
-function findNearestColor(
-  r: number,
-  g: number,
-  b: number,
-  paletteName: string,
-): RGB {
-  const lut = buildLut(paletteName);
-  const idx = ((r >> SHIFT) << (BITS * 2)) | ((g >> SHIFT) << BITS) | (b >> SHIFT);
-  return lut.colors[idx];
-}
 
 /** Clear caches for palettes not currently in use */
 export function clearPaletteCachesExcept(activePalette: string) {
@@ -105,6 +95,10 @@ export function applyPixelationAndPalette(
   const outData = new ImageData(width, height);
   const outPixels = outData.data;
   const outPixels32 = new Uint32Array(outPixels.buffer);
+
+  // Pre-build LUT for palette (cached after first call)
+  const usePalette = paletteName !== "original";
+  const lut = usePalette ? buildLut(paletteName) : null;
 
   for (let y = 0; y < height; y += effectivePixelSize) {
     for (let x = 0; x < width; x += effectivePixelSize) {
@@ -138,26 +132,21 @@ export function applyPixelationAndPalette(
       b = Math.round(b / count);
       a = Math.round(a / count);
 
-      // 2. Quantize the average color
-      let finalColor = { r, g, b };
-      if (paletteName !== "original") {
-        finalColor = findNearestColor(r, g, b, paletteName);
+      // 2. Get packed color (LUT direct lookup or pack original)
+      let packedColor: number;
+      if (a < 128) {
+        packedColor = 0;
+      } else if (lut) {
+        // Direct LUT lookup — O(1), no function call or object allocation
+        const lutIdx = ((r >> SHIFT) << (BITS * 2)) | ((g >> SHIFT) << BITS) | (b >> SHIFT);
+        packedColor = lut.packed[lutIdx];
+      } else {
+        packedColor = IS_LITTLE_ENDIAN
+          ? (255 << 24) | (b << 16) | (g << 8) | r
+          : (r << 24) | (g << 16) | (b << 8) | 255;
       }
 
       // 3. Fill the entire block
-      const packedColor =
-        a < 128
-          ? 0
-          : IS_LITTLE_ENDIAN
-            ? (255 << 24) |
-              (finalColor.b << 16) |
-              (finalColor.g << 8) |
-              finalColor.r
-            : (finalColor.r << 24) |
-              (finalColor.g << 16) |
-              (finalColor.b << 8) |
-              255;
-
       for (let by = 0; by < blockH; by++) {
         const rowOffset = (y + by) * width;
         for (let bx = 0; bx < blockW; bx++) {

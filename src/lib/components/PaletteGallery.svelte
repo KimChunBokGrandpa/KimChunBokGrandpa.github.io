@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { PALETTE_GROUPS, PALETTES } from '../utils/palettes';
-  import type { RGB } from '../utils/palettes';
+  import { PALETTE_THEMES, PALETTES, getPaletteName } from '../utils/palettes';
+  import type { RGB, PaletteTheme } from '../utils/palettes';
 
   let {
     selectedPaletteId = 'original',
@@ -10,8 +10,8 @@
     onSelect: (id: string) => void;
   } = $props();
 
-  let activeGroup = $state<string>('core');
-  let hoveredPalette = $state<string | null>(null);
+  let activeThemeId = $state<string>('_core');
+  let hoveredPaletteId = $state<string | null>(null);
 
   // ─── Favorites ───
   const FAV_STORAGE_KEY = 'retro-pixel-favorites';
@@ -31,82 +31,95 @@
 
   function toggleFavorite(id: string, e: MouseEvent) {
     e.stopPropagation();
-    if (favorites.has(id)) {
-      favorites.delete(id);
-    } else {
-      favorites.add(id);
-    }
-    favorites = new Set(favorites); // trigger reactivity
+    if (favorites.has(id)) favorites.delete(id);
+    else favorites.add(id);
+    favorites = new Set(favorites);
     saveFavorites();
   }
 
-  interface PalItem {
+  // ─── Theme tabs ───
+  interface ThemeTab {
     id: string;
-    name: string;
-    colors: RGB[] | null;
-    desc: string;
+    label: string;
   }
 
-  const coreItems: PalItem[] = [
-    { id: 'original', name: 'Original (Full Color)', colors: null, desc: 'No color quantization — keep all original colors' },
-    { id: 'win256', name: '★ Windows 256', colors: PALETTES['win256'] || null, desc: '8-bit Windows default (216 web-safe + extras)' },
+  const themeTabs: ThemeTab[] = [
+    { id: '_favorites', label: '⭐' },
+    { id: '_core', label: '📁 Core' },
+    ...PALETTE_THEMES.map(t => ({ id: t.themeId, label: t.themeName })),
   ];
 
-  const groupTabs = [
-    { id: 'favorites', label: '⭐ Favorites' },
-    { id: 'core', label: '📁 Core' },
-    ...PALETTE_GROUPS.map(g => ({ id: g.groupId, label: `📁 ${g.groupName}` })),
-  ];
+  // ─── Active theme data ───
+  interface VariantItem {
+    id: string;
+    name: string;
+    colorCount: number;
+    colors: RGB[] | null;
+  }
 
-  const paletteLookup = new Map<string, PalItem>();
-  coreItems.forEach(i => paletteLookup.set(i.id, i));
-  PALETTE_GROUPS.forEach(g => g.palettes.forEach(p => {
-    paletteLookup.set(p.id, {
-      id: p.id, name: p.name,
-      colors: PALETTES[p.id] || null,
-      desc: `${(PALETTES[p.id] || []).length} colors`,
-    });
-  }));
-
-  let activeItems = $derived.by<PalItem[]>(() => {
-    if (activeGroup === 'favorites') {
-      return [...favorites].map(id => paletteLookup.get(id)).filter(Boolean) as PalItem[];
+  // Palette lookup for detail view
+  const allPaletteLookup = new Map<string, VariantItem>();
+  allPaletteLookup.set('original', { id: 'original', name: 'Original (Full Color)', colorCount: 0, colors: null });
+  for (const t of PALETTE_THEMES) {
+    for (const v of t.variants) {
+      allPaletteLookup.set(v.id, {
+        id: v.id,
+        name: getPaletteName(v.id),
+        colorCount: v.colorCount,
+        colors: PALETTES[v.id] || null,
+      });
     }
-    if (activeGroup === 'core') return coreItems;
-    const group = PALETTE_GROUPS.find(g => g.groupId === activeGroup);
-    if (!group) return [];
-    return group.palettes.map(p => ({
-      id: p.id,
-      name: p.name,
-      colors: PALETTES[p.id] || null,
-      desc: `${(PALETTES[p.id] || []).length} colors`,
+  }
+
+  let activeVariants = $derived.by<VariantItem[]>(() => {
+    if (activeThemeId === '_favorites') {
+      return [...favorites].map(id => allPaletteLookup.get(id)).filter(Boolean) as VariantItem[];
+    }
+    if (activeThemeId === '_core') {
+      return [
+        { id: 'original', name: 'Original (Full Color)', colorCount: 0, colors: null },
+      ];
+    }
+    const theme = PALETTE_THEMES.find(t => t.themeId === activeThemeId);
+    if (!theme) return [];
+    return theme.variants.map(v => ({
+      id: v.id,
+      name: `${v.colorCount} colors`,
+      colorCount: v.colorCount,
+      colors: PALETTES[v.id] || null,
     }));
   });
 
+  let activeThemeName = $derived(
+    activeThemeId === '_favorites' ? 'Favorites'
+    : activeThemeId === '_core' ? 'Core'
+    : PALETTE_THEMES.find(t => t.themeId === activeThemeId)?.themeName ?? ''
+  );
+
   // Detail panel for hovered or selected palette
-  let detailItem = $derived.by<PalItem | null>(() => {
-    const id = hoveredPalette || selectedPaletteId;
-    return paletteLookup.get(id) || null;
+  let detailItem = $derived.by<VariantItem | null>(() => {
+    const id = hoveredPaletteId || selectedPaletteId;
+    return allPaletteLookup.get(id) || null;
   });
 </script>
 
 <div class="pg">
-  <!-- Toolbar -->
+  <!-- Theme tabs -->
   <div class="pg-toolbar">
-    {#each groupTabs as tab}
+    {#each themeTabs as tab}
       <button
         class="pg-toolbtn"
-        class:tb-sel={activeGroup === tab.id}
-        onclick={() => activeGroup = tab.id}
+        class:tb-sel={activeThemeId === tab.id}
+        onclick={() => activeThemeId = tab.id}
       >{tab.label}</button>
     {/each}
   </div>
 
   <div class="pg-content">
-    <!-- Left: Palette list -->
+    <!-- Left: Variant list (color count options) -->
     <div class="pg-list-panel">
       <div class="pg-list" role="listbox">
-        {#each activeItems as item}
+        {#each activeVariants as item}
           <!-- svelte-ignore a11y_click_events_have_key_events -->
           <div
             class="pg-item"
@@ -115,8 +128,8 @@
             tabindex="0"
             aria-selected={selectedPaletteId === item.id}
             onclick={() => onSelect(item.id)}
-            onmouseenter={() => hoveredPalette = item.id}
-            onmouseleave={() => hoveredPalette = null}
+            onmouseenter={() => hoveredPaletteId = item.id}
+            onmouseleave={() => hoveredPaletteId = null}
           >
             <!-- Mini swatch strip -->
             <div class="pg-mini-swatches">
@@ -131,6 +144,9 @@
               {/if}
             </div>
             <span class="pg-item-name">{item.name}</span>
+            {#if item.colorCount > 0}
+              <span class="pg-color-badge">{item.colorCount}</span>
+            {/if}
             {#if selectedPaletteId === item.id}
               <span class="pg-check">✓</span>
             {/if}
@@ -150,8 +166,8 @@
     <div class="pg-detail">
       {#if detailItem}
         <fieldset>
-          <legend>{detailItem.name}</legend>
-          <p class="pg-desc">{detailItem.desc}</p>
+          <legend>{activeThemeName} — {detailItem.name}</legend>
+          <p class="pg-desc">{detailItem.colorCount > 0 ? `${detailItem.colorCount} colors` : 'Full color spectrum preserved'}</p>
           {#if detailItem.colors}
             <div class="pg-grid">
               {#each detailItem.colors as c}
@@ -177,7 +193,7 @@
   <!-- Status bar -->
   <div class="status-bar pg-status">
     <p class="status-bar-field">
-      {activeItems.length} palette(s) in group
+      {activeThemeName} — {activeVariants.length} variant(s)
     </p>
     <p class="status-bar-field">
       Active: {selectedPaletteId}
@@ -284,6 +300,20 @@
     text-overflow: ellipsis;
     white-space: nowrap;
     font-weight: 500;
+  }
+
+  .pg-color-badge {
+    flex-shrink: 0;
+    font-size: 9px;
+    padding: 0 4px;
+    border-radius: 3px;
+    background: #e8e4e0;
+    color: #555;
+    font-weight: bold;
+  }
+  .pg-item.sel .pg-color-badge {
+    background: #4040a0;
+    color: #ddd;
   }
 
   .pg-check {

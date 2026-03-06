@@ -155,8 +155,8 @@ class ImageProcessorService {
     if (
       settings.pixelSize <= 1 &&
       settings.palette === "original" &&
-      (!settings.glitchFilters || settings.glitchFilters.length === 0) &&
-      (!settings.renderMode || settings.renderMode !== "hqx")
+      settings.glitchFilters.length === 0 &&
+      settings.renderMode !== "hqx"
     ) {
       const img = await this.loadImage(imageSrc);
       if (this.currentRequestId !== requestId) return null;

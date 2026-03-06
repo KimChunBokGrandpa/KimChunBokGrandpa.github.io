@@ -182,6 +182,13 @@
       savedPos = { x, y, w: width, h: height }; mode = 'maximized';
     }
   }
+
+  let windowStyle = $derived.by(() => {
+    const mobileVars = mobileSlot ? `--mobile-t:${mobileSlot.top}; --mobile-h:${mobileSlot.height};` : '';
+    return mode === 'maximized'
+      ? `z-index:${zIndex}; position:absolute; inset:0; ${mobileVars}`
+      : `z-index:${zIndex}; position:absolute; left:${x}px; top:${y}px; width:${width}px; height:${height}px; ${mobileVars}`;
+  });
 </script>
 
 {#if mode !== 'minimized'}
@@ -191,12 +198,7 @@
     class="window win98-window"
     class:maximized={mode === 'maximized'}
     class:interacting={isDragging || isResizing}
-    style={(() => {
-      const mobileVars = mobileSlot ? `--mobile-t:${mobileSlot.top}; --mobile-h:${mobileSlot.height};` : '';
-      return mode === 'maximized'
-        ? `z-index:${zIndex}; position:absolute; inset:0; ${mobileVars}`
-        : `z-index:${zIndex}; position:absolute; left:${x}px; top:${y}px; width:${width}px; height:${height}px; ${mobileVars}`;
-    })()}
+    style={windowStyle}
     onclick={handleWindowClick}
   >
     <!-- svelte-ignore a11y_no_static_element_interactions -->

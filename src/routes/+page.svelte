@@ -15,7 +15,6 @@
   import type { SaveFormat } from '$lib/services/saveService';
   import type { TaskbarWindowInfo } from '$lib/components/Taskbar.svelte';
   import type { ProcessingSettings, WindowId } from '$lib/types';
-  import { isTauri } from '$lib/utils/env';
 
   // ─── Stores ───
   const wm = createWindowStore();

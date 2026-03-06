@@ -20,80 +20,155 @@ export const PALETTE_GROUPS: PaletteGroup[] = [
     groupId: "2",
     groupName: "2 Colors",
     palettes: [
-      { id: "monochrome", name: "Monochrome (B&W)" },
-      { id: "sepia2", name: "Sepia Duo" },
-      { id: "blue2", name: "Blueprint" },
-      { id: "green2", name: "Terminal Green" },
-      { id: "amber2", name: "Amber CRT" },
-      { id: "red2", name: "Darkroom Red" },
+      { id: "monochrome", name: "Monochrome" },
+      { id: "sepia2", name: "Monochrome" },
+      { id: "blue2", name: "Monochrome" },
+      { id: "green2", name: "Monochrome" },
+      { id: "amber2", name: "Monochrome" },
+      { id: "red2", name: "Monochrome" },
+      { id: "earth2", name: "Earth Tone" },
+      { id: "neon2", name: "Neon Glow" },
+      { id: "ocean2", name: "Ocean" },
+      { id: "sunset2", name: "Sunset" },
+      { id: "vintage2", name: "Vintage Film" },
+      { id: "forest2", name: "Forest Canopy" },
     ],
   },
   {
     groupId: "4",
     groupName: "4 Colors",
     palettes: [
-      { id: "dmg", name: "DMG Green (Gameboy)" },
-      { id: "pocket", name: "GB Pocket" },
-      { id: "gb_warm", name: "GB Warm Amber" },
-      { id: "gb_blue", name: "GB Blue" },
-      { id: "gb_red", name: "GB Red" },
-      { id: "gamewatch", name: "Game & Watch LCD" },
-      { id: "arctic4", name: "Arctic" },
+      { id: "dmg", name: "Gameboy" },
+      { id: "pocket", name: "Gameboy" },
+      { id: "gb_warm", name: "Gameboy" },
+      { id: "gb_blue", name: "Gameboy" },
+      { id: "gb_red", name: "Gameboy" },
+      { id: "gamewatch", name: "Gameboy" },
+      { id: "arctic4", name: "Artistic" },
+      { id: "earth4", name: "Earth Tone" },
+      { id: "forest4", name: "Forest Canopy" },
+      { id: "neon4", name: "Neon Glow" },
+      { id: "ocean4", name: "Ocean" },
+      { id: "pastel4", name: "Pastel Dream" },
       { id: "sunset4", name: "Sunset" },
-      { id: "pastel4", name: "Pastel Candy" },
-      { id: "ocean4", name: "Deep Ocean" },
+      { id: "vintage4", name: "Vintage Film" },
     ],
   },
   {
     groupId: "8",
     groupName: "8 Colors",
     palettes: [
-      { id: "cga", name: "CGA Mode4" },
-      { id: "pastel8", name: "Pastel Dream" },
+      { id: "cga", name: "Retro PC" },
       { id: "earth8", name: "Earth Tone" },
-      { id: "neon8", name: "Neon Glow" },
-      { id: "vintage8", name: "Vintage Film" },
       { id: "forest8", name: "Forest Canopy" },
+      { id: "neon8", name: "Neon Glow" },
+      { id: "ocean8", name: "Ocean" },
+      { id: "pastel8", name: "Pastel Dream" },
+      { id: "sunset8", name: "Sunset" },
+      { id: "vintage8", name: "Vintage Film" },
     ],
   },
   {
     groupId: "16",
     groupName: "16 Colors",
     palettes: [
-      { id: "pico8", name: "PICO-8" },
-      { id: "nes", name: "NES Standard" },
-      { id: "ega", name: "IBM EGA" },
-      { id: "gameboy_color", name: "GBC Poke" },
-      { id: "msx", name: "MSX TMS9918" },
-      { id: "pastel16", name: "Pastel Dream 16" },
-      { id: "autumn16", name: "Autumn Harvest" },
-      { id: "ocean16", name: "Ocean Breeze" },
+      { id: "ega", name: "Retro PC" },
+      { id: "msx", name: "Retro PC" },
+      { id: "pico8", name: "Retro Console" },
+      { id: "nes", name: "Retro Console" },
+      { id: "gameboy_color", name: "Retro Console" },
+      { id: "autumn16", name: "Artistic" },
+      { id: "earth16", name: "Earth Tone" },
+      { id: "forest16", name: "Forest Canopy" },
+      { id: "neon16", name: "Neon Glow" },
+      { id: "ocean16", name: "Ocean" },
+      { id: "pastel16", name: "Pastel Dream" },
+      { id: "sunset16", name: "Sunset" },
+      { id: "vintage16", name: "Vintage Film" },
     ],
   },
   {
     groupId: "32",
     groupName: "32 Colors",
     palettes: [
-      { id: "snes32", name: "SNES Natural" },
-      { id: "mega32", name: "Mega Drive" },
-      { id: "pc98", name: "PC-98 Night" },
-      { id: "pastel32", name: "Pastel Dream 32" },
-      { id: "retro32", name: "Retro Pop" },
-      { id: "twilight32", name: "Twilight Sky" },
+      { id: "snes32", name: "Retro Console" },
+      { id: "mega32", name: "Retro Console" },
+      { id: "pc98", name: "Retro PC" },
+      { id: "retro32", name: "Artistic" },
+      { id: "twilight32", name: "Artistic" },
+      { id: "earth32", name: "Earth Tone" },
+      { id: "forest32", name: "Forest Canopy" },
+      { id: "neon32", name: "Neon Glow" },
+      { id: "ocean32", name: "Ocean" },
+      { id: "pastel32", name: "Pastel Dream" },
+      { id: "sunset32", name: "Sunset" },
+      { id: "vintage32", name: "Vintage Film" },
     ],
   },
   {
-    groupId: "48+",
-    groupName: "48+ Colors",
+    groupId: "48",
+    groupName: "44–54 Colors",
     palettes: [
-      { id: "snes_rpg", name: "SNES RPG Interior (44)" },
-      { id: "snes_bg", name: "SNES Background (48)" },
-      { id: "neogeo_char", name: "NEO-GEO Character (48)" },
-      { id: "cyberpunk16", name: "Cyberpunk City (48)" },
-      { id: "nes_full", name: "NES Full (54)" },
-      { id: "pastel48", name: "Pastel Dream 48" },
-      { id: "watercolor48", name: "Watercolor (48)" },
-      { id: "synthwave48", name: "Synthwave (48)" },
+      { id: "nes_full", name: "Retro Console" },
+      { id: "snes_rpg", name: "Retro Console" },
+      { id: "snes_bg", name: "Retro Console" },
+      { id: "neogeo_char", name: "Retro Console" },
+      { id: "cyberpunk16", name: "Cyberpunk" },
+      { id: "synthwave48", name: "Cyberpunk" },
+      { id: "watercolor48", name: "Artistic" },
+      { id: "earth48", name: "Earth Tone" },
+      { id: "forest48", name: "Forest Canopy" },
+      { id: "neon48", name: "Neon Glow" },
+      { id: "ocean48", name: "Ocean" },
+      { id: "pastel48", name: "Pastel Dream" },
+      { id: "sunset48", name: "Sunset" },
+      { id: "vintage48", name: "Vintage Film" },
+    ],
+  },
+  {
+    groupId: "64",
+    groupName: "64 Colors",
+    palettes: [
+      { id: "c64_full", name: "Retro PC" },
+      { id: "vga64", name: "Retro PC" },
+      { id: "amiga64", name: "Retro PC" },
+      { id: "retro_pc64", name: "Retro PC" },
+      { id: "earth64", name: "Earth Tone" },
+      { id: "forest64", name: "Forest Canopy" },
+      { id: "neon64", name: "Neon Glow" },
+      { id: "ocean64", name: "Ocean" },
+      { id: "sunset64", name: "Sunset" },
+      { id: "vintage64", name: "Vintage Film" },
+    ],
+  },
+  {
+    groupId: "128",
+    groupName: "128 Colors",
+    palettes: [
+      { id: "snes128", name: "Retro Console" },
+      { id: "gba128", name: "Retro Console" },
+      { id: "earth128", name: "Earth Tone" },
+      { id: "forest128", name: "Forest Canopy" },
+      { id: "neon128", name: "Neon Glow" },
+      { id: "ocean128", name: "Ocean" },
+      { id: "sunset128", name: "Sunset" },
+      { id: "vintage128", name: "Vintage Film" },
+    ],
+  },
+  {
+    groupId: "256",
+    groupName: "256 Colors",
+    palettes: [
+      { id: "apple2gs", name: "Retro PC" },
+      { id: "atarist256", name: "Retro PC" },
+      { id: "spectrum256", name: "Artistic" },
+      { id: "win256", name: "★ Windows 256" },
+      { id: "earth256", name: "Earth Tone" },
+      { id: "forest256", name: "Forest Canopy" },
+      { id: "neon256", name: "Neon Glow" },
+      { id: "ocean256", name: "Ocean" },
+      { id: "sunset256", name: "Sunset" },
+      { id: "vintage256", name: "Vintage Film" },
     ],
   },
 ];
@@ -156,16 +231,122 @@ export const PALETTES: Record<string, RGB[]> = {
   win256: generateWebSafePalette(),
 };
 
-// ─── Palette Name Lookup (shared, single source of truth) ───
-const paletteNameMap = new Map<string, string>([
-  ["original", "Full Color (Original)"],
-  ["win256", "8-bit Windows 256"],
-  ["monochrome", "2-bit Monochrome"],
-  ...PALETTE_GROUPS.flatMap((g) => g.palettes).map(
-    (p) => [p.id, p.name] as [string, string],
-  ),
-]);
+// ─── Palette Display Name Lookup ───
+// PALETTE_GROUPS.name은 테마 그룹핑용이므로, 개별 팔레트 표시 이름은 별도 정의
+const DISPLAY_NAMES: Record<string, string> = {
+  original: "Full Color (Original)",
+  win256: "8-bit Windows 256",
+  // Monochrome
+  monochrome: "Monochrome (B&W)",
+  sepia2: "Sepia Duo",
+  blue2: "Blueprint",
+  green2: "Terminal Green",
+  amber2: "Amber CRT",
+  red2: "Darkroom Red",
+  // Gameboy
+  dmg: "DMG Green",
+  pocket: "GB Pocket",
+  gb_warm: "GB Warm Amber",
+  gb_blue: "GB Blue",
+  gb_red: "GB Red",
+  gamewatch: "Game & Watch LCD",
+  // Retro Console
+  pico8: "PICO-8",
+  nes: "NES Standard",
+  gameboy_color: "GBC Color",
+  snes32: "SNES Natural",
+  mega32: "Mega Drive",
+  nes_full: "NES Full (45)",
+  snes_rpg: "SNES RPG (44)",
+  snes_bg: "SNES Background (48)",
+  neogeo_char: "NEO-GEO Character (49)",
+  snes128: "SNES Extended",
+  gba128: "GBA Natural",
+  // Retro PC
+  cga: "CGA Mode4",
+  ega: "IBM EGA",
+  msx: "MSX TMS9918",
+  pc98: "PC-98 Night",
+  c64_full: "Commodore 64",
+  vga64: "VGA Standard",
+  amiga64: "Amiga OCS",
+  retro_pc64: "Retro PC 64",
+  apple2gs: "Apple IIGS",
+  atarist256: "Atari ST",
+  // Artistic
+  arctic4: "Arctic",
+  autumn16: "Autumn Harvest",
+  retro32: "Retro Pop",
+  twilight32: "Twilight Sky",
+  watercolor48: "Watercolor (48)",
+  spectrum256: "Spectrum",
+  // Cyberpunk
+  cyberpunk16: "Cyberpunk City (48)",
+  synthwave48: "Synthwave (46)",
+};
 
 export function getPaletteName(id: string): string {
-  return paletteNameMap.get(id) ?? id;
+  if (DISPLAY_NAMES[id]) return DISPLAY_NAMES[id];
+  // Theme series: earth2 → "Earth Tone 2", neon64 → "Neon Glow 64"
+  for (const group of PALETTE_GROUPS) {
+    const p = group.palettes.find(pal => pal.id === id);
+    if (p) {
+      const colorCount = (PALETTES[id] || []).length;
+      return `${p.name} (${colorCount})`;
+    }
+  }
+  return id;
 }
+
+// ─── Theme-based palette grouping (auto-built from PALETTE_GROUPS) ───
+export interface PaletteTheme {
+  themeId: string;
+  themeName: string;
+  variants: { id: string; colorCount: number; groupName: string }[];
+}
+
+export const PALETTE_THEMES: PaletteTheme[] = (() => {
+  // Collect all palettes with their group info
+  const themeMap = new Map<string, { id: string; colorCount: number; groupName: string }[]>();
+
+  for (const group of PALETTE_GROUPS) {
+    for (const p of group.palettes) {
+      // Extract base theme name (remove color count suffixes like "(48)")
+      const themeName = p.name.replace(/\s*\(\d+\)\s*$/, '').trim();
+      if (!themeMap.has(themeName)) themeMap.set(themeName, []);
+      const colorCount = (PALETTES[p.id] || []).length;
+      themeMap.get(themeName)!.push({ id: p.id, colorCount, groupName: group.groupName });
+    }
+  }
+
+  // Build themes: only themes with 2+ variants get their own group
+  // Single-variant palettes go into a "Standalone" group
+  const themes: PaletteTheme[] = [];
+  const standalone: PaletteTheme['variants'] = [];
+
+  for (const [name, variants] of [...themeMap.entries()].sort((a, b) => a[0].localeCompare(b[0]))) {
+    // Sort variants by color count
+    variants.sort((a, b) => a.colorCount - b.colorCount);
+    if (variants.length >= 2) {
+      themes.push({
+        themeId: name.toLowerCase().replace(/[^a-z0-9]/g, '_'),
+        themeName: name,
+        variants,
+      });
+    } else {
+      standalone.push(...variants);
+    }
+  }
+
+  // Add standalone group at the end
+  if (standalone.length > 0) {
+    standalone.sort((a, b) => a.colorCount - b.colorCount);
+    themes.push({
+      themeId: '_standalone',
+      themeName: 'Standalone',
+      variants: standalone,
+    });
+  }
+
+  return themes;
+})();

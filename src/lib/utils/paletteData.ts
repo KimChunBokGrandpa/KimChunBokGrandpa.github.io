@@ -4,6 +4,62 @@
  * The "win256" palette is generated programmatically in palettes.ts.
  */
 
+/** HSL → RGB 변환 */
+function hslToRgb(h: number, s: number, l: number): [number, number, number] {
+  const c = (1 - Math.abs(2 * l - 1)) * s;
+  const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+  const m = l - c / 2;
+  let r = 0, g = 0, b = 0;
+  if (h < 60) { r = c; g = x; }
+  else if (h < 120) { r = x; g = c; }
+  else if (h < 180) { g = c; b = x; }
+  else if (h < 240) { g = x; b = c; }
+  else if (h < 300) { r = x; b = c; }
+  else { r = c; b = x; }
+  return [Math.round((r + m) * 255), Math.round((g + m) * 255), Math.round((b + m) * 255)];
+}
+
+/** RGB → hex string */
+function toHex(r: number, g: number, b: number): string {
+  return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+}
+
+/**
+ * 테마 기반 팔레트 제너레이터.
+ * hues: 테마의 주요 HSL 색상각 배열
+ * satRange: [min, max] 채도 범위
+ * count: 생성할 색상 수
+ * grayRatio: 그레이스케일 비율 (0~0.2)
+ */
+function generateThemePalette(
+  hues: number[],
+  satRange: [number, number],
+  count: number,
+  grayRatio = 0.12,
+): string[] {
+  const seen = new Set<string>();
+  const colors: string[] = [];
+  const grayCount = Math.max(4, Math.floor(count * grayRatio));
+  const colorCount = count - grayCount;
+  const stepsPerHue = Math.ceil(colorCount / hues.length);
+
+  for (const h of hues) {
+    for (let li = 0; li < stepsPerHue && colors.length < colorCount; li++) {
+      const l = 0.08 + (li / (stepsPerHue - 1)) * 0.82;
+      const s = satRange[0] + (satRange[1] - satRange[0]) * (0.5 + 0.5 * Math.sin(l * Math.PI));
+      const [r, g, b] = hslToRgb((h + li * 2) % 360, s, l);
+      const hex = toHex(r, g, b);
+      if (!seen.has(hex)) { seen.add(hex); colors.push(hex); }
+    }
+  }
+  for (let i = 0; i < grayCount; i++) {
+    const v = Math.round(i * 255 / Math.max(1, grayCount - 1));
+    const hex = toHex(v, v, v);
+    if (!seen.has(hex)) { seen.add(hex); colors.push(hex); }
+  }
+  return colors.slice(0, count);
+}
+
 export const PALETTE_HEX_DATA: Record<string, string[]> = {
   // ─── 2-Color Palettes ───
   monochrome: ["#000000", "#FFFFFF"],
@@ -21,17 +77,8 @@ export const PALETTE_HEX_DATA: Record<string, string[]> = {
   gb_red: ["#200000", "#701010", "#c82020", "#f0a0a0"],
   gamewatch: ["#101800", "#404800", "#a0b000", "#d8e890"],
   arctic4: ["#1B2838", "#4A8DB7", "#A8D8EA", "#F0F8FF"],
-  sunset4: ["#2D0A31", "#C62E46", "#F58A07", "#F9DC5C"],
-  pastel4: ["#F8B4D8", "#B8D8F8", "#D0F0C0", "#FFF0D0"],
-  ocean4: ["#001830", "#003870", "#0078C0", "#60C8F0"],
 
-  // ─── 8-Color Palettes ───
   cga: ["#000000", "#555555", "#aaaaaa", "#ffffff", "#00aaaa", "#55ffff", "#aa00aa", "#ff55ff"],
-  pastel8: ["#F8B4C8", "#B8D4E8", "#C8E8B0", "#F8E8A0", "#E0C0F0", "#F0D0B0", "#FFFFFF", "#404040"],
-  earth8: ["#1A0E00", "#4A2800", "#8B5E3C", "#C8A882", "#2D4A1E", "#5C8A3C", "#7BA0C8", "#F0E8D8"],
-  neon8: ["#0A0A0A", "#FF0055", "#00FF88", "#00BBFF", "#FF8800", "#AA00FF", "#FFFF00", "#FFFFFF"],
-  vintage8: ["#2B2018", "#6B4830", "#A87850", "#D8B888", "#384828", "#607848", "#889078", "#E8E0D0"],
-  forest8: ["#0A1A08", "#1A3A10", "#2D6020", "#50A038", "#80D060", "#B8F090", "#4A3020", "#F0E8C0"],
 
   // ─── 16-Color Palettes ───
   pico8: [
@@ -64,24 +111,14 @@ export const PALETTE_HEX_DATA: Record<string, string[]> = {
     "#db6559", "#ff897d", "#ccc35e", "#ded087",
     "#3aa241", "#b766b5", "#cccccc", "#ffffff",
   ],
-  pastel16: [
-    "#F8B4C8", "#F8C8D8", "#B8D4E8", "#A0C8E8",
-    "#C8E8B0", "#B0E0A0", "#F8E8A0", "#F8D888",
-    "#E0C0F0", "#D0A8E8", "#F0D0B0", "#F0C098",
-    "#C0E8E0", "#A8E0D0", "#FFFFFF", "#404040",
-  ],
+
   autumn16: [
     "#1A0800", "#4A1800", "#883010", "#C85020",
     "#E88030", "#F8B050", "#F8D870", "#F8F0A0",
     "#2A3010", "#4A5820", "#708040", "#A0A060",
     "#382010", "#684028", "#C0B8A0", "#F0E8D8",
   ],
-  ocean16: [
-    "#001020", "#002040", "#003870", "#0058A0",
-    "#0080D0", "#20A8E8", "#60C8F0", "#A0E0F8",
-    "#004040", "#007060", "#00A088", "#40D0B0",
-    "#D0F0F0", "#F8F8FF", "#182830", "#304858",
-  ],
+
 
   // ─── 32-Color Palettes ───
   snes32: [
@@ -114,16 +151,7 @@ export const PALETTE_HEX_DATA: Record<string, string[]> = {
     "#aa00aa", "#cc44cc", "#ff00ff", "#ffaaff",
     "#181818", "#555555", "#aaaaaa", "#ffffff",
   ],
-  pastel32: [
-    "#F8B4C8", "#F8C8D8", "#F0A0B0", "#E88898",
-    "#B8D4E8", "#A0C8E8", "#88B0D8", "#6898C8",
-    "#C8E8B0", "#B0E0A0", "#98D088", "#78C068",
-    "#F8E8A0", "#F8D888", "#F8C870", "#E8B858",
-    "#E0C0F0", "#D0A8E8", "#C090D8", "#A870C0",
-    "#F0D0B0", "#F0C098", "#E0A878", "#D09060",
-    "#C0E8E0", "#A8E0D0", "#88D0C0", "#60B8A8",
-    "#FFFFFF", "#D0D0D0", "#808080", "#303030",
-  ],
+
   retro32: [
     "#000000", "#1A1A2E", "#16213E", "#0F3460",
     "#E94560", "#FF6B6B", "#FFA07A", "#FFD700",
@@ -216,20 +244,7 @@ export const PALETTE_HEX_DATA: Record<string, string[]> = {
     "#884400", "#442200", "#223344", "#445566",
     "#667788", "#8899aa", "#aabbcc", "#ccddee",
   ],
-  pastel48: [
-    "#F8B4C8", "#F8C8D8", "#F0A0B0", "#E88898",
-    "#FFC8E0", "#FFE0F0", "#B8D4E8", "#A0C8E8",
-    "#88B0D8", "#6898C8", "#C8E0F8", "#E0F0FF",
-    "#C8E8B0", "#B0E0A0", "#98D088", "#78C068",
-    "#D8F0C8", "#E8F8E0", "#F8E8A0", "#F8D888",
-    "#F8C870", "#E8B858", "#FFF0C0", "#FFF8E0",
-    "#E0C0F0", "#D0A8E8", "#C090D8", "#A870C0",
-    "#E8D0F8", "#F0E0FF", "#F0D0B0", "#F0C098",
-    "#E0A878", "#D09060", "#F8E0C8", "#FFF0E0",
-    "#C0E8E0", "#A8E0D0", "#88D0C0", "#60B8A8",
-    "#D0F0E8", "#E8F8F0", "#FFFFFF", "#E8E0E8",
-    "#D0C8D0", "#A0A0A8", "#686070", "#303030",
-  ],
+
   watercolor48: [
     "#F5C6C6", "#E8A0A0", "#D07878", "#B85050",
     "#F8D8D8", "#FCE8E8", "#C6D8F0", "#A0B8E0",
@@ -258,4 +273,306 @@ export const PALETTE_HEX_DATA: Record<string, string[]> = {
     "#FFFFFF", "#F0E0FF", "#E0F0FF", "#D0D0E8",
     "#A0A0C0", "#606080",
   ],
+
+  // ─── 64-Color Palettes ───
+  c64_full: [
+    "#000000", "#FFFFFF", "#880000", "#AAFFEE",
+    "#CC44CC", "#00CC55", "#0000AA", "#EEEE77",
+    "#DD8855", "#664400", "#FF7777", "#333333",
+    "#777777", "#AAFF66", "#0088FF", "#BBBBBB",
+  ],
+  vga64: [
+    "#000000", "#0000AA", "#00AA00", "#00AAAA",
+    "#AA0000", "#AA00AA", "#AA5500", "#AAAAAA",
+    "#555555", "#5555FF", "#55FF55", "#55FFFF",
+    "#FF5555", "#FF55FF", "#FFFF55", "#FFFFFF",
+    "#000000", "#141414", "#202020", "#2C2C2C",
+    "#383838", "#444444", "#505050", "#616161",
+    "#717171", "#818181", "#919191", "#A1A1A1",
+    "#B6B6B6", "#CACACA", "#E2E2E2", "#FFFFFF",
+    "#0000FF", "#4100FF", "#7D00FF", "#BE00FF",
+    "#FF00FF", "#FF00BE", "#FF007D", "#FF0041",
+    "#FF0000", "#FF4100", "#FF7D00", "#FFBE00",
+    "#FFFF00", "#BEFF00", "#7DFF00", "#41FF00",
+    "#00FF00", "#00FF41", "#00FF7D", "#00FFBE",
+    "#00FFFF", "#00BEFF", "#007DFF", "#0041FF",
+    "#7D7DFF", "#9E7DFF", "#BE7DFF", "#DF7DFF",
+    "#FF7DFF", "#FF7DDF", "#FF7DBE", "#FF7D9E",
+  ],
+  amiga64: [
+    "#000000", "#111111", "#222222", "#333333",
+    "#444444", "#555555", "#666666", "#777777",
+    "#888888", "#999999", "#AAAAAA", "#BBBBBB",
+    "#CCCCCC", "#DDDDDD", "#EEEEEE", "#FFFFFF",
+    "#FF0000", "#DD0000", "#BB0000", "#990000",
+    "#770000", "#550000", "#330000", "#110000",
+    "#00FF00", "#00DD00", "#00BB00", "#009900",
+    "#007700", "#005500", "#003300", "#001100",
+    "#0000FF", "#0000DD", "#0000BB", "#000099",
+    "#000077", "#000055", "#000033", "#000011",
+    "#FFFF00", "#FF8800", "#FF4400", "#FF0044",
+    "#FF0088", "#FF00CC", "#CC00FF", "#8800FF",
+    "#4400FF", "#0044FF", "#0088FF", "#00CCFF",
+    "#00FFCC", "#00FF88", "#00FF44", "#44FF00",
+    "#88FF00", "#CCFF00", "#FFD800", "#FFB000",
+    "#FF9000", "#FF7000", "#FF5000", "#FF3000",
+  ],
+  retro_pc64: [
+    "#000000", "#0000A8", "#00A800", "#00A8A8",
+    "#A80000", "#A800A8", "#A85400", "#A8A8A8",
+    "#545454", "#5454FC", "#54FC54", "#54FCFC",
+    "#FC5454", "#FC54FC", "#FCFC54", "#FCFCFC",
+    "#000054", "#0054A8", "#00A854", "#00FCFC",
+    "#540054", "#5454A8", "#54A854", "#54FCFC",
+    "#A80054", "#A854A8", "#A8A854", "#A8FCFC",
+    "#FC0054", "#FC54A8", "#FCA854", "#FCFCFC",
+    "#002800", "#005400", "#008000", "#00AB00",
+    "#00D500", "#00FF00", "#280000", "#540000",
+    "#800000", "#AB0000", "#D50000", "#FF0000",
+    "#000028", "#000054", "#000080", "#0000AB",
+    "#0000D5", "#0000FF", "#282828", "#404040",
+    "#585858", "#707070", "#909090", "#B0B0B0",
+    "#C8C8C8", "#E0E0E0", "#F0F0F0", "#FFFFFF",
+    "#FFD800", "#FFA800", "#FF7800", "#FF4800",
+  ],
+
+  // ─── 128-Color Palettes ───
+  snes128: [
+    // grayscale ramp (16)
+    "#000000", "#111111", "#222222", "#333333",
+    "#444444", "#555555", "#666666", "#777777",
+    "#888888", "#999999", "#AAAAAA", "#BBBBBB",
+    "#CCCCCC", "#DDDDDD", "#EEEEEE", "#FFFFFF",
+    // reds (16)
+    "#1A0000", "#330000", "#4D0000", "#660000",
+    "#800000", "#990000", "#B30000", "#CC0000",
+    "#E60000", "#FF0000", "#FF3333", "#FF6666",
+    "#FF8080", "#FF9999", "#FFB3B3", "#FFCCCC",
+    // oranges (16)
+    "#1A0D00", "#331A00", "#4D2600", "#663300",
+    "#804000", "#994D00", "#B35900", "#CC6600",
+    "#E67300", "#FF8000", "#FF9933", "#FFB366",
+    "#FFCC80", "#FFD999", "#FFE6B3", "#FFF0CC",
+    // yellows (16)
+    "#1A1A00", "#333300", "#4D4D00", "#666600",
+    "#808000", "#999900", "#B3B300", "#CCCC00",
+    "#E6E600", "#FFFF00", "#FFFF33", "#FFFF66",
+    "#FFFF80", "#FFFF99", "#FFFFB3", "#FFFFCC",
+    // greens (16)
+    "#001A00", "#003300", "#004D00", "#006600",
+    "#008000", "#009900", "#00B300", "#00CC00",
+    "#00E600", "#00FF00", "#33FF33", "#66FF66",
+    "#80FF80", "#99FF99", "#B3FFB3", "#CCFFCC",
+    // cyans (16)
+    "#001A1A", "#003333", "#004D4D", "#006666",
+    "#008080", "#009999", "#00B3B3", "#00CCCC",
+    "#00E6E6", "#00FFFF", "#33FFFF", "#66FFFF",
+    "#80FFFF", "#99FFFF", "#B3FFFF", "#CCFFFF",
+    // blues (16)
+    "#00001A", "#000033", "#00004D", "#000066",
+    "#000080", "#000099", "#0000B3", "#0000CC",
+    "#0000E6", "#0000FF", "#3333FF", "#6666FF",
+    "#8080FF", "#9999FF", "#B3B3FF", "#CCCCFF",
+    // purples (16)
+    "#1A001A", "#330033", "#4D004D", "#660066",
+    "#800080", "#990099", "#B300B3", "#CC00CC",
+    "#E600E6", "#FF00FF", "#FF33FF", "#FF66FF",
+    "#FF80FF", "#FF99FF", "#FFB3FF", "#FFCCFF",
+  ],
+  gba128: [
+    // grays (8)
+    "#000000", "#242424", "#484848", "#6D6D6D",
+    "#919191", "#B6B6B6", "#DADADA", "#FFFFFF",
+    // skin/earth tones (16)
+    "#3D1C00", "#5A2D0E", "#7A4420", "#9B6230",
+    "#BA8348", "#D4A76A", "#E8C88E", "#F5E0B0",
+    "#2B1B0E", "#4A3520", "#6B5038", "#8E6E52",
+    "#B08E70", "#CEB090", "#E4D0B2", "#F4E8D4",
+    // reds-oranges (16)
+    "#400000", "#680000", "#8B0000", "#B22222",
+    "#CD3333", "#DC4E4E", "#EA6D6D", "#F5A0A0",
+    "#6B2600", "#8B4513", "#A0522D", "#B8742E",
+    "#CD853F", "#DAA06D", "#E8BC8A", "#F5D5B0",
+    // greens (16)
+    "#002000", "#003800", "#005200", "#006E00",
+    "#008B00", "#00AA00", "#2BBD2B", "#55D055",
+    "#193000", "#264D00", "#3A6B00", "#4E8B00",
+    "#66AA00", "#88CC22", "#AADD55", "#CCEE88",
+    // blues (16)
+    "#000040", "#000060", "#000088", "#0000AA",
+    "#0000CC", "#2222DD", "#4444EE", "#7777FF",
+    "#001830", "#002850", "#003C78", "#0052A0",
+    "#006ACC", "#3388DD", "#66AAEE", "#99CCFF",
+    // purples (16)
+    "#200028", "#380040", "#520060", "#6E0088",
+    "#8800AA", "#AA22CC", "#CC44EE", "#DD88FF",
+    "#280020", "#480038", "#680052", "#880070",
+    "#AA0088", "#CC22AA", "#DD55CC", "#EE88DD",
+    // warm accents (16)
+    "#FF0055", "#FF2277", "#FF4499", "#FF66BB",
+    "#FF88CC", "#FFAADD", "#FFCCEE", "#FFEEFF",
+    "#FF6600", "#FF8822", "#FFAA44", "#FFBB66",
+    "#FFCC88", "#FFDDAA", "#FFEECC", "#FFF5E0",
+    // cyans & teals (16)
+    "#002828", "#004040", "#006060", "#008080",
+    "#00A0A0", "#00C0C0", "#33D8D8", "#66EEEE",
+    "#003838", "#005858", "#007878", "#009898",
+    "#00B8B8", "#44D0D0", "#88E8E8", "#BBFFFF",
+    // yellows (8)
+    "#4D4D00", "#808000", "#B3B300", "#CCCC00",
+    "#E6E600", "#FFFF33", "#FFFF88", "#FFFFCC",
+  ],
+
+  // ─── 256-Color Palettes ───
+  apple2gs: (() => {
+    // Apple IIGS-inspired 256-color palette: 16 hue ramps × 16 brightness levels
+    const colors: string[] = [];
+    const hues = [
+      [255,0,0],[255,80,0],[255,160,0],[255,220,0],
+      [200,255,0],[0,255,0],[0,255,128],[0,255,255],
+      [0,160,255],[0,80,255],[80,0,255],[160,0,255],
+      [255,0,255],[255,0,160],[255,0,80],[192,192,192],
+    ];
+    for (const [hr,hg,hb] of hues) {
+      for (let i = 0; i < 16; i++) {
+        const t = i / 15;
+        colors.push(toHex(Math.round(hr * t), Math.round(hg * t), Math.round(hb * t)));
+      }
+    }
+    return colors;
+  })(),
+  atarist256: (() => {
+    // Atari ST-style palette: 8 levels per channel (8×8×4 = 256)
+    const colors: string[] = [];
+    const seen = new Set<string>();
+    for (let r = 0; r < 8; r++) {
+      for (let g = 0; g < 8; g++) {
+        for (let b = 0; b < 4; b++) {
+          const rv = Math.round(r * 255 / 7);
+          const gv = Math.round(g * 255 / 7);
+          const bv = Math.round(b * 255 / 3);
+          const hex = toHex(rv, gv, bv);
+          if (!seen.has(hex)) { seen.add(hex); colors.push(hex); }
+        }
+      }
+    }
+    // Fill remaining slots with interpolated grays
+    for (let i = colors.length; i < 256; i++) {
+      const v = Math.round((i - colors.length) * 255 / (256 - colors.length));
+      colors.push(toHex(v, v, v));
+    }
+    return colors;
+  })(),
+  spectrum256: (() => {
+    // Full spectrum with smooth gradients: 256 evenly distributed hues
+    const colors: string[] = [];
+    // 200 hue-based colors (full saturation, brightness variations)
+    for (let i = 0; i < 200; i++) {
+      const h = (i / 200) * 360;
+      const s = 1;
+      const l = 0.15 + (i % 10) * 0.07;
+      const [r, g, b] = hslToRgb(h, s, l);
+      colors.push(toHex(r, g, b));
+    }
+    // 32 pastel tones
+    for (let i = 0; i < 32; i++) {
+      const h = (i / 32) * 360;
+      const [r, g, b] = hslToRgb(h, 0.5, 0.75);
+      colors.push(toHex(r, g, b));
+    }
+    // 24 grayscale
+    for (let i = 0; i < 24; i++) {
+      const v = Math.round(i * 255 / 23);
+      colors.push(toHex(v, v, v));
+    }
+    return colors;
+  })(),
+
+  // ══════════════════════════════════════════════════
+  // ═══ UNIFIED THEME SERIES (consistent HSL hues) ═══
+  // ══════════════════════════════════════════════════
+  //
+  // 각 테마의 핵심 hue를 공유하여 2색→256색 전체에서 일관된 색감을 보장합니다.
+  // 색상수가 적을수록 핵심 hue만 사용하고, 많을수록 보조 hue가 추가됩니다.
+
+  // ─── Earth Tone Series ───
+  // 핵심 hue: 20(적갈), 30(갈색), 40(황갈), 55(올리브), 75(녹갈)
+  earth2:   generateThemePalette([30, 45], [0.3, 0.6], 2),
+  earth4:   generateThemePalette([25, 35, 50], [0.3, 0.6], 4),
+  earth8:   generateThemePalette([20, 30, 40, 55], [0.3, 0.6], 8),
+  earth16:  generateThemePalette([20, 30, 40, 55, 75], [0.3, 0.6], 16),
+  earth32:  generateThemePalette([20, 30, 40, 55, 75, 100], [0.3, 0.6], 32),
+  earth48:  generateThemePalette([20, 30, 40, 55, 75, 100], [0.3, 0.6], 48),
+  earth64:  generateThemePalette([15, 25, 35, 45, 55, 70, 90, 115], [0.25, 0.6], 64),
+  earth128: generateThemePalette([10, 20, 28, 35, 42, 50, 60, 75, 90, 110, 130], [0.2, 0.55], 128),
+  earth256: generateThemePalette([8, 15, 20, 25, 30, 35, 40, 48, 55, 65, 75, 90, 105, 120, 140], [0.15, 0.5], 256),
+
+  // ─── Neon Glow Series ───
+  // 핵심 hue: 전 스펙트럼 (0~330), 고채도
+  neon2:   generateThemePalette([330, 160], [0.9, 1.0], 2, 0.08),
+  neon4:   generateThemePalette([330, 160, 210], [0.9, 1.0], 4, 0.08),
+  neon8:   generateThemePalette([0, 60, 120, 210, 270, 330], [0.9, 1.0], 8, 0.08),
+  neon16:  generateThemePalette([0, 30, 60, 120, 180, 270, 300, 330], [0.9, 1.0], 16, 0.08),
+  neon32:  generateThemePalette([0, 30, 60, 120, 180, 210, 270, 300, 330], [0.9, 1.0], 32, 0.08),
+  neon48:  generateThemePalette([0, 30, 60, 120, 180, 210, 270, 300, 330], [0.9, 1.0], 48, 0.08),
+  neon64:  generateThemePalette([0, 25, 50, 75, 120, 160, 200, 240, 280, 320], [0.85, 1.0], 64, 0.08),
+  neon128: generateThemePalette([0, 20, 40, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330], [0.8, 1.0], 128, 0.06),
+  neon256: generateThemePalette([0, 15, 30, 45, 60, 80, 100, 120, 145, 170, 195, 220, 245, 270, 295, 320, 345], [0.75, 1.0], 256, 0.06),
+
+  // ─── Ocean Series ───
+  // 핵심 hue: 185(시안), 200(하늘), 215(코발트), 230(남색), 245(짙은남)
+  ocean2:   generateThemePalette([200, 220], [0.5, 0.85], 2),
+  ocean4:   generateThemePalette([195, 210, 230], [0.5, 0.85], 4),
+  ocean8:   generateThemePalette([190, 205, 220, 240], [0.5, 0.85], 8),
+  ocean16:  generateThemePalette([185, 200, 215, 230, 245], [0.5, 0.85], 16),
+  ocean32:  generateThemePalette([185, 195, 205, 215, 225, 235, 245], [0.5, 0.85], 32),
+  ocean48:  generateThemePalette([185, 195, 205, 215, 225, 235, 245], [0.5, 0.85], 48),
+  ocean64:  generateThemePalette([180, 190, 200, 210, 220, 230, 240, 250], [0.45, 0.85], 64),
+  ocean128: generateThemePalette([175, 185, 192, 200, 208, 216, 224, 232, 240, 248], [0.4, 0.8], 128),
+  ocean256: generateThemePalette([170, 178, 185, 192, 198, 205, 212, 218, 225, 232, 238, 245, 252], [0.35, 0.8], 256),
+
+  // ─── Sunset Series ───
+  // 핵심 hue: 340(마젠타), 0(빨강), 20(주황), 40(황금), 300(보라)
+  sunset2:   generateThemePalette([350, 30], [0.6, 0.9], 2),
+  sunset4:   generateThemePalette([340, 10, 35], [0.6, 0.9], 4),
+  sunset8:   generateThemePalette([330, 350, 15, 40], [0.6, 0.9], 8),
+  sunset16:  generateThemePalette([320, 340, 0, 20, 40, 50], [0.6, 0.9], 16),
+  sunset32:  generateThemePalette([0, 10, 20, 30, 40, 50, 280, 300, 320, 340], [0.6, 0.9], 32),
+  sunset48:  generateThemePalette([0, 10, 20, 30, 40, 50, 280, 300, 320, 340], [0.6, 0.9], 48),
+  sunset64:  generateThemePalette([350, 0, 10, 20, 30, 40, 50, 60, 280, 300, 320, 340], [0.55, 0.9], 64),
+  sunset128: generateThemePalette([345, 355, 5, 15, 25, 35, 45, 55, 270, 285, 300, 315, 330], [0.5, 0.85], 128),
+  sunset256: generateThemePalette([340, 348, 355, 3, 10, 18, 25, 32, 40, 48, 56, 265, 278, 290, 305, 318, 335], [0.45, 0.85], 256),
+
+  // ─── Vintage Film Series ───
+  // 핵심 hue: 20(세피아), 30(갈색), 40(카키), 80(올리브그린), 낮은 채도
+  vintage2:   generateThemePalette([25, 40], [0.15, 0.4], 2),
+  vintage4:   generateThemePalette([20, 35, 50], [0.15, 0.4], 4),
+  vintage8:   generateThemePalette([20, 30, 40, 80], [0.15, 0.4], 8),
+  vintage16:  generateThemePalette([20, 30, 40, 50, 80, 120], [0.15, 0.4], 16),
+  vintage32:  generateThemePalette([20, 30, 40, 50, 80, 120, 200], [0.15, 0.4], 32),
+  vintage48:  generateThemePalette([20, 30, 40, 50, 80, 120, 200], [0.15, 0.4], 48),
+  vintage64:  generateThemePalette([15, 25, 35, 45, 55, 80, 110, 190], [0.12, 0.38], 64),
+  vintage128: generateThemePalette([10, 20, 28, 35, 42, 50, 60, 80, 100, 130, 180], [0.1, 0.35], 128),
+  vintage256: generateThemePalette([8, 15, 22, 28, 34, 40, 48, 56, 70, 85, 100, 120, 150, 180, 210], [0.08, 0.32], 256),
+
+  // ─── Forest Canopy Series ───
+  // 핵심 hue: 80(연두), 100(녹색), 120(짙은녹), 140(청록), 160(에메랄드)
+  forest2:   generateThemePalette([100, 130], [0.4, 0.7], 2),
+  forest4:   generateThemePalette([90, 115, 140], [0.4, 0.7], 4),
+  forest8:   generateThemePalette([85, 105, 125, 150], [0.4, 0.7], 8),
+  forest16:  generateThemePalette([80, 100, 120, 140, 160], [0.4, 0.7], 16),
+  forest32:  generateThemePalette([80, 95, 110, 125, 140, 155, 170], [0.4, 0.7], 32),
+  forest48:  generateThemePalette([80, 95, 110, 125, 140, 155, 170], [0.4, 0.7], 48),
+  forest64:  generateThemePalette([75, 88, 100, 112, 125, 138, 150, 165], [0.35, 0.7], 64),
+  forest128: generateThemePalette([70, 82, 93, 105, 115, 125, 135, 148, 160, 175], [0.3, 0.65], 128),
+  forest256: generateThemePalette([65, 75, 85, 95, 105, 112, 120, 128, 138, 148, 158, 170, 185], [0.25, 0.65], 256),
+
+  // ─── Pastel Dream Series ───
+  // 핵심 hue: 전 스펙트럼, 고명도 / 중간 채도
+  pastel4:   generateThemePalette([330, 210, 120], [0.4, 0.65], 4, 0.05),
+  pastel8:   generateThemePalette([330, 210, 120, 50], [0.4, 0.65], 8, 0.08),
+  pastel16:  generateThemePalette([330, 270, 210, 150, 90, 30], [0.4, 0.65], 16, 0.08),
+  pastel32:  generateThemePalette([330, 290, 250, 210, 170, 130, 90, 50], [0.4, 0.65], 32, 0.08),
+  pastel48:  generateThemePalette([330, 300, 270, 240, 210, 180, 150, 120, 90, 50], [0.4, 0.65], 48, 0.08),
 };
+

@@ -21,7 +21,7 @@ function loadSavedLayout(): Record<string, SavedLayout> | null {
   } catch { return null; }
 }
 
-function saveLayout(wins: Record<string, WindowState>) {
+function saveLayout(wins: Record<WindowId, WindowState>) {
   try {
     const data: Record<string, SavedLayout> = {};
     for (const id of WINDOW_IDS) {
@@ -38,7 +38,7 @@ function saveLayout(wins: Record<string, WindowState>) {
 export function createWindowStore() {
   const saved = loadSavedLayout();
 
-  let wins = $state<Record<string, WindowState>>({
+  let wins = $state<Record<WindowId, WindowState>>({
     settings: {
       mode: "windowed",
       x: saved?.settings?.x ?? 30,
