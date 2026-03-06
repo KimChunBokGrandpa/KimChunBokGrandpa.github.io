@@ -1,4 +1,4 @@
-import { PALETTES, type RGB } from "./palettes";
+import { PALETTES } from "./palettes";
 
 // Color Quantization & Pixelation Engine
 
@@ -10,8 +10,8 @@ const LEVELS = 1 << BITS;          // 32
 const SHIFT = 8 - BITS;            // 3 (256 → 32 매핑)
 const LUT_SIZE = LEVELS ** 3;      // 32,768
 
-// 팔레트별 LUT 캐시: Uint32Array (packed RGBA) + RGB 객체 배열
-const lutCache = new Map<string, { packed: Uint32Array; colors: RGB[] }>();
+// 팔레트별 LUT 캐시: Uint32Array (packed RGBA)
+const lutCache = new Map<string, Uint32Array>();
 
 // Endianness check for Uint32Array color packing (computed once at module load)
 const IS_LITTLE_ENDIAN =
@@ -21,21 +21,20 @@ const IS_LITTLE_ENDIAN =
  * Weighted Euclidean distance — accounts for human color perception.
  * Green channel has the highest weight (human eyes are most sensitive to green).
  */
-function colorDistance(c1: RGB, r: number, g: number, b: number): number {
-  const dr = c1.r - r;
-  const dg = c1.g - g;
-  const db = c1.b - b;
+function colorDistance(cr: number, cg: number, cb: number, r: number, g: number, b: number): number {
+  const dr = cr - r;
+  const dg = cg - g;
+  const db = cb - b;
   return 2 * dr * dr + 4 * dg * dg + 3 * db * db;
 }
 
 /** 팔레트별 LUT를 최초 1회 빌드 */
-function buildLut(paletteName: string): { packed: Uint32Array; colors: RGB[] } {
+function buildLut(paletteName: string): Uint32Array {
   const existing = lutCache.get(paletteName);
   if (existing) return existing;
 
   const palette = PALETTES[paletteName] || PALETTES["win256"];
   const packed = new Uint32Array(LUT_SIZE);
-  const colors: RGB[] = new Array(LUT_SIZE);
 
   for (let ri = 0; ri < LEVELS; ri++) {
     // 양자화 대표값: 구간 중앙값 (0→3, 1→11, ... 31→251)
@@ -49,13 +48,13 @@ function buildLut(paletteName: string): { packed: Uint32Array; colors: RGB[] } {
         let minDist = Infinity;
         let nearestIdx = 0;
         for (let pi = 0; pi < palette.length; pi++) {
-          const d = colorDistance(palette[pi], r, g, b);
+          const c = palette[pi];
+          const d = colorDistance(c.r, c.g, c.b, r, g, b);
           if (d === 0) { nearestIdx = pi; break; }
           if (d < minDist) { minDist = d; nearestIdx = pi; }
         }
 
         const c = palette[nearestIdx];
-        colors[idx] = c;
         packed[idx] = IS_LITTLE_ENDIAN
           ? (255 << 24) | (c.b << 16) | (c.g << 8) | c.r
           : (c.r << 24) | (c.g << 16) | (c.b << 8) | 255;
@@ -63,9 +62,8 @@ function buildLut(paletteName: string): { packed: Uint32Array; colors: RGB[] } {
     }
   }
 
-  const lut = { packed, colors };
-  lutCache.set(paletteName, lut);
-  return lut;
+  lutCache.set(paletteName, packed);
+  return packed;
 }
 
 
@@ -98,7 +96,7 @@ export function applyPixelationAndPalette(
 
   // Pre-build LUT for palette (cached after first call)
   const usePalette = paletteName !== "original";
-  const lut = usePalette ? buildLut(paletteName) : null;
+  const packed = usePalette ? buildLut(paletteName) : null;
 
   for (let y = 0; y < height; y += effectivePixelSize) {
     for (let x = 0; x < width; x += effectivePixelSize) {
@@ -136,22 +134,20 @@ export function applyPixelationAndPalette(
       let packedColor: number;
       if (a < 128) {
         packedColor = 0;
-      } else if (lut) {
+      } else if (packed) {
         // Direct LUT lookup — O(1), no function call or object allocation
         const lutIdx = ((r >> SHIFT) << (BITS * 2)) | ((g >> SHIFT) << BITS) | (b >> SHIFT);
-        packedColor = lut.packed[lutIdx];
+        packedColor = packed[lutIdx];
       } else {
         packedColor = IS_LITTLE_ENDIAN
           ? (255 << 24) | (b << 16) | (g << 8) | r
           : (r << 24) | (g << 16) | (b << 8) | 255;
       }
 
-      // 3. Fill the entire block
+      // 3. Fill the entire block (row-wise fill is V8-optimized)
       for (let by = 0; by < blockH; by++) {
         const rowOffset = (y + by) * width;
-        for (let bx = 0; bx < blockW; bx++) {
-          outPixels32[rowOffset + x + bx] = packedColor;
-        }
+        outPixels32.fill(packedColor, rowOffset + x, rowOffset + x + blockW);
       }
     }
   }

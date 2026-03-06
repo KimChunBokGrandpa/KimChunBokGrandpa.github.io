@@ -30,18 +30,19 @@ export const applyGlitch = (
     const shiftAmount = Math.max(1, Math.floor(width * shiftPercent));
 
     for (let y = 0; y < height; y++) {
+      const rowBase = y * width * 4;
       for (let x = 0; x < width; x++) {
-        const i = getIndex(x, y);
+        const i = rowBase + x * 4;
 
         // Red channel shift (left)
         const rx = x - shiftAmount;
         if (rx >= 0) {
-          resultData[i] = data[getIndex(rx, y)];
+          resultData[i] = data[rowBase + rx * 4];
         }
         // Blue channel shift (right)
         const bx = x + shiftAmount;
         if (bx < width) {
-          resultData[i + 2] = data[getIndex(bx, y) + 2];
+          resultData[i + 2] = data[rowBase + bx * 4 + 2];
         }
       }
     }
@@ -62,8 +63,8 @@ export const applyGlitch = (
       const shiftX = Math.floor(randomValue(b + 2) * maxShift * 2) - maxShift;
       const targetX = Math.min(width - 1, Math.max(0, x + shiftX));
 
-      const i1 = getIndex(x, y);
-      const i2 = getIndex(targetX, y);
+      const i1 = (y * width + x) * 4;
+      const i2 = (y * width + targetX) * 4;
 
       // Noise or Swap
       if (randomValue(b + 3) > 0.5) {
@@ -104,10 +105,10 @@ export const applyGlitch = (
       if (totalShift !== 0) {
         for (let x = 0; x < width; x++) {
           const srcX = x + totalShift;
-          const i = getIndex(x, y);
+          const i = (y * width + x) * 4;
 
           if (srcX >= 0 && srcX < width) {
-            const srcI = getIndex(srcX, y);
+            const srcI = (y * width + srcX) * 4;
             resultData[i] = data[srcI];
             resultData[i + 1] = data[srcI + 1];
             resultData[i + 2] = data[srcI + 2];
@@ -138,9 +139,9 @@ export const applyGlitch = (
       for (let y = sliceY; y < sliceY + sliceH && y < height; y++) {
         for (let x = 0; x < width; x++) {
           const srcX = x + shiftX;
-          const idx = getIndex(x, y);
+          const idx = (y * width + x) * 4;
           if (srcX >= 0 && srcX < width) {
-            const srcI = getIndex(srcX, y);
+            const srcI = (y * width + srcX) * 4;
             resultData[idx] = data[srcI];
             resultData[idx + 1] = data[srcI + 1];
             resultData[idx + 2] = data[srcI + 2];

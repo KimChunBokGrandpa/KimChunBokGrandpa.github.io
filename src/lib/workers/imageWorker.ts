@@ -5,14 +5,9 @@ import {
 import { applyGlitch } from "../utils/glitchEngine";
 import { applyScaling } from "../utils/scaleEngine";
 import type {
-  GlitchType,
-  RenderMode,
   ImageWorkerMessage,
   ImageWorkerResponse,
 } from "../types";
-
-// Re-export for consumers that import from this file
-export type { ImageWorkerMessage, ImageWorkerResponse };
 
 
 onmessage = (e: MessageEvent<ImageWorkerMessage>) => {
@@ -59,7 +54,7 @@ onmessage = (e: MessageEvent<ImageWorkerMessage>) => {
       }
     }
 
-    if (renderMode && renderMode === "hqx") {
+    if (renderMode === "hqx") {
       processedData = applyScaling(processedData, renderMode);
     }
 

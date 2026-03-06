@@ -24,84 +24,100 @@ function toHex(r: number, g: number, b: number): string {
   return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
 }
 
-/**
- * 테마 기반 팔레트 제너레이터.
- * hues: 테마의 주요 HSL 색상각 배열
- * satRange: [min, max] 채도 범위
- * count: 생성할 색상 수
- * grayRatio: 그레이스케일 비율 (0~0.2)
- */
-function generateThemePalette(
-  hues: number[],
-  satRange: [number, number],
-  count: number,
-  grayRatio = 0,
-): string[] {
-  const seen = new Set<string>();
-  const colors: string[] = [];
-  const grayCount = Math.round(count * grayRatio);
-  const colorCount = count - grayCount;
-  const stepsPerHue = Math.ceil(colorCount / hues.length);
+/** RGB → HSL 변환 */
+function rgbToHsl(r: number, g: number, b: number): [number, number, number] {
+  r /= 255; g /= 255; b /= 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  let h = 0, s = 0;
+  const l = (max + min) / 2;
+  if (max !== min) {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    if (max === r) h = ((g - b) / d + (g < b ? 6 : 0)) * 60;
+    else if (max === g) h = ((b - r) / d + 2) * 60;
+    else h = ((r - g) / d + 4) * 60;
+  }
+  return [h, s, l];
+}
 
-  for (const h of hues) {
-    for (let li = 0; li < stepsPerHue && colors.length < colorCount; li++) {
-      const l = 0.08 + (li / (stepsPerHue - 1)) * 0.82;
-      const s = satRange[0] + (satRange[1] - satRange[0]) * (0.5 + 0.5 * Math.sin(l * Math.PI));
-      const [r, g, b] = hslToRgb((h + li * 2) % 360, s, l);
-      const hex = toHex(r, g, b);
-      if (!seen.has(hex)) { seen.add(hex); colors.push(hex); }
-    }
-  }
-  for (let i = 0; i < grayCount; i++) {
-    const v = Math.round(i * 255 / Math.max(1, grayCount - 1));
-    const hex = toHex(v, v, v);
-    if (!seen.has(hex)) { seen.add(hex); colors.push(hex); }
-  }
-  return colors.slice(0, count);
+/** hex → RGB 튜플 */
+function hexToRgbTuple(hex: string): [number, number, number] {
+  return [parseInt(hex.slice(1, 3), 16), parseInt(hex.slice(3, 5), 16), parseInt(hex.slice(5, 7), 16)];
 }
 
 /**
- * 파스텔/소프트 톤 팔레트 제너레이터.
- * 밝고 부드러운 색감을 생성하며, 강제 그레이스케일을 최소화합니다.
- * hues: 색상 계열의 HSL 색상각 배열
- * count: 생성할 총 색상 수
- * satRange: [min, max] 채도 범위 (기본: 파스텔 톤)
- * lightRange: [min, max] 명도 범위 (기본: 밝은 파스텔)
- * grayRatio: 틴티드 그레이 비율 (0이면 그레이 없음)
+ * 시드 색상 기반 팔레트 확장 제너레이터.
+ * 핸드크래프트된 시드 색상에서 H/S를 추출하여 테마 본연의 색감을
+ * 유지하면서 원하는 수의 색상으로 확장합니다.
+ * seeds: 테마를 정의하는 기본 색상 배열 (hex)
+ * count: 생성할 색상 수
+ * lightRange: [min, max] 명도 범위 (기본: 전체 범위, 파스텔: [0.50, 0.93])
  */
-function generatePastelPalette(
-  hues: number[],
-  count: number,
-  satRange: [number, number] = [0.30, 0.60],
-  lightRange: [number, number] = [0.50, 0.93],
-  grayRatio = 0.08,
-): string[] {
+function generateFromSeeds(seeds: string[], count: number, lightRange: [number, number] = [0.06, 0.92]): string[] {
+  // 시드 수 이하면 균등 샘플링
+  if (count <= seeds.length) {
+    if (count === seeds.length) return [...seeds];
+    const result: string[] = [];
+    for (let i = 0; i < count; i++) {
+      const idx = Math.round(i * (seeds.length - 1) / Math.max(1, count - 1));
+      result.push(seeds[idx]);
+    }
+    return result;
+  }
+
+  // 시드에서 유채색 H/S 추출 후 유사 색상 그룹핑 (10° 이내)
+  const rawHsl = seeds
+    .map(hex => { const [r, g, b] = hexToRgbTuple(hex); return rgbToHsl(r, g, b); })
+    .filter(([, s]) => s > 0.08);
+
+  const hueGroups: { h: number; s: number }[] = [];
+  for (const [h, s] of rawHsl) {
+    const existing = hueGroups.find(g => {
+      const diff = Math.abs(g.h - h);
+      return Math.min(diff, 360 - diff) < 10;
+    });
+    if (existing) { existing.s = Math.max(existing.s, s); }
+    else { hueGroups.push({ h, s }); }
+  }
+
+  // 무채색만 있는 경우 그레이스케일
+  if (hueGroups.length === 0) {
+    const colors: string[] = [];
+    for (let i = 0; i < count; i++) {
+      const v = Math.round(i * 255 / Math.max(1, count - 1));
+      colors.push(toHex(v, v, v));
+    }
+    return colors;
+  }
+
   const seen = new Set<string>();
   const colors: string[] = [];
-  const grayCount = Math.round(count * grayRatio);
-  const colorCount = count - grayCount;
-  const stepsPerHue = Math.ceil(colorCount / hues.length);
+  const stepsPerHue = Math.ceil(count / hueGroups.length);
 
-  for (const h of hues) {
-    for (let li = 0; li < stepsPerHue && colors.length < colorCount; li++) {
+  for (const { h, s } of hueGroups) {
+    for (let li = 0; li < stepsPerHue && colors.length < count; li++) {
       const t = stepsPerHue > 1 ? li / (stepsPerHue - 1) : 0.5;
       const l = lightRange[0] + t * (lightRange[1] - lightRange[0]);
-      const s = satRange[0] + (satRange[1] - satRange[0]) * (0.5 + 0.5 * Math.sin(t * Math.PI));
-      const [r, g, b] = hslToRgb((h + li * 1.5) % 360, s, l);
+      const adjS = s * (0.6 + 0.8 * Math.sin(t * Math.PI));
+      const [r, g, b] = hslToRgb(h, Math.min(1, adjS), l);
       const hex = toHex(r, g, b);
       if (!seen.has(hex)) { seen.add(hex); colors.push(hex); }
     }
   }
-  // 틴티드 그레이 (라벤더 틴트로 파스텔 테마에 어울리는 부드러운 그레이)
-  for (let i = 0; i < grayCount; i++) {
-    const t = grayCount > 1 ? i / (grayCount - 1) : 0.5;
-    const l = 0.25 + t * 0.73;
-    const [r, g, b] = hslToRgb(260, 0.04, l);
-    const hex = toHex(r, g, b);
-    if (!seen.has(hex)) { seen.add(hex); colors.push(hex); }
-  }
   return colors.slice(0, count);
 }
+
+// ─── Theme Seed Colors (핸드크래프트된 테마 기준 색상) ───
+const EARTH_SEEDS = ["#1A0E00", "#4A2800", "#8B5E3C", "#C8A882", "#2D4A1E", "#5C8A3C", "#7BA0C8", "#F0E8D8"];
+const NEON_SEEDS = ["#FF0055", "#00FF88", "#00BBFF", "#FF8800", "#AA00FF", "#FFFF00"];
+const OCEAN_SEEDS = [
+  "#001020", "#002040", "#003870", "#0058A0", "#0080D0", "#20A8E8", "#60C8F0", "#A0E0F8",
+  "#004040", "#007060", "#00A088", "#40D0B0", "#D0F0F0", "#F8F8FF", "#182830", "#304858",
+];
+const SUNSET_SEEDS = ["#2D0A31", "#C62E46", "#F58A07", "#F9DC5C"];
+const VINTAGE_SEEDS = ["#2B2018", "#6B4830", "#A87850", "#D8B888", "#384828", "#607848", "#889078", "#E8E0D0"];
+const FOREST_SEEDS = ["#0A1A08", "#1A3A10", "#2D6020", "#50A038", "#80D060", "#B8F090", "#4A3020", "#F0E8C0"];
+const PASTEL_SEEDS = ["#F8B4C8", "#B8D4E8", "#C8E8B0", "#F8E8A0", "#E0C0F0", "#F0D0B0", "#C0E8E0"];
 
 export const PALETTE_HEX_DATA: Record<string, string[]> = {
   // ─── 2-Color Palettes ───
@@ -532,84 +548,85 @@ export const PALETTE_HEX_DATA: Record<string, string[]> = {
   })(),
 
   // ══════════════════════════════════════════════════
-  // ═══ UNIFIED THEME SERIES (consistent HSL hues) ═══
+  // ═══ UNIFIED THEME SERIES (seed-based) ═══
   // ══════════════════════════════════════════════════
   //
-  // 각 테마의 핵심 hue를 공유하여 일관된 색감을 보장합니다.
+  // 핸드크래프트된 시드 색상에서 H/S를 추출하여 테마 본연의 색감을 유지합니다.
 
   // ─── Earth Tone Series ───
-  earth2:   generateThemePalette([30, 40], [0.3, 0.6], 2),
-  earth4:   generateThemePalette([20, 35, 50, 75], [0.3, 0.6], 4),
-  earth8:   generateThemePalette([20, 30, 40, 55], [0.3, 0.6], 8),
-  earth16:  generateThemePalette([20, 30, 40, 55, 75], [0.3, 0.6], 16),
-  earth32:  generateThemePalette([20, 30, 40, 55, 75, 100], [0.3, 0.6], 32),
-  earth48:  generateThemePalette([20, 30, 40, 55, 75, 100], [0.3, 0.6], 48),
-  earth64:  generateThemePalette([15, 25, 35, 45, 55, 70, 90, 115], [0.25, 0.6], 64),
-  earth128: generateThemePalette([10, 20, 28, 35, 42, 50, 60, 75, 90, 110, 130], [0.2, 0.55], 128),
-  earth256: generateThemePalette([8, 15, 20, 25, 30, 35, 40, 48, 55, 65, 75, 90, 105, 120, 140], [0.15, 0.5], 256),
+  earth2:   generateFromSeeds(EARTH_SEEDS, 2),
+  earth4:   generateFromSeeds(EARTH_SEEDS, 4),
+  earth8:   generateFromSeeds(EARTH_SEEDS, 8),
+  earth16:  generateFromSeeds(EARTH_SEEDS, 16),
+  earth32:  generateFromSeeds(EARTH_SEEDS, 32),
+  earth48:  generateFromSeeds(EARTH_SEEDS, 48),
+  earth64:  generateFromSeeds(EARTH_SEEDS, 64),
+  earth128: generateFromSeeds(EARTH_SEEDS, 128),
+  earth256: generateFromSeeds(EARTH_SEEDS, 256),
 
   // ─── Neon Glow Series ───
-  neon2:   generateThemePalette([300, 180], [0.9, 1.0], 2),
-  neon4:   generateThemePalette([0, 120, 240, 300], [0.9, 1.0], 4),
-  neon8:   generateThemePalette([0, 60, 120, 210, 270, 330], [0.9, 1.0], 8),
-  neon16:  generateThemePalette([0, 30, 60, 120, 180, 270, 300, 330], [0.9, 1.0], 16),
-  neon32:  generateThemePalette([0, 30, 60, 120, 180, 210, 270, 300, 330], [0.9, 1.0], 32),
-  neon48:  generateThemePalette([0, 30, 60, 120, 180, 210, 270, 300, 330], [0.9, 1.0], 48),
-  neon64:  generateThemePalette([0, 25, 50, 75, 120, 160, 200, 240, 280, 320], [0.85, 1.0], 64),
-  neon128: generateThemePalette([0, 20, 40, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330], [0.8, 1.0], 128),
-  neon256: generateThemePalette([0, 15, 30, 45, 60, 80, 100, 120, 145, 170, 195, 220, 245, 270, 295, 320, 345], [0.75, 1.0], 256),
+  neon2:   generateFromSeeds(NEON_SEEDS, 2),
+  neon4:   generateFromSeeds(NEON_SEEDS, 4),
+  neon8:   generateFromSeeds(NEON_SEEDS, 8),
+  neon16:  generateFromSeeds(NEON_SEEDS, 16),
+  neon32:  generateFromSeeds(NEON_SEEDS, 32),
+  neon48:  generateFromSeeds(NEON_SEEDS, 48),
+  neon64:  generateFromSeeds(NEON_SEEDS, 64),
+  neon128: generateFromSeeds(NEON_SEEDS, 128),
+  neon256: generateFromSeeds(NEON_SEEDS, 256),
 
   // ─── Ocean Series ───
-  ocean2:   generateThemePalette([200, 220], [0.5, 0.85], 2),
-  ocean4:   generateThemePalette([190, 210, 230, 245], [0.5, 0.85], 4),
-  ocean8:   generateThemePalette([190, 205, 220, 240], [0.5, 0.85], 8),
-  ocean16:  generateThemePalette([185, 200, 215, 230, 245], [0.5, 0.85], 16),
-  ocean32:  generateThemePalette([185, 195, 205, 215, 225, 235, 245], [0.5, 0.85], 32),
-  ocean48:  generateThemePalette([185, 195, 205, 215, 225, 235, 245], [0.5, 0.85], 48),
-  ocean64:  generateThemePalette([180, 190, 200, 210, 220, 230, 240, 250], [0.45, 0.85], 64),
-  ocean128: generateThemePalette([175, 185, 192, 200, 208, 216, 224, 232, 240, 248], [0.4, 0.8], 128),
-  ocean256: generateThemePalette([170, 178, 185, 192, 198, 205, 212, 218, 225, 232, 238, 245, 252], [0.35, 0.8], 256),
+  ocean2:   generateFromSeeds(OCEAN_SEEDS, 2),
+  ocean4:   generateFromSeeds(OCEAN_SEEDS, 4),
+  ocean8:   generateFromSeeds(OCEAN_SEEDS, 8),
+  ocean16:  generateFromSeeds(OCEAN_SEEDS, 16),
+  ocean32:  generateFromSeeds(OCEAN_SEEDS, 32),
+  ocean48:  generateFromSeeds(OCEAN_SEEDS, 48),
+  ocean64:  generateFromSeeds(OCEAN_SEEDS, 64),
+  ocean128: generateFromSeeds(OCEAN_SEEDS, 128),
+  ocean256: generateFromSeeds(OCEAN_SEEDS, 256),
 
   // ─── Sunset Series ───
-  sunset2:   generateThemePalette([350, 30], [0.6, 0.9], 2),
-  sunset4:   generateThemePalette([340, 0, 20, 45], [0.6, 0.9], 4),
-  sunset8:   generateThemePalette([330, 350, 15, 40], [0.6, 0.9], 8),
-  sunset16:  generateThemePalette([320, 340, 0, 20, 40, 50], [0.6, 0.9], 16),
-  sunset32:  generateThemePalette([0, 10, 20, 30, 40, 50, 280, 300, 320, 340], [0.6, 0.9], 32),
-  sunset48:  generateThemePalette([0, 10, 20, 30, 40, 50, 280, 300, 320, 340], [0.6, 0.9], 48),
-  sunset64:  generateThemePalette([350, 0, 10, 20, 30, 40, 50, 60, 280, 300, 320, 340], [0.55, 0.9], 64),
-  sunset128: generateThemePalette([345, 355, 5, 15, 25, 35, 45, 55, 270, 285, 300, 315, 330], [0.5, 0.85], 128),
-  sunset256: generateThemePalette([340, 348, 355, 3, 10, 18, 25, 32, 40, 48, 56, 265, 278, 290, 305, 318, 335], [0.45, 0.85], 256),
+  sunset2:   generateFromSeeds(SUNSET_SEEDS, 2),
+  sunset4:   generateFromSeeds(SUNSET_SEEDS, 4),
+  sunset8:   generateFromSeeds(SUNSET_SEEDS, 8),
+  sunset16:  generateFromSeeds(SUNSET_SEEDS, 16),
+  sunset32:  generateFromSeeds(SUNSET_SEEDS, 32),
+  sunset48:  generateFromSeeds(SUNSET_SEEDS, 48),
+  sunset64:  generateFromSeeds(SUNSET_SEEDS, 64),
+  sunset128: generateFromSeeds(SUNSET_SEEDS, 128),
+  sunset256: generateFromSeeds(SUNSET_SEEDS, 256),
 
   // ─── Vintage Film Series ───
-  vintage2:   generateThemePalette([30, 50], [0.15, 0.4], 2),
-  vintage4:   generateThemePalette([20, 35, 50, 80], [0.15, 0.4], 4),
-  vintage8:   generateThemePalette([20, 30, 40, 80], [0.15, 0.4], 8),
-  vintage16:  generateThemePalette([20, 30, 40, 50, 80, 120], [0.15, 0.4], 16),
-  vintage32:  generateThemePalette([20, 30, 40, 50, 80, 120, 200], [0.15, 0.4], 32),
-  vintage48:  generateThemePalette([20, 30, 40, 50, 80, 120, 200], [0.15, 0.4], 48),
-  vintage64:  generateThemePalette([15, 25, 35, 45, 55, 80, 110, 190], [0.12, 0.38], 64),
-  vintage128: generateThemePalette([10, 20, 28, 35, 42, 50, 60, 80, 100, 130, 180], [0.1, 0.35], 128),
-  vintage256: generateThemePalette([8, 15, 22, 28, 34, 40, 48, 56, 70, 85, 100, 120, 150, 180, 210], [0.08, 0.32], 256),
+  vintage2:   generateFromSeeds(VINTAGE_SEEDS, 2),
+  vintage4:   generateFromSeeds(VINTAGE_SEEDS, 4),
+  vintage8:   generateFromSeeds(VINTAGE_SEEDS, 8),
+  vintage16:  generateFromSeeds(VINTAGE_SEEDS, 16),
+  vintage32:  generateFromSeeds(VINTAGE_SEEDS, 32),
+  vintage48:  generateFromSeeds(VINTAGE_SEEDS, 48),
+  vintage64:  generateFromSeeds(VINTAGE_SEEDS, 64),
+  vintage128: generateFromSeeds(VINTAGE_SEEDS, 128),
+  vintage256: generateFromSeeds(VINTAGE_SEEDS, 256),
 
   // ─── Forest Canopy Series ───
-  forest2:   generateThemePalette([100, 140], [0.4, 0.7], 2),
-  forest4:   generateThemePalette([85, 110, 135, 160], [0.4, 0.7], 4),
-  forest8:   generateThemePalette([85, 105, 125, 150], [0.4, 0.7], 8),
-  forest16:  generateThemePalette([80, 100, 120, 140, 160], [0.4, 0.7], 16),
-  forest32:  generateThemePalette([80, 95, 110, 125, 140, 155, 170], [0.4, 0.7], 32),
-  forest48:  generateThemePalette([80, 95, 110, 125, 140, 155, 170], [0.4, 0.7], 48),
-  forest64:  generateThemePalette([75, 88, 100, 112, 125, 138, 150, 165], [0.35, 0.7], 64),
-  forest128: generateThemePalette([70, 82, 93, 105, 115, 125, 135, 148, 160, 175], [0.3, 0.65], 128),
-  forest256: generateThemePalette([65, 75, 85, 95, 105, 112, 120, 128, 138, 148, 158, 170, 185], [0.25, 0.65], 256),
+  forest2:   generateFromSeeds(FOREST_SEEDS, 2),
+  forest4:   generateFromSeeds(FOREST_SEEDS, 4),
+  forest8:   generateFromSeeds(FOREST_SEEDS, 8),
+  forest16:  generateFromSeeds(FOREST_SEEDS, 16),
+  forest32:  generateFromSeeds(FOREST_SEEDS, 32),
+  forest48:  generateFromSeeds(FOREST_SEEDS, 48),
+  forest64:  generateFromSeeds(FOREST_SEEDS, 64),
+  forest128: generateFromSeeds(FOREST_SEEDS, 128),
+  forest256: generateFromSeeds(FOREST_SEEDS, 256),
 
   // ─── Pastel Dream Series ───
-  pastel4:   generatePastelPalette([340, 215, 120, 50], 4, [0.40, 0.55], [0.75, 0.90], 0),
-  pastel8:   generatePastelPalette([340, 215, 120, 50, 280, 25], 8, [0.35, 0.60], [0.60, 0.93], 0),
-  pastel16:  generatePastelPalette([340, 215, 120, 50, 280, 25, 170], 16),
-  pastel32:  generatePastelPalette([340, 215, 120, 50, 280, 25, 170], 32),
-  pastel48:  generatePastelPalette([340, 215, 120, 50, 280, 25, 170], 48),
-  pastel64:  generatePastelPalette([340, 210, 120, 45, 280, 25, 170], 64),
-  pastel128: generatePastelPalette([340, 210, 120, 45, 280, 25, 170, 5, 190, 300], 128),
-  pastel256: generatePastelPalette([335, 345, 210, 220, 115, 125, 40, 55, 275, 285, 20, 30, 165, 175], 256),
+  pastel2:   generateFromSeeds(PASTEL_SEEDS, 2, [0.55, 0.93]),
+  pastel4:   generateFromSeeds(PASTEL_SEEDS, 4, [0.55, 0.93]),
+  pastel8:   generateFromSeeds(PASTEL_SEEDS, 8, [0.50, 0.93]),
+  pastel16:  generateFromSeeds(PASTEL_SEEDS, 16, [0.50, 0.93]),
+  pastel32:  generateFromSeeds(PASTEL_SEEDS, 32, [0.45, 0.93]),
+  pastel48:  generateFromSeeds(PASTEL_SEEDS, 48, [0.45, 0.93]),
+  pastel64:  generateFromSeeds(PASTEL_SEEDS, 64, [0.40, 0.93]),
+  pastel128: generateFromSeeds(PASTEL_SEEDS, 128, [0.40, 0.93]),
+  pastel256: generateFromSeeds(PASTEL_SEEDS, 256, [0.35, 0.93]),
 };

@@ -36,27 +36,18 @@ async function imageSrcToBlob(
 ): Promise<Blob> {
   const img = new Image();
   img.crossOrigin = "anonymous";
-  return new Promise<Blob>((resolve, reject) => {
+  return new Promise<HTMLCanvasElement>((resolve, reject) => {
     img.onload = () => {
       const c = document.createElement("canvas");
       c.width = img.naturalWidth;
       c.height = img.naturalHeight;
       const ctx = c.getContext("2d")!;
       ctx.drawImage(img, 0, 0);
-      const mime = MIME_MAP[format];
-      const q = format === "png" ? undefined : quality;
-      c.toBlob(
-        (blob) => {
-          if (blob) resolve(blob);
-          else reject(new Error("Failed to create blob"));
-        },
-        mime,
-        q,
-      );
+      resolve(c);
     };
     img.onerror = () => reject(new Error("Failed to load image for save"));
     img.src = src;
-  });
+  }).then((canvas) => canvasToBlob(canvas, format, quality));
 }
 
 /**

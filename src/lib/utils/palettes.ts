@@ -32,6 +32,7 @@ export const PALETTE_GROUPS: PaletteGroup[] = [
       { id: "sunset2", name: "Sunset" },
       { id: "vintage2", name: "Vintage Film" },
       { id: "forest2", name: "Forest Canopy" },
+      { id: "pastel2", name: "Pastel Dream" },
     ],
   },
   {
@@ -78,6 +79,7 @@ export const PALETTE_GROUPS: PaletteGroup[] = [
       { id: "nes", name: "Retro Console" },
       { id: "gameboy_color", name: "Retro Console" },
       { id: "autumn16", name: "Artistic" },
+      { id: "c64_full", name: "Retro PC" },
       { id: "earth16", name: "Earth Tone" },
       { id: "forest16", name: "Forest Canopy" },
       { id: "neon16", name: "Neon Glow" },
@@ -129,7 +131,6 @@ export const PALETTE_GROUPS: PaletteGroup[] = [
     groupId: "64",
     groupName: "64 Colors",
     palettes: [
-      { id: "c64_full", name: "Retro PC" },
       { id: "vga64", name: "Retro PC" },
       { id: "amiga64", name: "Retro PC" },
       { id: "retro_pc64", name: "Retro PC" },

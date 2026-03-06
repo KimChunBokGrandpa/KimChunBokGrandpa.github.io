@@ -14,12 +14,10 @@
     windows = [],
     onWindowClick,
     onWindowClose,
-    onStartClick,
   }: {
     windows: TaskbarWindowInfo[];
     onWindowClick: (id: WindowId) => void;
     onWindowClose: (id: WindowId) => void;
-    onStartClick?: () => void;
   } = $props();
 
   let timeString = $state('');
@@ -53,12 +51,6 @@
 
 <div class="taskbar">
   <div class="taskbar-left">
-    {#if onStartClick}
-      <button class="start-btn" onclick={onStartClick}>
-        <span class="start-logo">⊞</span><b>Start</b>
-      </button>
-      <div class="sep"></div>
-    {/if}
 
     {#each visibleWindows as win}
       <div
@@ -115,36 +107,6 @@
     min-width: 0;
     overflow: hidden;
     flex: 1;
-  }
-
-  /* ── Start Button ── */
-  .start-btn {
-    display: flex;
-    align-items: center;
-    gap: 3px;
-    padding: 0 8px;
-    font-size: 12px;
-    background: #c0c0c0;
-    border: none;
-    cursor: pointer;
-    flex-shrink: 0;
-    box-shadow: inset 1px 1px #fff, inset -1px -1px #0a0a0a,
-                inset 2px 2px #dfdfdf, inset -2px -2px grey;
-  }
-  .start-btn:active {
-    box-shadow: inset -1px -1px #fff, inset 1px 1px #0a0a0a,
-                inset -2px -2px #dfdfdf, inset 2px 2px grey;
-    padding: 2px 6px 0 10px;
-  }
-  .start-logo { font-size: 14px; color: #000080; }
-
-  .sep {
-    width: 2px;
-    align-self: stretch;
-    margin: 1px 1px;
-    background: #808080;
-    border-right: 1px solid #fff;
-    flex-shrink: 0;
   }
 
   /* ── Task Item (Win98 button style) ── */

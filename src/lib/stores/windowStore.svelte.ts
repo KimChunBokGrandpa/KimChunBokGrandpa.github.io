@@ -5,6 +5,7 @@ export const WINDOW_CONFIGS: WindowConfig[] = [
   { id: "preview", title: "Preview", icon: "🖼️" },
   { id: "settings", title: "Settings", icon: "⚙️" },
   { id: "gallery", title: "Palette Gallery", icon: "🎨" },
+  { id: "batch", title: "Batch", icon: "📦" },
 ];
 
 const WINDOW_IDS = WINDOW_CONFIGS.map((c) => c.id) as WindowId[];
@@ -65,6 +66,15 @@ export function createWindowStore() {
       h: saved?.gallery?.h ?? 460,
       z: 8,
       defaults: { x: 100, y: 60, w: 480, h: 460 },
+    },
+    batch: {
+      mode: "closed",
+      x: saved?.batch?.x ?? 150,
+      y: saved?.batch?.y ?? 40,
+      w: saved?.batch?.w ?? 520,
+      h: saved?.batch?.h ?? 440,
+      z: 7,
+      defaults: { x: 150, y: 40, w: 520, h: 440 },
     },
   });
 

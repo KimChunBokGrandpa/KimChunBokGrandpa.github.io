@@ -1,8 +1,8 @@
 import type {
+  ProcessingSettings,
   ImageWorkerMessage,
   ImageWorkerResponse,
-} from "../workers/imageWorker";
-import type { ProcessingSettings } from "../types";
+} from "../types";
 
 /**
  * Singleton-based image processing service.
@@ -130,6 +130,32 @@ class ImageProcessorService {
     });
   }
 
+  /**
+   * Handle images that need no worker processing (original settings).
+   * Still converts to blob URL for save compatibility.
+   */
+  private async processWithoutWorker(
+    imageSrc: string,
+    requestId: string,
+  ): Promise<string | null> {
+    const img = await this.loadImage(imageSrc);
+    if (this.currentRequestId !== requestId) return null;
+    const c = this.getOrCreateCanvas('early', img.width, img.height);
+    const ctx = c.getContext("2d")!;
+    ctx.drawImage(img, 0, 0);
+    this.lastCanvas = c;
+    return new Promise<string>((resolve, reject) => {
+      c.toBlob((blob) => {
+        if (blob) {
+          const url = this.replaceBlobUrl(URL.createObjectURL(blob));
+          resolve(url);
+        } else {
+          reject(new Error("Failed to create image blob"));
+        }
+      }, "image/png");
+    });
+  }
+
   async processImage(
     imageSrc: string,
     settings: ProcessingSettings,
@@ -142,8 +168,6 @@ class ImageProcessorService {
     this.currentRequestId = requestId;
 
     // Cancel previous pending requests — resolve as null (stale)
-    // Worker is kept alive; stale results will be discarded in onmessage
-    // because their IDs won't be in pendingResolvers anymore.
     if (this.pendingResolvers.size > 0) {
       for (const [, pending] of this.pendingResolvers) {
         pending.resolve(null);
@@ -151,29 +175,14 @@ class ImageProcessorService {
       this.pendingResolvers.clear();
     }
 
-    // Early return: no processing needed — still convert to data URL for save compatibility
+    // Early return: no processing needed
     if (
       settings.pixelSize <= 1 &&
       settings.palette === "original" &&
       settings.glitchFilters.length === 0 &&
       settings.renderMode !== "hqx"
     ) {
-      const img = await this.loadImage(imageSrc);
-      if (this.currentRequestId !== requestId) return null;
-      const c = this.getOrCreateCanvas('early', img.width, img.height);
-      const ctx = c.getContext("2d")!;
-      ctx.drawImage(img, 0, 0);
-      this.lastCanvas = c;
-      return new Promise<string>((resolve, reject) => {
-        c.toBlob((blob) => {
-          if (blob) {
-            const url = this.replaceBlobUrl(URL.createObjectURL(blob));
-            resolve(url);
-          } else {
-            reject(new Error("Failed to create image blob"));
-          }
-        }, "image/png");
-      });
+      return this.processWithoutWorker(imageSrc, requestId);
     }
 
     const img = await this.loadImage(imageSrc);

@@ -4,9 +4,11 @@
   import ImageDropZone from '$lib/components/ImageDropZone.svelte';
   import ControlPanel from '$lib/components/ControlPanel.svelte';
   import CrtDisplay from '$lib/components/CrtDisplay.svelte';
+  import BeforeAfterSlider from '$lib/components/BeforeAfterSlider.svelte';
   import Taskbar from '$lib/components/Taskbar.svelte';
   import PaletteGallery from '$lib/components/PaletteGallery.svelte';
   import MessageDialog from '$lib/components/MessageDialog.svelte';
+  import BatchProcessor from '$lib/components/BatchProcessor.svelte';
   import ToastNotification from '$lib/components/ToastNotification.svelte';
   import { createWindowStore, WINDOW_CONFIGS } from '$lib/stores/windowStore.svelte';
   import { createZoomPan } from '$lib/stores/zoomPanStore.svelte';
@@ -25,6 +27,9 @@
   let dialogMessage: string | null = $state(null);
   let dialogTitle = $state('Message');
   let toastMessage: string | null = $state(null);
+
+  // ─── Compare Mode ───
+  let compareMode = $state(false);
 
   // ─── Desktop icon selection ───
   let selectedIcon = $state<WindowId | null>(null);
@@ -50,7 +55,7 @@
   });
 
   // ─── Mobile split layout ───
-  const WINDOW_ORDER = ['preview', 'settings', 'gallery'] as const;
+  const WINDOW_ORDER = ['preview', 'settings', 'gallery', 'batch'] as const;
   let mobileVisibleIds = $derived(
     WINDOW_ORDER.filter(id => wm.wins[id].mode !== 'closed' && wm.wins[id].mode !== 'minimized')
   );
@@ -62,9 +67,9 @@
     const idx = mobileVisibleIds.indexOf(id as typeof WINDOW_ORDER[number]);
     if (idx === -1) return null;
     const count = mobileVisibleIds.length;
-    // 데스크탑 영역(100dvh - 30px)을 균등 분할
-    const slotHeight = `calc((100dvh - ${TASKBAR_HEIGHT}px) / ${count})`;
-    const slotTop = idx === 0 ? '0px' : `calc((100dvh - ${TASKBAR_HEIGHT}px) / ${count} * ${idx})`;
+    // 데스크탑 영역(100dvh - taskbar)을 균등 분할
+    const slotHeight = `calc((100dvh - var(--taskbar-h)) / ${count})`;
+    const slotTop = idx === 0 ? '0px' : `calc((100dvh - var(--taskbar-h)) / ${count} * ${idx})`;
     return { top: slotTop, height: slotHeight };
   }
 
@@ -252,20 +257,29 @@
         aria-label="Image preview"
       >
         {#if processedImageSrc}
-          <CrtDisplay active={processingSettings.crtEffect}>
-            {#snippet children()}
-              <img
-                bind:this={zp.previewImg}
-                src={processedImageSrc}
-                alt="Pixel Art - {getPaletteName(processingSettings.palette)}"
-                class="preview-image"
-                style:image-rendering={processingSettings.renderMode === 'bilinear' ? 'auto' : 'pixelated'}
-                style:transform="scale({zp.zoomLevel}) translate({zp.panX / zp.zoomLevel}px, {zp.panY / zp.zoomLevel}px)"
-                style:transition={zp.isPanning || zp.isTouchPanning ? 'none' : 'transform 0.1s ease'}
-                draggable="false"
-              />
-            {/snippet}
-          </CrtDisplay>
+          {#if compareMode && originalImageSrc}
+            <BeforeAfterSlider
+              originalSrc={originalImageSrc}
+              processedSrc={processedImageSrc}
+              imageRendering={processingSettings.renderMode === 'bilinear' ? 'auto' : 'pixelated'}
+              altText="Before/After: {getPaletteName(processingSettings.palette)}"
+            />
+          {:else}
+            <CrtDisplay active={processingSettings.crtEffect}>
+              {#snippet children()}
+                <img
+                  bind:this={zp.previewImg}
+                  src={processedImageSrc}
+                  alt="Pixel Art - {getPaletteName(processingSettings.palette)}"
+                  class="preview-image"
+                  style:image-rendering={processingSettings.renderMode === 'bilinear' ? 'auto' : 'pixelated'}
+                  style:transform="scale({zp.zoomLevel}) translate({zp.panX / zp.zoomLevel}px, {zp.panY / zp.zoomLevel}px)"
+                  style:transition={zp.isPanning || zp.isTouchPanning ? 'none' : 'transform 0.1s ease'}
+                  draggable="false"
+                />
+              {/snippet}
+            </CrtDisplay>
+          {/if}
           {#if isProcessing}
             <div class="processing-overlay">
               <div class="processing-indicator">
@@ -281,10 +295,19 @@
           <div class="zoom-controls">
             <button class="zoom-btn" onclick={(e) => { e.stopPropagation(); wm.openWindow('settings'); }} title="Open Settings">⚙️</button>
             <div class="zoom-sep"></div>
-            <button class="zoom-btn" onclick={zp.zoomIn} title="Zoom In">+</button>
-            <button class="zoom-btn zoom-label" onclick={zp.resetZoom} title="Reset Zoom">{Math.round(zp.zoomLevel * 100)}%</button>
-            <button class="zoom-btn" onclick={zp.zoomOut} title="Zoom Out">−</button>
-            <button class="zoom-btn" onclick={zp.zoomToFit} title="Fit to Window">⊡</button>
+            <button
+              class="zoom-btn"
+              class:compare-active={compareMode}
+              onclick={() => { compareMode = !compareMode; }}
+              title={compareMode ? 'Exit Compare Mode' : 'Compare Before/After'}
+            >{compareMode ? '🔀' : '⚖️'}</button>
+            <div class="zoom-sep"></div>
+            {#if !compareMode}
+              <button class="zoom-btn" onclick={zp.zoomIn} title="Zoom In">+</button>
+              <button class="zoom-btn zoom-label" onclick={zp.resetZoom} title="Reset Zoom">{Math.round(zp.zoomLevel * 100)}%</button>
+              <button class="zoom-btn" onclick={zp.zoomOut} title="Zoom Out">−</button>
+              <button class="zoom-btn" onclick={zp.zoomToFit} title="Fit to Window">⊡</button>
+            {/if}
           </div>
         {:else if originalImageSrc}
           <div class="initial-processing">
@@ -325,6 +348,31 @@
       />
     </Win98Window>
   {/if}
+
+  <!-- ═══ Batch Window ═══ -->
+  {#if wm.wins.batch.mode !== 'closed'}
+    <Win98Window
+      title="Batch Process"
+      icon="📦"
+      bind:mode={wm.wins.batch.mode}
+      bind:x={wm.wins.batch.x}
+      bind:y={wm.wins.batch.y}
+      bind:width={wm.wins.batch.w}
+      bind:height={wm.wins.batch.h}
+      zIndex={wm.wins.batch.z}
+      mobileSlot={getMobileSlot('batch')}
+      onClose={() => wm.close('batch')}
+      onFocus={() => wm.focusWindow('batch')}
+      onLayoutChange={wm.persistLayout}
+    >
+      <BatchProcessor
+        settings={processingSettings}
+        saveFormat={saveFormat}
+        saveQuality={saveQuality}
+        onError={(msg) => showDialog(msg, 'Error')}
+      />
+    </Win98Window>
+  {/if}
 </div>
 
 <!-- ═══ Taskbar ═══ -->
@@ -353,14 +401,15 @@
 
 <style>
   .desktop {
+    --taskbar-h: 30px;
     background-color: #008080;
     background-image:
       radial-gradient(circle at 20px 20px, rgba(255,255,255,0.03) 1px, transparent 1px),
       radial-gradient(circle at 10px 10px, rgba(0,0,0,0.04) 1px, transparent 1px);
     background-size: 20px 20px;
     width: 100vw;
-    height: calc(100vh - 30px);
-    height: calc(100dvh - 30px); /* prefer dvh for mobile browser chrome */
+    height: calc(100vh - var(--taskbar-h));
+    height: calc(100dvh - var(--taskbar-h));
     position: relative;
     overflow: hidden;
     box-sizing: border-box;
@@ -465,7 +514,6 @@
     transform-origin: center center;
   }
 
-
   /* ===== Settings Panel Body ===== */
   .settings-body {
     padding: 4px;
@@ -531,6 +579,11 @@
     min-width: 40px;
     font-size: 10px;
     font-weight: normal;
+  }
+  .compare-active {
+    background: #000080 !important;
+    color: #fff;
+    box-shadow: inset -1px -1px #fff, inset 1px 1px #0a0a0a;
   }
 
   /* ===== Processing Overlay ===== */
