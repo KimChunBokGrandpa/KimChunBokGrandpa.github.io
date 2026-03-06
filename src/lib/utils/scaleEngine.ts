@@ -23,29 +23,35 @@ export const applyScaling = (
   const targetH = sh * 2;
   const targetData = new Uint8ClampedArray(targetW * targetH * 4);
 
-  const getIdx = (x: number, y: number, w: number) => (y * w + x) * 4;
-
-  const getPixel = (x: number, y: number) => {
-    // Clamp to edge
+  // Returns the byte offset for pixel (x, y) in a buffer of width w.
+  // Clamps coordinates to the image edge.
+  const getIdx = (x: number, y: number): number => {
     x = Math.max(0, Math.min(sw - 1, x));
     y = Math.max(0, Math.min(sh - 1, y));
-    const i = getIdx(x, y, sw);
-    return [data[i], data[i + 1], data[i + 2], data[i + 3]];
+    return (y * sw + x) * 4;
   };
 
-  const isSameColor = (p1: number[], p2: number[]) => {
-    return (
-      p1[0] === p2[0] && p1[1] === p2[1] && p1[2] === p2[2] && p1[3] === p2[3]
-    );
+  const isSame = (i1: number, i2: number): boolean =>
+    data[i1] === data[i2] &&
+    data[i1 + 1] === data[i2 + 1] &&
+    data[i1 + 2] === data[i2 + 2] &&
+    data[i1 + 3] === data[i2 + 3];
+
+  const writeFrom = (tx: number, ty: number, srcIdx: number) => {
+    const di = (ty * targetW + tx) * 4;
+    targetData[di] = data[srcIdx];
+    targetData[di + 1] = data[srcIdx + 1];
+    targetData[di + 2] = data[srcIdx + 2];
+    targetData[di + 3] = data[srcIdx + 3];
   };
 
   for (let y = 0; y < sh; y++) {
     for (let x = 0; x < sw; x++) {
-      const P = getPixel(x, y);
-      const A = getPixel(x, y - 1); // Top
-      const C = getPixel(x - 1, y); // Left
-      const B = getPixel(x + 1, y); // Right
-      const D = getPixel(x, y + 1); // Bottom
+      const P = getIdx(x, y);
+      const A = getIdx(x, y - 1); // Top
+      const C = getIdx(x - 1, y); // Left
+      const B = getIdx(x + 1, y); // Right
+      const D = getIdx(x, y + 1); // Bottom
 
       /*
         EPX / Scale2x algorithm logic:
@@ -57,34 +63,22 @@ export const applyScaling = (
       E2 E3
       */
 
-      let E0 = P,
-        E1 = P,
-        E2 = P,
-        E3 = P;
+      let e0 = P, e1 = P, e2 = P, e3 = P;
 
-      if (!isSameColor(C, B) && !isSameColor(A, D)) {
-        if (isSameColor(C, A)) E0 = A;
-        if (isSameColor(A, B)) E1 = B;
-        if (isSameColor(C, D)) E2 = C;
-        if (isSameColor(D, B)) E3 = D;
+      if (!isSame(C, B) && !isSame(A, D)) {
+        if (isSame(C, A)) e0 = A;
+        if (isSame(A, B)) e1 = B;
+        if (isSame(C, D)) e2 = C;
+        if (isSame(D, B)) e3 = D;
       }
 
       // Write doubled pixels
       const tx = x * 2;
       const ty = y * 2;
-
-      const writePx = (px: number, py: number, color: number[]) => {
-        const idx = getIdx(px, py, targetW);
-        targetData[idx] = color[0];
-        targetData[idx + 1] = color[1];
-        targetData[idx + 2] = color[2];
-        targetData[idx + 3] = color[3];
-      };
-
-      writePx(tx, ty, E0);
-      writePx(tx + 1, ty, E1);
-      writePx(tx, ty + 1, E2);
-      writePx(tx + 1, ty + 1, E3);
+      writeFrom(tx, ty, e0);
+      writeFrom(tx + 1, ty, e1);
+      writeFrom(tx, ty + 1, e2);
+      writeFrom(tx + 1, ty + 1, e3);
     }
   }
 

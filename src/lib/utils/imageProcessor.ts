@@ -34,6 +34,25 @@ class ImageProcessorService {
   /** Cached last-rendered canvas for save without re-decode */
   private lastCanvas: HTMLCanvasElement | null = null;
 
+  /** Reusable canvases to avoid repeated createElement calls */
+  private earlyCanvas: HTMLCanvasElement | null = null;
+  private workerCanvas: HTMLCanvasElement | null = null;
+  /** Get or create a reusable canvas, resizing only when needed */
+  private getOrCreateCanvas(kind: 'early' | 'worker', w: number, h: number): HTMLCanvasElement {
+    const existing = kind === 'early' ? this.earlyCanvas : this.workerCanvas;
+    if (existing) {
+      if (existing.width !== w) existing.width = w;
+      if (existing.height !== h) existing.height = h;
+      return existing;
+    }
+    const c = document.createElement('canvas');
+    c.width = w;
+    c.height = h;
+    if (kind === 'early') this.earlyCanvas = c;
+    else this.workerCanvas = c;
+    return c;
+  }
+
   /** Revoke old blob URL and register new one */
   private replaceBlobUrl(newUrl: string): string {
     if (this.lastBlobUrl) {
@@ -141,9 +160,7 @@ class ImageProcessorService {
     ) {
       const img = await this.loadImage(imageSrc);
       if (this.currentRequestId !== requestId) return null;
-      const c = document.createElement("canvas");
-      c.width = img.width;
-      c.height = img.height;
+      const c = this.getOrCreateCanvas('early', img.width, img.height);
       const ctx = c.getContext("2d")!;
       ctx.drawImage(img, 0, 0);
       this.lastCanvas = c;
@@ -185,9 +202,7 @@ class ImageProcessorService {
 
     return new Promise<string | null>((resolve, reject) => {
       // Create canvas for the final export
-      const canvas = document.createElement("canvas");
-      canvas.width = procWidth;
-      canvas.height = procHeight;
+      const canvas = this.getOrCreateCanvas('worker', procWidth, procHeight);
       const ctx = canvas.getContext("2d")!;
       this.pendingResolvers.set(requestId, { resolve, reject, canvas, ctx });
 

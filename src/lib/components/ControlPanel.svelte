@@ -29,7 +29,7 @@
     { id: 'pico8',      label: '👾 PICO-8',      pixelSize: 4, palette: 'pico8',        crtEffect: false, glitchFilters: [],                                                                   renderMode: 'pixel_perfect' },
     { id: 'broken_vhs', label: '📼 Broken VHS',  pixelSize: 2, palette: 'win256',       crtEffect: true,  glitchFilters: [{ type: 'wave', intensity: 2 }],                                      renderMode: 'pixel_perfect' },
     { id: 'cyberpunk',  label: '🌃 Cyberpunk',   pixelSize: 2, palette: 'cyberpunk16',  crtEffect: true,  glitchFilters: [{ type: 'rgb_split', intensity: 2 }],                                  renderMode: 'pixel_perfect' },
-    { id: 'glitch_art', label: '☠️ Glitch Art',  pixelSize: 3, palette: 'c64',          crtEffect: true,  glitchFilters: [{ type: 'noise', intensity: 3 }],                                     renderMode: 'pixel_perfect' },
+    { id: 'glitch_art', label: '☠️ Glitch Art',  pixelSize: 3, palette: 'ega',          crtEffect: true,  glitchFilters: [{ type: 'noise', intensity: 3 }],                                     renderMode: 'pixel_perfect' },
     { id: 'chaos',      label: '🔥 Chaos',       pixelSize: 2, palette: 'win256',       crtEffect: true,  glitchFilters: [{ type: 'rgb_split', intensity: 3 }, { type: 'wave', intensity: 2 }, { type: 'noise', intensity: 3 }], renderMode: 'pixel_perfect' },
     { id: 'smooth_hqx', label: '✨ Smooth HQx',  pixelSize: 2, palette: 'win256',       crtEffect: false, glitchFilters: [],                                                                   renderMode: 'hqx' },
     { id: 'original',   label: '🖼️ Original',    pixelSize: 1, palette: 'original',     crtEffect: false, glitchFilters: [],                                                                   renderMode: 'pixel_perfect' },
@@ -137,12 +137,12 @@
     </div>
   </fieldset>
 
-  <fieldset style="margin-top: 8px;">
+  <fieldset class="cp-section">
     <legend>Pixelation Size: {settings.pixelSize}px</legend>
-    <div class="field-row" style="display: flex; align-items: center; gap: 8px;">
-      <span style="font-size: 10px; flex-shrink: 0;">1</span>
+    <div class="field-row slider-row">
+      <span class="slider-label">1</span>
       <button
-        style="min-width: 24px; padding: 0;"
+        class="stepper-btn"
         onclick={() => { settings.pixelSize = Math.max(1, settings.pixelSize - 1); update(); }}
       >-</button>
       <input
@@ -152,38 +152,35 @@
         step="1"
         bind:value={settings.pixelSize}
         oninput={update}
-        style="flex: 1;"
+        class="slider-input"
       />
       <button
-        style="min-width: 24px; padding: 0;"
+        class="stepper-btn"
         onclick={() => { settings.pixelSize = Math.min(10, settings.pixelSize + 1); update(); }}
       >+</button>
-      <span style="font-size: 10px; flex-shrink: 0;">10</span>
+      <span class="slider-label">10</span>
     </div>
   </fieldset>
 
-  <fieldset style="margin-top: 8px;">
+  <fieldset class="cp-section">
     <legend>Color Quantization</legend>
     <div class="field-row">
-      <button
-        style="width: 100%; text-align: left; padding: 4px; display: flex; justify-content: space-between; align-items: center;"
-        onclick={onOpenGallery}
-      >
+      <button class="palette-btn" onclick={onOpenGallery}>
         <span><b>Palette:</b> {getPaletteName(settings.palette)}</span>
-        <span style="font-size: 10px;">Select &gt;</span>
+        <span class="palette-arrow">Select &gt;</span>
       </button>
     </div>
   </fieldset>
 
-  <fieldset style="margin-top: 8px;">
+  <fieldset class="cp-section">
     <legend>Post Processing</legend>
     <div class="field-row">
       <input type="checkbox" id="crt-effect" bind:checked={settings.crtEffect} onchange={update} />
       <label for="crt-effect">CRT Scanlines</label>
     </div>
 
-    <div style="margin-top: 8px; font-size: 11px; margin-bottom: 2px;">
-      Glitch Filters <span style="color:#808080; font-size:9px;">(multi-select)</span>:
+    <div class="section-label">
+      Glitch Filters <span class="section-hint">(multi-select)</span>:
     </div>
     <div class="field-row glitch-toggles">
       <button
@@ -232,20 +229,18 @@
 
     <!-- 글리치 시드 고정/랜덤 토글 -->
     {#if settings.glitchFilters.length > 0}
-    <div class="glitch-intensity-panel" style="margin-top: 4px;">
+    <div class="glitch-intensity-panel glitch-seed-panel">
       <div class="glitch-intensity-row">
         <span class="glitch-intensity-label">🎲 Seed</span>
         <div class="glitch-intensity-btns">
           <button
             class:preset-active={settings.glitchSeed === null}
-            class="intensity-btn"
-            style="min-width: 50px;"
+            class="intensity-btn seed-btn"
             onclick={() => { settings.glitchSeed = null; update(); }}
           >Random</button>
           <button
             class:preset-active={settings.glitchSeed !== null}
-            class="intensity-btn"
-            style="min-width: 50px;"
+            class="intensity-btn seed-btn"
             onclick={() => { settings.glitchSeed = Math.round(Math.random() * 10000) / 10000; update(); }}
           >{settings.glitchSeed !== null ? `Fixed (${settings.glitchSeed})` : 'Fix'}</button>
           {#if settings.glitchSeed !== null}
@@ -260,8 +255,8 @@
     </div>
     {/if}
 
-    <div style="margin-top: 8px; font-size: 11px; margin-bottom: 2px;">Scaling / Render Mode:</div>
-    <div class="field-row" style="display: flex; flex-wrap: wrap; gap: 4px;">
+    <div class="section-label">Scaling / Render Mode:</div>
+    <div class="field-row render-row">
       {#each [
         { id: 'pixel_perfect', label: 'Pixel Perfect', title: 'Crisp & sharp dot edges' },
         { id: 'bilinear', label: 'Bilinear Blur', title: 'Smoothly interpolates for retro CRT feel' },
@@ -269,7 +264,7 @@
       ] as opt}
         <button
           class:preset-active={settings.renderMode === opt.id}
-          style="font-size: 10px; padding: 3px 6px; flex: 1; text-align: center;"
+          class="render-btn"
           onclick={() => { settings.renderMode = opt.id as RenderMode; update(); }}
           title={opt.title}
         >
@@ -280,7 +275,7 @@
   </fieldset>
 
   <!-- Current Settings Summary -->
-  <fieldset style="margin-top: 8px; background: #f8f8f0;">
+  <fieldset class="cp-section summary-fieldset">
     <legend>Current Settings {#if isCustom}<span class="custom-badge">Custom</span>{/if}</legend>
     <div class="settings-summary">
       <span>📌 {settings.pixelSize}px</span>
@@ -293,21 +288,21 @@
     </div>
   </fieldset>
 
-  <fieldset style="margin-top: 8px;">
+  <fieldset class="cp-section">
     <legend>Save Options</legend>
-    <div class="field-row" style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
-      <span style="font-size: 11px; flex-shrink: 0;">Format:</span>
+    <div class="field-row format-row">
+      <span class="format-label">Format:</span>
       {#each [{ id: 'png', label: 'PNG' }, { id: 'jpeg', label: 'JPEG' }, { id: 'webp', label: 'WebP' }] as opt}
         <button
           class:preset-active={saveFormat === opt.id}
-          style="font-size: 10px; padding: 2px 8px; flex: 1; text-align: center;"
+          class="format-btn"
           onclick={() => onFormatChange?.(opt.id as SaveFormat)}
         >{opt.label}</button>
       {/each}
     </div>
     {#if saveFormat !== 'png'}
-      <div class="field-row" style="display: flex; align-items: center; gap: 6px;">
-        <span style="font-size: 10px; flex-shrink: 0;">Quality: {Math.round(saveQuality * 100)}%</span>
+      <div class="field-row quality-row">
+        <span class="quality-label">Quality: {Math.round(saveQuality * 100)}%</span>
         <input
           type="range"
           min="0.1"
@@ -315,14 +310,21 @@
           step="0.05"
           value={saveQuality}
           oninput={(e) => onQualityChange?.(parseFloat((e.target as HTMLInputElement).value))}
-          style="flex: 1;"
+          class="slider-input"
         />
       </div>
     {/if}
   </fieldset>
 
-  <div class="field-row" style="margin-top: 10px; justify-content: flex-end;">
+  <div class="field-row save-row">
     <button class="save-btn" onclick={onSave}>💾 Save As...</button>
+  </div>
+
+  <div class="shortcuts-hint">
+    <span>⌨️</span>
+    <span>Ctrl+Z Undo</span>
+    <span>Ctrl+Shift+Z Redo</span>
+    <span>Ctrl+S Save</span>
   </div>
 </div>
 
@@ -336,6 +338,22 @@
     background: #d0d8e0;
     border-color: #000080;
   }
+
+  /* ===== Sections ===== */
+  .cp-section { margin-top: 8px; }
+  .summary-fieldset { background: #f8f8f0; }
+
+  .section-label {
+    margin-top: 8px;
+    font-size: 11px;
+    margin-bottom: 2px;
+  }
+  .section-hint {
+    color: #808080;
+    font-size: 9px;
+  }
+
+  /* ===== Preset Grid ===== */
   .preset-grid {
     display: flex;
     flex-wrap: wrap;
@@ -349,6 +367,37 @@
   }
   .preset-btn:hover {
     background: #e8e8e0;
+  }
+
+  /* ===== Slider Row ===== */
+  .slider-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .slider-label {
+    font-size: 10px;
+    flex-shrink: 0;
+  }
+  .slider-input {
+    flex: 1;
+  }
+  .stepper-btn {
+    min-width: 24px;
+    padding: 0;
+  }
+
+  /* ===== Palette Button ===== */
+  .palette-btn {
+    width: 100%;
+    text-align: left;
+    padding: 4px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .palette-arrow {
+    font-size: 10px;
   }
 
   /* ===== Glitch Filter Toggle Buttons ===== */
@@ -375,6 +424,9 @@
     border: 1px solid #c0c0c0;
     padding: 4px;
   }
+  .glitch-seed-panel {
+    margin-top: 4px;
+  }
   .glitch-intensity-row {
     display: flex;
     align-items: center;
@@ -395,6 +447,49 @@
     padding: 1px 6px;
     min-width: 22px;
     text-align: center;
+  }
+  .seed-btn {
+    min-width: 50px;
+  }
+
+  /* ===== Render Mode Buttons ===== */
+  .render-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  .render-btn {
+    font-size: 10px;
+    padding: 3px 6px;
+    flex: 1;
+    text-align: center;
+  }
+
+  /* ===== Format / Quality ===== */
+  .format-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 4px;
+  }
+  .format-label {
+    font-size: 11px;
+    flex-shrink: 0;
+  }
+  .format-btn {
+    font-size: 10px;
+    padding: 2px 8px;
+    flex: 1;
+    text-align: center;
+  }
+  .quality-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .quality-label {
+    font-size: 10px;
+    flex-shrink: 0;
   }
 
   /* ===== Settings Summary ===== */
@@ -421,6 +516,12 @@
     font-weight: bold;
     vertical-align: middle;
   }
+
+  /* ===== Save Button ===== */
+  .save-row {
+    margin-top: 10px;
+    justify-content: flex-end;
+  }
   .save-btn {
     font-weight: bold;
     padding: 4px 12px;
@@ -429,6 +530,17 @@
   }
   .save-btn:hover {
     background: #d0d0d0;
+  }
+
+  /* ===== Shortcuts Hint ===== */
+  .shortcuts-hint {
+    display: flex;
+    gap: 8px;
+    font-size: 9px;
+    color: #808080;
+    padding: 4px 0 0 0;
+    justify-content: center;
+    flex-wrap: wrap;
   }
   @media (max-width: 400px) {
     .hide-on-small { display: none; }

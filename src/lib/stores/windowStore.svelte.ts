@@ -1,4 +1,4 @@
-import type { WindowState, WindowMode, WindowConfig } from "$lib/types";
+import type { WindowState, WindowMode, WindowConfig, WindowId } from "$lib/types";
 
 /** Desktop window definitions */
 export const WINDOW_CONFIGS: WindowConfig[] = [
@@ -7,7 +7,7 @@ export const WINDOW_CONFIGS: WindowConfig[] = [
   { id: "gallery", title: "Palette Gallery", icon: "🎨" },
 ];
 
-const WINDOW_IDS = WINDOW_CONFIGS.map((c) => c.id);
+const WINDOW_IDS = WINDOW_CONFIGS.map((c) => c.id) as WindowId[];
 const STORAGE_KEY = "retro-pixel-window-layout";
 
 interface SavedLayout {
@@ -68,9 +68,9 @@ export function createWindowStore() {
     },
   });
 
-  let focusedWindow = $state<string>("settings");
+  let focusedWindow = $state<WindowId>("settings");
 
-  function focusWindow(id: string) {
+  function focusWindow(id: WindowId) {
     const sorted = WINDOW_IDS.slice().sort((a, b) => wins[a].z - wins[b].z);
     const rest = sorted.filter((w) => w !== id);
     const final = [...rest, id];
@@ -80,7 +80,7 @@ export function createWindowStore() {
     focusedWindow = id;
   }
 
-  function openWindow(id: string) {
+  function openWindow(id: WindowId) {
     const mode = wins[id].mode;
     if (mode === "closed" || mode === "minimized") {
       wins[id].mode = "windowed";
@@ -89,8 +89,7 @@ export function createWindowStore() {
     saveLayout(wins);
   }
 
-  /** Taskbar X button: close + reset position/size to defaults */
-  function closeAndReset(id: string) {
+  function closeAndReset(id: WindowId) {
     wins[id].mode = "closed";
     const def = wins[id].defaults;
     wins[id].x = def.x;
@@ -100,12 +99,12 @@ export function createWindowStore() {
   }
 
   /** Title-bar X button: close only, keep position/size */
-  function close(id: string) {
+  function close(id: WindowId) {
     wins[id].mode = "closed";
     saveLayout(wins);
   }
 
-  function handleTaskbarClick(id: string) {
+  function handleTaskbarClick(id: WindowId) {
     const mode = wins[id].mode;
     if (mode === "minimized") {
       openWindow(id);

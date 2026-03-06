@@ -2,8 +2,16 @@ import { PALETTES, type RGB } from "./palettes";
 
 // Color Quantization & Pixelation Engine
 
-// Cache for nearest color lookups per palette
-const paletteCaches = new Map<string, Map<number, RGB>>();
+// ─── 5-bit Quantized Lookup Table (LUT) ───
+// RGB 각 채널을 5비트(32단계)로 양자화 → 32×32×32 = 32,768 엔트리
+// 팔레트별 1회 빌드 후 모든 조회 O(1), ~130KB/팔레트
+const BITS = 5;
+const LEVELS = 1 << BITS;          // 32
+const SHIFT = 8 - BITS;            // 3 (256 → 32 매핑)
+const LUT_SIZE = LEVELS ** 3;      // 32,768
+
+// 팔레트별 LUT 캐시: Uint32Array (packed RGBA) + RGB 객체 배열
+const lutCache = new Map<string, { packed: Uint32Array; colors: RGB[] }>();
 
 // Endianness check for Uint32Array color packing (computed once at module load)
 const IS_LITTLE_ENDIAN =
@@ -20,7 +28,45 @@ function colorDistance(c1: RGB, r: number, g: number, b: number): number {
   return 2 * dr * dr + 4 * dg * dg + 3 * db * db;
 }
 
-const CACHE_MAX = 50000;
+/** 팔레트별 LUT를 최초 1회 빌드 */
+function buildLut(paletteName: string): { packed: Uint32Array; colors: RGB[] } {
+  const existing = lutCache.get(paletteName);
+  if (existing) return existing;
+
+  const palette = PALETTES[paletteName] || PALETTES["win256"];
+  const packed = new Uint32Array(LUT_SIZE);
+  const colors: RGB[] = new Array(LUT_SIZE);
+
+  for (let ri = 0; ri < LEVELS; ri++) {
+    // 양자화 대표값: 구간 중앙값 (0→3, 1→11, ... 31→251)
+    const r = (ri << SHIFT) | ((1 << (SHIFT - 1)) - 1);
+    for (let gi = 0; gi < LEVELS; gi++) {
+      const g = (gi << SHIFT) | ((1 << (SHIFT - 1)) - 1);
+      for (let bi = 0; bi < LEVELS; bi++) {
+        const b = (bi << SHIFT) | ((1 << (SHIFT - 1)) - 1);
+        const idx = (ri << (BITS * 2)) | (gi << BITS) | bi;
+
+        let minDist = Infinity;
+        let nearestIdx = 0;
+        for (let pi = 0; pi < palette.length; pi++) {
+          const d = colorDistance(palette[pi], r, g, b);
+          if (d === 0) { nearestIdx = pi; break; }
+          if (d < minDist) { minDist = d; nearestIdx = pi; }
+        }
+
+        const c = palette[nearestIdx];
+        colors[idx] = c;
+        packed[idx] = IS_LITTLE_ENDIAN
+          ? (255 << 24) | (c.b << 16) | (c.g << 8) | c.r
+          : (c.r << 24) | (c.g << 16) | (c.b << 8) | 255;
+      }
+    }
+  }
+
+  const lut = { packed, colors };
+  lutCache.set(paletteName, lut);
+  return lut;
+}
 
 function findNearestColor(
   r: number,
@@ -28,61 +74,16 @@ function findNearestColor(
   b: number,
   paletteName: string,
 ): RGB {
-  let cache = paletteCaches.get(paletteName);
-  if (!cache) {
-    cache = new Map<number, RGB>();
-    paletteCaches.set(paletteName, cache);
-  }
-
-  const cacheKey = (r << 16) | (g << 8) | b;
-  const cached = cache.get(cacheKey);
-  if (cached) {
-    // LRU: move to end by re-inserting
-    cache.delete(cacheKey);
-    cache.set(cacheKey, cached);
-    return cached;
-  }
-
-  const palette = PALETTES[paletteName] || PALETTES["win256"];
-
-  let minDistanceSq = Infinity;
-  let nearestIndex = 0;
-
-  for (let i = 0; i < palette.length; i++) {
-    const d2 = colorDistance(palette[i], r, g, b);
-    if (d2 === 0) {
-      cacheSet(cache, cacheKey, palette[i]);
-      return palette[i];
-    }
-    if (d2 < minDistanceSq) {
-      minDistanceSq = d2;
-      nearestIndex = i;
-    }
-  }
-
-  const result = palette[nearestIndex];
-  cacheSet(cache, cacheKey, result);
-  return result;
-}
-
-/** LRU eviction: when cache is full, delete the oldest 25% in bulk */
-function cacheSet(cache: Map<number, RGB>, key: number, value: RGB) {
-  if (cache.size >= CACHE_MAX) {
-    const evictCount = CACHE_MAX >> 2; // 25%
-    const iter = cache.keys();
-    for (let i = 0; i < evictCount; i++) {
-      const k = iter.next().value;
-      if (k !== undefined) cache.delete(k);
-    }
-  }
-  cache.set(key, value);
+  const lut = buildLut(paletteName);
+  const idx = ((r >> SHIFT) << (BITS * 2)) | ((g >> SHIFT) << BITS) | (b >> SHIFT);
+  return lut.colors[idx];
 }
 
 /** Clear caches for palettes not currently in use */
 export function clearPaletteCachesExcept(activePalette: string) {
-  const toDelete = [...paletteCaches.keys()].filter(k => k !== activePalette);
+  const toDelete = [...lutCache.keys()].filter(k => k !== activePalette);
   for (const key of toDelete) {
-    paletteCaches.delete(key);
+    lutCache.delete(key);
   }
 }
 

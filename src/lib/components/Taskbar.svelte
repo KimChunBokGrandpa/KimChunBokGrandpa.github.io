@@ -1,11 +1,12 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import type { WindowId, WindowMode } from '../types';
 
   export interface TaskbarWindowInfo {
-    id: string;
+    id: WindowId;
     title: string;
     icon: string;
-    mode: 'windowed' | 'maximized' | 'minimized' | 'closed';
+    mode: WindowMode;
     focused: boolean;
   }
 
@@ -16,8 +17,8 @@
     onStartClick,
   }: {
     windows: TaskbarWindowInfo[];
-    onWindowClick: (id: string) => void;
-    onWindowClose: (id: string) => void;
+    onWindowClick: (id: WindowId) => void;
+    onWindowClose: (id: WindowId) => void;
     onStartClick?: () => void;
   } = $props();
 

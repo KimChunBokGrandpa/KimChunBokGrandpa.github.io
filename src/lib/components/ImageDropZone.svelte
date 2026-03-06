@@ -15,6 +15,10 @@
 
   function handleDragLeave(e: DragEvent) {
     e.preventDefault();
+    // 자식 요소에서 발생한 이벤트면 무시 (깜빡임 방지)
+    if (e.currentTarget && (e.currentTarget as HTMLElement).contains(e.relatedTarget as Node)) {
+      return;
+    }
     isDragging = false;
   }
 
@@ -37,6 +41,8 @@
     if (input.files && input.files.length > 0) {
       onImageSelected(input.files[0]);
     }
+    // 같은 파일을 다시 선택할 수 있도록 초기화
+    input.value = '';
   }
 
   function handlePaste(e: ClipboardEvent) {

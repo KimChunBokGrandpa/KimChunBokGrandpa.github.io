@@ -14,7 +14,7 @@
   import { getPaletteName } from '$lib/utils/palettes';
   import type { SaveFormat } from '$lib/services/saveService';
   import type { TaskbarWindowInfo } from '$lib/components/Taskbar.svelte';
-  import type { ProcessingSettings } from '$lib/types';
+  import type { ProcessingSettings, WindowId } from '$lib/types';
   import { isTauri } from '$lib/utils/env';
 
   // ─── Stores ───
@@ -28,10 +28,19 @@
   let toastMessage: string | null = $state(null);
 
   // ─── Desktop icon selection ───
-  let selectedIcon = $state<string | null>(null);
+  let selectedIcon = $state<WindowId | null>(null);
 
-  // ─── Mobile detection ───
-  const isMobile = typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0);
+  // ─── Mobile / narrow viewport detection ───
+  // CSS @media (max-width: 550px) 와 동일한 기준으로 JS 레이아웃도 전환
+  const MOBILE_BREAKPOINT = 550;
+  const mql = typeof window !== 'undefined' ? window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT}px)`) : null;
+  let isMobile = $state(mql?.matches ?? false);
+  $effect(() => {
+    if (!mql) return;
+    const handler = (e: MediaQueryListEvent) => { isMobile = e.matches; };
+    mql.addEventListener('change', handler);
+    return () => mql.removeEventListener('change', handler);
+  });
 
   // ─── Dimension cap callback ───
   ip.setDimensionCapCallback((original, capped) => {
@@ -47,13 +56,17 @@
     WINDOW_ORDER.filter(id => wm.wins[id].mode !== 'closed' && wm.wins[id].mode !== 'minimized')
   );
 
+  const TASKBAR_HEIGHT = 30;
+
   function getMobileSlot(id: string): { top: string; height: string } | null {
     if (!isMobile) return null;
     const idx = mobileVisibleIds.indexOf(id as typeof WINDOW_ORDER[number]);
     if (idx === -1) return null;
     const count = mobileVisibleIds.length;
-    const heightPct = 100 / count;
-    return { top: `${idx * heightPct}%`, height: `${heightPct}%` };
+    // 데스크탑 영역(100dvh - 30px)을 균등 분할
+    const slotHeight = `calc((100dvh - ${TASKBAR_HEIGHT}px) / ${count})`;
+    const slotTop = idx === 0 ? '0px' : `calc((100dvh - ${TASKBAR_HEIGHT}px) / ${count} * ${idx})`;
+    return { top: slotTop, height: slotHeight };
   }
 
   // ─── Taskbar window info ───
@@ -109,7 +122,7 @@
     ip.loadNewImage();
   }
 
-  function handleIconClick(id: string) {
+  function handleIconClick(id: WindowId) {
     if (isMobile) {
       selectedIcon = null;
       wm.openWindow(id);
@@ -117,7 +130,7 @@
       selectedIcon = id;
     }
   }
-  function handleIconDblClick(id: string) { selectedIcon = null; wm.openWindow(id); }
+  function handleIconDblClick(id: WindowId) { selectedIcon = null; wm.openWindow(id); }
   function handleDesktopClick() { selectedIcon = null; }
 
   function handleKeydown(e: KeyboardEvent) {
@@ -139,9 +152,8 @@
 <svelte:window onkeydown={handleKeydown} />
 
 <!-- ═══ Desktop ═══ -->
-<!-- svelte-ignore a11y_click_events_have_key_events -->
-<!-- svelte-ignore a11y_no_static_element_interactions -->
-<div class="desktop" onclick={handleDesktopClick}>
+<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+<div class="desktop" onclick={handleDesktopClick} onkeydown={(e) => { if (e.key === 'Escape') handleDesktopClick(); }} role="application" tabindex="-1">
 
   <!-- Desktop Icons -->
   <div class="desktop-icons" role="toolbar" aria-label="Desktop shortcuts">
@@ -224,7 +236,7 @@
       onFocus={() => wm.focusWindow('preview')}
       onLayoutChange={wm.persistLayout}
     >
-      <!-- svelte-ignore a11y_no_static_element_interactions -->
+      <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
       <div
         class="preview-body"
         class:panning={zp.isPanning}
@@ -237,6 +249,8 @@
         ontouchstart={zp.handleTouchStart}
         ontouchmove={zp.handleTouchMove}
         ontouchend={zp.handleTouchEnd}
+        role="img"
+        aria-label="Image preview"
       >
         {#if processedImageSrc}
           <CrtDisplay active={processingSettings.crtEffect}>
@@ -284,11 +298,7 @@
             </div>
           </div>
         {:else}
-          <div class="empty-preview">
-            <span class="empty-icon">🖼️</span>
-            <p class="empty-title">No Image Loaded</p>
-            <p class="empty-hint">Open an image from Settings window<br/>or drag & drop to start</p>
-          </div>
+          <ImageDropZone onImageSelected={handleImageSelected} onError={(msg) => showDialog(msg, 'Error')} />
         {/if}
       </div>
     </Win98Window>
@@ -351,6 +361,7 @@
     background-size: 20px 20px;
     width: 100vw;
     height: calc(100vh - 30px);
+    height: calc(100dvh - 30px); /* prefer dvh for mobile browser chrome */
     position: relative;
     overflow: hidden;
     box-sizing: border-box;
@@ -455,33 +466,6 @@
     transform-origin: center center;
   }
 
-  /* ===== Empty Preview State ===== */
-  .empty-preview {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-    padding: 20px;
-    text-align: center;
-  }
-  .empty-icon {
-    font-size: 40px;
-    opacity: 0.6;
-    font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
-  }
-  .empty-title {
-    color: #fff;
-    font-weight: bold;
-    font-size: 14px;
-    text-shadow: 1px 1px 0 #000;
-    margin: 4px 0 2px 0;
-  }
-  .empty-hint {
-    color: #a0a0a0;
-    font-size: 11px;
-    line-height: 1.4;
-    margin: 0;
-  }
 
   /* ===== Settings Panel Body ===== */
   .settings-body {
