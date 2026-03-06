@@ -35,11 +35,11 @@ function generateThemePalette(
   hues: number[],
   satRange: [number, number],
   count: number,
-  grayRatio = 0.12,
+  grayRatio = 0,
 ): string[] {
   const seen = new Set<string>();
   const colors: string[] = [];
-  const grayCount = Math.max(4, Math.floor(count * grayRatio));
+  const grayCount = Math.round(count * grayRatio);
   const colorCount = count - grayCount;
   const stepsPerHue = Math.ceil(colorCount / hues.length);
 
@@ -55,6 +55,49 @@ function generateThemePalette(
   for (let i = 0; i < grayCount; i++) {
     const v = Math.round(i * 255 / Math.max(1, grayCount - 1));
     const hex = toHex(v, v, v);
+    if (!seen.has(hex)) { seen.add(hex); colors.push(hex); }
+  }
+  return colors.slice(0, count);
+}
+
+/**
+ * 파스텔/소프트 톤 팔레트 제너레이터.
+ * 밝고 부드러운 색감을 생성하며, 강제 그레이스케일을 최소화합니다.
+ * hues: 색상 계열의 HSL 색상각 배열
+ * count: 생성할 총 색상 수
+ * satRange: [min, max] 채도 범위 (기본: 파스텔 톤)
+ * lightRange: [min, max] 명도 범위 (기본: 밝은 파스텔)
+ * grayRatio: 틴티드 그레이 비율 (0이면 그레이 없음)
+ */
+function generatePastelPalette(
+  hues: number[],
+  count: number,
+  satRange: [number, number] = [0.30, 0.60],
+  lightRange: [number, number] = [0.50, 0.93],
+  grayRatio = 0.08,
+): string[] {
+  const seen = new Set<string>();
+  const colors: string[] = [];
+  const grayCount = Math.round(count * grayRatio);
+  const colorCount = count - grayCount;
+  const stepsPerHue = Math.ceil(colorCount / hues.length);
+
+  for (const h of hues) {
+    for (let li = 0; li < stepsPerHue && colors.length < colorCount; li++) {
+      const t = stepsPerHue > 1 ? li / (stepsPerHue - 1) : 0.5;
+      const l = lightRange[0] + t * (lightRange[1] - lightRange[0]);
+      const s = satRange[0] + (satRange[1] - satRange[0]) * (0.5 + 0.5 * Math.sin(t * Math.PI));
+      const [r, g, b] = hslToRgb((h + li * 1.5) % 360, s, l);
+      const hex = toHex(r, g, b);
+      if (!seen.has(hex)) { seen.add(hex); colors.push(hex); }
+    }
+  }
+  // 틴티드 그레이 (라벤더 틴트로 파스텔 테마에 어울리는 부드러운 그레이)
+  for (let i = 0; i < grayCount; i++) {
+    const t = grayCount > 1 ? i / (grayCount - 1) : 0.5;
+    const l = 0.25 + t * 0.73;
+    const [r, g, b] = hslToRgb(260, 0.04, l);
+    const hex = toHex(r, g, b);
     if (!seen.has(hex)) { seen.add(hex); colors.push(hex); }
   }
   return colors.slice(0, count);
@@ -492,13 +535,11 @@ export const PALETTE_HEX_DATA: Record<string, string[]> = {
   // ═══ UNIFIED THEME SERIES (consistent HSL hues) ═══
   // ══════════════════════════════════════════════════
   //
-  // 각 테마의 핵심 hue를 공유하여 2색→256색 전체에서 일관된 색감을 보장합니다.
-  // 색상수가 적을수록 핵심 hue만 사용하고, 많을수록 보조 hue가 추가됩니다.
+  // 각 테마의 핵심 hue를 공유하여 일관된 색감을 보장합니다.
 
   // ─── Earth Tone Series ───
-  // 핵심 hue: 20(적갈), 30(갈색), 40(황갈), 55(올리브), 75(녹갈)
-  earth2:   generateThemePalette([30, 45], [0.3, 0.6], 2),
-  earth4:   generateThemePalette([25, 35, 50], [0.3, 0.6], 4),
+  earth2:   generateThemePalette([30, 40], [0.3, 0.6], 2),
+  earth4:   generateThemePalette([20, 35, 50, 75], [0.3, 0.6], 4),
   earth8:   generateThemePalette([20, 30, 40, 55], [0.3, 0.6], 8),
   earth16:  generateThemePalette([20, 30, 40, 55, 75], [0.3, 0.6], 16),
   earth32:  generateThemePalette([20, 30, 40, 55, 75, 100], [0.3, 0.6], 32),
@@ -508,21 +549,19 @@ export const PALETTE_HEX_DATA: Record<string, string[]> = {
   earth256: generateThemePalette([8, 15, 20, 25, 30, 35, 40, 48, 55, 65, 75, 90, 105, 120, 140], [0.15, 0.5], 256),
 
   // ─── Neon Glow Series ───
-  // 핵심 hue: 전 스펙트럼 (0~330), 고채도
-  neon2:   generateThemePalette([330, 160], [0.9, 1.0], 2, 0.08),
-  neon4:   generateThemePalette([330, 160, 210], [0.9, 1.0], 4, 0.08),
-  neon8:   generateThemePalette([0, 60, 120, 210, 270, 330], [0.9, 1.0], 8, 0.08),
-  neon16:  generateThemePalette([0, 30, 60, 120, 180, 270, 300, 330], [0.9, 1.0], 16, 0.08),
-  neon32:  generateThemePalette([0, 30, 60, 120, 180, 210, 270, 300, 330], [0.9, 1.0], 32, 0.08),
-  neon48:  generateThemePalette([0, 30, 60, 120, 180, 210, 270, 300, 330], [0.9, 1.0], 48, 0.08),
-  neon64:  generateThemePalette([0, 25, 50, 75, 120, 160, 200, 240, 280, 320], [0.85, 1.0], 64, 0.08),
-  neon128: generateThemePalette([0, 20, 40, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330], [0.8, 1.0], 128, 0.06),
-  neon256: generateThemePalette([0, 15, 30, 45, 60, 80, 100, 120, 145, 170, 195, 220, 245, 270, 295, 320, 345], [0.75, 1.0], 256, 0.06),
+  neon2:   generateThemePalette([300, 180], [0.9, 1.0], 2),
+  neon4:   generateThemePalette([0, 120, 240, 300], [0.9, 1.0], 4),
+  neon8:   generateThemePalette([0, 60, 120, 210, 270, 330], [0.9, 1.0], 8),
+  neon16:  generateThemePalette([0, 30, 60, 120, 180, 270, 300, 330], [0.9, 1.0], 16),
+  neon32:  generateThemePalette([0, 30, 60, 120, 180, 210, 270, 300, 330], [0.9, 1.0], 32),
+  neon48:  generateThemePalette([0, 30, 60, 120, 180, 210, 270, 300, 330], [0.9, 1.0], 48),
+  neon64:  generateThemePalette([0, 25, 50, 75, 120, 160, 200, 240, 280, 320], [0.85, 1.0], 64),
+  neon128: generateThemePalette([0, 20, 40, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330], [0.8, 1.0], 128),
+  neon256: generateThemePalette([0, 15, 30, 45, 60, 80, 100, 120, 145, 170, 195, 220, 245, 270, 295, 320, 345], [0.75, 1.0], 256),
 
   // ─── Ocean Series ───
-  // 핵심 hue: 185(시안), 200(하늘), 215(코발트), 230(남색), 245(짙은남)
   ocean2:   generateThemePalette([200, 220], [0.5, 0.85], 2),
-  ocean4:   generateThemePalette([195, 210, 230], [0.5, 0.85], 4),
+  ocean4:   generateThemePalette([190, 210, 230, 245], [0.5, 0.85], 4),
   ocean8:   generateThemePalette([190, 205, 220, 240], [0.5, 0.85], 8),
   ocean16:  generateThemePalette([185, 200, 215, 230, 245], [0.5, 0.85], 16),
   ocean32:  generateThemePalette([185, 195, 205, 215, 225, 235, 245], [0.5, 0.85], 32),
@@ -532,9 +571,8 @@ export const PALETTE_HEX_DATA: Record<string, string[]> = {
   ocean256: generateThemePalette([170, 178, 185, 192, 198, 205, 212, 218, 225, 232, 238, 245, 252], [0.35, 0.8], 256),
 
   // ─── Sunset Series ───
-  // 핵심 hue: 340(마젠타), 0(빨강), 20(주황), 40(황금), 300(보라)
   sunset2:   generateThemePalette([350, 30], [0.6, 0.9], 2),
-  sunset4:   generateThemePalette([340, 10, 35], [0.6, 0.9], 4),
+  sunset4:   generateThemePalette([340, 0, 20, 45], [0.6, 0.9], 4),
   sunset8:   generateThemePalette([330, 350, 15, 40], [0.6, 0.9], 8),
   sunset16:  generateThemePalette([320, 340, 0, 20, 40, 50], [0.6, 0.9], 16),
   sunset32:  generateThemePalette([0, 10, 20, 30, 40, 50, 280, 300, 320, 340], [0.6, 0.9], 32),
@@ -544,9 +582,8 @@ export const PALETTE_HEX_DATA: Record<string, string[]> = {
   sunset256: generateThemePalette([340, 348, 355, 3, 10, 18, 25, 32, 40, 48, 56, 265, 278, 290, 305, 318, 335], [0.45, 0.85], 256),
 
   // ─── Vintage Film Series ───
-  // 핵심 hue: 20(세피아), 30(갈색), 40(카키), 80(올리브그린), 낮은 채도
-  vintage2:   generateThemePalette([25, 40], [0.15, 0.4], 2),
-  vintage4:   generateThemePalette([20, 35, 50], [0.15, 0.4], 4),
+  vintage2:   generateThemePalette([30, 50], [0.15, 0.4], 2),
+  vintage4:   generateThemePalette([20, 35, 50, 80], [0.15, 0.4], 4),
   vintage8:   generateThemePalette([20, 30, 40, 80], [0.15, 0.4], 8),
   vintage16:  generateThemePalette([20, 30, 40, 50, 80, 120], [0.15, 0.4], 16),
   vintage32:  generateThemePalette([20, 30, 40, 50, 80, 120, 200], [0.15, 0.4], 32),
@@ -556,9 +593,8 @@ export const PALETTE_HEX_DATA: Record<string, string[]> = {
   vintage256: generateThemePalette([8, 15, 22, 28, 34, 40, 48, 56, 70, 85, 100, 120, 150, 180, 210], [0.08, 0.32], 256),
 
   // ─── Forest Canopy Series ───
-  // 핵심 hue: 80(연두), 100(녹색), 120(짙은녹), 140(청록), 160(에메랄드)
-  forest2:   generateThemePalette([100, 130], [0.4, 0.7], 2),
-  forest4:   generateThemePalette([90, 115, 140], [0.4, 0.7], 4),
+  forest2:   generateThemePalette([100, 140], [0.4, 0.7], 2),
+  forest4:   generateThemePalette([85, 110, 135, 160], [0.4, 0.7], 4),
   forest8:   generateThemePalette([85, 105, 125, 150], [0.4, 0.7], 8),
   forest16:  generateThemePalette([80, 100, 120, 140, 160], [0.4, 0.7], 16),
   forest32:  generateThemePalette([80, 95, 110, 125, 140, 155, 170], [0.4, 0.7], 32),
@@ -568,11 +604,12 @@ export const PALETTE_HEX_DATA: Record<string, string[]> = {
   forest256: generateThemePalette([65, 75, 85, 95, 105, 112, 120, 128, 138, 148, 158, 170, 185], [0.25, 0.65], 256),
 
   // ─── Pastel Dream Series ───
-  // 핵심 hue: 전 스펙트럼, 고명도 / 중간 채도
-  pastel4:   generateThemePalette([330, 210, 120], [0.4, 0.65], 4, 0.05),
-  pastel8:   generateThemePalette([330, 210, 120, 50], [0.4, 0.65], 8, 0.08),
-  pastel16:  generateThemePalette([330, 270, 210, 150, 90, 30], [0.4, 0.65], 16, 0.08),
-  pastel32:  generateThemePalette([330, 290, 250, 210, 170, 130, 90, 50], [0.4, 0.65], 32, 0.08),
-  pastel48:  generateThemePalette([330, 300, 270, 240, 210, 180, 150, 120, 90, 50], [0.4, 0.65], 48, 0.08),
+  pastel4:   generatePastelPalette([340, 215, 120, 50], 4, [0.40, 0.55], [0.75, 0.90], 0),
+  pastel8:   generatePastelPalette([340, 215, 120, 50, 280, 25], 8, [0.35, 0.60], [0.60, 0.93], 0),
+  pastel16:  generatePastelPalette([340, 215, 120, 50, 280, 25, 170], 16),
+  pastel32:  generatePastelPalette([340, 215, 120, 50, 280, 25, 170], 32),
+  pastel48:  generatePastelPalette([340, 215, 120, 50, 280, 25, 170], 48),
+  pastel64:  generatePastelPalette([340, 210, 120, 45, 280, 25, 170], 64),
+  pastel128: generatePastelPalette([340, 210, 120, 45, 280, 25, 170, 5, 190, 300], 128),
+  pastel256: generatePastelPalette([335, 345, 210, 220, 115, 125, 40, 55, 275, 285, 20, 30, 165, 175], 256),
 };
-
