@@ -6,6 +6,7 @@
 
   import { processorService } from '$lib/utils/imageProcessor';
   import { saveImage } from '$lib/services/saveService';
+  import { getPaletteName } from '$lib/utils/palettes';
   import type { ProcessingSettings } from '$lib/types';
   import type { SaveFormat } from '$lib/services/saveService';
 
@@ -14,11 +15,13 @@
     saveFormat = 'png' as SaveFormat,
     saveQuality = 0.92,
     onError,
+    onItemClick,
   }: {
     settings: ProcessingSettings;
     saveFormat?: SaveFormat;
     saveQuality?: number;
     onError?: (msg: string) => void;
+    onItemClick?: (file: File) => void;
   } = $props();
 
   interface BatchItem {
@@ -139,6 +142,12 @@
 </script>
 
 <div class="batch-root">
+  <!-- Settings Info -->
+  <div class="batch-settings-info">
+    <span><strong>Settings applied:</strong> Pixel {settings.pixelSize}x · {getPaletteName(settings.palette)}</span>
+    <span class="batch-settings-hint">(Change in Settings window)</span>
+  </div>
+
   <!-- Drop zone / Add area -->
   <div
     class="batch-dropzone"
@@ -147,6 +156,8 @@
     ondragover={(e) => e.preventDefault()}
     ondragleave={handleDragLeave}
     ondrop={handleDrop}
+    role="button"
+    tabindex="0"
   >
     {#if items.length === 0}
       <div class="batch-empty">
@@ -160,7 +171,16 @@
       <!-- Items grid -->
       <div class="batch-grid">
         {#each items as item (item.id)}
-          <div class="batch-item" class:item-done={item.status === 'done'} class:item-error={item.status === 'error'} class:item-processing={item.status === 'processing'}>
+          <!-- svelte-ignore a11y_click_events_have_key_events -->
+          <!-- svelte-ignore a11y_interactive_supports_focus -->
+          <div
+            class="batch-item"
+            class:item-done={item.status === 'done'}
+            class:item-error={item.status === 'error'}
+            class:item-processing={item.status === 'processing'}
+            onclick={() => onItemClick?.(item.file)}
+            role="button"
+          >
             <img src={item.thumbnailUrl} alt={item.name} class="batch-thumb" draggable="false" />
             <div class="batch-item-info">
               <span class="batch-item-name">{item.name}</span>
@@ -172,7 +192,12 @@
                 {/if}
               </span>
             </div>
-            <button class="batch-item-remove" onclick={() => removeItem(item.id)} title="Remove" aria-label="Remove {item.name}">×</button>
+            <button
+              class="batch-item-remove"
+              onclick={(e) => { e.stopPropagation(); removeItem(item.id); }}
+              title="Remove"
+              aria-label="Remove {item.name}"
+            >×</button>
           </div>
         {/each}
         <!-- Add more button -->
@@ -212,6 +237,22 @@
     flex-direction: column;
     min-height: 0;
     font-size: 11px;
+    background: #c0c0c0;
+  }
+
+  /* Settings Info */
+  .batch-settings-info {
+    padding: 4px 6px;
+    background: #000080;
+    color: #fff;
+    font-size: 11px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .batch-settings-hint {
+    color: #aaa;
+    font-size: 9px;
   }
 
   .batch-dropzone {
@@ -259,7 +300,9 @@
     padding: 3px 4px;
     background: #f8f8f8;
     border: 1px solid #ccc;
+    cursor: pointer;
   }
+  .batch-item:hover { background: #e0e8f0; border-color: #000080; }
   .batch-item.item-done { border-color: #4a4; background: #f0f8f0; }
   .batch-item.item-error { border-color: #a44; background: #f8f0f0; }
   .batch-item.item-processing { border-color: #44a; background: #f0f0f8; }

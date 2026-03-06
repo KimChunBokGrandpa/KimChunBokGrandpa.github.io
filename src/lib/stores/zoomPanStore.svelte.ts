@@ -170,5 +170,6 @@ export function createZoomPan() {
     zoomToFit,
     zoomIn,
     zoomOut,
+    setZoom: (val: number) => { zoomLevel = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, val)); },
   };
 }

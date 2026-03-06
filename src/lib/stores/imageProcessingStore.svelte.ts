@@ -25,6 +25,7 @@ export function createImageProcessingStore() {
   let originalImageSrc = $state<string | null>(null);
   let processedImageSrc = $state<string | null>(null);
   let isProcessing = $state(false);
+  let lastError = $state<string | null>(null);
   let settings = $state<ProcessingSettings>({ ...DEFAULT_SETTINGS });
   let saveFormat = $state<SaveFormat>('png');
   let saveQuality = $state(0.92);
@@ -36,8 +37,8 @@ export function createImageProcessingStore() {
   let dimensionCapShown = false;
 
   // ─── Undo / Redo History ───
-  let settingsHistory: ProcessingSettings[] = [];
-  let redoHistory: ProcessingSettings[] = [];
+  let settingsHistory = $state<ProcessingSettings[]>([]);
+  let redoHistory = $state<ProcessingSettings[]>([]);
 
   function cloneSettings(s: ProcessingSettings): ProcessingSettings {
     return { ...s, glitchFilters: s.glitchFilters.map(f => ({ ...f })) };
@@ -65,9 +66,13 @@ export function createImageProcessingStore() {
     const gen = ++processingGeneration;
     isProcessing = true;
     try {
+      lastError = null;
       const result = await processorService.processImage(originalImageSrc, settings, handleDimensionCapped);
       if (result !== null) processedImageSrc = result;
-    } catch (err) { console.error(err); }
+    } catch (err) {
+      console.error(err);
+      lastError = err instanceof Error ? err.message : String(err);
+    }
     finally { if (gen === processingGeneration) isProcessing = false; }
   }
 
@@ -79,9 +84,13 @@ export function createImageProcessingStore() {
       debounceTimer = null;
       const gen = ++processingGeneration;
       try {
+        lastError = null;
         const result = await processorService.processImage(originalImageSrc!, settings, handleDimensionCapped);
         if (result !== null) processedImageSrc = result;
-      } catch (err) { console.error(err); }
+      } catch (err) {
+        console.error(err);
+        lastError = err instanceof Error ? err.message : String(err);
+      }
       finally { if (gen === processingGeneration) isProcessing = false; }
     }, DEBOUNCE_MS);
   }
@@ -136,6 +145,19 @@ export function createImageProcessingStore() {
     applyProcessingDebounced();
   }
 
+  function jumpToHistory(index: number, isRedoList: boolean = false) {
+    if (isRedoList) {
+      // Jump forward into redo history
+      for (let i = 0; i <= index; i++) redo();
+    } else {
+      // Jump backward into settings history
+      // index is from 0 (oldest) to length-1 (newest)
+      // distance is length - 1 - index
+      const distance = settingsHistory.length - 1 - index;
+      for (let i = 0; i <= distance; i++) undo();
+    }
+  }
+
   async function save(): Promise<string | null> {
     if (!processedImageSrc) return null;
     const cachedCanvas = processorService.getLastCanvas();
@@ -160,8 +182,11 @@ export function createImageProcessingStore() {
     get originalImageSrc() { return originalImageSrc; },
     get processedImageSrc() { return processedImageSrc; },
     get isProcessing() { return isProcessing; },
+    get lastError() { return lastError; },
     get settings() { return settings; },
     set settings(v: ProcessingSettings) { settings = v; },
+    get settingsHistory() { return settingsHistory; },
+    get redoHistory() { return redoHistory; },
     get saveFormat() { return saveFormat; },
     get saveQuality() { return saveQuality; },
 
@@ -172,10 +197,12 @@ export function createImageProcessingStore() {
     selectPalette,
     undo,
     redo,
+    jumpToHistory,
     save,
     setFormat,
     setQuality,
     setDimensionCapCallback,
     destroy,
+    clearError: () => { lastError = null; },
   };
 }

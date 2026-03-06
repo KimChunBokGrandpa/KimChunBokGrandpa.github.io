@@ -1,5 +1,6 @@
 <script lang="ts">
   import { getPaletteName } from '../utils/palettes';
+  import { PRESETS, type Preset } from '../utils/presets';
   import type { GlitchFilter, GlitchType, RenderMode, ProcessingSettings } from '../types';
   import type { SaveFormat } from '../services/saveService';
 
@@ -25,29 +26,6 @@
     { id: 'webp', label: 'WebP' },
   ] as const;
 
-  // 추천 프리셋 정의
-  interface Preset {
-    id: string;
-    label: string;
-    pixelSize: number;
-    palette: string;
-    crtEffect: boolean;
-    glitchFilters: GlitchFilter[];
-    renderMode: RenderMode;
-  }
-
-  const PRESETS: Preset[] = [
-    { id: 'retro_crt',  label: '📺 CRT',         pixelSize: 3, palette: 'win256',      crtEffect: true,  glitchFilters: [],                                                                   renderMode: 'pixel_perfect' },
-    { id: 'gameboy',    label: '🎮 Gameboy',     pixelSize: 4, palette: 'dmg',          crtEffect: false, glitchFilters: [],                                                                   renderMode: 'pixel_perfect' },
-    { id: 'nes',        label: '🕹️ NES',         pixelSize: 3, palette: 'nes',          crtEffect: false, glitchFilters: [],                                                                   renderMode: 'pixel_perfect' },
-    { id: 'pico8',      label: '👾 PICO-8',      pixelSize: 4, palette: 'pico8',        crtEffect: false, glitchFilters: [],                                                                   renderMode: 'pixel_perfect' },
-    { id: 'broken_vhs', label: '📼 Broken VHS',  pixelSize: 2, palette: 'win256',       crtEffect: true,  glitchFilters: [{ type: 'wave', intensity: 2 }],                                      renderMode: 'pixel_perfect' },
-    { id: 'cyberpunk',  label: '🌃 Cyberpunk',   pixelSize: 2, palette: 'cyberpunk16',  crtEffect: true,  glitchFilters: [{ type: 'rgb_split', intensity: 2 }],                                  renderMode: 'pixel_perfect' },
-    { id: 'glitch_art', label: '☠️ Glitch Art',  pixelSize: 3, palette: 'ega',          crtEffect: true,  glitchFilters: [{ type: 'noise', intensity: 3 }],                                     renderMode: 'pixel_perfect' },
-    { id: 'chaos',      label: '🔥 Chaos',       pixelSize: 2, palette: 'win256',       crtEffect: true,  glitchFilters: [{ type: 'rgb_split', intensity: 3 }, { type: 'wave', intensity: 2 }, { type: 'noise', intensity: 3 }], renderMode: 'pixel_perfect' },
-    { id: 'smooth_hqx', label: '✨ Smooth HQx',  pixelSize: 2, palette: 'win256',       crtEffect: false, glitchFilters: [],                                                                   renderMode: 'hqx' },
-    { id: 'original',   label: '🖼️ Original',    pixelSize: 1, palette: 'original',     crtEffect: false, glitchFilters: [],                                                                   renderMode: 'pixel_perfect' },
-  ];
 
   let {
     settings = $bindable({ pixelSize: 1, palette: 'original', crtEffect: false, glitchFilters: [] as GlitchFilter[], renderMode: 'pixel_perfect' as const, glitchSeed: null as (number | null) }),
@@ -58,6 +36,7 @@
     onOpenGallery,
     onFormatChange,
     onQualityChange,
+    hasImage = true,
   }: {
     settings: ProcessingSettings;
     saveFormat?: SaveFormat;
@@ -67,6 +46,7 @@
     onOpenGallery: () => void;
     onFormatChange?: (format: SaveFormat) => void;
     onQualityChange?: (quality: number) => void;
+    hasImage?: boolean;
   } = $props();
 
   function update() {
@@ -327,7 +307,14 @@
   </fieldset>
 
   <div class="field-row save-row">
-    <button class="save-btn" onclick={onSave}>💾 Save As...</button>
+    <button
+      class="save-btn"
+      onclick={onSave}
+      disabled={!hasImage}
+      title={!hasImage ? 'Load an image in Preview to save' : 'Save Processed Image'}
+    >
+      💾 Save As...
+    </button>
   </div>
 
   <div class="shortcuts-hint">

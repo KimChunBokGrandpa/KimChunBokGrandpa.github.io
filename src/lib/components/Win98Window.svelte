@@ -57,19 +57,21 @@
   $effect(() => {
     if (!isDragging) return;
     const desktopH = window.innerHeight - 30; // taskbar height
-    const onMove = (e: MouseEvent) => {
-      x = Math.max(-50, e.clientX - dragOffsetX);
-      y = Math.max(0, e.clientY - dragOffsetY);
+    const onMove = (e: MouseEvent | TouchEvent) => {
+      const clientX = 'touches' in e ? e.touches[0].clientX : (e as MouseEvent).clientX;
+      const clientY = 'touches' in e ? e.touches[0].clientY : (e as MouseEvent).clientY;
+      x = Math.max(-50, clientX - dragOffsetX);
+      y = Math.max(0, clientY - dragOffsetY);
       // Snap preview detection
-      if (e.clientX <= SNAP_THRESHOLD) {
+      if (clientX <= SNAP_THRESHOLD) {
         snapPreview = 'left';
-      } else if (e.clientX >= window.innerWidth - SNAP_THRESHOLD) {
+      } else if (clientX >= window.innerWidth - SNAP_THRESHOLD) {
         snapPreview = 'right';
       } else {
         snapPreview = null;
       }
     };
-    const onUp = (e: MouseEvent) => {
+    const onUp = (e: MouseEvent | TouchEvent) => {
       isDragging = false;
       // Apply snap
       if (snapPreview) {
@@ -85,19 +87,25 @@
       onLayoutChange?.();
     };
     document.addEventListener('mousemove', onMove);
+    document.addEventListener('touchmove', onMove, { passive: false });
     document.addEventListener('mouseup', onUp);
+    document.addEventListener('touchend', onUp);
     return () => {
       document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('touchmove', onMove);
       document.removeEventListener('mouseup', onUp);
+      document.removeEventListener('touchend', onUp);
     };
   });
 
   // Resize listeners (8-direction)
   $effect(() => {
     if (!isResizing) return;
-    const onMove = (e: MouseEvent) => {
-      const dx = e.clientX - resizeStartX;
-      const dy = e.clientY - resizeStartY;
+    const onMove = (e: MouseEvent | TouchEvent) => {
+      const clientX = 'touches' in e ? e.touches[0].clientX : (e as MouseEvent).clientX;
+      const clientY = 'touches' in e ? e.touches[0].clientY : (e as MouseEvent).clientY;
+      const dx = clientX - resizeStartX;
+      const dy = clientY - resizeStartY;
 
       if (resizeDir.includes('r')) {
         width = Math.max(minWidth, resizeStartW + dx);
@@ -120,38 +128,51 @@
     };
     const onUp = () => { isResizing = false; onLayoutChange?.(); };
     document.addEventListener('mousemove', onMove);
+    document.addEventListener('touchmove', onMove, { passive: false });
     document.addEventListener('mouseup', onUp);
+    document.addEventListener('touchend', onUp);
     return () => {
       document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('touchmove', onMove);
       document.removeEventListener('mouseup', onUp);
+      document.removeEventListener('touchend', onUp);
     };
   });
 
-  function startDrag(e: MouseEvent) {
-    if (mode !== 'windowed' || e.button !== 0) return;
+  function startDrag(e: MouseEvent | TouchEvent) {
+    if (mode !== 'windowed') return;
+    if ('button' in e && e.button !== 0) return;
     if ((e.target as HTMLElement).closest('.title-bar-controls')) return;
+
+    const clientX = 'touches' in e ? e.touches[0].clientX : (e as MouseEvent).clientX;
+    const clientY = 'touches' in e ? e.touches[0].clientY : (e as MouseEvent).clientY;
+
     // If currently snapped, unsnap and adjust drag offset for smooth move
     if (preSnapPos) {
-      const ratioX = e.clientX / width;
+      const ratioX = clientX / width;
       width = preSnapPos.w;
       height = preSnapPos.h;
-      y = e.clientY - dragOffsetY;
-      x = e.clientX - Math.floor(preSnapPos.w * ratioX);
+      y = clientY - dragOffsetY;
+      x = clientX - Math.floor(preSnapPos.w * ratioX);
       preSnapPos = null;
     }
     isDragging = true;
-    dragOffsetX = e.clientX - x;
-    dragOffsetY = e.clientY - y;
+    dragOffsetX = clientX - x;
+    dragOffsetY = clientY - y;
     onFocus?.();
     e.preventDefault();
   }
 
-  function startResize(dir: string, e: MouseEvent) {
-    if (mode !== 'windowed' || e.button !== 0) return;
+  function startResize(dir: string, e: MouseEvent | TouchEvent) {
+    if (mode !== 'windowed') return;
+    if ('button' in e && e.button !== 0) return;
+    const clientX = 'touches' in e ? e.touches[0].clientX : (e as MouseEvent).clientX;
+    const clientY = 'touches' in e ? e.touches[0].clientY : (e as MouseEvent).clientY;
+    
     isResizing = true;
     resizeDir = dir;
-    resizeStartX = e.clientX;
-    resizeStartY = e.clientY;
+    resizeStartX = clientX;
+    resizeStartY = clientY;
     resizeStartW = width;
     resizeStartH = height;
     resizeStartLeft = x;
