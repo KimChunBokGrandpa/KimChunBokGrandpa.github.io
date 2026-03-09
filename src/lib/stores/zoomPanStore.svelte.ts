@@ -15,6 +15,7 @@ export function createZoomPan() {
   let isPanning = $state(false);
   let panStartX = 0;
   let panStartY = 0;
+  let showGrid = $state(false);
 
   // Touch state
   let lastTouchDist = 0;
@@ -146,6 +147,12 @@ export function createZoomPan() {
     },
     get isTouchPanning() {
       return isTouchPanning;
+    },
+    get showGrid() {
+      return showGrid;
+    },
+    set showGrid(v: boolean) {
+      showGrid = v;
     },
     get previewContainer() {
       return previewContainer;

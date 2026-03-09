@@ -202,7 +202,6 @@
         {/each}
         <!-- Add more button -->
         <button class="batch-add-more" onclick={() => document.getElementById('batch-upload')?.click()}>
-          <input type="file" accept={ACCEPTED_TYPES.join(',')} multiple id="batch-upload" onchange={handleFileInput} style="display: none;" />
           ＋ Add
         </button>
       </div>

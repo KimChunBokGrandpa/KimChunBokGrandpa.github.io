@@ -2,7 +2,9 @@
   import ImageDropZone from './ImageDropZone.svelte';
   import BeforeAfterSlider from './BeforeAfterSlider.svelte';
   import CrtDisplay from './CrtDisplay.svelte';
+  import GifControls from './GifControls.svelte';
   import { getPaletteName } from '../utils/palettes';
+  import type { createZoomPan } from '../stores/zoomPanStore.svelte';
   import type { ProcessingSettings } from '../types';
 
   let {
@@ -15,8 +17,19 @@
     onImageSelected,
     onError,
     onOpenSettings,
+    // GIF props
+    isGif = false,
+    gifCurrentFrame = 0,
+    gifFrameCount = 0,
+    gifPlaying = false,
+    gifIsExporting = false,
+    gifExportProgress = 0,
+    onGifPlay,
+    onGifPause,
+    onGifSeek,
+    onGifExport,
   }: {
-    zp: any;
+    zp: ReturnType<typeof createZoomPan>;
     originalImageSrc: string | null;
     processedImageSrc: string | null;
     isProcessing: boolean;
@@ -25,10 +38,51 @@
     onImageSelected: (file: File) => void;
     onError: (msg: string) => void;
     onOpenSettings: () => void;
+    // GIF props
+    isGif?: boolean;
+    gifCurrentFrame?: number;
+    gifFrameCount?: number;
+    gifPlaying?: boolean;
+    gifIsExporting?: boolean;
+    gifExportProgress?: number;
+    onGifPlay?: () => void;
+    onGifPause?: () => void;
+    onGifSeek?: (frame: number) => void;
+    onGifExport?: () => void;
   } = $props();
 
   let displayedWidth = $derived(zp.previewImg?.naturalWidth ?? 0);
   let displayedHeight = $derived(zp.previewImg?.naturalHeight ?? 0);
+
+  // Pixel grid: show when grid is on and zoom is high enough to see pixels
+  let gridVisible = $derived(zp.showGrid && zp.zoomLevel >= 2 && processingSettings.pixelSize > 1);
+
+  // Compute grid style that matches the image's "object-fit: contain" rendering
+  let gridStyle = $derived.by(() => {
+    if (!gridVisible || !zp.previewImg || !zp.previewContainer) return '';
+    const px = processingSettings.pixelSize;
+    const z = zp.zoomLevel;
+    const imgW = zp.previewImg.naturalWidth;
+    const imgH = zp.previewImg.naturalHeight;
+    const contW = zp.previewContainer.clientWidth;
+    const contH = zp.previewContainer.clientHeight;
+    if (!imgW || !imgH || !contW || !contH) return '';
+
+    // "contain" fit scale at zoom=1
+    const fitScale = Math.min(contW / imgW, contH / imgH);
+    // Screen-space cell size
+    const cellSize = px * fitScale * z;
+    if (cellSize < 4) return '';
+
+    const w = imgW * fitScale * z;
+    const h = imgH * fitScale * z;
+    // Pan is in screen coordinates, same as image transform
+    const tx = zp.panX;
+    const ty = zp.panY;
+    return `width:${w}px;height:${h}px;` +
+      `background-size:${cellSize}px ${cellSize}px;` +
+      `transform:translate(calc(-50% + ${tx}px), calc(-50% + ${ty}px));`;
+  });
 </script>
 
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
@@ -72,6 +126,10 @@
           />
         {/snippet}
       </CrtDisplay>
+    {/if}
+    <!-- Pixel Grid Overlay -->
+    {#if gridVisible && gridStyle}
+      <div class="pixel-grid-overlay" style={gridStyle}></div>
     {/if}
     {#if isProcessing}
       <div class="processing-overlay">
@@ -117,8 +175,29 @@
         </div>
         <button class="zoom-btn" onclick={zp.zoomOut} title="Zoom Out">−</button>
         <button class="zoom-btn" onclick={zp.zoomToFit} title="Fit to Window">⊡</button>
+        <div class="zoom-sep"></div>
+        <button
+          class="zoom-btn"
+          class:grid-active={zp.showGrid}
+          onclick={() => { zp.showGrid = !zp.showGrid; }}
+          title={zp.showGrid ? 'Hide Pixel Grid' : 'Show Pixel Grid (zoom ≥2x, pixelSize>1)'}
+        >#</button>
       {/if}
     </div>
+    <!-- GIF Frame Controls -->
+    {#if isGif && gifFrameCount > 1 && onGifPlay && onGifPause && onGifSeek && onGifExport}
+      <GifControls
+        currentFrame={gifCurrentFrame}
+        frameCount={gifFrameCount}
+        isPlaying={gifPlaying}
+        isExporting={gifIsExporting}
+        exportProgress={gifExportProgress}
+        onPlay={onGifPlay}
+        onPause={onGifPause}
+        onSeek={onGifSeek}
+        onExport={onGifExport}
+      />
+    {/if}
   {:else if originalImageSrc}
     <div class="initial-processing">
       <div class="processing-indicator">
@@ -302,9 +381,22 @@
   .zoom-sep {
     width: 4px;
   }
-  .compare-active {
+  .compare-active, .grid-active {
     background: #000080;
     color: #fff;
     box-shadow: inset -1px -1px #fff, inset 1px 1px #0a0a0a;
+  }
+
+  /* ===== Pixel Grid Overlay ===== */
+  .pixel-grid-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    pointer-events: none;
+    z-index: 3;
+    background-image:
+      linear-gradient(to right, rgba(255,255,255,0.3) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255,255,255,0.3) 1px, transparent 1px);
+    background-position: 0 0;
   }
 </style>

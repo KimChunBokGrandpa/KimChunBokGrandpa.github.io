@@ -1,7 +1,7 @@
 <script lang="ts">
   import { getPaletteName } from '../utils/palettes';
   import { PRESETS, type Preset } from '../utils/presets';
-  import type { GlitchFilter, GlitchType, RenderMode, ProcessingSettings } from '../types';
+  import type { DitherType, GlitchFilter, GlitchType, RenderMode, ProcessingSettings } from '../types';
   import type { SaveFormat } from '../services/saveService';
 
   // 글리치 필터 옵션 정의
@@ -19,6 +19,13 @@
     { id: 'hqx', label: 'HQx Upscale', title: 'High quality curve-based edge upscaling' },
   ] as const;
 
+  // 디더링 옵션
+  const DITHER_OPTIONS = [
+    { id: 'none', label: 'None', title: 'No dithering — flat color blocks' },
+    { id: 'floyd_steinberg', label: 'Floyd-Steinberg', title: 'Error diffusion for smooth gradients' },
+    { id: 'ordered', label: 'Ordered', title: 'Bayer matrix pattern dithering' },
+  ] as const;
+
   // 저장 포맷 옵션
   const FORMAT_OPTIONS = [
     { id: 'png', label: 'PNG' },
@@ -28,7 +35,7 @@
 
 
   let {
-    settings = $bindable({ pixelSize: 1, palette: 'original', crtEffect: false, glitchFilters: [] as GlitchFilter[], renderMode: 'pixel_perfect' as const, glitchSeed: null as (number | null) }),
+    settings = $bindable({ pixelSize: 1, palette: 'original', crtEffect: false, glitchFilters: [] as GlitchFilter[], renderMode: 'pixel_perfect' as const, glitchSeed: null as (number | null), ditherType: 'none' as const }),
     saveFormat = 'png' as SaveFormat,
     saveQuality = 0.92,
     onChange,
@@ -60,7 +67,8 @@
       crtEffect: preset.crtEffect,
       glitchFilters: preset.glitchFilters.map(f => ({ ...f })),
       renderMode: preset.renderMode,
-      glitchSeed: settings.glitchSeed
+      glitchSeed: settings.glitchSeed,
+      ditherType: preset.ditherType,
     };
     update();
   }
@@ -72,6 +80,7 @@
     if (settings.palette !== preset.palette) return false;
     if (settings.crtEffect !== preset.crtEffect) return false;
     if (settings.renderMode !== preset.renderMode) return false;
+    if ((settings.ditherType || 'none') !== preset.ditherType) return false;
     if (settings.glitchFilters.length !== preset.glitchFilters.length) return false;
     return preset.glitchFilters.every(pf =>
       settings.glitchFilters.some(sf => sf.type === pf.type && sf.intensity === pf.intensity)
@@ -163,6 +172,20 @@
         <span><b>Palette:</b> {getPaletteName(settings.palette)}</span>
         <span class="palette-arrow">Select &gt;</span>
       </button>
+    </div>
+
+    <div class="section-label">Dithering:</div>
+    <div class="field-row render-row">
+      {#each DITHER_OPTIONS as opt}
+        <button
+          class:preset-active={settings.ditherType === opt.id}
+          class="render-btn"
+          onclick={() => { settings.ditherType = opt.id as DitherType; update(); }}
+          title={opt.title}
+        >
+          {opt.label}
+        </button>
+      {/each}
     </div>
   </fieldset>
 
@@ -275,6 +298,7 @@
         <span>⚡ {f.type} Lv{f.intensity}</span>
       {/each}
       <span>🔍 {settings.renderMode === 'pixel_perfect' ? 'Pixel' : settings.renderMode === 'bilinear' ? 'Smooth' : 'HQx'}</span>
+      {#if settings.ditherType && settings.ditherType !== 'none'}<span>🔳 {settings.ditherType === 'floyd_steinberg' ? 'FS Dither' : 'Ordered'}</span>{/if}
     </div>
   </fieldset>
 

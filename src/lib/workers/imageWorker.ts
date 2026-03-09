@@ -21,6 +21,8 @@ onmessage = (e: MessageEvent<ImageWorkerMessage>) => {
     glitchFilters,
     renderMode,
     glitchSeed,
+    ditherType,
+    customPaletteColors,
   } = e.data;
 
   try {
@@ -36,6 +38,8 @@ onmessage = (e: MessageEvent<ImageWorkerMessage>) => {
       sourceData,
       pixelSize,
       palette,
+      ditherType || 'none',
+      customPaletteColors,
     );
 
     // Clear cached color lookups for unused palettes

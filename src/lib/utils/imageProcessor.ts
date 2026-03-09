@@ -3,6 +3,7 @@ import type {
   ImageWorkerMessage,
   ImageWorkerResponse,
 } from "../types";
+import { customPaletteStore } from "../stores/customPaletteStore.svelte";
 
 /**
  * Singleton-based image processing service.
@@ -180,7 +181,8 @@ class ImageProcessorService {
       settings.pixelSize <= 1 &&
       settings.palette === "original" &&
       settings.glitchFilters.length === 0 &&
-      settings.renderMode !== "hqx"
+      settings.renderMode !== "hqx" &&
+      (!settings.ditherType || settings.ditherType === 'none')
     ) {
       return this.processWithoutWorker(imageSrc, requestId);
     }
@@ -228,6 +230,10 @@ class ImageProcessorService {
         })),
         renderMode: settings.renderMode,
         glitchSeed: settings.glitchSeed,
+        ditherType: settings.ditherType,
+        customPaletteColors: settings.palette.startsWith('custom_')
+          ? customPaletteStore.getPaletteById(settings.palette)?.colors
+          : undefined,
       };
 
       this.ensureWorker().postMessage(message, [bitmap]);

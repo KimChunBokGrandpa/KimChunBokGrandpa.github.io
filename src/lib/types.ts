@@ -21,6 +21,7 @@ export interface WindowConfig {
 // ─── Processing Types ───
 export type GlitchType = "none" | "rgb_split" | "noise" | "wave" | "slice";
 export type RenderMode = "pixel_perfect" | "bilinear" | "hqx";
+export type DitherType = "none" | "floyd_steinberg" | "ordered";
 
 export interface GlitchFilter {
   type: GlitchType;
@@ -34,6 +35,7 @@ export interface ProcessingSettings {
   glitchFilters: GlitchFilter[];
   renderMode: RenderMode;
   glitchSeed: number | null; // null = random each time, number = fixed seed
+  ditherType: DitherType;
 }
 
 // ─── Worker Message Types ───
@@ -47,6 +49,8 @@ export interface ImageWorkerMessage {
   glitchFilters?: GlitchFilter[];
   renderMode?: RenderMode;
   glitchSeed?: number | null;
+  ditherType?: DitherType;
+  customPaletteColors?: { r: number; g: number; b: number }[];
 }
 
 export interface ImageWorkerResponse {

@@ -13,3 +13,6 @@ vite.config.ts.timestamp-*
 *.zip
 retro-palette-sample/
 .agent/
+.cursor/
+.claude/
+CLAUDE.md

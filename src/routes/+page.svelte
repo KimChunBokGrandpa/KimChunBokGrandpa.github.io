@@ -68,8 +68,6 @@
     WINDOW_ORDER.filter(id => wm.wins[id].mode !== 'closed' && wm.wins[id].mode !== 'minimized')
   );
 
-  const TASKBAR_HEIGHT = 30;
-
   function getMobileSlot(id: string): { top: string; height: string } | null {
     if (!isMobile) return null;
     const idx = mobileVisibleIds.indexOf(id as typeof WINDOW_ORDER[number]);
@@ -145,6 +143,40 @@
   function handleIconDblClick(id: WindowId) { selectedIcon = null; wm.openWindow(id); }
   function handleDesktopClick() { selectedIcon = null; }
 
+  // ─── Desktop-wide Drop Zone ───
+  const ACCEPTED_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/bmp', 'image/webp'];
+  let dragCounter = 0;
+  let isDraggingOverDesktop = $state(false);
+
+  function handleDesktopDragEnter(e: DragEvent) {
+    e.preventDefault();
+    dragCounter++;
+    if (dragCounter === 1) isDraggingOverDesktop = true;
+  }
+
+  function handleDesktopDragLeave(e: DragEvent) {
+    e.preventDefault();
+    dragCounter--;
+    if (dragCounter <= 0) {
+      dragCounter = 0;
+      isDraggingOverDesktop = false;
+    }
+  }
+
+  function handleDesktopDrop(e: DragEvent) {
+    e.preventDefault();
+    dragCounter = 0;
+    isDraggingOverDesktop = false;
+    if (e.dataTransfer?.files && e.dataTransfer.files.length > 0) {
+      const file = e.dataTransfer.files[0];
+      if (ACCEPTED_IMAGE_TYPES.includes(file.type)) {
+        handleImageSelected(file);
+      } else {
+        showDialog('Please drop an image file (PNG, JPEG, GIF, BMP, WebP).', 'Unsupported Format');
+      }
+    }
+  }
+
   function handleKeydown(e: KeyboardEvent) {
     if ((e.ctrlKey || e.metaKey) && e.key === 'z' && e.shiftKey) {
       e.preventDefault();
@@ -165,7 +197,27 @@
 
 <!-- ═══ Desktop ═══ -->
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-<div class="desktop" onclick={handleDesktopClick} onkeydown={(e) => { if (e.key === 'Escape') handleDesktopClick(); }} role="application" tabindex="-1">
+<div
+  class="desktop"
+  onclick={handleDesktopClick}
+  onkeydown={(e) => { if (e.key === 'Escape') handleDesktopClick(); }}
+  ondragenter={handleDesktopDragEnter}
+  ondragover={(e) => e.preventDefault()}
+  ondragleave={handleDesktopDragLeave}
+  ondrop={handleDesktopDrop}
+  role="application"
+  tabindex="-1"
+>
+
+  <!-- Desktop Drop Overlay -->
+  {#if isDraggingOverDesktop}
+    <div class="desktop-drop-overlay">
+      <div class="desktop-drop-message">
+        <span class="desktop-drop-icon">📥</span>
+        <span>Drop image here</span>
+      </div>
+    </div>
+  {/if}
 
   <!-- Desktop Icons -->
   <DesktopIcons
@@ -191,32 +243,32 @@
       onLayoutChange={wm.persistLayout}
     >
       <div class="settings-body">
-          <div class="settings-toolbar">
-            <button
-              class="load-new-btn"
-              onclick={handleLoadNewImage}
-            >
-              📂 Load New Image...
-            </button>
-            <button
-              class="load-new-btn"
-              onclick={(e) => { e.stopPropagation(); wm.openWindow('preview'); }}
-            >
-              🖼️ Preview
-            </button>
-          </div>
-          <ControlPanel
-            bind:settings={processingSettings}
-            {saveFormat}
-            {saveQuality}
-            hasImage={!!originalImageSrc}
-            onChange={handleSettingsChange}
-            onSave={handleSave}
-            onOpenGallery={() => { setTimeout(() => wm.openWindow('gallery'), 0); }}
-            onFormatChange={handleFormatChange}
-            onQualityChange={handleQualityChange}
-          />
+        <div class="settings-toolbar">
+          <button
+            class="load-new-btn"
+            onclick={handleLoadNewImage}
+          >
+            📂 Load New Image...
+          </button>
+          <button
+            class="load-new-btn"
+            onclick={(e) => { e.stopPropagation(); wm.openWindow('preview'); }}
+          >
+            🖼️ Preview
+          </button>
         </div>
+        <ControlPanel
+          bind:settings={processingSettings}
+          {saveFormat}
+          {saveQuality}
+          hasImage={!!originalImageSrc}
+          onChange={handleSettingsChange}
+          onSave={handleSave}
+          onOpenGallery={() => { setTimeout(() => wm.openWindow('gallery'), 0); }}
+          onFormatChange={handleFormatChange}
+          onQualityChange={handleQualityChange}
+        />
+      </div>
     </Win98Window>
   {/if}
 
@@ -246,6 +298,19 @@
         onImageSelected={handleImageSelected}
         onError={(msg) => showDialog(msg, 'Error')}
         onOpenSettings={() => wm.openWindow('settings')}
+        isGif={ip.isGif}
+        gifCurrentFrame={ip.gifCurrentFrame}
+        gifFrameCount={ip.gifFrameCount}
+        gifPlaying={ip.gifPlaying}
+        gifIsExporting={ip.gifIsExporting}
+        gifExportProgress={ip.gifProcessingProgress}
+        onGifPlay={() => ip.playGif()}
+        onGifPause={() => ip.pauseGif()}
+        onGifSeek={(frame) => ip.seekGifFrame(frame)}
+        onGifExport={async () => {
+          const msg = await ip.exportGif();
+          if (msg) toastMessage = msg;
+        }}
       />
     </Win98Window>
   {/if}
@@ -367,5 +432,37 @@
     height: calc(100dvh - var(--taskbar-h));
     position: relative;
     overflow: hidden;
+  }
+
+  .desktop-drop-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 9998;
+    background: rgba(0, 0, 128, 0.2);
+    border: 3px dashed #000080;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+  }
+
+  .desktop-drop-message {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 16px 32px;
+    background: #c0c0c0;
+    border: 2px solid;
+    border-color: #dfdfdf #808080 #808080 #dfdfdf;
+    box-shadow: 4px 4px 12px rgba(0, 0, 0, 0.4);
+    font-size: 14px;
+    font-weight: bold;
+    color: #000080;
+  }
+
+  .desktop-drop-icon {
+    font-size: 32px;
+    font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
   }
 </style>
