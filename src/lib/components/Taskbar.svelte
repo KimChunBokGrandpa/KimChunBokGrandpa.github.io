@@ -1,6 +1,15 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import type { WindowId, WindowMode } from '../types';
+  import { i18n, LOCALE_LABELS, type Locale } from '$lib/i18n/index.svelte';
+  import { getWindowTitle } from '$lib/stores/windowStore.svelte';
+
+  const LOCALES: Locale[] = ['en', 'ko', 'ja'];
+
+  function cycleLocale() {
+    const idx = LOCALES.indexOf(i18n.locale);
+    i18n.locale = LOCALES[(idx + 1) % LOCALES.length];
+  }
 
   export interface TaskbarWindowInfo {
     id: WindowId;
@@ -61,15 +70,15 @@
         onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onWindowClick(win.id); } }}
         role="button"
         tabindex="0"
-        aria-label="{win.title} window"
+        aria-label="{getWindowTitle(win.id)} window"
       >
         <span class="tb-icon">{win.icon}</span>
-        <span class="tb-label">{win.title}</span>
+        <span class="tb-label">{getWindowTitle(win.id)}</span>
         <button
           class="tb-x"
-          title="Close {win.title}"
+          title="{i18n.t('close')} {getWindowTitle(win.id)}"
           onclick={(e) => { e.stopPropagation(); onWindowClose(win.id); }}
-          aria-label="Close {win.title}"
+          aria-label="{i18n.t('close')} {getWindowTitle(win.id)}"
         ></button>
       </div>
     {/each}
@@ -78,6 +87,11 @@
   <div class="taskbar-right">
     <div class="tray">
       <span class="tray-ico">🔊</span>
+      <button
+        class="tray-lang"
+        onclick={cycleLocale}
+        title={i18n.t('language')}
+      >{i18n.locale.toUpperCase()}</button>
       <span class="tray-clock">{timeString}</span>
     </div>
   </div>
@@ -213,6 +227,23 @@
   }
   .tray-ico { font-size: 13px; font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif; }
   .tray-clock { cursor: default; white-space: nowrap; letter-spacing: 0; font-variant-numeric: tabular-nums; }
+  .tray-lang {
+    font-size: 10px;
+    font-weight: bold;
+    font-family: inherit;
+    padding: 1px 4px;
+    background: #c0c0c0;
+    border: none;
+    box-shadow: inset 1px 1px #fff, inset -1px -1px #0a0a0a;
+    cursor: pointer;
+    min-width: 24px;
+    text-align: center;
+    height: 18px;
+    line-height: 1;
+  }
+  .tray-lang:active {
+    box-shadow: inset -1px -1px #fff, inset 1px 1px #0a0a0a;
+  }
 
   /* ── Mobile ── */
   @media (max-width: 400px) {

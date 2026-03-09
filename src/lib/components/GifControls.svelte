@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { i18n } from '$lib/i18n/index.svelte';
+
   let {
     currentFrame,
     frameCount,
@@ -27,7 +29,7 @@
     <button
       class="gif-btn"
       onclick={() => isPlaying ? onPause() : onPlay()}
-      title={isPlaying ? 'Pause' : 'Play'}
+      title={isPlaying ? i18n.t('pause') : i18n.t('play')}
       disabled={isExporting}
     >
       {isPlaying ? '⏸' : '▶'}
@@ -35,26 +37,26 @@
     <button
       class="gif-btn"
       onclick={() => onSeek(0)}
-      title="First Frame"
+      title={i18n.t('first_frame')}
       disabled={isExporting}
     >⏮</button>
     <button
       class="gif-btn"
       onclick={() => onSeek(Math.max(0, currentFrame - 1))}
-      title="Previous Frame"
+      title={i18n.t('prev_frame')}
       disabled={isExporting}
     >◀</button>
     <span class="gif-frame-info">{currentFrame + 1}/{frameCount}</span>
     <button
       class="gif-btn"
       onclick={() => onSeek(Math.min(frameCount - 1, currentFrame + 1))}
-      title="Next Frame"
+      title={i18n.t('next_frame')}
       disabled={isExporting}
     >▶</button>
     <button
       class="gif-btn"
       onclick={() => onSeek(frameCount - 1)}
-      title="Last Frame"
+      title={i18n.t('last_frame')}
       disabled={isExporting}
     >⏭</button>
     <div class="gif-sep"></div>
@@ -62,9 +64,9 @@
       class="gif-btn gif-export-btn"
       onclick={onExport}
       disabled={isExporting}
-      title="Export as Animated GIF"
+      title={i18n.t('export_gif')}
     >
-      {isExporting ? `${Math.round(exportProgress * 100)}%` : '💾 GIF'}
+      {isExporting ? `${Math.round(exportProgress * 100)}%` : `💾 ${i18n.t('gif_btn')}`}
     </button>
   </div>
   <div class="gif-slider-row">

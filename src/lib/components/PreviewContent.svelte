@@ -4,6 +4,7 @@
   import CrtDisplay from './CrtDisplay.svelte';
   import GifControls from './GifControls.svelte';
   import { getPaletteName } from '../utils/palettes';
+  import { i18n } from '$lib/i18n/index.svelte';
   import type { createZoomPan } from '../stores/zoomPanStore.svelte';
   import type { ProcessingSettings } from '../types';
 
@@ -28,6 +29,12 @@
     onGifPause,
     onGifSeek,
     onGifExport,
+    // Color count
+    colorCount = 0,
+    // Tile mode
+    tileMode = $bindable(false),
+    // Post-process CSS filter
+    postFilterCss = '',
   }: {
     zp: ReturnType<typeof createZoomPan>;
     originalImageSrc: string | null;
@@ -49,6 +56,12 @@
     onGifPause?: () => void;
     onGifSeek?: (frame: number) => void;
     onGifExport?: () => void;
+    // Color count
+    colorCount?: number;
+    // Tile mode
+    tileMode?: boolean;
+    // Post-process CSS filter
+    postFilterCss?: string;
   } = $props();
 
   let displayedWidth = $derived(zp.previewImg?.naturalWidth ?? 0);
@@ -70,15 +83,21 @@
 
     // "contain" fit scale at zoom=1
     const fitScale = Math.min(contW / imgW, contH / imgH);
-    // Screen-space cell size
+    // Screen-space cell size — use exact pixel count per cell
     const cellSize = px * fitScale * z;
     if (cellSize < 4) return '';
 
-    const w = imgW * fitScale * z;
-    const h = imgH * fitScale * z;
-    // Pan is in screen coordinates, same as image transform
-    const tx = zp.panX;
-    const ty = zp.panY;
+    // Grid dimensions = exact number of pixel blocks × cell size
+    // This prevents drift by ensuring grid aligns to block boundaries
+    const blocksX = Math.floor(imgW / px);
+    const blocksY = Math.floor(imgH / px);
+    const w = blocksX * cellSize;
+    const h = blocksY * cellSize;
+    // Offset: center the grid on the image, accounting for partial blocks
+    const offsetX = ((imgW - blocksX * px) / 2) * fitScale * z;
+    const offsetY = ((imgH - blocksY * px) / 2) * fitScale * z;
+    const tx = zp.panX + offsetX;
+    const ty = zp.panY + offsetY;
     return `width:${w}px;height:${h}px;` +
       `background-size:${cellSize}px ${cellSize}px;` +
       `transform:translate(calc(-50% + ${tx}px), calc(-50% + ${ty}px));`;
@@ -99,12 +118,22 @@
   ontouchmove={zp.handleTouchMove}
   ontouchend={zp.handleTouchEnd}
   role="img"
-  aria-label="Image preview"
+  aria-label={i18n.t('image_preview')}
 >
   {#if !originalImageSrc}
     <ImageDropZone {onImageSelected} {onError} />
   {:else if processedImageSrc}
-    {#if compareMode && originalImageSrc}
+    {#if tileMode && processedImageSrc}
+      <div class="tile-preview">
+        <div
+          class="tile-grid"
+          style:background-image="url({processedImageSrc})"
+          style:image-rendering={processingSettings.renderMode === 'bilinear' ? 'auto' : 'pixelated'}
+          style:filter={postFilterCss || 'none'}
+        ></div>
+        <span class="tile-label">{i18n.t('tile_label')}</span>
+      </div>
+    {:else if compareMode && originalImageSrc}
       <BeforeAfterSlider
         originalSrc={originalImageSrc}
         processedSrc={processedImageSrc}
@@ -120,6 +149,7 @@
             alt="Pixel Art - {getPaletteName(processingSettings.palette)}"
             class="preview-image"
             style:image-rendering={processingSettings.renderMode === 'bilinear' ? 'auto' : 'pixelated'}
+            style:filter={postFilterCss || 'none'}
             style:transform="scale({zp.zoomLevel}) translate({zp.panX / zp.zoomLevel}px, {zp.panY / zp.zoomLevel}px)"
             style:transition={zp.isPanning || zp.isTouchPanning ? 'none' : 'transform 0.1s ease'}
             draggable="false"
@@ -137,7 +167,7 @@
           <div class="progress-container">
             <div class="progress-bar"></div>
           </div>
-          <span class="processing-text">Rendering...</span>
+          <span class="processing-text">{i18n.t('rendering')}</span>
           <span class="processing-palette">🎨 {getPaletteName(processingSettings.palette)}</span>
         </div>
       </div>
@@ -156,6 +186,9 @@
       {#if !compareMode}
         {#if displayedWidth > 0 && displayedHeight > 0}
           <div class="zoom-info" title="Image Resolution">{displayedWidth}×{displayedHeight}</div>
+          {#if colorCount > 0}
+            <div class="zoom-info color-count" title="Unique Colors">{colorCount}c</div>
+          {/if}
           <div class="zoom-sep"></div>
         {/if}
         <button class="zoom-btn" onclick={zp.zoomIn} title="Zoom In">+</button>
@@ -182,6 +215,12 @@
           onclick={() => { zp.showGrid = !zp.showGrid; }}
           title={zp.showGrid ? 'Hide Pixel Grid' : 'Show Pixel Grid (zoom ≥2x, pixelSize>1)'}
         >#</button>
+        <button
+          class="zoom-btn"
+          class:grid-active={tileMode}
+          onclick={() => { tileMode = !tileMode; }}
+          title={tileMode ? 'Exit Tile Preview' : 'Tile Preview (seamless pattern check)'}
+        >⊞</button>
       {/if}
     </div>
     <!-- GIF Frame Controls -->
@@ -385,6 +424,44 @@
     background: #000080;
     color: #fff;
     box-shadow: inset -1px -1px #fff, inset 1px 1px #0a0a0a;
+  }
+
+  /* ===== Color Count ===== */
+  .color-count {
+    background: #000080;
+    color: #0f0;
+    border-color: #000080;
+    font-size: 10px;
+    margin-left: 2px;
+  }
+
+  /* ===== Tile Preview ===== */
+  .tile-preview {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #111;
+  }
+  .tile-grid {
+    width: 100%;
+    height: 100%;
+    background-size: 33.333% 33.333%;
+    background-repeat: repeat;
+    background-position: center;
+  }
+  .tile-label {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    font-size: 9px;
+    font-weight: bold;
+    padding: 2px 6px;
+    background: rgba(0, 0, 128, 0.8);
+    color: #fff;
+    letter-spacing: 1px;
+    pointer-events: none;
+    z-index: 4;
   }
 
   /* ===== Pixel Grid Overlay ===== */

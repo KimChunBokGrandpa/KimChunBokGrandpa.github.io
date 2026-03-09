@@ -6,6 +6,7 @@
 
   import { processorService } from '$lib/utils/imageProcessor';
   import { saveImage } from '$lib/services/saveService';
+  import { i18n } from '$lib/i18n/index.svelte';
   import { getPaletteName } from '$lib/utils/palettes';
   import type { ProcessingSettings } from '$lib/types';
   import type { SaveFormat } from '$lib/services/saveService';

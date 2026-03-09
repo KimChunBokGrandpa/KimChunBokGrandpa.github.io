@@ -1,4 +1,17 @@
 import type { WindowState, WindowMode, WindowConfig, WindowId } from "$lib/types";
+import { i18n } from "$lib/i18n/index.svelte";
+
+const TITLE_KEYS: Record<WindowId, string> = {
+  preview: 'win_preview',
+  settings: 'win_settings',
+  gallery: 'win_gallery',
+  batch: 'win_batch',
+  history: 'win_history',
+};
+
+export function getWindowTitle(id: WindowId): string {
+  return i18n.t(TITLE_KEYS[id] as any);
+}
 
 /** Desktop window definitions */
 export const WINDOW_CONFIGS: WindowConfig[] = [

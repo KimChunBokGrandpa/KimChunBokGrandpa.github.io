@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { WINDOW_CONFIGS } from '$lib/stores/windowStore.svelte';
+  import { WINDOW_CONFIGS, getWindowTitle } from '$lib/stores/windowStore.svelte';
   import type { WindowId } from '$lib/types';
 
   let {
@@ -20,10 +20,10 @@
       class:icon-selected={selectedIcon === cfg.id}
       onclick={(e) => { e.stopPropagation(); onIconClick(cfg.id); }}
       ondblclick={() => onIconDblClick(cfg.id)}
-      aria-label="Open {cfg.title}"
+      aria-label="Open {getWindowTitle(cfg.id)}"
     >
       <span class="icon-img" aria-hidden="true">{cfg.icon}</span>
-      <span class="icon-label">{cfg.title}</span>
+      <span class="icon-label">{getWindowTitle(cfg.id)}</span>
     </button>
   {/each}
 </div>

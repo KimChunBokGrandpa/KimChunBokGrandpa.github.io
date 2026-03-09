@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { i18n } from '$lib/i18n/index.svelte';
+
   let { onImageSelected, onError }: {
     onImageSelected: (file: File) => void;
     onError?: (message: string) => void;
@@ -31,7 +33,7 @@
       if (ACCEPTED_TYPES.includes(file.type)) {
         onImageSelected(file);
       } else {
-        onError?.("Please drop an image file (PNG, JPEG, GIF, BMP, WebP).");
+        onError?.(i18n.t('drop_image_error'));
       }
     }
   }
@@ -67,7 +69,7 @@
   style="margin: 0; flex: 1; display: flex; flex-direction: column; box-sizing: border-box; overflow: hidden;"
 >
   <div class="title-bar">
-    <div class="title-bar-text">Open Image</div>
+    <div class="title-bar-text">{i18n.t('open_image')}</div>
   </div>
   <div
     class="window-body dropzone"
@@ -81,14 +83,14 @@
   >
     <div class="drop-content">
       <span class="drop-icon">{isDragging ? '📥' : '🖼️'}</span>
-      <p class="drop-title">{isDragging ? 'Drop here!' : 'Drag & Drop Image Here'}</p>
-      <p class="drop-or">or</p>
+      <p class="drop-title">{isDragging ? i18n.t('drop_here') : i18n.t('drag_drop_image')}</p>
+      <p class="drop-or">{i18n.t('or')}</p>
       <div class="field-row">
         <input type="file" accept={ACCEPTED_TYPES.join(',')} id="file-upload" onchange={handleFileInput} style="display: none;" />
-        <button class="browse-btn" onclick={() => document.getElementById('file-upload')?.click()}>📂 Browse...</button>
+        <button class="browse-btn" onclick={() => document.getElementById('file-upload')?.click()}>📂 {i18n.t('browse')}</button>
       </div>
-      <p class="drop-hint">Ctrl+V to paste from clipboard</p>
-      <p class="drop-formats">PNG · JPEG · GIF · BMP · WebP</p>
+      <p class="drop-hint">{i18n.t('paste_hint')}</p>
+      <p class="drop-formats">{i18n.t('supported_formats')}</p>
     </div>
   </div>
 </div>

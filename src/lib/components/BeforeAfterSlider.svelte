@@ -3,6 +3,7 @@
    * Before/After Slider — Compares original vs processed image
    * with a draggable divider. Supports mouse, touch, and keyboard.
    */
+  import { i18n } from '$lib/i18n/index.svelte';
 
   let {
     originalSrc,
@@ -126,8 +127,8 @@
   </div>
 
   <!-- Labels -->
-  <span class="ba-label ba-label-before">BEFORE</span>
-  <span class="ba-label ba-label-after">AFTER</span>
+  <span class="ba-label ba-label-before">{i18n.t('before')}</span>
+  <span class="ba-label ba-label-after">{i18n.t('after')}</span>
 </div>
 
 <style>

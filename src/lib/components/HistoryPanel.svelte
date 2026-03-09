@@ -4,6 +4,7 @@
    * to specific states.
    */
   import { getPaletteName } from '$lib/utils/palettes';
+  import { i18n } from '$lib/i18n/index.svelte';
   import type { ProcessingSettings } from '$lib/types';
 
   let {
@@ -34,8 +35,8 @@
 
 <div class="history-panel">
   <div class="history-controls">
-    <button onclick={onUndo} disabled={history.length === 0} title="Undo (Ctrl+Z)">↩ Undo</button>
-    <button onclick={onRedo} disabled={redoHistory.length === 0} title="Redo (Ctrl+Y)">↪ Redo</button>
+    <button onclick={onUndo} disabled={history.length === 0} title="{i18n.t('undo')} (Ctrl+Z)">↩ {i18n.t('undo')}</button>
+    <button onclick={onRedo} disabled={redoHistory.length === 0} title="{i18n.t('redo')} (Ctrl+Y)">↪ {i18n.t('redo')}</button>
   </div>
 
   <div class="history-list">
@@ -51,7 +52,7 @@
     <div class="history-item current">
       <span class="step-num">{history.length + 1}</span>
       <span class="step-desc">{describeSettings(currentSettings)}</span>
-      <span class="current-badge">Current</span>
+      <span class="current-badge">{i18n.t('current')}</span>
     </div>
 
     <!-- Future (redo) states -->

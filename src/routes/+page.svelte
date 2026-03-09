@@ -10,6 +10,7 @@
   import DesktopIcons from '$lib/components/DesktopIcons.svelte';
   import PreviewContent from '$lib/components/PreviewContent.svelte';
   import ToastNotification from '$lib/components/ToastNotification.svelte';
+  import KeyboardShortcuts from '$lib/components/KeyboardShortcuts.svelte';
   import { createWindowStore, WINDOW_CONFIGS } from '$lib/stores/windowStore.svelte';
   import { createZoomPan } from '$lib/stores/zoomPanStore.svelte';
   import { createImageProcessingStore } from '$lib/stores/imageProcessingStore.svelte';
@@ -30,6 +31,8 @@
 
   // ─── Compare Mode ───
   let compareMode = $state(false);
+  let tileMode = $state(false);
+  let showShortcuts = $state(false);
 
   // ─── Error Handling ───
   $effect(() => {
@@ -187,6 +190,8 @@
     } else if ((e.ctrlKey || e.metaKey) && e.key === 's') {
       e.preventDefault();
       handleSave();
+    } else if (e.key === '?' && !e.ctrlKey && !e.metaKey) {
+      showShortcuts = !showShortcuts;
     }
   }
 
@@ -259,6 +264,7 @@
         </div>
         <ControlPanel
           bind:settings={processingSettings}
+          bind:postFilters={ip.postFilters}
           {saveFormat}
           {saveQuality}
           hasImage={!!originalImageSrc}
@@ -295,6 +301,9 @@
         isProcessing={isProcessing}
         processingSettings={processingSettings}
         bind:compareMode={compareMode}
+        bind:tileMode={tileMode}
+        colorCount={ip.colorCount}
+        postFilterCss={ip.postFilterCss}
         onImageSelected={handleImageSelected}
         onError={(msg) => showDialog(msg, 'Error')}
         onOpenSettings={() => wm.openWindow('settings')}
@@ -417,6 +426,11 @@
     message={toastMessage}
     onDone={() => { toastMessage = null; }}
   />
+{/if}
+
+<!-- ═══ Keyboard Shortcuts ═══ -->
+{#if showShortcuts}
+  <KeyboardShortcuts onClose={() => { showShortcuts = false; }} />
 {/if}
 
 <style>

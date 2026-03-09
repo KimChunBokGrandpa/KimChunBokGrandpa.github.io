@@ -38,6 +38,21 @@ export interface ProcessingSettings {
   ditherType: DitherType;
 }
 
+// ─── Post-Process Filter Types ───
+export interface PostProcessFilters {
+  brightness: number; // 100 = normal
+  contrast: number;   // 100 = normal
+  saturation: number; // 100 = normal
+  hueRotate: number;  // 0 = normal, degrees
+}
+
+export const DEFAULT_POST_FILTERS: PostProcessFilters = {
+  brightness: 100,
+  contrast: 100,
+  saturation: 100,
+  hueRotate: 0,
+};
+
 // ─── Worker Message Types ───
 export interface ImageWorkerMessage {
   id: string;
@@ -56,5 +71,6 @@ export interface ImageWorkerMessage {
 export interface ImageWorkerResponse {
   id: string;
   processedData: ImageData;
+  colorCount?: number;
   error?: string;
 }

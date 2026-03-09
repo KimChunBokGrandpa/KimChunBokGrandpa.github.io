@@ -35,6 +35,9 @@ class ImageProcessorService {
   /** Cached last-rendered canvas for save without re-decode */
   private lastCanvas: HTMLCanvasElement | null = null;
 
+  /** Last computed unique color count */
+  private _lastColorCount = 0;
+
   /** Reusable canvases to avoid repeated createElement calls */
   private earlyCanvas: HTMLCanvasElement | null = null;
   private workerCanvas: HTMLCanvasElement | null = null;
@@ -70,7 +73,7 @@ class ImageProcessorService {
         { type: "module" },
       );
       this.worker.onmessage = (e: MessageEvent<ImageWorkerResponse>) => {
-        const { id, processedData, error } = e.data;
+        const { id, processedData, colorCount, error } = e.data;
         const pending = this.pendingResolvers.get(id);
         if (!pending) return;
         this.pendingResolvers.delete(id);
@@ -91,6 +94,7 @@ class ImageProcessorService {
 
           pending.ctx.putImageData(safeData, 0, 0);
           this.lastCanvas = pending.canvas;
+          if (colorCount !== undefined) this._lastColorCount = colorCount;
           // Use toBlob + createObjectURL instead of toDataURL for memory efficiency
           pending.canvas.toBlob((blob) => {
             if (blob) {
@@ -247,6 +251,11 @@ class ImageProcessorService {
   /** Get the last rendered canvas for direct export (avoids re-decoding) */
   getLastCanvas(): HTMLCanvasElement | null {
     return this.lastCanvas;
+  }
+
+  /** Get the number of unique colors in the last processed image */
+  getLastColorCount(): number {
+    return this._lastColorCount;
   }
 
   destroy() {

@@ -62,7 +62,15 @@ onmessage = (e: MessageEvent<ImageWorkerMessage>) => {
       processedData = applyScaling(processedData, renderMode);
     }
 
-    const response: ImageWorkerResponse = { id, processedData };
+    // Count unique colors
+    const colorSet = new Set<number>();
+    const pd = processedData.data;
+    for (let i = 0; i < pd.length; i += 4) {
+      if (pd[i + 3] < 128) continue; // skip transparent
+      colorSet.add((pd[i] << 16) | (pd[i + 1] << 8) | pd[i + 2]);
+    }
+
+    const response: ImageWorkerResponse = { id, processedData, colorCount: colorSet.size };
     postMessage(response, { transfer: [processedData.data.buffer] });
   } catch (error: unknown) {
     const message =

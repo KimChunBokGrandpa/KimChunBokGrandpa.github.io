@@ -1,8 +1,10 @@
 <script lang="ts">
   import { getPaletteName } from '../utils/palettes';
   import { PRESETS, type Preset } from '../utils/presets';
-  import type { DitherType, GlitchFilter, GlitchType, RenderMode, ProcessingSettings } from '../types';
+  import type { DitherType, GlitchFilter, GlitchType, RenderMode, ProcessingSettings, PostProcessFilters } from '../types';
+  import { DEFAULT_POST_FILTERS } from '../types';
   import type { SaveFormat } from '../services/saveService';
+  import { i18n } from '$lib/i18n/index.svelte';
 
   // 글리치 필터 옵션 정의
   const GLITCH_OPTIONS = [
@@ -44,6 +46,7 @@
     onFormatChange,
     onQualityChange,
     hasImage = true,
+    postFilters = $bindable({ ...DEFAULT_POST_FILTERS }),
   }: {
     settings: ProcessingSettings;
     saveFormat?: SaveFormat;
@@ -54,6 +57,7 @@
     onFormatChange?: (format: SaveFormat) => void;
     onQualityChange?: (quality: number) => void;
     hasImage?: boolean;
+    postFilters?: PostProcessFilters;
   } = $props();
 
   function update() {
@@ -123,11 +127,60 @@
     settings.glitchFilters = [];
     update();
   }
+
+  // ─── Preset Sharing ───
+  let presetFileInput = $state<HTMLInputElement>();
+
+  function exportPreset() {
+    const preset = {
+      name: 'Custom Preset',
+      version: 1,
+      settings: { ...settings, glitchFilters: settings.glitchFilters.map(f => ({ ...f })) },
+    };
+    const json = JSON.stringify(preset, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'pixel-preset.json';
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function importPreset() {
+    presetFileInput?.click();
+  }
+
+  async function handlePresetFile(e: Event) {
+    const input = e.target as HTMLInputElement;
+    if (!input.files?.length) return;
+    try {
+      const text = await input.files[0].text();
+      const data = JSON.parse(text);
+      const s = data.settings;
+      if (!s || typeof s.pixelSize !== 'number' || typeof s.palette !== 'string') {
+        throw new Error('Invalid preset format');
+      }
+      settings = {
+        pixelSize: Math.max(1, Math.min(64, s.pixelSize)),
+        palette: s.palette,
+        crtEffect: !!s.crtEffect,
+        glitchFilters: Array.isArray(s.glitchFilters) ? s.glitchFilters.map((f: { type: GlitchType; intensity: number }) => ({ type: f.type, intensity: f.intensity })) : [],
+        renderMode: ['pixel_perfect', 'bilinear', 'hqx'].includes(s.renderMode) ? s.renderMode : 'pixel_perfect',
+        glitchSeed: s.glitchSeed ?? null,
+        ditherType: ['none', 'floyd_steinberg', 'ordered'].includes(s.ditherType) ? s.ditherType : 'none',
+      };
+      update();
+    } catch {
+      alert('Failed to load preset file. Please check the format.');
+    }
+    input.value = '';
+  }
 </script>
 
 <div class="cp-root">
   <fieldset>
-    <legend>Recommended Presets</legend>
+    <legend>{i18n.t('presets')}</legend>
     <div class="field-row preset-grid">
       {#each PRESETS as preset}
         <button
@@ -138,10 +191,15 @@
         >{preset.label}</button>
       {/each}
     </div>
+    <div class="field-row preset-share-row">
+      <button class="preset-share-btn" onclick={exportPreset} title={i18n.t('export_preset')}>📤 {i18n.t('export_btn')}</button>
+      <button class="preset-share-btn" onclick={importPreset} title={i18n.t('import_preset')}>📥 {i18n.t('import_btn')}</button>
+      <input bind:this={presetFileInput} type="file" accept=".json" onchange={handlePresetFile} style="display:none" />
+    </div>
   </fieldset>
 
   <fieldset class="cp-section">
-    <legend>Pixelation Size: {settings.pixelSize}px</legend>
+    <legend>{i18n.t('pixel_size')}: {settings.pixelSize}px</legend>
     <div class="field-row slider-row">
       <span class="slider-label">1</span>
       <button
@@ -166,11 +224,11 @@
   </fieldset>
 
   <fieldset class="cp-section">
-    <legend>Color Quantization</legend>
+    <legend>{i18n.t('color_quant')}</legend>
     <div class="field-row">
       <button class="palette-btn" onclick={onOpenGallery}>
-        <span><b>Palette:</b> {getPaletteName(settings.palette)}</span>
-        <span class="palette-arrow">Select &gt;</span>
+        <span><b>{i18n.t('palette')}:</b> {getPaletteName(settings.palette)}</span>
+        <span class="palette-arrow">{i18n.t('select')}</span>
       </button>
     </div>
 
@@ -287,6 +345,30 @@
     </div>
   </fieldset>
 
+  <!-- Post-Process Filters -->
+  <fieldset class="cp-section">
+    <legend>Adjust (Post-Process)</legend>
+    <div class="pf-row">
+      <span class="pf-label">☀️ Brightness: {postFilters.brightness}%</span>
+      <input type="range" min="20" max="200" step="5" bind:value={postFilters.brightness} class="slider-input" />
+    </div>
+    <div class="pf-row">
+      <span class="pf-label">◐ Contrast: {postFilters.contrast}%</span>
+      <input type="range" min="20" max="200" step="5" bind:value={postFilters.contrast} class="slider-input" />
+    </div>
+    <div class="pf-row">
+      <span class="pf-label">🎨 Saturation: {postFilters.saturation}%</span>
+      <input type="range" min="0" max="200" step="5" bind:value={postFilters.saturation} class="slider-input" />
+    </div>
+    <div class="pf-row">
+      <span class="pf-label">🌈 Hue Rotate: {postFilters.hueRotate}°</span>
+      <input type="range" min="0" max="360" step="5" bind:value={postFilters.hueRotate} class="slider-input" />
+    </div>
+    {#if postFilters.brightness !== 100 || postFilters.contrast !== 100 || postFilters.saturation !== 100 || postFilters.hueRotate !== 0}
+      <button class="pf-reset" onclick={() => { postFilters = { ...DEFAULT_POST_FILTERS }; }}>Reset Filters</button>
+    {/if}
+  </fieldset>
+
   <!-- Current Settings Summary -->
   <fieldset class="cp-section summary-fieldset">
     <legend>Current Settings {#if isCustom}<span class="custom-badge">Custom</span>{/if}</legend>
@@ -388,6 +470,18 @@
   }
   .preset-btn:hover {
     background: #e8e8e0;
+  }
+
+  /* ===== Preset Share ===== */
+  .preset-share-row {
+    margin-top: 4px;
+    display: flex;
+    gap: 4px;
+    justify-content: flex-end;
+  }
+  .preset-share-btn {
+    font-size: 10px;
+    padding: 2px 8px;
   }
 
   /* ===== Slider Row ===== */
@@ -511,6 +605,24 @@
   .quality-label {
     font-size: 10px;
     flex-shrink: 0;
+  }
+
+  /* ===== Post-Process Filters ===== */
+  .pf-row {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    margin-bottom: 4px;
+  }
+  .pf-label {
+    font-size: 10px;
+    color: #333;
+  }
+  .pf-reset {
+    font-size: 10px;
+    padding: 2px 8px;
+    margin-top: 2px;
+    width: 100%;
   }
 
   /* ===== Settings Summary ===== */

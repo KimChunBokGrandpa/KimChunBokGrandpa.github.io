@@ -6,8 +6,9 @@
 import { processorService } from '$lib/utils/imageProcessor';
 import { saveImage } from '$lib/services/saveService';
 import type { SaveFormat } from '$lib/services/saveService';
-import type { ProcessingSettings } from '$lib/types';
-import { decodeGif, encodeGif, frameToBlobUrl, type GifFrame, type GifInfo } from '$lib/utils/gifProcessor';
+import type { ProcessingSettings, PostProcessFilters } from '$lib/types';
+import { DEFAULT_POST_FILTERS } from '$lib/types';
+import { decodeGif, encodeGif, frameToBlobUrl, type GifInfo } from '$lib/utils/gifProcessor';
 
 const DEBOUNCE_MS = 150;
 const MAX_HISTORY = 20;
@@ -31,6 +32,8 @@ export function createImageProcessingStore() {
   let settings = $state<ProcessingSettings>({ ...DEFAULT_SETTINGS });
   let saveFormat = $state<SaveFormat>('png');
   let saveQuality = $state(0.92);
+  let colorCount = $state(0);
+  let postFilters = $state<PostProcessFilters>({ ...DEFAULT_POST_FILTERS });
 
   // ─── Internal State ───
   let currentObjectUrl: string | null = null;
@@ -77,7 +80,10 @@ export function createImageProcessingStore() {
     try {
       lastError = null;
       const result = await processorService.processImage(originalImageSrc!, settings, handleDimensionCapped);
-      if (result !== null) processedImageSrc = result;
+      if (result !== null) {
+        processedImageSrc = result;
+        colorCount = processorService.getLastColorCount();
+      }
     } catch (err) {
       console.error(err);
       lastError = err instanceof Error ? err.message : String(err);
@@ -103,6 +109,24 @@ export function createImageProcessingStore() {
     }, DEBOUNCE_MS);
   }
 
+  // ─── GIF Frame Cache ───
+  let gifFrameCache = new Map<string, string>(); // "settingsHash:frameIdx" → blobUrl
+  let gifCacheSettingsHash = '';
+
+  function settingsHash(): string {
+    return JSON.stringify({
+      p: settings.pixelSize, pal: settings.palette, crt: settings.crtEffect,
+      g: settings.glitchFilters, r: settings.renderMode, s: settings.glitchSeed,
+      d: settings.ditherType,
+    });
+  }
+
+  function invalidateGifCache() {
+    for (const url of gifFrameCache.values()) URL.revokeObjectURL(url);
+    gifFrameCache.clear();
+    gifCacheSettingsHash = '';
+  }
+
   // ─── GIF Helpers ───
   function stopGifPlayback() {
     gifPlaying = false;
@@ -120,6 +144,7 @@ export function createImageProcessingStore() {
       if (url) URL.revokeObjectURL(url);
     }
     gifFrameBlobUrls = [];
+    invalidateGifCache();
   }
 
   async function processGifFrame(frameIndex: number): Promise<string | null> {
@@ -137,10 +162,28 @@ export function createImageProcessingStore() {
 
   async function showGifFrame(index: number) {
     gifCurrentFrame = index;
+    const hash = settingsHash();
+    // Invalidate cache if settings changed
+    if (hash !== gifCacheSettingsHash) {
+      invalidateGifCache();
+      gifCacheSettingsHash = hash;
+    }
+    // Check cache
+    const cacheKey = `${index}`;
+    const cached = gifFrameCache.get(cacheKey);
+    if (cached) {
+      processedImageSrc = cached;
+      isProcessing = false;
+      return;
+    }
     isProcessing = true;
     try {
       const result = await processGifFrame(index);
-      if (result !== null) processedImageSrc = result;
+      if (result !== null) {
+        processedImageSrc = result;
+        colorCount = processorService.getLastColorCount();
+        gifFrameCache.set(cacheKey, result);
+      }
     } catch (err) {
       console.error('GIF frame processing error:', err);
     } finally {
@@ -180,6 +223,8 @@ export function createImageProcessingStore() {
 
     try {
       const processedFrames: { data: Uint8ClampedArray; delay: number }[] = [];
+      let outW = 0;
+      let outH = 0;
 
       for (let i = 0; i < gifInfo.frames.length; i++) {
         gifProcessingProgress = i / gifInfo.frames.length;
@@ -200,12 +245,15 @@ export function createImageProcessingStore() {
             img.src = resultUrl;
           });
 
+          // Track output dimensions from first frame
+          if (i === 0) { outW = img.width; outH = img.height; }
+
           const canvas = document.createElement('canvas');
-          canvas.width = img.width;
-          canvas.height = img.height;
+          canvas.width = outW;
+          canvas.height = outH;
           const ctx = canvas.getContext('2d')!;
-          ctx.drawImage(img, 0, 0);
-          const imageData = ctx.getImageData(0, 0, img.width, img.height);
+          ctx.drawImage(img, 0, 0, outW, outH);
+          const imageData = ctx.getImageData(0, 0, outW, outH);
 
           processedFrames.push({
             data: imageData.data,
@@ -218,22 +266,9 @@ export function createImageProcessingStore() {
         }
       }
 
-      if (processedFrames.length === 0) return null;
+      if (processedFrames.length === 0 || outW === 0) return null;
 
       gifProcessingProgress = 1;
-
-      // Encode as GIF
-      const firstFrame = processedFrames[0];
-      // Determine output dimensions from the first processed frame
-      const img = new Image();
-      const firstBlobUrl = await frameToBlobUrl(gifInfo.frames[0]);
-      const firstResult = await processorService.processImage(firstBlobUrl, settings);
-      URL.revokeObjectURL(firstBlobUrl);
-      if (!firstResult) return null;
-      await new Promise<void>((resolve) => { img.onload = () => resolve(); img.src = firstResult; });
-      const outW = img.width;
-      const outH = img.height;
-      URL.revokeObjectURL(firstResult);
 
       const gifBytes = encodeGif(processedFrames, outW, outH);
       const blob = new Blob([gifBytes], { type: 'image/gif' });
@@ -369,10 +404,21 @@ export function createImageProcessingStore() {
     }
   }
 
+  function postFilterCssString(): string {
+    const f = postFilters;
+    const parts: string[] = [];
+    if (f.brightness !== 100) parts.push(`brightness(${f.brightness}%)`);
+    if (f.contrast !== 100) parts.push(`contrast(${f.contrast}%)`);
+    if (f.saturation !== 100) parts.push(`saturate(${f.saturation}%)`);
+    if (f.hueRotate !== 0) parts.push(`hue-rotate(${f.hueRotate}deg)`);
+    return parts.join(' ');
+  }
+
   async function save(): Promise<string | null> {
     if (!processedImageSrc) return null;
     const cachedCanvas = processorService.getLastCanvas();
-    return saveImage(processedImageSrc, { format: saveFormat, quality: saveQuality }, cachedCanvas);
+    const filterStr = postFilterCssString();
+    return saveImage(processedImageSrc, { format: saveFormat, quality: saveQuality }, cachedCanvas, filterStr || undefined);
   }
 
   function setFormat(format: SaveFormat) { saveFormat = format; }
@@ -401,6 +447,10 @@ export function createImageProcessingStore() {
     get redoHistory() { return redoHistory; },
     get saveFormat() { return saveFormat; },
     get saveQuality() { return saveQuality; },
+    get colorCount() { return colorCount; },
+    get postFilters() { return postFilters; },
+    set postFilters(v: PostProcessFilters) { postFilters = v; },
+    get postFilterCss() { return postFilterCssString(); },
 
     // GIF state
     get isGif() { return isGif; },

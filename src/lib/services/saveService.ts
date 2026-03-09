@@ -81,10 +81,23 @@ export async function saveImage(
   processedImageSrc: string,
   options: SaveOptions = { format: "png", quality: 0.92 },
   sourceCanvas?: HTMLCanvasElement | null,
+  cssFilter?: string,
 ): Promise<string> {
-  const blobData = sourceCanvas
-    ? await canvasToBlob(sourceCanvas, options.format, options.quality)
-    : await imageSrcToBlob(processedImageSrc, options.format, options.quality);
+  let blobData: Blob;
+  if (cssFilter && sourceCanvas) {
+    // Re-draw with CSS filter applied via canvas.filter
+    const filtered = document.createElement("canvas");
+    filtered.width = sourceCanvas.width;
+    filtered.height = sourceCanvas.height;
+    const fctx = filtered.getContext("2d")!;
+    fctx.filter = cssFilter;
+    fctx.drawImage(sourceCanvas, 0, 0);
+    blobData = await canvasToBlob(filtered, options.format, options.quality);
+  } else if (sourceCanvas) {
+    blobData = await canvasToBlob(sourceCanvas, options.format, options.quality);
+  } else {
+    blobData = await imageSrcToBlob(processedImageSrc, options.format, options.quality);
+  }
   const ext = EXT_MAP[options.format];
   const filename = `retro_pixel_${Date.now()}.${ext}`;
 

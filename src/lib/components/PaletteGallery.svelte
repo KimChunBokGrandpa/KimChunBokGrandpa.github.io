@@ -55,7 +55,7 @@
   }
 
   // ─── Palette Import/Export ───
-  let importFileInput: HTMLInputElement;
+  let importFileInput = $state<HTMLInputElement>();
 
   function handleImportClick() {
     importFileInput?.click();
