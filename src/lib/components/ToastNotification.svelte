@@ -1,7 +1,11 @@
 <script lang="ts">
   import { onMount } from 'svelte';
 
-  let { message, duration = 3000, onDone }: {
+  let {
+    message,
+    duration = 3000,
+    onDone,
+  }: {
     message: string;
     duration?: number;
     onDone: () => void;
@@ -39,7 +43,7 @@
     background: #c0c0c0;
     border: 2px solid;
     border-color: #dfdfdf #808080 #808080 #dfdfdf;
-    box-shadow: 2px 2px 8px rgba(0,0,0,0.4);
+    box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.4);
     font-size: 12px;
     font-weight: bold;
     animation: toastIn 0.3s ease-out;
@@ -48,7 +52,7 @@
 
   .toast-icon {
     font-size: 14px;
-    font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+    font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif;
   }
 
   .toast-msg {

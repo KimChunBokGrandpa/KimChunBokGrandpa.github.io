@@ -102,12 +102,17 @@
     try {
       const raw = localStorage.getItem(FAV_STORAGE_KEY);
       return raw ? new Set(JSON.parse(raw)) : new Set();
-    } catch { return new Set(); }
+    } catch {
+      return new Set();
+    }
   }
 
   function saveFavorites() {
-    try { localStorage.setItem(FAV_STORAGE_KEY, JSON.stringify([...favorites])); }
-    catch { /* ignore */ }
+    try {
+      localStorage.setItem(FAV_STORAGE_KEY, JSON.stringify([...favorites]));
+    } catch {
+      /* ignore */
+    }
   }
 
   function toggleFavorite(id: string, e: MouseEvent) {
@@ -128,7 +133,7 @@
     { id: '_favorites', label: '⭐' },
     { id: '_custom', label: '✏️ Custom' },
     { id: '_core', label: '📁 Core' },
-    ...PALETTE_THEMES.map(t => ({ id: t.themeId, label: t.themeName })),
+    ...PALETTE_THEMES.map((t) => ({ id: t.themeId, label: t.themeName })),
   ];
 
   // ─── Active theme data ───
@@ -142,7 +147,12 @@
 
   // Palette lookup for detail view (built-in palettes)
   const builtinPaletteLookup = new Map<string, VariantItem>();
-  builtinPaletteLookup.set('original', { id: 'original', name: 'Original (Full Color)', colorCount: 0, colors: null });
+  builtinPaletteLookup.set('original', {
+    id: 'original',
+    name: 'Original (Full Color)',
+    colorCount: 0,
+    colors: null,
+  });
   for (const t of PALETTE_THEMES) {
     for (const v of t.variants) {
       builtinPaletteLookup.set(v.id, {
@@ -172,10 +182,10 @@
   let activeVariants = $derived.by<VariantItem[]>(() => {
     const lookup = getAllPaletteLookup();
     if (activeThemeId === '_favorites') {
-      return [...favorites].map(id => lookup.get(id)).filter(Boolean) as VariantItem[];
+      return [...favorites].map((id) => lookup.get(id)).filter(Boolean) as VariantItem[];
     }
     if (activeThemeId === '_custom') {
-      return customPaletteStore.palettes.map(p => ({
+      return customPaletteStore.palettes.map((p) => ({
         id: p.id,
         name: p.name,
         colorCount: p.colors.length,
@@ -184,13 +194,11 @@
       }));
     }
     if (activeThemeId === '_core') {
-      return [
-        { id: 'original', name: 'Original (Full Color)', colorCount: 0, colors: null },
-      ];
+      return [{ id: 'original', name: 'Original (Full Color)', colorCount: 0, colors: null }];
     }
-    const theme = PALETTE_THEMES.find(t => t.themeId === activeThemeId);
+    const theme = PALETTE_THEMES.find((t) => t.themeId === activeThemeId);
     if (!theme) return [];
-    return theme.variants.map(v => ({
+    return theme.variants.map((v) => ({
       id: v.id,
       name: `${v.colorCount} colors`,
       colorCount: v.colorCount,
@@ -199,10 +207,13 @@
   });
 
   let activeThemeName = $derived(
-    activeThemeId === '_favorites' ? 'Favorites'
-    : activeThemeId === '_custom' ? 'Custom'
-    : activeThemeId === '_core' ? 'Core'
-    : PALETTE_THEMES.find(t => t.themeId === activeThemeId)?.themeName ?? ''
+    activeThemeId === '_favorites'
+      ? 'Favorites'
+      : activeThemeId === '_custom'
+        ? 'Custom'
+        : activeThemeId === '_core'
+          ? 'Core'
+          : (PALETTE_THEMES.find((t) => t.themeId === activeThemeId)?.themeName ?? ''),
   );
 
   // Detail panel for hovered or selected palette
@@ -218,7 +229,9 @@
       initialName={editorInitialName}
       initialColors={editorInitialColors}
       onSave={handleEditorSave}
-      onCancel={() => { showEditor = false; }}
+      onCancel={() => {
+        showEditor = false;
+      }}
     />
   {:else}
     <!-- Theme tabs -->
@@ -227,8 +240,8 @@
         <button
           class="pg-toolbtn"
           class:tb-sel={activeThemeId === tab.id}
-          onclick={() => activeThemeId = tab.id}
-        >{tab.label}</button>
+          onclick={() => (activeThemeId = tab.id)}>{tab.label}</button
+        >
       {/each}
     </div>
 
@@ -237,12 +250,8 @@
       <div class="pg-list-panel">
         {#if activeThemeId === '_custom'}
           <div class="pg-custom-toolbar">
-            <button class="pg-new-btn" onclick={openNewPaletteEditor}>
-              + New
-            </button>
-            <button class="pg-new-btn" onclick={handleImportClick}>
-              📥 Import
-            </button>
+            <button class="pg-new-btn" onclick={openNewPaletteEditor}> + New </button>
+            <button class="pg-new-btn" onclick={handleImportClick}> 📥 Import </button>
           </div>
           <input
             bind:this={importFileInput}
@@ -269,8 +278,8 @@
                   onSelect(item.id);
                 }
               }}
-              onmouseenter={() => hoveredPaletteId = item.id}
-              onmouseleave={() => hoveredPaletteId = null}
+              onmouseenter={() => (hoveredPaletteId = item.id)}
+              onmouseleave={() => (hoveredPaletteId = null)}
             >
               <!-- Mini swatch strip -->
               <div class="pg-mini-swatches">
@@ -296,28 +305,31 @@
                   class="pg-export-btn"
                   onclick={(e) => handleExportPalette(item.id, 'hex', e)}
                   title="Export as .hex"
-                  aria-label="Export {item.name}"
-                >💾</button>
+                  aria-label="Export {item.name}">💾</button
+                >
                 <button
                   class="pg-edit-btn"
-                  onclick={(e) => { e.stopPropagation(); openEditPaletteEditor(item.id); }}
+                  onclick={(e) => {
+                    e.stopPropagation();
+                    openEditPaletteEditor(item.id);
+                  }}
                   title="Edit palette"
-                  aria-label="Edit {item.name}"
-                >✎</button>
+                  aria-label="Edit {item.name}">✎</button
+                >
                 <button
                   class="pg-del-btn"
                   onclick={(e) => handleDeletePalette(item.id, e)}
                   title="Delete palette"
-                  aria-label="Delete {item.name}"
-                >×</button>
+                  aria-label="Delete {item.name}">×</button
+                >
               {:else}
                 <button
                   class="pg-fav-btn"
                   class:fav-active={favorites.has(item.id)}
                   onclick={(e) => toggleFavorite(item.id, e)}
                   title={favorites.has(item.id) ? 'Remove from favorites' : 'Add to favorites'}
-                  aria-label="Toggle favorite"
-                >{favorites.has(item.id) ? '★' : '☆'}</button>
+                  aria-label="Toggle favorite">{favorites.has(item.id) ? '★' : '☆'}</button
+                >
               {/if}
             </div>
           {/each}
@@ -332,7 +344,11 @@
         {#if detailItem}
           <fieldset>
             <legend>{activeThemeName} — {detailItem.name}</legend>
-            <p class="pg-desc">{detailItem.colorCount > 0 ? `${detailItem.colorCount} colors` : 'Full color spectrum preserved'}</p>
+            <p class="pg-desc">
+              {detailItem.colorCount > 0
+                ? `${detailItem.colorCount} colors`
+                : 'Full color spectrum preserved'}
+            </p>
             {#if detailItem.colors}
               <div class="pg-grid">
                 {#each detailItem.colors as c}
@@ -396,13 +412,19 @@
     border: 1px solid transparent;
     border-bottom: none;
     cursor: pointer;
-    box-shadow: inset 1px 1px #fff, inset -1px -1px #808080;
+    box-shadow:
+      inset 1px 1px #fff,
+      inset -1px -1px #808080;
   }
-  .pg-toolbtn:hover { background: #e0dcd4; }
+  .pg-toolbtn:hover {
+    background: #e0dcd4;
+  }
   .pg-toolbtn.tb-sel {
     background: #c0c0c0;
     font-weight: bold;
-    box-shadow: inset -1px -1px #fff, inset 1px 1px #808080;
+    box-shadow:
+      inset -1px -1px #fff,
+      inset 1px 1px #808080;
   }
 
   /* ── Custom Toolbar (New + Import) ── */
@@ -419,10 +441,14 @@
     background: #d4d0c8;
     border: none;
     border-bottom: 1px solid #808080;
-    box-shadow: inset 1px 1px #fff, inset -1px -1px #808080;
+    box-shadow:
+      inset 1px 1px #fff,
+      inset -1px -1px #808080;
     text-align: center;
   }
-  .pg-new-btn:hover { background: #e0dcd4; }
+  .pg-new-btn:hover {
+    background: #e0dcd4;
+  }
 
   /* ── Content (list + detail) ── */
   .pg-content {
@@ -457,7 +483,9 @@
     cursor: pointer;
     border-bottom: 1px solid #f4f4f4;
   }
-  .pg-item:hover { background: #efefef; }
+  .pg-item:hover {
+    background: #efefef;
+  }
   .pg-item.sel {
     background: #000080;
     color: #fff;
@@ -472,7 +500,7 @@
     display: inline-block;
     width: 8px;
     height: 10px;
-    border: 0.5px solid rgba(0,0,0,0.1);
+    border: 0.5px solid rgba(0, 0, 0, 0.1);
   }
   .ms-rainbow {
     width: 64px;
@@ -507,7 +535,9 @@
     font-weight: bold;
     color: #0a0;
   }
-  .pg-item.sel .pg-check { color: #8f8; }
+  .pg-item.sel .pg-check {
+    color: #8f8;
+  }
 
   /* ── Favorite button ── */
   .pg-fav-btn {
@@ -523,10 +553,18 @@
     box-shadow: none;
     line-height: 1;
   }
-  .pg-fav-btn:hover { color: #e8a000; }
-  .pg-fav-btn.fav-active { color: #e8a000; }
-  .pg-item.sel .pg-fav-btn { color: #aaa; }
-  .pg-item.sel .pg-fav-btn.fav-active { color: #ffd700; }
+  .pg-fav-btn:hover {
+    color: #e8a000;
+  }
+  .pg-fav-btn.fav-active {
+    color: #e8a000;
+  }
+  .pg-item.sel .pg-fav-btn {
+    color: #aaa;
+  }
+  .pg-item.sel .pg-fav-btn.fav-active {
+    color: #ffd700;
+  }
 
   /* ── Export/Edit/Delete buttons for custom palettes ── */
   .pg-export-btn {
@@ -542,11 +580,18 @@
     box-shadow: none;
     line-height: 1;
   }
-  .pg-export-btn:hover { color: #008000; }
-  .pg-item.sel .pg-export-btn { color: #aaa; }
-  .pg-item.sel .pg-export-btn:hover { color: #8f8; }
+  .pg-export-btn:hover {
+    color: #008000;
+  }
+  .pg-item.sel .pg-export-btn {
+    color: #aaa;
+  }
+  .pg-item.sel .pg-export-btn:hover {
+    color: #8f8;
+  }
 
-  .pg-edit-btn, .pg-del-btn {
+  .pg-edit-btn,
+  .pg-del-btn {
     flex-shrink: 0;
     background: none;
     border: none;
@@ -559,12 +604,24 @@
     box-shadow: none;
     line-height: 1;
   }
-  .pg-edit-btn:hover { color: #000080; }
-  .pg-del-btn:hover { color: #cc0000; }
-  .pg-item.sel .pg-edit-btn { color: #aaa; }
-  .pg-item.sel .pg-del-btn { color: #faa; }
-  .pg-item.sel .pg-edit-btn:hover { color: #fff; }
-  .pg-item.sel .pg-del-btn:hover { color: #ff4444; }
+  .pg-edit-btn:hover {
+    color: #000080;
+  }
+  .pg-del-btn:hover {
+    color: #cc0000;
+  }
+  .pg-item.sel .pg-edit-btn {
+    color: #aaa;
+  }
+  .pg-item.sel .pg-del-btn {
+    color: #faa;
+  }
+  .pg-item.sel .pg-edit-btn:hover {
+    color: #fff;
+  }
+  .pg-item.sel .pg-del-btn:hover {
+    color: #ff4444;
+  }
 
   /* ── Empty state ── */
   .pg-empty {
@@ -605,7 +662,7 @@
   .pg-swatch {
     width: 14px;
     height: 14px;
-    border: 1px solid rgba(0,0,0,0.15);
+    border: 1px solid rgba(0, 0, 0, 0.15);
     cursor: crosshair;
     flex-shrink: 0;
   }
@@ -621,7 +678,9 @@
     background: #f8f8f8;
     border: 1px inset;
   }
-  .pg-info-box p { margin: 0 0 6px 0; }
+  .pg-info-box p {
+    margin: 0 0 6px 0;
+  }
 
   .pg-hint {
     color: #888;

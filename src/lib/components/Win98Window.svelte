@@ -80,9 +80,15 @@
         preSnapPos = { x, y, w: width, h: height };
         const halfW = Math.floor(window.innerWidth / 2);
         if (snapPreview === 'left') {
-          x = 0; y = 0; width = halfW; height = desktopH;
+          x = 0;
+          y = 0;
+          width = halfW;
+          height = desktopH;
         } else {
-          x = halfW; y = 0; width = window.innerWidth - halfW; height = desktopH;
+          x = halfW;
+          y = 0;
+          width = window.innerWidth - halfW;
+          height = desktopH;
         }
         snapPreview = null;
       }
@@ -128,7 +134,10 @@
         height = newH;
       }
     };
-    const onUp = () => { isResizing = false; onLayoutChange?.(); };
+    const onUp = () => {
+      isResizing = false;
+      onLayoutChange?.();
+    };
     document.addEventListener('mousemove', onMove);
     document.addEventListener('touchmove', onMove, { passive: false });
     document.addEventListener('mouseup', onUp);
@@ -170,7 +179,7 @@
     if ('button' in e && e.button !== 0) return;
     const clientX = 'touches' in e ? e.touches[0].clientX : (e as MouseEvent).clientX;
     const clientY = 'touches' in e ? e.touches[0].clientY : (e as MouseEvent).clientY;
-    
+
     isResizing = true;
     resizeDir = dir;
     resizeStartX = clientX;
@@ -184,30 +193,48 @@
     e.stopPropagation();
   }
 
-  function handleMinimize(e: MouseEvent) { e.stopPropagation(); mode = 'minimized'; }
+  function handleMinimize(e: MouseEvent) {
+    e.stopPropagation();
+    mode = 'minimized';
+  }
   function handleMaximize(e: MouseEvent) {
     e.stopPropagation();
     if (mode === 'maximized') {
       mode = 'windowed';
-      x = savedPos.x; y = savedPos.y; width = savedPos.w; height = savedPos.h;
+      x = savedPos.x;
+      y = savedPos.y;
+      width = savedPos.w;
+      height = savedPos.h;
     } else {
       savedPos = { x, y, w: width, h: height };
       mode = 'maximized';
     }
   }
-  function handleClose(e: MouseEvent) { e.stopPropagation(); onClose?.(); }
-  function handleWindowClick() { onFocus?.(); }
+  function handleClose(e: MouseEvent) {
+    e.stopPropagation();
+    onClose?.();
+  }
+  function handleWindowClick() {
+    onFocus?.();
+  }
 
   function handleTitleDblClick() {
     if (mode === 'maximized') {
-      mode = 'windowed'; x = savedPos.x; y = savedPos.y; width = savedPos.w; height = savedPos.h;
+      mode = 'windowed';
+      x = savedPos.x;
+      y = savedPos.y;
+      width = savedPos.w;
+      height = savedPos.h;
     } else {
-      savedPos = { x, y, w: width, h: height }; mode = 'maximized';
+      savedPos = { x, y, w: width, h: height };
+      mode = 'maximized';
     }
   }
 
   let windowStyle = $derived.by(() => {
-    const mobileVars = mobileSlot ? `--mobile-t:${mobileSlot.top}; --mobile-h:${mobileSlot.height};` : '';
+    const mobileVars = mobileSlot
+      ? `--mobile-t:${mobileSlot.top}; --mobile-h:${mobileSlot.height};`
+      : '';
     return mode === 'maximized'
       ? `z-index:${zIndex}; position:absolute; inset:0; ${mobileVars}`
       : `z-index:${zIndex}; position:absolute; left:${x}px; top:${y}px; width:${width}px; height:${height}px; ${mobileVars}`;
@@ -227,7 +254,8 @@
     <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div class="title-bar" onmousedown={startDrag} ondblclick={handleTitleDblClick}>
       <div class="title-bar-text">
-        <span class="window-icon">{icon}</span> {title}
+        <span class="window-icon">{icon}</span>
+        {title}
       </div>
       <div class="title-bar-controls">
         <button aria-label={i18n.t('minimize')} onclick={handleMinimize}></button>
@@ -241,14 +269,46 @@
 
     <!-- Resize handles: 8-direction (only in windowed mode, hidden from screen readers) -->
     {#if mode === 'windowed'}
-      <div class="resize-handle rh-top" aria-hidden="true" onmousedown={(e) => startResize('t', e)}></div>
-      <div class="resize-handle rh-right" aria-hidden="true" onmousedown={(e) => startResize('r', e)}></div>
-      <div class="resize-handle rh-bottom" aria-hidden="true" onmousedown={(e) => startResize('b', e)}></div>
-      <div class="resize-handle rh-left" aria-hidden="true" onmousedown={(e) => startResize('l', e)}></div>
-      <div class="resize-handle rh-corner-rt" aria-hidden="true" onmousedown={(e) => startResize('rt', e)}></div>
-      <div class="resize-handle rh-corner-rb" aria-hidden="true" onmousedown={(e) => startResize('rb', e)}></div>
-      <div class="resize-handle rh-corner-lt" aria-hidden="true" onmousedown={(e) => startResize('lt', e)}></div>
-      <div class="resize-handle rh-corner-lb" aria-hidden="true" onmousedown={(e) => startResize('lb', e)}></div>
+      <div
+        class="resize-handle rh-top"
+        aria-hidden="true"
+        onmousedown={(e) => startResize('t', e)}
+      ></div>
+      <div
+        class="resize-handle rh-right"
+        aria-hidden="true"
+        onmousedown={(e) => startResize('r', e)}
+      ></div>
+      <div
+        class="resize-handle rh-bottom"
+        aria-hidden="true"
+        onmousedown={(e) => startResize('b', e)}
+      ></div>
+      <div
+        class="resize-handle rh-left"
+        aria-hidden="true"
+        onmousedown={(e) => startResize('l', e)}
+      ></div>
+      <div
+        class="resize-handle rh-corner-rt"
+        aria-hidden="true"
+        onmousedown={(e) => startResize('rt', e)}
+      ></div>
+      <div
+        class="resize-handle rh-corner-rb"
+        aria-hidden="true"
+        onmousedown={(e) => startResize('rb', e)}
+      ></div>
+      <div
+        class="resize-handle rh-corner-lt"
+        aria-hidden="true"
+        onmousedown={(e) => startResize('lt', e)}
+      ></div>
+      <div
+        class="resize-handle rh-corner-lb"
+        aria-hidden="true"
+        onmousedown={(e) => startResize('lb', e)}
+      ></div>
     {/if}
   </div>
 {/if}
@@ -256,7 +316,9 @@
 {#if snapPreview}
   <div
     class="snap-preview"
-    style="left:{snapPreview === 'left' ? '0' : '50%'}; top:0; width:50vw; height:calc(100vh - {TASKBAR_HEIGHT}px);"
+    style="left:{snapPreview === 'left'
+      ? '0'
+      : '50%'}; top:0; width:50vw; height:calc(100vh - {TASKBAR_HEIGHT}px);"
   ></div>
 {/if}
 
@@ -265,15 +327,21 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    box-shadow: inset -1px -1px #0a0a0a, inset 1px 1px #dfdfdf,
-                inset -2px -2px grey, inset 2px 2px #fff,
-                4px 4px 12px rgba(0,0,0,0.4);
+    box-shadow:
+      inset -1px -1px #0a0a0a,
+      inset 1px 1px #dfdfdf,
+      inset -2px -2px grey,
+      inset 2px 2px #fff,
+      4px 4px 12px rgba(0, 0, 0, 0.4);
     user-select: none;
     animation: windowOpen 0.12s ease-out;
   }
   .win98-window.maximized {
-    box-shadow: inset -1px -1px #0a0a0a, inset 1px 1px #dfdfdf,
-                inset -2px -2px grey, inset 2px 2px #fff;
+    box-shadow:
+      inset -1px -1px #0a0a0a,
+      inset 1px 1px #dfdfdf,
+      inset -2px -2px grey,
+      inset 2px 2px #fff;
   }
   .win98-window.interacting {
     opacity: 0.92;
@@ -288,24 +356,80 @@
     min-height: 0;
   }
 
-  .title-bar { cursor: grab; flex-shrink: 0; }
-  .interacting .title-bar { cursor: grabbing; }
+  .title-bar {
+    cursor: grab;
+    flex-shrink: 0;
+  }
+  .interacting .title-bar {
+    cursor: grabbing;
+  }
   .window-icon {
-    font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+    font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif;
     color: initial;
     margin-right: 4px;
   }
 
   /* ===== Resize Handles (8-direction) ===== */
-  .resize-handle { position: absolute; z-index: 100; }
-  .rh-top { top: 0; left: 0; width: 100%; height: 5px; cursor: ns-resize; }
-  .rh-right { right: 0; top: 0; width: 5px; height: 100%; cursor: ew-resize; }
-  .rh-bottom { bottom: 0; left: 0; width: 100%; height: 5px; cursor: ns-resize; }
-  .rh-left { left: 0; top: 0; width: 5px; height: 100%; cursor: ew-resize; }
-  .rh-corner-rt { right: 0; top: 0; width: 14px; height: 14px; cursor: nesw-resize; }
-  .rh-corner-rb { right: 0; bottom: 0; width: 14px; height: 14px; cursor: nwse-resize; }
-  .rh-corner-lt { left: 0; top: 0; width: 14px; height: 14px; cursor: nwse-resize; }
-  .rh-corner-lb { left: 0; bottom: 0; width: 14px; height: 14px; cursor: nesw-resize; }
+  .resize-handle {
+    position: absolute;
+    z-index: 100;
+  }
+  .rh-top {
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 5px;
+    cursor: ns-resize;
+  }
+  .rh-right {
+    right: 0;
+    top: 0;
+    width: 5px;
+    height: 100%;
+    cursor: ew-resize;
+  }
+  .rh-bottom {
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 5px;
+    cursor: ns-resize;
+  }
+  .rh-left {
+    left: 0;
+    top: 0;
+    width: 5px;
+    height: 100%;
+    cursor: ew-resize;
+  }
+  .rh-corner-rt {
+    right: 0;
+    top: 0;
+    width: 14px;
+    height: 14px;
+    cursor: nesw-resize;
+  }
+  .rh-corner-rb {
+    right: 0;
+    bottom: 0;
+    width: 14px;
+    height: 14px;
+    cursor: nwse-resize;
+  }
+  .rh-corner-lt {
+    left: 0;
+    top: 0;
+    width: 14px;
+    height: 14px;
+    cursor: nwse-resize;
+  }
+  .rh-corner-lb {
+    left: 0;
+    bottom: 0;
+    width: 14px;
+    height: 14px;
+    cursor: nesw-resize;
+  }
 
   @media (max-width: 550px) {
     .win98-window {
@@ -314,7 +438,9 @@
       left: 0 !important;
       top: var(--mobile-t, 0) !important;
     }
-    .resize-handle { display: none; }
+    .resize-handle {
+      display: none;
+    }
   }
 
   /* ===== Snap Preview ===== */

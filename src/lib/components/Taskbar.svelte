@@ -4,7 +4,7 @@
   import { i18n, LOCALE_LABELS, type Locale } from '$lib/i18n/index.svelte';
   import { getWindowTitle } from '$lib/stores/windowStore.svelte';
 
-  const LOCALES: Locale[] = ['en', 'ko', 'ja'];
+  const LOCALES: Locale[] = ['ja', 'en', 'ko'];
 
   function cycleLocale() {
     const idx = LOCALES.indexOf(i18n.locale);
@@ -55,19 +55,23 @@
     };
   });
 
-  let visibleWindows = $derived(windows.filter(w => w.mode !== 'closed'));
+  let visibleWindows = $derived(windows.filter((w) => w.mode !== 'closed'));
 </script>
 
 <div class="taskbar">
   <div class="taskbar-left">
-
     {#each visibleWindows as win}
       <div
         class="tb-item"
         class:tb-active={win.focused && win.mode !== 'minimized'}
         class:tb-dim={win.mode === 'minimized'}
         onclick={() => onWindowClick(win.id)}
-        onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onWindowClick(win.id); } }}
+        onkeydown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onWindowClick(win.id);
+          }
+        }}
         role="button"
         tabindex="0"
         aria-label="{getWindowTitle(win.id)} window"
@@ -77,7 +81,10 @@
         <button
           class="tb-x"
           title="{i18n.t('close')} {getWindowTitle(win.id)}"
-          onclick={(e) => { e.stopPropagation(); onWindowClose(win.id); }}
+          onclick={(e) => {
+            e.stopPropagation();
+            onWindowClose(win.id);
+          }}
           aria-label="{i18n.t('close')} {getWindowTitle(win.id)}"
         ></button>
       </div>
@@ -87,11 +94,9 @@
   <div class="taskbar-right">
     <div class="tray">
       <span class="tray-ico">🔊</span>
-      <button
-        class="tray-lang"
-        onclick={cycleLocale}
-        title={i18n.t('language')}
-      >{i18n.locale.toUpperCase()}</button>
+      <button class="tray-lang" onclick={cycleLocale} title={i18n.t('language')}
+        >{i18n.locale.toUpperCase()}</button
+      >
       <span class="tray-clock">{timeString}</span>
     </div>
   </div>
@@ -101,7 +106,9 @@
   /* ── Taskbar Container ── */
   .taskbar {
     position: fixed;
-    bottom: 0; left: 0; right: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
     height: 30px;
     background: #c0c0c0;
     border-top: 1px solid #fff;
@@ -139,14 +146,20 @@
     font-size: 11px;
     font-family: inherit;
     overflow: hidden;
-    box-shadow: inset 1px 1px #fff, inset -1px -1px #0a0a0a,
-                inset 2px 2px #dfdfdf, inset -2px -2px grey;
+    box-shadow:
+      inset 1px 1px #fff,
+      inset -1px -1px #0a0a0a,
+      inset 2px 2px #dfdfdf,
+      inset -2px -2px grey;
     transition: flex-basis 0.15s ease;
   }
 
   .tb-item.tb-active {
-    box-shadow: inset -1px -1px #fff, inset 1px 1px #0a0a0a,
-                inset -2px -2px #dfdfdf, inset 2px 2px grey;
+    box-shadow:
+      inset -1px -1px #fff,
+      inset 1px 1px #0a0a0a,
+      inset -2px -2px #dfdfdf,
+      inset 2px 2px grey;
     background: #d4d0c8;
     font-weight: bold;
   }
@@ -157,7 +170,7 @@
   .tb-icon {
     font-size: 14px;
     flex-shrink: 0;
-    font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+    font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif;
     color: initial;
   }
   .tb-label {
@@ -185,7 +198,9 @@
     background: #c0c0c0;
     border: none;
     cursor: pointer;
-    box-shadow: inset 1px 1px #fff, inset -1px -1px #0a0a0a;
+    box-shadow:
+      inset 1px 1px #fff,
+      inset -1px -1px #0a0a0a;
     opacity: 0;
     transition: opacity 0.1s;
   }
@@ -201,13 +216,17 @@
   }
   .tb-x:hover {
     background: #c0c0c0;
-    box-shadow: inset -1px -1px #fff, inset 1px 1px #0a0a0a;
+    box-shadow:
+      inset -1px -1px #fff,
+      inset 1px 1px #0a0a0a;
   }
   .tb-x:hover::after {
     color: #000;
   }
   .tb-x:active {
-    box-shadow: inset -1px -1px #dfdfdf, inset 1px 1px #808080;
+    box-shadow:
+      inset -1px -1px #dfdfdf,
+      inset 1px 1px #808080;
   }
 
   /* ── System Tray ── */
@@ -221,12 +240,22 @@
     align-items: center;
     gap: 6px;
     padding: 0 8px;
-    box-shadow: inset -1px -1px #fff, inset 1px 1px #808080;
+    box-shadow:
+      inset -1px -1px #fff,
+      inset 1px 1px #808080;
     font-size: 11px;
     font-family: 'Segoe UI', 'MS Sans Serif', Arial, sans-serif;
   }
-  .tray-ico { font-size: 13px; font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif; }
-  .tray-clock { cursor: default; white-space: nowrap; letter-spacing: 0; font-variant-numeric: tabular-nums; }
+  .tray-ico {
+    font-size: 13px;
+    font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif;
+  }
+  .tray-clock {
+    cursor: default;
+    white-space: nowrap;
+    letter-spacing: 0;
+    font-variant-numeric: tabular-nums;
+  }
   .tray-lang {
     font-size: 10px;
     font-weight: bold;
@@ -234,7 +263,9 @@
     padding: 1px 4px;
     background: #c0c0c0;
     border: none;
-    box-shadow: inset 1px 1px #fff, inset -1px -1px #0a0a0a;
+    box-shadow:
+      inset 1px 1px #fff,
+      inset -1px -1px #0a0a0a;
     cursor: pointer;
     min-width: 24px;
     text-align: center;
@@ -242,13 +273,24 @@
     line-height: 1;
   }
   .tray-lang:active {
-    box-shadow: inset -1px -1px #fff, inset 1px 1px #0a0a0a;
+    box-shadow:
+      inset -1px -1px #fff,
+      inset 1px 1px #0a0a0a;
   }
 
   /* ── Mobile ── */
   @media (max-width: 400px) {
-    .tb-label { display: none; }
-    .tb-item { min-width: 36px; max-width: 50px; flex-basis: 40px; padding-right: 4px; }
-    .tb-x { display: none; }
+    .tb-label {
+      display: none;
+    }
+    .tb-item {
+      min-width: 36px;
+      max-width: 50px;
+      flex-basis: 40px;
+      padding-right: 4px;
+    }
+    .tb-x {
+      display: none;
+    }
   }
 </style>

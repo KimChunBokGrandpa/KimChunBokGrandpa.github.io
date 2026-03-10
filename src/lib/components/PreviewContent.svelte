@@ -107,7 +107,9 @@
     ctx.drawImage(img, 0, 0);
     const pixel = ctx.getImageData(imgX, imgY, 1, 1).data;
 
-    const r = pixel[0], g = pixel[1], b = pixel[2];
+    const r = pixel[0],
+      g = pixel[1],
+      b = pixel[2];
     const hex = `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
     pickedColor = { r, g, b, hex };
     pickedColorPos = { x: e.clientX, y: e.clientY };
@@ -154,9 +156,11 @@
     const offsetY = ((imgH - blocksY * px) / 2) * fitScale * z;
     const tx = zp.panX + offsetX;
     const ty = zp.panY + offsetY;
-    return `width:${w}px;height:${h}px;` +
+    return (
+      `width:${w}px;height:${h}px;` +
       `background-size:${cellSize}px ${cellSize}px;` +
-      `transform:translate(calc(-50% + ${tx}px), calc(-50% + ${ty}px));`;
+      `transform:translate(calc(-50% + ${tx}px), calc(-50% + ${ty}px));`
+    );
   });
 </script>
 
@@ -187,7 +191,9 @@
         <div
           class="tile-grid"
           style:background-image="url({processedImageSrc})"
-          style:image-rendering={processingSettings.renderMode === 'bilinear' ? 'auto' : 'pixelated'}
+          style:image-rendering={processingSettings.renderMode === 'bilinear'
+            ? 'auto'
+            : 'pixelated'}
           style:filter={postFilterCss || 'none'}
         ></div>
         <span class="tile-label">{i18n.t('tile_label')}</span>
@@ -207,9 +213,12 @@
             src={processedImageSrc}
             alt="Pixel Art - {getPaletteName(processingSettings.palette)}"
             class="preview-image"
-            style:image-rendering={processingSettings.renderMode === 'bilinear' ? 'auto' : 'pixelated'}
+            style:image-rendering={processingSettings.renderMode === 'bilinear'
+              ? 'auto'
+              : 'pixelated'}
             style:filter={postFilterCss || 'none'}
-            style:transform="scale({zp.zoomLevel}) translate({zp.panX / zp.zoomLevel}px, {zp.panY / zp.zoomLevel}px)"
+            style:transform="scale({zp.zoomLevel}) translate({zp.panX / zp.zoomLevel}px, {zp.panY /
+              zp.zoomLevel}px)"
             style:transition={zp.isPanning || zp.isTouchPanning ? 'none' : 'transform 0.1s ease'}
             draggable="false"
           />
@@ -233,24 +242,44 @@
     {/if}
     <!-- Zoom Controls -->
     <div class="zoom-controls">
-      <button class="zoom-btn" onclick={(e) => { e.stopPropagation(); onOpenSettings(); }} title={i18n.t('open_settings')}>⚙️</button>
+      <button
+        class="zoom-btn"
+        onclick={(e) => {
+          e.stopPropagation();
+          onOpenSettings();
+        }}
+        title={i18n.t('open_settings')}>⚙️</button
+      >
       <div class="zoom-sep"></div>
-      <button class="zoom-btn" onclick={() => onRotate?.(-90)} title={i18n.t('rotate_left')}>↺</button>
-      <button class="zoom-btn" onclick={() => onRotate?.(90)} title={i18n.t('rotate_right')}>↻</button>
+      <button class="zoom-btn" onclick={() => onRotate?.(-90)} title={i18n.t('rotate_left')}
+        >↺</button
+      >
+      <button class="zoom-btn" onclick={() => onRotate?.(90)} title={i18n.t('rotate_right')}
+        >↻</button
+      >
       {#if currentRotation !== 0}
-        <button class="zoom-btn" onclick={() => onResetTransform?.()} title={i18n.t('reset_transform')}>⟲</button>
+        <button
+          class="zoom-btn"
+          onclick={() => onResetTransform?.()}
+          title={i18n.t('reset_transform')}>⟲</button
+        >
       {/if}
       <div class="zoom-sep"></div>
       <button
         class="zoom-btn"
         class:compare-active={compareMode}
-        onclick={() => { compareMode = !compareMode; }}
+        onclick={() => {
+          compareMode = !compareMode;
+        }}
         title={compareMode ? i18n.t('exit_compare') : i18n.t('compare_before_after')}
-      >{compareMode ? '🔀' : '⚖️'}</button>
+        >{compareMode ? '🔀' : '⚖️'}</button
+      >
       <div class="zoom-sep"></div>
       {#if !compareMode}
         {#if displayedWidth > 0 && displayedHeight > 0}
-          <div class="zoom-info" title={i18n.t('image_resolution')}>{displayedWidth}×{displayedHeight}</div>
+          <div class="zoom-info" title={i18n.t('image_resolution')}>
+            {displayedWidth}×{displayedHeight}
+          </div>
           {#if colorCount > 0}
             <div class="zoom-info color-count" title={i18n.t('unique_colors')}>{colorCount}c</div>
           {/if}
@@ -261,7 +290,8 @@
           <input
             type="number"
             class="zoom-input"
-            min="25" max="800"
+            min="25"
+            max="800"
             value={Math.round(zp.zoomLevel * 100)}
             onchange={(e) => {
               const val = parseInt(e.currentTarget.value);
@@ -277,21 +307,28 @@
         <button
           class="zoom-btn"
           class:grid-active={zp.showGrid}
-          onclick={() => { zp.showGrid = !zp.showGrid; }}
-          title={zp.showGrid ? i18n.t('hide_pixel_grid') : i18n.t('show_pixel_grid')}
-        >#</button>
+          onclick={() => {
+            zp.showGrid = !zp.showGrid;
+          }}
+          title={zp.showGrid ? i18n.t('hide_pixel_grid') : i18n.t('show_pixel_grid')}>#</button
+        >
         <button
           class="zoom-btn"
           class:grid-active={tileMode}
-          onclick={() => { tileMode = !tileMode; }}
-          title={tileMode ? i18n.t('exit_tile') : i18n.t('tile_preview')}
-        >⊞</button>
+          onclick={() => {
+            tileMode = !tileMode;
+          }}
+          title={tileMode ? i18n.t('exit_tile') : i18n.t('tile_preview')}>⊞</button
+        >
         <button
           class="zoom-btn"
           class:grid-active={eyedropperActive}
-          onclick={() => { eyedropperActive = !eyedropperActive; pickedColor = null; }}
-          title={eyedropperActive ? i18n.t('exit_eyedropper') : i18n.t('eyedropper')}
-        >💧</button>
+          onclick={() => {
+            eyedropperActive = !eyedropperActive;
+            pickedColor = null;
+          }}
+          title={eyedropperActive ? i18n.t('exit_eyedropper') : i18n.t('eyedropper')}>💧</button
+        >
       {/if}
     </div>
     <!-- Picked Color Tooltip -->
@@ -303,7 +340,9 @@
           <span class="color-rgb">RGB({pickedColor.r}, {pickedColor.g}, {pickedColor.b})</span>
         </div>
         <div class="color-actions">
-          <button class="color-action-btn" onclick={copyColor} title={i18n.t('copy_color')}>📋</button>
+          <button class="color-action-btn" onclick={copyColor} title={i18n.t('copy_color')}
+            >📋</button
+          >
           <button class="color-action-btn" onclick={dismissColor}>✕</button>
         </div>
       </div>
@@ -370,7 +409,7 @@
     display: flex;
     align-items: center;
     gap: 6px;
-    box-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
     pointer-events: auto;
   }
   .color-swatch {
@@ -386,8 +425,12 @@
     font-family: 'Courier New', monospace;
     font-weight: bold;
   }
-  .color-hex { color: #000080; }
-  .color-rgb { color: #444; }
+  .color-hex {
+    color: #000080;
+  }
+  .color-rgb {
+    color: #444;
+  }
   .color-actions {
     display: flex;
     gap: 2px;
@@ -400,13 +443,17 @@
     background: #c0c0c0;
     border: none;
     cursor: pointer;
-    box-shadow: inset 1px 1px #fff, inset -1px -1px #0a0a0a;
+    box-shadow:
+      inset 1px 1px #fff,
+      inset -1px -1px #0a0a0a;
     display: flex;
     align-items: center;
     justify-content: center;
   }
   .color-action-btn:active {
-    box-shadow: inset -1px -1px #fff, inset 1px 1px #0a0a0a;
+    box-shadow:
+      inset -1px -1px #fff,
+      inset 1px 1px #0a0a0a;
   }
 
   /* ===== Preview Image ===== */
@@ -422,7 +469,8 @@
   /* ===== Initial Processing ===== */
   .initial-processing {
     position: absolute;
-    top: 50%; left: 50%;
+    top: 50%;
+    left: 50%;
     transform: translate(-50%, -50%);
     color: #0f0;
     font-family: 'Courier New', Courier, monospace;
@@ -472,19 +520,27 @@
   }
   .progress-bar {
     position: absolute;
-    top: 0; left: 0; bottom: 0;
+    top: 0;
+    left: 0;
+    bottom: 0;
     background: repeating-linear-gradient(
       90deg,
-      #000080 0px, #000080 8px,
-      transparent 8px, transparent 10px
+      #000080 0px,
+      #000080 8px,
+      transparent 8px,
+      transparent 10px
     );
     animation: progressSlide 1.5s linear infinite;
     width: 200%;
   }
 
   @keyframes progressSlide {
-    from { transform: translateX(-50%); }
-    to { transform: translateX(0); }
+    from {
+      transform: translateX(-50%);
+    }
+    to {
+      transform: translateX(0);
+    }
   }
 
   /* ===== Zoom Controls ===== */
@@ -506,13 +562,17 @@
     background: #c0c0c0;
     border: none;
     cursor: pointer;
-    box-shadow: inset 1px 1px #fff, inset -1px -1px #0a0a0a;
+    box-shadow:
+      inset 1px 1px #fff,
+      inset -1px -1px #0a0a0a;
     display: flex;
     align-items: center;
     justify-content: center;
   }
   .zoom-btn:active {
-    box-shadow: inset -1px -1px #fff, inset 1px 1px #0a0a0a;
+    box-shadow:
+      inset -1px -1px #fff,
+      inset 1px 1px #0a0a0a;
     padding: 1px 3px -1px 5px;
   }
   .zoom-info {
@@ -559,10 +619,13 @@
   .zoom-sep {
     width: 4px;
   }
-  .compare-active, .grid-active {
+  .compare-active,
+  .grid-active {
     background: #000080;
     color: #fff;
-    box-shadow: inset -1px -1px #fff, inset 1px 1px #0a0a0a;
+    box-shadow:
+      inset -1px -1px #fff,
+      inset 1px 1px #0a0a0a;
   }
 
   /* ===== Color Count ===== */
@@ -610,9 +673,8 @@
     left: 50%;
     pointer-events: none;
     z-index: 3;
-    background-image:
-      linear-gradient(to right, rgba(255,255,255,0.3) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(255,255,255,0.3) 1px, transparent 1px);
+    background-image: linear-gradient(to right, rgba(255, 255, 255, 0.3) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255, 255, 255, 0.3) 1px, transparent 1px);
     background-position: 0 0;
   }
 </style>
