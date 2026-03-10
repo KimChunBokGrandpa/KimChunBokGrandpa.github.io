@@ -25,10 +25,10 @@
 
   // Helper to concisely describe a setting state
   function describeSettings(s: ProcessingSettings) {
-    let desc = `Pixel: ${s.pixelSize}x, `;
+    let desc = i18n.t('history_pixel').replace('{0}', String(s.pixelSize)) + ', ';
     desc += getPaletteName(s.palette);
-    if (s.crtEffect) desc += ' +CRT';
-    if (s.glitchFilters.length > 0) desc += ` (+${s.glitchFilters.length} glitch)`;
+    if (s.crtEffect) desc += ' ' + i18n.t('history_crt');
+    if (s.glitchFilters.length > 0) desc += ' ' + i18n.t('history_glitch').replace('{0}', String(s.glitchFilters.length));
     return desc;
   }
 </script>

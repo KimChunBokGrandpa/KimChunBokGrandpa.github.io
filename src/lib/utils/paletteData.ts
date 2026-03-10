@@ -4,7 +4,7 @@
  * The "win256" palette is generated programmatically in palettes.ts.
  */
 
-/** HSL → RGB 변환 */
+/** HSL → RGB conversion */
 function hslToRgb(h: number, s: number, l: number): [number, number, number] {
   const c = (1 - Math.abs(2 * l - 1)) * s;
   const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
@@ -24,7 +24,7 @@ function toHex(r: number, g: number, b: number): string {
   return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
 }
 
-/** RGB → HSL 변환 */
+/** RGB → HSL conversion */
 function rgbToHsl(r: number, g: number, b: number): [number, number, number] {
   r /= 255; g /= 255; b /= 255;
   const max = Math.max(r, g, b), min = Math.min(r, g, b);
@@ -40,21 +40,21 @@ function rgbToHsl(r: number, g: number, b: number): [number, number, number] {
   return [h, s, l];
 }
 
-/** hex → RGB 튜플 */
+/** hex → RGB tuple */
 function hexToRgbTuple(hex: string): [number, number, number] {
   return [parseInt(hex.slice(1, 3), 16), parseInt(hex.slice(3, 5), 16), parseInt(hex.slice(5, 7), 16)];
 }
 
 /**
- * 시드 색상 기반 팔레트 확장 제너레이터.
- * 핸드크래프트된 시드 색상에서 H/S를 추출하여 테마 본연의 색감을
- * 유지하면서 원하는 수의 색상으로 확장합니다.
- * seeds: 테마를 정의하는 기본 색상 배열 (hex)
- * count: 생성할 색상 수
- * lightRange: [min, max] 명도 범위 (기본: 전체 범위, 파스텔: [0.50, 0.93])
+ * Seed-based palette expansion generator.
+ * Extracts H/S from hand-crafted seed colors and expands to the desired
+ * count while preserving the theme's native color feel.
+ * @param seeds - Base colors defining the theme (hex strings)
+ * @param count - Number of colors to generate
+ * @param lightRange - [min, max] lightness range (default: full range; pastel: [0.50, 0.93])
  */
 function generateFromSeeds(seeds: string[], count: number, lightRange: [number, number] = [0.06, 0.92]): string[] {
-  // 시드 수 이하면 균등 샘플링
+  // If count <= seeds, sample evenly
   if (count <= seeds.length) {
     if (count === seeds.length) return [...seeds];
     const result: string[] = [];
@@ -65,7 +65,7 @@ function generateFromSeeds(seeds: string[], count: number, lightRange: [number, 
     return result;
   }
 
-  // 시드에서 유채색 H/S 추출 후 유사 색상 그룹핑 (10° 이내)
+  // Extract chromatic H/S from seeds and group similar hues (within 10°)
   const rawHsl = seeds
     .map(hex => { const [r, g, b] = hexToRgbTuple(hex); return rgbToHsl(r, g, b); })
     .filter(([, s]) => s > 0.08);
@@ -80,7 +80,7 @@ function generateFromSeeds(seeds: string[], count: number, lightRange: [number, 
     else { hueGroups.push({ h, s }); }
   }
 
-  // 무채색만 있는 경우 그레이스케일
+  // Achromatic seeds only → grayscale ramp
   if (hueGroups.length === 0) {
     const colors: string[] = [];
     for (let i = 0; i < count; i++) {
@@ -107,7 +107,7 @@ function generateFromSeeds(seeds: string[], count: number, lightRange: [number, 
   return colors.slice(0, count);
 }
 
-// ─── Theme Seed Colors (핸드크래프트된 테마 기준 색상) ───
+// ─── Theme Seed Colors (hand-crafted base colors per theme) ───
 const EARTH_SEEDS = ["#1A0E00", "#4A2800", "#8B5E3C", "#C8A882", "#2D4A1E", "#5C8A3C", "#7BA0C8", "#F0E8D8"];
 const NEON_SEEDS = ["#FF0055", "#00FF88", "#00BBFF", "#FF8800", "#AA00FF", "#FFFF00"];
 const OCEAN_SEEDS = [
@@ -551,7 +551,7 @@ export const PALETTE_HEX_DATA: Record<string, string[]> = {
   // ═══ UNIFIED THEME SERIES (seed-based) ═══
   // ══════════════════════════════════════════════════
   //
-  // 핸드크래프트된 시드 색상에서 H/S를 추출하여 테마 본연의 색감을 유지합니다.
+  // Extracts H/S from hand-crafted seed colors to preserve the theme's native color feel.
 
   // ─── Earth Tone Series ───
   earth2:   generateFromSeeds(EARTH_SEEDS, 2),

@@ -70,7 +70,9 @@ export interface ImageWorkerMessage {
 
 export interface ImageWorkerResponse {
   id: string;
+  type?: 'progress' | 'complete';
   processedData: ImageData;
   colorCount?: number;
+  progress?: number; // 0–1, sent during processing stages
   error?: string;
 }

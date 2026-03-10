@@ -20,6 +20,16 @@
       class:icon-selected={selectedIcon === cfg.id}
       onclick={(e) => { e.stopPropagation(); onIconClick(cfg.id); }}
       ondblclick={() => onIconDblClick(cfg.id)}
+      onkeydown={(e) => {
+        if (e.key === 'Enter') { onIconDblClick(cfg.id); e.preventDefault(); }
+        else if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
+          const next = (e.currentTarget as HTMLElement).nextElementSibling as HTMLElement | null;
+          if (next) { next.focus(); e.preventDefault(); }
+        } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+          const prev = (e.currentTarget as HTMLElement).previousElementSibling as HTMLElement | null;
+          if (prev) { prev.focus(); e.preventDefault(); }
+        }
+      }}
       aria-label="Open {getWindowTitle(cfg.id)}"
     >
       <span class="icon-img" aria-hidden="true">{cfg.icon}</span>

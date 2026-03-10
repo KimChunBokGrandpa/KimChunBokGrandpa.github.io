@@ -18,6 +18,8 @@
   import type { SaveFormat } from '$lib/services/saveService';
   import type { TaskbarWindowInfo } from '$lib/components/Taskbar.svelte';
   import type { ProcessingSettings, WindowId } from '$lib/types';
+  import { i18n } from '$lib/i18n/index.svelte';
+  import { getWindowTitle } from '$lib/stores/windowStore.svelte';
 
   // ─── Stores ───
   const wm = createWindowStore();
@@ -37,7 +39,7 @@
   // ─── Error Handling ───
   $effect(() => {
     if (ip.lastError) {
-      showDialog(ip.lastError, 'Processing Error');
+      showDialog(ip.lastError, i18n.t('processing_error'));
       ip.clearError();
     }
   });
@@ -46,7 +48,7 @@
   let selectedIcon = $state<WindowId | null>(null);
 
   // ─── Mobile / narrow viewport detection ───
-  // CSS @media (max-width: 550px) 와 동일한 기준으로 JS 레이아웃도 전환
+  // Match the CSS @media (max-width: 550px) breakpoint for JS layout switching
   const MOBILE_BREAKPOINT = 550;
   const mql = typeof window !== 'undefined' ? window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT}px)`) : null;
   let isMobile = $state(mql?.matches ?? false);
@@ -60,8 +62,8 @@
   // ─── Dimension cap callback ───
   ip.setDimensionCapCallback((original, capped) => {
     showDialog(
-      `Image resized: ${original.w}×${original.h} → ${capped.w}×${capped.h}px (max 2048px)`,
-      'Image Resized'
+      i18n.t('image_resized', `${original.w}×${original.h}`, `${capped.w}×${capped.h}px`),
+      i18n.t('image_resized_title')
     );
   });
 
@@ -76,7 +78,7 @@
     const idx = mobileVisibleIds.indexOf(id as typeof WINDOW_ORDER[number]);
     if (idx === -1) return null;
     const count = mobileVisibleIds.length;
-    // 데스크탑 영역(100dvh - taskbar)을 균등 분할
+    // Evenly divide desktop area (100dvh - taskbar) among visible windows
     const slotHeight = `calc((100dvh - var(--taskbar-h)) / ${count})`;
     const slotTop = idx === 0 ? '0px' : `calc((100dvh - var(--taskbar-h)) / ${count} * ${idx})`;
     return { top: slotTop, height: slotHeight };
@@ -85,7 +87,7 @@
   // ─── Taskbar window info ───
   let taskbarWindows = $derived<TaskbarWindowInfo[]>(
     WINDOW_CONFIGS.map(c => ({
-      id: c.id, title: c.title, icon: c.icon,
+      id: c.id, title: getWindowTitle(c.id), icon: c.icon,
       mode: wm.wins[c.id].mode, focused: wm.focusedWindow === c.id,
     }))
   );
@@ -124,7 +126,7 @@
       if (message) toastMessage = message;
     } catch (err) {
       console.error('Failed to save file:', err);
-      showDialog('Error saving file. Please try again.', 'Error');
+      showDialog(i18n.t('save_error'), i18n.t('error'));
     }
   }
 
@@ -175,7 +177,7 @@
       if (ACCEPTED_IMAGE_TYPES.includes(file.type)) {
         handleImageSelected(file);
       } else {
-        showDialog('Please drop an image file (PNG, JPEG, GIF, BMP, WebP).', 'Unsupported Format');
+        showDialog(i18n.t('unsupported_format'), i18n.t('error'));
       }
     }
   }
@@ -219,7 +221,7 @@
     <div class="desktop-drop-overlay">
       <div class="desktop-drop-message">
         <span class="desktop-drop-icon">📥</span>
-        <span>Drop image here</span>
+        <span>{i18n.t('drop_image_here')}</span>
       </div>
     </div>
   {/if}
@@ -234,7 +236,7 @@
   <!-- ═══ Settings Window ═══ -->
   {#if wm.wins.settings.mode !== 'closed'}
     <Win98Window
-      title="Settings"
+      title={getWindowTitle('settings')}
       icon="⚙️"
       bind:mode={wm.wins.settings.mode}
       bind:x={wm.wins.settings.x}
@@ -253,18 +255,19 @@
             class="load-new-btn"
             onclick={handleLoadNewImage}
           >
-            📂 Load New Image...
+            📂 {i18n.t('load_new_image')}
           </button>
           <button
             class="load-new-btn"
             onclick={(e) => { e.stopPropagation(); wm.openWindow('preview'); }}
           >
-            🖼️ Preview
+            🖼️ {i18n.t('win_preview')}
           </button>
         </div>
         <ControlPanel
           bind:settings={processingSettings}
           bind:postFilters={ip.postFilters}
+          bind:autoProcess={ip.autoProcess}
           {saveFormat}
           {saveQuality}
           hasImage={!!originalImageSrc}
@@ -273,6 +276,7 @@
           onOpenGallery={() => { setTimeout(() => wm.openWindow('gallery'), 0); }}
           onFormatChange={handleFormatChange}
           onQualityChange={handleQualityChange}
+          onApplyNow={() => ip.applyNow()}
         />
       </div>
     </Win98Window>
@@ -281,7 +285,7 @@
   <!-- ═══ Preview Window ═══ -->
   {#if wm.wins.preview.mode !== 'closed'}
     <Win98Window
-      title="Preview - {isProcessing ? 'Rendering...' : 'Ready'}"
+      title="{getWindowTitle('preview')} - {isProcessing ? i18n.t('rendering') : i18n.t('ready')}"
       icon="🖼️"
       bind:mode={wm.wins.preview.mode}
       bind:x={wm.wins.preview.x}
@@ -320,6 +324,9 @@
           const msg = await ip.exportGif();
           if (msg) toastMessage = msg;
         }}
+        onRotate={(deg) => ip.rotate(deg)}
+        onResetTransform={() => ip.resetTransform()}
+        currentRotation={ip.rotation}
       />
     </Win98Window>
   {/if}
@@ -327,7 +334,7 @@
   <!-- ═══ Gallery Window ═══ -->
   {#if wm.wins.gallery.mode !== 'closed'}
     <Win98Window
-      title="Palette Gallery"
+      title={getWindowTitle('gallery')}
       icon="🎨"
       bind:mode={wm.wins.gallery.mode}
       bind:x={wm.wins.gallery.x}
@@ -350,7 +357,7 @@
   <!-- ═══ Batch Window ═══ -->
   {#if wm.wins.batch.mode !== 'closed'}
     <Win98Window
-      title="Batch Process"
+      title={getWindowTitle('batch')}
       icon="📦"
       bind:mode={wm.wins.batch.mode}
       bind:x={wm.wins.batch.x}
@@ -379,7 +386,7 @@
   <!-- ═══ History Window ═══ -->
   {#if wm.wins.history.mode !== 'closed'}
     <Win98Window
-      title="History"
+      title={getWindowTitle('history')}
       icon="⏱️"
       bind:mode={wm.wins.history.mode}
       bind:x={wm.wins.history.x}

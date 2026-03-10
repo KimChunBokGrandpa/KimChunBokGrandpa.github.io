@@ -5,30 +5,31 @@
   import { DEFAULT_POST_FILTERS } from '../types';
   import type { SaveFormat } from '../services/saveService';
   import { i18n } from '$lib/i18n/index.svelte';
+  import { getCustomPresets, addCustomPreset, removeCustomPreset } from '$lib/stores/customPresetStore.svelte';
 
-  // 글리치 필터 옵션 정의
+  // Glitch filter options
   const GLITCH_OPTIONS = [
-    { id: 'rgb_split', icon: '🔴', label: 'RGB Split' },
-    { id: 'wave',      icon: '📺', label: 'Wave' },
-    { id: 'noise',     icon: '🧩', label: 'Noise' },
-    { id: 'slice',     icon: '🔪', label: 'Slice' },
+    { id: 'rgb_split', icon: '🔴', labelKey: 'rgb_split' as const },
+    { id: 'wave',      icon: '📺', labelKey: 'wave' as const },
+    { id: 'noise',     icon: '🧩', labelKey: 'noise' as const },
+    { id: 'slice',     icon: '🔪', labelKey: 'slice' as const },
   ] as const;
 
-  // 렌더 모드 옵션
+  // Render mode options
   const RENDER_OPTIONS = [
-    { id: 'pixel_perfect', label: 'Pixel Perfect', title: 'Crisp & sharp dot edges' },
-    { id: 'bilinear', label: 'Bilinear Blur', title: 'Smoothly interpolates for retro CRT feel' },
-    { id: 'hqx', label: 'HQx Upscale', title: 'High quality curve-based edge upscaling' },
+    { id: 'pixel_perfect', labelKey: 'pixel_perfect' as const, titleKey: 'pixel_perfect_desc' as const },
+    { id: 'bilinear', labelKey: 'bilinear_blur' as const, titleKey: 'bilinear_desc' as const },
+    { id: 'hqx', labelKey: 'hqx_upscale' as const, titleKey: 'hqx_desc' as const },
   ] as const;
 
-  // 디더링 옵션
+  // Dithering options
   const DITHER_OPTIONS = [
-    { id: 'none', label: 'None', title: 'No dithering — flat color blocks' },
-    { id: 'floyd_steinberg', label: 'Floyd-Steinberg', title: 'Error diffusion for smooth gradients' },
-    { id: 'ordered', label: 'Ordered', title: 'Bayer matrix pattern dithering' },
+    { id: 'none', labelKey: 'dither_none' as const, titleKey: 'dither_none_desc' as const },
+    { id: 'floyd_steinberg', labelKey: 'dither_fs' as const, titleKey: 'dither_fs_desc' as const },
+    { id: 'ordered', labelKey: 'dither_ordered' as const, titleKey: 'dither_ordered_desc' as const },
   ] as const;
 
-  // 저장 포맷 옵션
+  // Save format options
   const FORMAT_OPTIONS = [
     { id: 'png', label: 'PNG' },
     { id: 'jpeg', label: 'JPEG' },
@@ -47,6 +48,8 @@
     onQualityChange,
     hasImage = true,
     postFilters = $bindable({ ...DEFAULT_POST_FILTERS }),
+    autoProcess = $bindable(true),
+    onApplyNow,
   }: {
     settings: ProcessingSettings;
     saveFormat?: SaveFormat;
@@ -58,6 +61,8 @@
     onQualityChange?: (quality: number) => void;
     hasImage?: boolean;
     postFilters?: PostProcessFilters;
+    autoProcess?: boolean;
+    onApplyNow?: () => void;
   } = $props();
 
   function update() {
@@ -77,8 +82,6 @@
     update();
   }
 
-
-
   function matchesPreset(preset: Preset): boolean {
     if (settings.pixelSize !== preset.pixelSize) return false;
     if (settings.palette !== preset.palette) return false;
@@ -91,10 +94,10 @@
     );
   }
 
-  // 현재 설정이 어떤 프리셋과도 일치하지 않으면 Custom
+  // True when current settings don't match any preset
   let isCustom = $derived(!PRESETS.some(p => matchesPreset(p)));
 
-  // 필터 토글: 없으면 intensity 1로 추가, 있으면 제거
+  // Toggle filter: add with intensity 1 if absent, remove if present
   function toggleGlitch(filterId: GlitchType) {
     const idx = settings.glitchFilters.findIndex(f => f.type === filterId);
     if (idx >= 0) {
@@ -105,7 +108,7 @@
     update();
   }
 
-  // 개별 필터의 강도 변경
+  // Change intensity of a specific filter
   function setFilterIntensity(filterId: GlitchType, intensity: number) {
     settings.glitchFilters = settings.glitchFilters.map(f =>
       f.type === filterId ? { ...f, intensity } : { ...f }
@@ -113,18 +116,38 @@
     update();
   }
 
-  // 특정 필터가 활성화되어 있는지
+  // Check if a filter is active
   function isFilterActive(filterId: GlitchType): boolean {
     return settings.glitchFilters.some(f => f.type === filterId);
   }
 
-  // 특정 필터의 현재 강도
+  // Get current intensity of a filter
   function getFilterIntensity(filterId: GlitchType): number {
     return settings.glitchFilters.find(f => f.type === filterId)?.intensity ?? 1;
   }
 
   function clearAllGlitch() {
     settings.glitchFilters = [];
+    update();
+  }
+
+  // ─── Custom Presets ───
+  let showSavePreset = $state(false);
+  let newPresetName = $state('');
+  let customPresets = $derived(getCustomPresets());
+
+  function saveCurrentAsPreset() {
+    if (!newPresetName.trim()) return;
+    addCustomPreset(newPresetName, settings);
+    newPresetName = '';
+    showSavePreset = false;
+  }
+
+  function applyCustomPreset(preset: { settings: ProcessingSettings }) {
+    settings = {
+      ...preset.settings,
+      glitchFilters: preset.settings.glitchFilters.map(f => ({ ...f })),
+    };
     update();
   }
 
@@ -187,7 +210,7 @@
           class:preset-active={matchesPreset(preset)}
           class="preset-btn"
           onclick={() => applyPreset(preset)}
-          title="Pixel: {preset.pixelSize}px | Palette: {getPaletteName(preset.palette)}"
+          title="{i18n.t('pixel_size')}: {preset.pixelSize}px | {i18n.t('palette')}: {getPaletteName(preset.palette)}"
         >{preset.label}</button>
       {/each}
     </div>
@@ -195,6 +218,47 @@
       <button class="preset-share-btn" onclick={exportPreset} title={i18n.t('export_preset')}>📤 {i18n.t('export_btn')}</button>
       <button class="preset-share-btn" onclick={importPreset} title={i18n.t('import_preset')}>📥 {i18n.t('import_btn')}</button>
       <input bind:this={presetFileInput} type="file" accept=".json" onchange={handlePresetFile} style="display:none" />
+    </div>
+
+    <!-- Custom Presets -->
+    {#if customPresets.length > 0}
+      <div class="section-label">{i18n.t('my_presets')}:</div>
+      <div class="field-row preset-grid">
+        {#each customPresets as cp}
+          <button
+            class="preset-btn custom-preset-btn"
+            onclick={() => applyCustomPreset(cp)}
+            title={cp.name}
+          >
+            ⭐ {cp.name}
+            <!-- svelte-ignore a11y_no_static_element_interactions -->
+            <span
+              class="preset-delete"
+              role="button"
+              tabindex="0"
+              onclick={(e) => { e.stopPropagation(); removeCustomPreset(cp.id); }}
+              onkeydown={(e) => { e.stopPropagation(); if (e.key === 'Enter') removeCustomPreset(cp.id); }}
+            >×</span>
+          </button>
+        {/each}
+      </div>
+    {/if}
+
+    <!-- Save Current as Preset -->
+    <div class="field-row preset-share-row">
+      {#if showSavePreset}
+        <input
+          type="text"
+          class="preset-name-input"
+          bind:value={newPresetName}
+          placeholder={i18n.t('preset_name_placeholder')}
+          onkeydown={(e) => { if (e.key === 'Enter') saveCurrentAsPreset(); if (e.key === 'Escape') showSavePreset = false; }}
+        />
+        <button class="preset-share-btn" onclick={saveCurrentAsPreset}>✓</button>
+        <button class="preset-share-btn" onclick={() => { showSavePreset = false; }}>✕</button>
+      {:else}
+        <button class="preset-share-btn" onclick={() => { showSavePreset = true; }}>💾 {i18n.t('save_preset')}</button>
+      {/if}
     </div>
   </fieldset>
 
@@ -232,66 +296,66 @@
       </button>
     </div>
 
-    <div class="section-label">Dithering:</div>
+    <div class="section-label">{i18n.t('dithering')}:</div>
     <div class="field-row render-row">
       {#each DITHER_OPTIONS as opt}
         <button
           class:preset-active={settings.ditherType === opt.id}
           class="render-btn"
           onclick={() => { settings.ditherType = opt.id as DitherType; update(); }}
-          title={opt.title}
+          title={i18n.t(opt.titleKey)}
         >
-          {opt.label}
+          {i18n.t(opt.labelKey)}
         </button>
       {/each}
     </div>
   </fieldset>
 
   <fieldset class="cp-section">
-    <legend>Post Processing</legend>
+    <legend>{i18n.t('post_processing')}</legend>
     <div class="field-row">
       <input type="checkbox" id="crt-effect" bind:checked={settings.crtEffect} onchange={update} />
-      <label for="crt-effect">CRT Scanlines</label>
+      <label for="crt-effect">{i18n.t('crt_scanlines')}</label>
     </div>
 
     <div class="section-label">
-      Glitch Filters <span class="section-hint">(multi-select)</span>:
+      {i18n.t('glitch_filters')} <span class="section-hint">({i18n.t('multi_select')})</span>:
     </div>
     <div class="field-row glitch-toggles">
       <button
         class:preset-active={settings.glitchFilters.length === 0}
         class="glitch-toggle-btn"
         onclick={clearAllGlitch}
-        title="None"
+        title={i18n.t('none')}
       >
-        🚫 <span class="hide-on-small">None</span>
+        🚫 <span class="hide-on-small">{i18n.t('none')}</span>
       </button>
       {#each GLITCH_OPTIONS as opt}
         <button
           class:preset-active={isFilterActive(opt.id)}
           class="glitch-toggle-btn"
           onclick={() => toggleGlitch(opt.id)}
-          aria-label="{opt.label} Glitch Filter"
-          title="{opt.label}"
+          aria-label="{i18n.t(opt.labelKey)} Glitch Filter"
+          title={i18n.t(opt.labelKey)}
         >
-          {opt.icon} <span class="hide-on-small">{opt.label}</span>
+          {opt.icon} <span class="hide-on-small">{i18n.t(opt.labelKey)}</span>
         </button>
       {/each}
     </div>
 
-    <!-- 활성 필터별 개별 강도 슬라이더 -->
+    <!-- Per-filter intensity sliders -->
     {#if settings.glitchFilters.length > 0}
     <div class="glitch-intensity-panel">
       {#each GLITCH_OPTIONS.filter(o => isFilterActive(o.id)) as opt}
         <div class="glitch-intensity-row">
-          <span class="glitch-intensity-label">{opt.icon} {opt.label}</span>
+          <span class="glitch-intensity-label">{opt.icon} {i18n.t(opt.labelKey)}</span>
           <div class="glitch-intensity-btns">
             {#each [1, 2, 3] as lv}
               <button
                 class:preset-active={getFilterIntensity(opt.id) === lv}
                 class="intensity-btn"
                 onclick={() => setFilterIntensity(opt.id, lv)}
-                title="Level {lv}"
+                title="{i18n.t('level')} {lv}"
               >
                 {lv}
               </button>
@@ -302,26 +366,26 @@
     </div>
     {/if}
 
-    <!-- 글리치 시드 고정/랜덤 토글 -->
+    <!-- Glitch seed lock/random toggle -->
     {#if settings.glitchFilters.length > 0}
     <div class="glitch-intensity-panel glitch-seed-panel">
       <div class="glitch-intensity-row">
-        <span class="glitch-intensity-label">🎲 Seed</span>
+        <span class="glitch-intensity-label">🎲 {i18n.t('seed')}</span>
         <div class="glitch-intensity-btns">
           <button
             class:preset-active={settings.glitchSeed === null}
             class="intensity-btn seed-btn"
             onclick={() => { settings.glitchSeed = null; update(); }}
-          >Random</button>
+          >{i18n.t('random')}</button>
           <button
             class:preset-active={settings.glitchSeed !== null}
             class="intensity-btn seed-btn"
             onclick={() => { settings.glitchSeed = Math.round(Math.random() * 10000) / 10000; update(); }}
-          >{settings.glitchSeed !== null ? `Fixed (${settings.glitchSeed})` : 'Fix'}</button>
+          >{settings.glitchSeed !== null ? `${i18n.t('fixed')} (${settings.glitchSeed})` : i18n.t('fix')}</button>
           {#if settings.glitchSeed !== null}
             <button
               class="intensity-btn"
-              title="Re-roll seed"
+              title={i18n.t('reroll_seed')}
               onclick={() => { settings.glitchSeed = Math.round(Math.random() * 10000) / 10000; update(); }}
             >🔄</button>
           {/if}
@@ -330,16 +394,16 @@
     </div>
     {/if}
 
-    <div class="section-label">Scaling / Render Mode:</div>
+    <div class="section-label">{i18n.t('scaling_render')}:</div>
     <div class="field-row render-row">
       {#each RENDER_OPTIONS as opt}
         <button
           class:preset-active={settings.renderMode === opt.id}
           class="render-btn"
           onclick={() => { settings.renderMode = opt.id as RenderMode; update(); }}
-          title={opt.title}
+          title={i18n.t(opt.titleKey)}
         >
-          {opt.label}
+          {i18n.t(opt.labelKey)}
         </button>
       {/each}
     </div>
@@ -347,31 +411,45 @@
 
   <!-- Post-Process Filters -->
   <fieldset class="cp-section">
-    <legend>Adjust (Post-Process)</legend>
+    <legend>{i18n.t('adjust_post')}</legend>
     <div class="pf-row">
-      <span class="pf-label">☀️ Brightness: {postFilters.brightness}%</span>
+      <span class="pf-label">☀️ {i18n.t('brightness')}: {postFilters.brightness}%</span>
       <input type="range" min="20" max="200" step="5" bind:value={postFilters.brightness} class="slider-input" />
     </div>
     <div class="pf-row">
-      <span class="pf-label">◐ Contrast: {postFilters.contrast}%</span>
+      <span class="pf-label">◐ {i18n.t('contrast')}: {postFilters.contrast}%</span>
       <input type="range" min="20" max="200" step="5" bind:value={postFilters.contrast} class="slider-input" />
     </div>
     <div class="pf-row">
-      <span class="pf-label">🎨 Saturation: {postFilters.saturation}%</span>
+      <span class="pf-label">🎨 {i18n.t('saturation')}: {postFilters.saturation}%</span>
       <input type="range" min="0" max="200" step="5" bind:value={postFilters.saturation} class="slider-input" />
     </div>
     <div class="pf-row">
-      <span class="pf-label">🌈 Hue Rotate: {postFilters.hueRotate}°</span>
+      <span class="pf-label">🌈 {i18n.t('hue_rotate')}: {postFilters.hueRotate}°</span>
       <input type="range" min="0" max="360" step="5" bind:value={postFilters.hueRotate} class="slider-input" />
     </div>
     {#if postFilters.brightness !== 100 || postFilters.contrast !== 100 || postFilters.saturation !== 100 || postFilters.hueRotate !== 0}
-      <button class="pf-reset" onclick={() => { postFilters = { ...DEFAULT_POST_FILTERS }; }}>Reset Filters</button>
+      <button class="pf-reset" onclick={() => { postFilters = { ...DEFAULT_POST_FILTERS }; }}>{i18n.t('reset_filters')}</button>
+    {/if}
+  </fieldset>
+
+  <!-- Auto-Process Toggle -->
+  <fieldset class="cp-section">
+    <legend>{i18n.t('auto_process')}</legend>
+    <div class="field-row auto-process-row">
+      <input type="checkbox" id="auto-process" bind:checked={autoProcess} />
+      <label for="auto-process">{i18n.t('auto_process_label')}</label>
+    </div>
+    {#if !autoProcess}
+      <button class="apply-now-btn" onclick={() => onApplyNow?.()} disabled={!hasImage}>
+        ▶️ {i18n.t('apply_now')}
+      </button>
     {/if}
   </fieldset>
 
   <!-- Current Settings Summary -->
   <fieldset class="cp-section summary-fieldset">
-    <legend>Current Settings {#if isCustom}<span class="custom-badge">Custom</span>{/if}</legend>
+    <legend>{i18n.t('current_settings')} {#if isCustom}<span class="custom-badge">{i18n.t('custom')}</span>{/if}</legend>
     <div class="settings-summary">
       <span>📌 {settings.pixelSize}px</span>
       <span>🎨 {getPaletteName(settings.palette)}</span>
@@ -385,9 +463,9 @@
   </fieldset>
 
   <fieldset class="cp-section">
-    <legend>Save Options</legend>
+    <legend>{i18n.t('save_options')}</legend>
     <div class="field-row format-row">
-      <span class="format-label">Format:</span>
+      <span class="format-label">{i18n.t('format')}:</span>
       {#each FORMAT_OPTIONS as opt}
         <button
           class:preset-active={saveFormat === opt.id}
@@ -398,7 +476,7 @@
     </div>
     {#if saveFormat !== 'png'}
       <div class="field-row quality-row">
-        <span class="quality-label">Quality: {Math.round(saveQuality * 100)}%</span>
+        <span class="quality-label">{i18n.t('quality')}: {Math.round(saveQuality * 100)}%</span>
         <input
           type="range"
           min="0.1"
@@ -417,17 +495,17 @@
       class="save-btn"
       onclick={onSave}
       disabled={!hasImage}
-      title={!hasImage ? 'Load an image in Preview to save' : 'Save Processed Image'}
+      title={!hasImage ? i18n.t('save_no_image') : i18n.t('save_processed')}
     >
-      💾 Save As...
+      💾 {i18n.t('save_as')}
     </button>
   </div>
 
   <div class="shortcuts-hint">
     <span>⌨️</span>
-    <span>Ctrl+Z Undo</span>
-    <span>Ctrl+Shift+Z Redo</span>
-    <span>Ctrl+S Save</span>
+    <span>{i18n.t('shortcut_undo')}</span>
+    <span>{i18n.t('shortcut_redo')}</span>
+    <span>{i18n.t('shortcut_save')}</span>
   </div>
 </div>
 
@@ -470,6 +548,31 @@
   }
   .preset-btn:hover {
     background: #e8e8e0;
+  }
+
+  /* ===== Custom Preset ===== */
+  .custom-preset-btn {
+    position: relative;
+    padding-right: 16px;
+  }
+  .preset-delete {
+    position: absolute;
+    top: 0;
+    right: 2px;
+    font-size: 12px;
+    font-weight: bold;
+    color: #808080;
+    cursor: pointer;
+    line-height: 1;
+  }
+  .preset-delete:hover {
+    color: #c00;
+  }
+  .preset-name-input {
+    flex: 1;
+    font-size: 11px;
+    padding: 2px 4px;
+    min-width: 0;
   }
 
   /* ===== Preset Share ===== */
@@ -623,6 +726,30 @@
     padding: 2px 8px;
     margin-top: 2px;
     width: 100%;
+  }
+
+  /* ===== Auto-Process ===== */
+  .auto-process-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .apply-now-btn {
+    width: 100%;
+    margin-top: 4px;
+    padding: 4px 8px;
+    font-weight: bold;
+    font-size: 12px;
+    background: #000080;
+    color: #fff;
+    cursor: pointer;
+  }
+  .apply-now-btn:hover {
+    background: #0000a0;
+  }
+  .apply-now-btn:disabled {
+    background: #808080;
+    cursor: default;
   }
 
   /* ===== Settings Summary ===== */

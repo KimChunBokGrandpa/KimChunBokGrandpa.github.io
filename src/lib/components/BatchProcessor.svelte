@@ -33,6 +33,7 @@
     status: 'pending' | 'processing' | 'done' | 'error';
     resultUrl: string | null;
     error: string | null;
+    progress: number; // 0–1
   }
 
   let items = $state<BatchItem[]>([]);
@@ -52,6 +53,7 @@
         status: 'pending',
         resultUrl: null,
         error: null,
+        progress: 0,
       };
       items = [...items, item];
     }
@@ -101,13 +103,19 @@
       const item = items[i];
       if (item.status === 'done') continue;
 
-      items[i] = { ...item, status: 'processing', error: null };
+      items[i] = { ...item, status: 'processing', error: null, progress: 0 };
 
       try {
         const src = item.thumbnailUrl;
-        const result = await processorService.processImage(src, settings);
+        const idx = i; // capture for closure
+        const result = await processorService.processImage(
+          src,
+          settings,
+          undefined, // onDimensionCapped
+          (progress) => { items[idx] = { ...items[idx], progress }; },
+        );
         if (result) {
-          items[i] = { ...items[i], status: 'done', resultUrl: result };
+          items[i] = { ...items[i], status: 'done', resultUrl: result, progress: 1 };
         } else {
           items[i] = { ...items[i], status: 'error', error: 'Processing returned null' };
         }
@@ -124,7 +132,7 @@
   async function saveAll() {
     const doneItems = items.filter(i => i.status === 'done' && i.resultUrl);
     if (doneItems.length === 0) {
-      onError?.('No processed images to save.');
+      onError?.(i18n.t('no_processed'));
       return;
     }
 
@@ -140,13 +148,24 @@
   let doneCount = $derived(items.filter(i => i.status === 'done').length);
   let errorCount = $derived(items.filter(i => i.status === 'error').length);
   let processingCount = $derived(items.filter(i => i.status === 'processing').length);
+
+  // Overall batch progress (0–100)
+  let overallProgress = $derived.by(() => {
+    if (items.length === 0) return 0;
+    const total = items.reduce((sum, item) => {
+      if (item.status === 'done') return sum + 1;
+      if (item.status === 'processing') return sum + item.progress;
+      return sum;
+    }, 0);
+    return Math.round((total / items.length) * 100);
+  });
 </script>
 
 <div class="batch-root">
   <!-- Settings Info -->
   <div class="batch-settings-info">
-    <span><strong>Settings applied:</strong> Pixel {settings.pixelSize}x · {getPaletteName(settings.palette)}</span>
-    <span class="batch-settings-hint">(Change in Settings window)</span>
+    <span><strong>{i18n.t('settings_applied')}:</strong> Pixel {settings.pixelSize}x · {getPaletteName(settings.palette)}</span>
+    <span class="batch-settings-hint">{i18n.t('change_in_settings')}</span>
   </div>
 
   <!-- Drop zone / Add area -->
@@ -163,10 +182,10 @@
     {#if items.length === 0}
       <div class="batch-empty">
         <span class="batch-empty-icon">📦</span>
-        <p>Drag & Drop multiple images here</p>
-        <p class="batch-hint">or</p>
+        <p>{i18n.t('drag_drop_multiple')}</p>
+        <p class="batch-hint">{i18n.t('or')}</p>
         <input type="file" accept={ACCEPTED_TYPES.join(',')} multiple id="batch-upload" onchange={handleFileInput} style="display: none;" />
-        <button class="batch-browse-btn" onclick={() => document.getElementById('batch-upload')?.click()}>📂 Browse...</button>
+        <button class="batch-browse-btn" onclick={() => document.getElementById('batch-upload')?.click()}>📂 {i18n.t('browse')}</button>
       </div>
     {:else}
       <!-- Items grid -->
@@ -186,12 +205,17 @@
             <div class="batch-item-info">
               <span class="batch-item-name">{item.name}</span>
               <span class="batch-item-status">
-                {#if item.status === 'pending'}⏳ Pending
-                {:else if item.status === 'processing'}⚙️ Processing...
-                {:else if item.status === 'done'}✅ Done
+                {#if item.status === 'pending'}⏳ {i18n.t('pending')}
+                {:else if item.status === 'processing'}⚙️ {Math.round(item.progress * 100)}%
+                {:else if item.status === 'done'}✅ {i18n.t('done')}
                 {:else if item.status === 'error'}❌ {item.error}
                 {/if}
               </span>
+              {#if item.status === 'processing'}
+                <div class="batch-item-progress">
+                  <div class="batch-item-progress-fill" style:width="{item.progress * 100}%"></div>
+                </div>
+              {/if}
             </div>
             <button
               class="batch-item-remove"
@@ -203,7 +227,7 @@
         {/each}
         <!-- Add more button -->
         <button class="batch-add-more" onclick={() => document.getElementById('batch-upload')?.click()}>
-          ＋ Add
+          ＋ {i18n.t('add')}
         </button>
       </div>
     {/if}
@@ -211,20 +235,28 @@
 
   <!-- Controls -->
   <div class="batch-controls">
+    {#if isProcessingAll}
+      <div class="batch-overall-progress">
+        <div class="batch-overall-bar">
+          <div class="batch-overall-fill" style:width="{overallProgress}%"></div>
+        </div>
+        <span class="batch-overall-text">{overallProgress}% ({doneCount}/{items.length})</span>
+      </div>
+    {/if}
     <div class="batch-status">
-      {items.length} image(s) · {doneCount} done
-      {#if errorCount > 0} · <span class="error-text">{errorCount} error(s)</span>{/if}
-      {#if processingCount > 0} · ⚙️ {processingCount} processing{/if}
+      {items.length} {i18n.t('images')} · {doneCount} {i18n.t('done')}
+      {#if errorCount > 0} · <span class="error-text">{errorCount} {i18n.t('errors')}</span>{/if}
+      {#if processingCount > 0} · ⚙️ {processingCount} {i18n.t('processing')}{/if}
     </div>
     <div class="batch-actions">
       <button onclick={processAll} disabled={items.length === 0 || isProcessingAll}>
-        {isProcessingAll ? '⚙️ Processing...' : '▶️ Process All'}
+        {isProcessingAll ? `⚙️ ${overallProgress}%` : '▶️ ' + i18n.t('process_all')}
       </button>
       <button onclick={saveAll} disabled={doneCount === 0}>
-        💾 Save All
+        💾 {i18n.t('save_all')}
       </button>
       <button onclick={clearAll} disabled={items.length === 0}>
-        🗑️ Clear
+        🗑️ {i18n.t('clear')}
       </button>
     </div>
   </div>
@@ -333,6 +365,19 @@
     font-size: 9px;
     color: #666;
   }
+  .batch-item-progress {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: #ddd;
+  }
+  .batch-item-progress-fill {
+    height: 100%;
+    background: #000080;
+    transition: width 0.15s ease;
+  }
   .batch-item-remove {
     position: absolute;
     top: 2px;
@@ -371,6 +416,35 @@
     flex-direction: column;
     gap: 4px;
     flex-shrink: 0;
+  }
+  .batch-overall-progress {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .batch-overall-bar {
+    flex: 1;
+    height: 12px;
+    background: #000;
+    border: 2px inset #dfdfdf;
+    position: relative;
+    overflow: hidden;
+  }
+  .batch-overall-fill {
+    height: 100%;
+    background: repeating-linear-gradient(
+      90deg,
+      #000080 0px, #000080 8px,
+      #0000a0 8px, #0000a0 10px
+    );
+    transition: width 0.2s ease;
+  }
+  .batch-overall-text {
+    font-size: 10px;
+    font-weight: bold;
+    color: #000080;
+    white-space: nowrap;
+    font-family: 'Courier New', monospace;
   }
   .batch-status {
     font-size: 10px;

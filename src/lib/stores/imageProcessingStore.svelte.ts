@@ -9,6 +9,7 @@ import type { SaveFormat } from '$lib/services/saveService';
 import type { ProcessingSettings, PostProcessFilters } from '$lib/types';
 import { DEFAULT_POST_FILTERS } from '$lib/types';
 import { decodeGif, encodeGif, frameToBlobUrl, type GifInfo } from '$lib/utils/gifProcessor';
+import { i18n } from '$lib/i18n/index.svelte';
 
 const DEBOUNCE_MS = 150;
 const MAX_HISTORY = 20;
@@ -34,6 +35,74 @@ export function createImageProcessingStore() {
   let saveQuality = $state(0.92);
   let colorCount = $state(0);
   let postFilters = $state<PostProcessFilters>({ ...DEFAULT_POST_FILTERS });
+  let autoProcess = $state(true);
+
+  // ─── Transform State (pre-processing) ───
+  let rotation = $state(0); // 0, 90, 180, 270
+  let cropRect = $state<{ x: number; y: number; w: number; h: number } | null>(null);
+  let transformedSrc = $state<string | null>(null); // blob URL after rotation/crop
+  let transformedObjectUrl: string | null = null;
+
+  /**
+   * Apply rotation and crop to the original image, producing a transformed source.
+   * Returns a blob URL of the transformed image.
+   */
+  async function applyTransform(): Promise<string | null> {
+    if (!originalImageSrc) return null;
+
+    // No transform needed
+    if (rotation === 0 && !cropRect) {
+      if (transformedObjectUrl) {
+        URL.revokeObjectURL(transformedObjectUrl);
+        transformedObjectUrl = null;
+      }
+      transformedSrc = null;
+      return null;
+    }
+
+    const img = new Image();
+    await new Promise<void>((resolve, reject) => {
+      img.onload = () => resolve();
+      img.onerror = () => reject(new Error('Failed to load image for transform'));
+      img.src = originalImageSrc!;
+    });
+
+    let srcX = 0, srcY = 0, srcW = img.naturalWidth, srcH = img.naturalHeight;
+    if (cropRect) {
+      srcX = cropRect.x;
+      srcY = cropRect.y;
+      srcW = cropRect.w;
+      srcH = cropRect.h;
+    }
+
+    const isRotated90 = rotation === 90 || rotation === 270;
+    const outW = isRotated90 ? srcH : srcW;
+    const outH = isRotated90 ? srcW : srcH;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = outW;
+    canvas.height = outH;
+    const ctx = canvas.getContext('2d')!;
+
+    ctx.save();
+    ctx.translate(outW / 2, outH / 2);
+    ctx.rotate((rotation * Math.PI) / 180);
+
+    // After rotation, draw centered
+    const drawW = srcW;
+    const drawH = srcH;
+    ctx.drawImage(img, srcX, srcY, srcW, srcH, -drawW / 2, -drawH / 2, drawW, drawH);
+    ctx.restore();
+
+    const blob = await new Promise<Blob>((resolve) => {
+      canvas.toBlob((b) => resolve(b!), 'image/png');
+    });
+
+    if (transformedObjectUrl) URL.revokeObjectURL(transformedObjectUrl);
+    transformedObjectUrl = URL.createObjectURL(blob);
+    transformedSrc = transformedObjectUrl;
+    return transformedObjectUrl;
+  }
 
   // ─── Internal State ───
   let currentObjectUrl: string | null = null;
@@ -79,7 +148,8 @@ export function createImageProcessingStore() {
     const gen = ++processingGeneration;
     try {
       lastError = null;
-      const result = await processorService.processImage(originalImageSrc!, settings, handleDimensionCapped);
+      const srcToProcess = transformedSrc || originalImageSrc!;
+      const result = await processorService.processImage(srcToProcess, settings, handleDimensionCapped);
       if (result !== null) {
         processedImageSrc = result;
         colorCount = processorService.getLastColorCount();
@@ -281,7 +351,7 @@ export function createImageProcessingStore() {
       a.click();
       URL.revokeObjectURL(url);
 
-      return 'GIF exported successfully!';
+      return i18n.t('gif_exported');
     } catch (err) {
       console.error('GIF export error:', err);
       lastError = err instanceof Error ? err.message : String(err);
@@ -356,6 +426,7 @@ export function createImageProcessingStore() {
   function updateSettings(newSettings: ProcessingSettings) {
     pushHistory(settings);
     settings = { ...newSettings };
+    if (!autoProcess) return;
     if (isGif && gifInfo) {
       stopGifPlayback();
       showGifFrame(gifCurrentFrame);
@@ -367,6 +438,18 @@ export function createImageProcessingStore() {
   function selectPalette(paletteId: string) {
     pushHistory(settings);
     settings.palette = paletteId;
+    if (!autoProcess) return;
+    if (isGif && gifInfo) {
+      stopGifPlayback();
+      showGifFrame(gifCurrentFrame);
+    } else {
+      processImmediate();
+    }
+  }
+
+  /** Manual apply — used when autoProcess is off */
+  function applyNow() {
+    if (!originalImageSrc) return;
     if (isGif && gifInfo) {
       stopGifPlayback();
       showGifFrame(gifCurrentFrame);
@@ -424,6 +507,35 @@ export function createImageProcessingStore() {
   function setFormat(format: SaveFormat) { saveFormat = format; }
   function setQuality(quality: number) { saveQuality = quality; }
 
+  // ─── Rotation & Crop ───
+  async function rotate(degrees: 90 | -90 | 180) {
+    rotation = ((rotation + degrees) % 360 + 360) % 360;
+    // Reset crop when rotating
+    cropRect = null;
+    await applyTransform();
+    processorService.clearImageCache();
+    processImmediate();
+  }
+
+  async function setCrop(rect: { x: number; y: number; w: number; h: number } | null) {
+    cropRect = rect;
+    await applyTransform();
+    processorService.clearImageCache();
+    processImmediate();
+  }
+
+  function resetTransform() {
+    rotation = 0;
+    cropRect = null;
+    if (transformedObjectUrl) {
+      URL.revokeObjectURL(transformedObjectUrl);
+      transformedObjectUrl = null;
+    }
+    transformedSrc = null;
+    processorService.clearImageCache();
+    processImmediate();
+  }
+
   function setDimensionCapCallback(cb: (original: { w: number; h: number }, capped: { w: number; h: number }) => void) {
     onDimensionCapped = cb;
   }
@@ -451,6 +563,12 @@ export function createImageProcessingStore() {
     get postFilters() { return postFilters; },
     set postFilters(v: PostProcessFilters) { postFilters = v; },
     get postFilterCss() { return postFilterCssString(); },
+    get autoProcess() { return autoProcess; },
+    set autoProcess(v: boolean) { autoProcess = v; },
+
+    // Transform state
+    get rotation() { return rotation; },
+    get cropRect() { return cropRect; },
 
     // GIF state
     get isGif() { return isGif; },
@@ -466,6 +584,7 @@ export function createImageProcessingStore() {
     loadNewImage,
     updateSettings,
     selectPalette,
+    applyNow,
     undo,
     redo,
     jumpToHistory,
@@ -475,6 +594,11 @@ export function createImageProcessingStore() {
     setDimensionCapCallback,
     destroy,
     clearError: () => { lastError = null; },
+
+    // Transform actions
+    rotate,
+    setCrop,
+    resetTransform,
 
     // GIF actions
     playGif,

@@ -15,6 +15,8 @@ import { customPaletteStore } from "../stores/customPaletteStore.svelte";
 class ImageProcessorService {
   private worker: Worker | null = null;
   private currentRequestId: string | null = null;
+  private workerErrorCount = 0;
+  private static readonly MAX_WORKER_RETRIES = 3;
   private pendingResolvers = new Map<
     string,
     {
@@ -22,9 +24,11 @@ class ImageProcessorService {
       reject: (reason: unknown) => void;
       canvas: HTMLCanvasElement;
       ctx: CanvasRenderingContext2D;
+      onProgress?: (progress: number) => void;
     }
   >();
   private imageCache = new Map<string, HTMLImageElement>();
+  private static readonly MAX_IMAGE_CACHE = 10;
   private lastBlobUrl: string | null = null;
 
   /** Maximum processing dimension to prevent OOM on large images */
@@ -67,15 +71,26 @@ class ImageProcessorService {
   }
 
   private ensureWorker(): Worker {
+    if (this.workerErrorCount >= ImageProcessorService.MAX_WORKER_RETRIES) {
+      throw new Error('Image processing worker failed repeatedly. Please reload the page.');
+    }
     if (!this.worker) {
+      this.workerErrorCount = 0; // Reset on successful creation
       this.worker = new Worker(
         new URL("../workers/imageWorker.ts", import.meta.url),
         { type: "module" },
       );
       this.worker.onmessage = (e: MessageEvent<ImageWorkerResponse>) => {
-        const { id, processedData, colorCount, error } = e.data;
+        const { id, type, processedData, colorCount, progress, error } = e.data;
         const pending = this.pendingResolvers.get(id);
         if (!pending) return;
+
+        // Handle progress updates (don't resolve yet)
+        if (type === 'progress' && progress !== undefined) {
+          pending.onProgress?.(progress);
+          return;
+        }
+
         this.pendingResolvers.delete(id);
 
         if (error) {
@@ -88,7 +103,7 @@ class ImageProcessorService {
             processedData.height,
           );
 
-          // Canvas 크기를 처리된 데이터에 맞게 조정 (HQx 등으로 인해 해상도가 커졌을 수 있음)
+          // Resize canvas to match processed data (may differ due to HQx upscaling)
           pending.canvas.width = processedData.width;
           pending.canvas.height = processedData.height;
 
@@ -107,13 +122,16 @@ class ImageProcessorService {
         }
       };
       this.worker.onerror = (err) => {
+        this.workerErrorCount++;
         for (const [, pending] of this.pendingResolvers) {
           pending.reject(err);
         }
         this.pendingResolvers.clear();
-        // Reset worker so next call creates a fresh one
         this.worker?.terminate();
         this.worker = null;
+        if (this.workerErrorCount >= ImageProcessorService.MAX_WORKER_RETRIES) {
+          console.error(`Worker failed ${this.workerErrorCount} times, stopping retries`);
+        }
       };
     }
     return this.worker;
@@ -121,12 +139,22 @@ class ImageProcessorService {
 
   private loadImage(src: string): Promise<HTMLImageElement> {
     const cached = this.imageCache.get(src);
-    if (cached) return Promise.resolve(cached);
+    if (cached) {
+      // Move to end for LRU ordering
+      this.imageCache.delete(src);
+      this.imageCache.set(src, cached);
+      return Promise.resolve(cached);
+    }
 
     return new Promise((resolve, reject) => {
       const img = new Image();
       img.crossOrigin = "Anonymous";
       img.onload = () => {
+        // Evict oldest entry if cache is full
+        if (this.imageCache.size >= ImageProcessorService.MAX_IMAGE_CACHE) {
+          const oldest = this.imageCache.keys().next().value!;
+          this.imageCache.delete(oldest);
+        }
         this.imageCache.set(src, img);
         resolve(img);
       };
@@ -168,6 +196,7 @@ class ImageProcessorService {
       original: { w: number; h: number },
       capped: { w: number; h: number },
     ) => void,
+    onProgress?: (progress: number) => void,
   ): Promise<string | null> {
     const requestId = crypto.randomUUID();
     this.currentRequestId = requestId;
@@ -219,7 +248,7 @@ class ImageProcessorService {
       // Create canvas for the final export
       const canvas = this.getOrCreateCanvas('worker', procWidth, procHeight);
       const ctx = canvas.getContext("2d")!;
-      this.pendingResolvers.set(requestId, { resolve, reject, canvas, ctx });
+      this.pendingResolvers.set(requestId, { resolve, reject, canvas, ctx, onProgress });
 
       const message: ImageWorkerMessage = {
         id: requestId,

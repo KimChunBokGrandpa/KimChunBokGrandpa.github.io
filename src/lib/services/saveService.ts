@@ -5,6 +5,7 @@
  */
 
 import { isTauri } from "../utils/env";
+import { i18n } from "$lib/i18n/index.svelte";
 
 export type SaveFormat = "png" | "jpeg" | "webp";
 
@@ -112,7 +113,7 @@ export async function saveImage(
       const arrayBuffer = await blobData.arrayBuffer();
       const bytes = new Uint8Array(arrayBuffer);
       await writeFile(filePath, bytes);
-      return "File saved successfully!";
+      return i18n.t('file_saved');
     }
     return ""; // User cancelled
   } else {
@@ -124,6 +125,6 @@ export async function saveImage(
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    return "Image downloaded successfully!";
+    return i18n.t('image_downloaded');
   }
 }

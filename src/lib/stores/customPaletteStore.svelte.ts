@@ -43,7 +43,7 @@ export function createCustomPaletteStore() {
     },
     addPalette(name: string, colors: RGB[]): CustomPalette {
       const newPalette: CustomPalette = {
-        id: `custom_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+        id: `custom_${crypto.randomUUID()}`,
         name: name || 'Untitled Palette',
         colors: colors.map(c => ({ ...c })),
         createdAt: Date.now()

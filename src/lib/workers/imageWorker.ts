@@ -9,7 +9,6 @@ import type {
   ImageWorkerResponse,
 } from "../types";
 
-
 onmessage = (e: MessageEvent<ImageWorkerMessage>) => {
   const {
     id,
@@ -34,6 +33,9 @@ onmessage = (e: MessageEvent<ImageWorkerMessage>) => {
     const sourceData = ctx.getImageData(0, 0, width, height);
     imageBitmap.close(); // Release memory
 
+    // Report progress: quantization starting
+    postMessage({ id, type: 'progress', progress: 0.1 } as ImageWorkerResponse);
+
     let processedData = applyPixelationAndPalette(
       sourceData,
       pixelSize,
@@ -44,6 +46,8 @@ onmessage = (e: MessageEvent<ImageWorkerMessage>) => {
 
     // Clear cached color lookups for unused palettes
     clearPaletteCachesExcept(palette);
+
+    postMessage({ id, type: 'progress', progress: 0.4 } as ImageWorkerResponse);
 
     if (glitchFilters && glitchFilters.length > 0) {
       for (const filter of glitchFilters) {
@@ -58,9 +62,13 @@ onmessage = (e: MessageEvent<ImageWorkerMessage>) => {
       }
     }
 
+    postMessage({ id, type: 'progress', progress: 0.7 } as ImageWorkerResponse);
+
     if (renderMode === "hqx") {
       processedData = applyScaling(processedData, renderMode);
     }
+
+    postMessage({ id, type: 'progress', progress: 0.9 } as ImageWorkerResponse);
 
     // Count unique colors
     const colorSet = new Set<number>();
@@ -70,7 +78,7 @@ onmessage = (e: MessageEvent<ImageWorkerMessage>) => {
       colorSet.add((pd[i] << 16) | (pd[i + 1] << 8) | pd[i + 2]);
     }
 
-    const response: ImageWorkerResponse = { id, processedData, colorCount: colorSet.size };
+    const response: ImageWorkerResponse = { id, type: 'complete', processedData, colorCount: colorSet.size };
     postMessage(response, { transfer: [processedData.data.buffer] });
   } catch (error: unknown) {
     const message =

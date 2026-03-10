@@ -5,14 +5,14 @@ import type { RGB } from "./palettes";
 // Color Quantization & Pixelation Engine
 
 // ─── 5-bit Quantized Lookup Table (LUT) ───
-// RGB 각 채널을 5비트(32단계)로 양자화 → 32×32×32 = 32,768 엔트리
-// 팔레트별 1회 빌드 후 모든 조회 O(1), ~130KB/팔레트
+// Quantize each RGB channel to 5 bits (32 levels) → 32×32×32 = 32,768 entries
+// Built once per palette; all lookups O(1), ~130KB per palette
 const BITS = 5;
 const LEVELS = 1 << BITS;          // 32
-const SHIFT = 8 - BITS;            // 3 (256 → 32 매핑)
+const SHIFT = 8 - BITS;            // 3 (maps 256 → 32)
 const LUT_SIZE = LEVELS ** 3;      // 32,768
 
-// 팔레트별 LUT 캐시: Uint32Array (packed RGBA)
+// Per-palette LUT cache: Uint32Array (packed RGBA)
 const lutCache = new Map<string, Uint32Array>();
 
 // Separate cache for RGB LUT (used by dithering which needs unpacked R,G,B)
@@ -33,13 +33,13 @@ function colorDistance(cr: number, cg: number, cb: number, r: number, g: number,
   return 2 * dr * dr + 4 * dg * dg + 3 * db * db;
 }
 
-/** 팔레트별 LUT를 최초 1회 빌드 */
-function buildLut(paletteName: string, customColors?: RGB[]): Uint32Array {
-  const existing = lutCache.get(paletteName);
-  if (existing) return existing;
+/** Build both packed (Uint32) and RGB (Uint8) LUTs in a single pass */
+function buildBothLuts(paletteName: string, customColors?: RGB[]): void {
+  if (lutCache.has(paletteName) && lutRgbCache.has(paletteName)) return;
 
   const palette = customColors || PALETTES[paletteName] || PALETTES["win256"];
   const packed = new Uint32Array(LUT_SIZE);
+  const rgbLut = new Uint8Array(LUT_SIZE * 3);
 
   for (let ri = 0; ri < LEVELS; ri++) {
     const r = (ri << SHIFT) | ((1 << (SHIFT - 1)) - 1);
@@ -62,40 +62,6 @@ function buildLut(paletteName: string, customColors?: RGB[]): Uint32Array {
         packed[idx] = IS_LITTLE_ENDIAN
           ? (255 << 24) | (c.b << 16) | (c.g << 8) | c.r
           : (c.r << 24) | (c.g << 16) | (c.b << 8) | 255;
-      }
-    }
-  }
-
-  lutCache.set(paletteName, packed);
-  return packed;
-}
-
-/** Build an RGB LUT that returns unpacked r,g,b for dithering error calculation */
-function buildLutRgb(paletteName: string, customColors?: RGB[]): Uint8Array {
-  const existing = lutRgbCache.get(paletteName);
-  if (existing) return existing;
-
-  const palette = customColors || PALETTES[paletteName] || PALETTES["win256"];
-  const rgbLut = new Uint8Array(LUT_SIZE * 3);
-
-  for (let ri = 0; ri < LEVELS; ri++) {
-    const r = (ri << SHIFT) | ((1 << (SHIFT - 1)) - 1);
-    for (let gi = 0; gi < LEVELS; gi++) {
-      const g = (gi << SHIFT) | ((1 << (SHIFT - 1)) - 1);
-      for (let bi = 0; bi < LEVELS; bi++) {
-        const b = (bi << SHIFT) | ((1 << (SHIFT - 1)) - 1);
-        const idx = (ri << (BITS * 2)) | (gi << BITS) | bi;
-
-        let minDist = Infinity;
-        let nearestIdx = 0;
-        for (let pi = 0; pi < palette.length; pi++) {
-          const c = palette[pi];
-          const d = colorDistance(c.r, c.g, c.b, r, g, b);
-          if (d === 0) { nearestIdx = pi; break; }
-          if (d < minDist) { minDist = d; nearestIdx = pi; }
-        }
-
-        const c = palette[nearestIdx];
         const off = idx * 3;
         rgbLut[off] = c.r;
         rgbLut[off + 1] = c.g;
@@ -104,8 +70,20 @@ function buildLutRgb(paletteName: string, customColors?: RGB[]): Uint8Array {
     }
   }
 
+  lutCache.set(paletteName, packed);
   lutRgbCache.set(paletteName, rgbLut);
-  return rgbLut;
+}
+
+/** Get packed RGBA LUT (lazy, cached) */
+function buildLut(paletteName: string, customColors?: RGB[]): Uint32Array {
+  if (!lutCache.has(paletteName)) buildBothLuts(paletteName, customColors);
+  return lutCache.get(paletteName)!;
+}
+
+/** Get unpacked RGB LUT for dithering error calculation (lazy, cached) */
+function buildLutRgb(paletteName: string, customColors?: RGB[]): Uint8Array {
+  if (!lutRgbCache.has(paletteName)) buildBothLuts(paletteName, customColors);
+  return lutRgbCache.get(paletteName)!;
 }
 
 /** LUT lookup returning unpacked RGB */

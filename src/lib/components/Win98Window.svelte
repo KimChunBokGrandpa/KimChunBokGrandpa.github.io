@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
+  import { i18n } from '$lib/i18n/index.svelte';
 
   let {
     title = '',
@@ -48,7 +49,8 @@
   let resizeStartTop = 0;
   let savedPos = { x: 0, y: 0, w: 0, h: 0 };
 
-  // Snap state
+  // Layout constants
+  const TASKBAR_HEIGHT = 30;
   const SNAP_THRESHOLD = 20;
   let snapPreview = $state<'left' | 'right' | null>(null);
   let preSnapPos: { x: number; y: number; w: number; h: number } | null = null;
@@ -56,7 +58,7 @@
   // Drag listeners
   $effect(() => {
     if (!isDragging) return;
-    const desktopH = window.innerHeight - 30; // taskbar height
+    const desktopH = window.innerHeight - TASKBAR_HEIGHT;
     const onMove = (e: MouseEvent | TouchEvent) => {
       const clientX = 'touches' in e ? e.touches[0].clientX : (e as MouseEvent).clientX;
       const clientY = 'touches' in e ? e.touches[0].clientY : (e as MouseEvent).clientY;
@@ -228,9 +230,9 @@
         <span class="window-icon">{icon}</span> {title}
       </div>
       <div class="title-bar-controls">
-        <button aria-label="Minimize" onclick={handleMinimize}></button>
-        <button aria-label="Maximize" onclick={handleMaximize}></button>
-        <button aria-label="Close" onclick={handleClose}></button>
+        <button aria-label={i18n.t('minimize')} onclick={handleMinimize}></button>
+        <button aria-label={i18n.t('maximize')} onclick={handleMaximize}></button>
+        <button aria-label={i18n.t('close')} onclick={handleClose}></button>
       </div>
     </div>
     <div class="window-body win98-body">
@@ -254,7 +256,7 @@
 {#if snapPreview}
   <div
     class="snap-preview"
-    style="left:{snapPreview === 'left' ? '0' : '50%'}; top:0; width:50vw; height:calc(100vh - 30px);"
+    style="left:{snapPreview === 'left' ? '0' : '50%'}; top:0; width:50vw; height:calc(100vh - {TASKBAR_HEIGHT}px);"
   ></div>
 {/if}
 

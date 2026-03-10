@@ -1,7 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { i18n } from '$lib/i18n/index.svelte';
 
-  let { message, title = 'Message', onClose }: {
+  let { message, title = i18n.t('message'), onClose }: {
     message: string;
     title?: string;
     onClose: () => void;
@@ -45,17 +46,17 @@
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div class="dialog-overlay" onclick={onClose}>
-  <div class="window dialog-win" bind:this={dialogEl} onclick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label={title} tabindex="-1">
+  <div class="window dialog-win" bind:this={dialogEl} onclick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="msg-dialog-title" tabindex="-1">
     <div class="title-bar">
-      <div class="title-bar-text">{title}</div>
+      <div class="title-bar-text" id="msg-dialog-title">{title}</div>
       <div class="title-bar-controls">
-        <button aria-label="Close" onclick={onClose}></button>
+        <button aria-label={i18n.t('close')} onclick={onClose}></button>
       </div>
     </div>
     <div class="window-body" style="padding: 12px;">
       <p style="margin: 0 0 16px 0;">{message}</p>
       <div class="field-row" style="justify-content: flex-end;">
-        <button bind:this={okBtn} onclick={onClose} style="min-width: 75px;">OK</button>
+        <button bind:this={okBtn} onclick={onClose} style="min-width: 75px;">{i18n.t('ok')}</button>
       </div>
     </div>
   </div>

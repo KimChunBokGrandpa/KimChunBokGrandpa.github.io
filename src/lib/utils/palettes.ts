@@ -236,7 +236,7 @@ export const PALETTES: Record<string, RGB[]> = {
 };
 
 // ─── Palette Display Name Lookup ───
-// PALETTE_GROUPS.name은 테마 그룹핑용이므로, 개별 팔레트 표시 이름은 별도 정의
+// PALETTE_GROUPS.theme is for grouping; individual display names defined separately
 const DISPLAY_NAMES: Record<string, string> = {
   original: "Full Color (Original)",
   win256: "8-bit Windows 256",
@@ -289,16 +289,21 @@ const DISPLAY_NAMES: Record<string, string> = {
   synthwave48: "Synthwave (46)",
 };
 
+// Reverse lookup: palette id → { theme, colorCount } (built once)
+const _paletteIdLookup = new Map<string, { theme: string; colorCount: number }>();
+for (const group of PALETTE_GROUPS) {
+  for (const p of group.palettes) {
+    _paletteIdLookup.set(p.id, {
+      theme: p.theme,
+      colorCount: (PALETTES[p.id] || []).length,
+    });
+  }
+}
+
 export function getPaletteName(id: string): string {
   if (DISPLAY_NAMES[id]) return DISPLAY_NAMES[id];
-  // Theme series: earth2 → "Earth Tone (2)", neon64 → "Neon Glow (64)"
-  for (const group of PALETTE_GROUPS) {
-    const p = group.palettes.find(pal => pal.id === id);
-    if (p) {
-      const colorCount = (PALETTES[id] || []).length;
-      return `${p.theme} (${colorCount})`;
-    }
-  }
+  const info = _paletteIdLookup.get(id);
+  if (info) return `${info.theme} (${info.colorCount})`;
   return id;
 }
 

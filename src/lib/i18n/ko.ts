@@ -5,6 +5,25 @@ export const ko: Record<TranslationKey, string> = {
   cancel: '\ucde8\uc18c',
   error: '\uc624\ub958',
   close: '\ub2eb\uae30',
+  minimize: '\ucd5c\uc18c\ud654',
+  maximize: '\ucd5c\ub300\ud654',
+  message: '\uba54\uc2dc\uc9c0',
+  update: '\uc218\uc815',
+
+  palette_name: '\ud314\ub808\ud2b8 \uc774\ub984',
+  my_custom_palette: '\ub098\ub9cc\uc758 \ud314\ub808\ud2b8',
+  add_at_least_2: '\ucd5c\uc18c 2\uac1c \uc774\uc0c1\uc758 \uc0c9\uc0c1\uc744 \ucd94\uac00\ud558\uc138\uc694',
+  add_color: '+ \ucd94\uac00',
+  save_palette: '\ud314\ub808\ud2b8 \uc800\uc7a5',
+  swatch_hint: '{0} \u2014 \ud074\ub9ad\ud558\uc5ec \ud3b8\uc9d1, \uc6b0\ud074\ub9ad\ud558\uc5ec \uc0ad\uc81c',
+  colors_count: '\uc0c9\uc0c1 ({0})',
+
+  history_pixel: '\ud53d\uc140: {0}x',
+  history_crt: '+CRT',
+  history_glitch: '+{0} \uae00\ub9ac\uce58',
+
+  level: '\ub808\ubca8',
+  reroll_seed: '\uc2dc\ub4dc \ub2e4\uc2dc \uc0dd\uc131',
 
   win_preview: '\ubbf8\ub9ac\ubcf4\uae30',
   win_settings: '\uc124\uc815',
@@ -143,6 +162,22 @@ export const ko: Record<TranslationKey, string> = {
   shortcut_drag: '\ud328\ub2dd (\ubbf8\ub9ac\ubcf4\uae30 \uc704)',
   shortcut_slider: '\uc804/\ud6c4 \uc2ac\ub77c\uc774\ub354',
   press_to_close: '{0} \ub610\ub294 {1}\uc744 \ub20c\ub7ec \ub2eb\uae30',
+
+  auto_process: '\ucc98\ub9ac \ubaa8\ub4dc',
+  auto_process_label: '\uc124\uc815 \ubcc0\uacbd \uc2dc \uc790\ub3d9 \ucc98\ub9ac',
+  apply_now: '\uc9c0\uae08 \uc801\uc6a9',
+
+  my_presets: '\ub0b4 \ud504\ub9ac\uc14b',
+  save_preset: '\ud504\ub9ac\uc14b \uc800\uc7a5',
+  preset_name_placeholder: '\ud504\ub9ac\uc14b \uc774\ub984...',
+
+  eyedropper: '\uc0c9\uc0c1 \ucd94\ucd9c (\uc774\ubbf8\uc9c0 \ud074\ub9ad\uc73c\ub85c \uc0d8\ud50c\ub9c1)',
+  exit_eyedropper: '\uc0c9\uc0c1 \ucd94\ucd9c \uc885\ub8cc',
+  copy_color: '\ud074\ub9bd\ubcf4\ub4dc\uc5d0 \ubcf5\uc0ac',
+
+  rotate_left: '\uc67c\ucabd\uc73c\ub85c 90\u00b0 \ud68c\uc804',
+  rotate_right: '\uc624\ub978\ucabd\uc73c\ub85c 90\u00b0 \ud68c\uc804',
+  reset_transform: '\ud68c\uc804 \ucd08\uae30\ud654',
 
   language: '\uc5b8\uc5b4',
 };

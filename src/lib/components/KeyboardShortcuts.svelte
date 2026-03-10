@@ -22,13 +22,13 @@
 </script>
 
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-<div class="ks-backdrop" onclick={onClose} onkeydown={(e) => { if (e.key === 'Escape' || e.key === '?') onClose(); }} role="dialog" tabindex="-1">
+<div class="ks-backdrop" onclick={onClose} onkeydown={(e) => { if (e.key === 'Escape' || e.key === '?') onClose(); }} role="dialog" aria-modal="true" aria-labelledby="ks-dialog-title" tabindex="-1">
   <!-- svelte-ignore a11y_click_events_have_key_events -->
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div class="ks-window" onclick={(e) => e.stopPropagation()}>
     <div class="ks-titlebar">
-      <span class="ks-title">⌨️ {i18n.t('keyboard_shortcuts')}</span>
-      <button class="ks-close" onclick={onClose} aria-label="Close">✕</button>
+      <span class="ks-title" id="ks-dialog-title">⌨️ {i18n.t('keyboard_shortcuts')}</span>
+      <button class="ks-close" onclick={onClose} aria-label={i18n.t('close')}>✕</button>
     </div>
     <div class="ks-body">
       <table class="ks-table">

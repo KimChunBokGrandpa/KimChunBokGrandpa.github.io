@@ -35,6 +35,10 @@
     tileMode = $bindable(false),
     // Post-process CSS filter
     postFilterCss = '',
+    // Transform
+    onRotate,
+    onResetTransform,
+    currentRotation = 0,
   }: {
     zp: ReturnType<typeof createZoomPan>;
     originalImageSrc: string | null;
@@ -62,10 +66,62 @@
     tileMode?: boolean;
     // Post-process CSS filter
     postFilterCss?: string;
+    // Transform
+    onRotate?: (degrees: 90 | -90 | 180) => void;
+    onResetTransform?: () => void;
+    currentRotation?: number;
   } = $props();
 
   let displayedWidth = $derived(zp.previewImg?.naturalWidth ?? 0);
   let displayedHeight = $derived(zp.previewImg?.naturalHeight ?? 0);
+
+  // ─── Eyedropper ───
+  let eyedropperActive = $state(false);
+  let pickedColor = $state<{ r: number; g: number; b: number; hex: string } | null>(null);
+  let pickedColorPos = $state<{ x: number; y: number }>({ x: 0, y: 0 });
+
+  function handlePreviewClick(e: MouseEvent) {
+    if (!eyedropperActive || !zp.previewImg || !processedImageSrc) return;
+    // Don't pick color if panning
+    if (zp.isPanning) return;
+
+    const img = zp.previewImg;
+    const rect = img.getBoundingClientRect();
+    // Calculate the actual image area within object-fit:contain
+    const scale = Math.min(rect.width / img.naturalWidth, rect.height / img.naturalHeight);
+    const renderedW = img.naturalWidth * scale;
+    const renderedH = img.naturalHeight * scale;
+    const offsetX = (rect.width - renderedW) / 2;
+    const offsetY = (rect.height - renderedH) / 2;
+
+    const imgX = Math.floor((e.clientX - rect.left - offsetX) / scale);
+    const imgY = Math.floor((e.clientY - rect.top - offsetY) / scale);
+
+    if (imgX < 0 || imgY < 0 || imgX >= img.naturalWidth || imgY >= img.naturalHeight) return;
+
+    // Read pixel from a canvas
+    const canvas = document.createElement('canvas');
+    canvas.width = img.naturalWidth;
+    canvas.height = img.naturalHeight;
+    const ctx = canvas.getContext('2d')!;
+    ctx.drawImage(img, 0, 0);
+    const pixel = ctx.getImageData(imgX, imgY, 1, 1).data;
+
+    const r = pixel[0], g = pixel[1], b = pixel[2];
+    const hex = `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+    pickedColor = { r, g, b, hex };
+    pickedColorPos = { x: e.clientX, y: e.clientY };
+  }
+
+  function copyColor() {
+    if (pickedColor) {
+      navigator.clipboard.writeText(pickedColor.hex);
+    }
+  }
+
+  function dismissColor() {
+    pickedColor = null;
+  }
 
   // Pixel grid: show when grid is on and zoom is high enough to see pixels
   let gridVisible = $derived(zp.showGrid && zp.zoomLevel >= 2 && processingSettings.pixelSize > 1);
@@ -105,10 +161,13 @@
 </script>
 
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+<!-- svelte-ignore a11y_click_events_have_key_events -->
 <div
   class="preview-body"
   class:panning={zp.isPanning}
+  class:eyedropper={eyedropperActive}
   bind:this={zp.previewContainer}
+  onclick={handlePreviewClick}
   onwheel={zp.handleWheel}
   onmousedown={zp.handleMouseDown}
   onmousemove={zp.handleMouseMove}
@@ -174,24 +233,30 @@
     {/if}
     <!-- Zoom Controls -->
     <div class="zoom-controls">
-      <button class="zoom-btn" onclick={(e) => { e.stopPropagation(); onOpenSettings(); }} title="Open Settings">⚙️</button>
+      <button class="zoom-btn" onclick={(e) => { e.stopPropagation(); onOpenSettings(); }} title={i18n.t('open_settings')}>⚙️</button>
+      <div class="zoom-sep"></div>
+      <button class="zoom-btn" onclick={() => onRotate?.(-90)} title={i18n.t('rotate_left')}>↺</button>
+      <button class="zoom-btn" onclick={() => onRotate?.(90)} title={i18n.t('rotate_right')}>↻</button>
+      {#if currentRotation !== 0}
+        <button class="zoom-btn" onclick={() => onResetTransform?.()} title={i18n.t('reset_transform')}>⟲</button>
+      {/if}
       <div class="zoom-sep"></div>
       <button
         class="zoom-btn"
         class:compare-active={compareMode}
         onclick={() => { compareMode = !compareMode; }}
-        title={compareMode ? 'Exit Compare Mode' : 'Compare Before/After'}
+        title={compareMode ? i18n.t('exit_compare') : i18n.t('compare_before_after')}
       >{compareMode ? '🔀' : '⚖️'}</button>
       <div class="zoom-sep"></div>
       {#if !compareMode}
         {#if displayedWidth > 0 && displayedHeight > 0}
-          <div class="zoom-info" title="Image Resolution">{displayedWidth}×{displayedHeight}</div>
+          <div class="zoom-info" title={i18n.t('image_resolution')}>{displayedWidth}×{displayedHeight}</div>
           {#if colorCount > 0}
-            <div class="zoom-info color-count" title="Unique Colors">{colorCount}c</div>
+            <div class="zoom-info color-count" title={i18n.t('unique_colors')}>{colorCount}c</div>
           {/if}
           <div class="zoom-sep"></div>
         {/if}
-        <button class="zoom-btn" onclick={zp.zoomIn} title="Zoom In">+</button>
+        <button class="zoom-btn" onclick={zp.zoomIn} title={i18n.t('zoom_in')}>+</button>
         <div class="zoom-input-container">
           <input
             type="number"
@@ -202,27 +267,47 @@
               const val = parseInt(e.currentTarget.value);
               if (!isNaN(val)) zp.setZoom(val / 100);
             }}
-            title="Set Zoom %"
+            title={i18n.t('set_zoom')}
           />
           <span class="zoom-percent">%</span>
         </div>
-        <button class="zoom-btn" onclick={zp.zoomOut} title="Zoom Out">−</button>
-        <button class="zoom-btn" onclick={zp.zoomToFit} title="Fit to Window">⊡</button>
+        <button class="zoom-btn" onclick={zp.zoomOut} title={i18n.t('zoom_out')}>−</button>
+        <button class="zoom-btn" onclick={zp.zoomToFit} title={i18n.t('fit_to_window')}>⊡</button>
         <div class="zoom-sep"></div>
         <button
           class="zoom-btn"
           class:grid-active={zp.showGrid}
           onclick={() => { zp.showGrid = !zp.showGrid; }}
-          title={zp.showGrid ? 'Hide Pixel Grid' : 'Show Pixel Grid (zoom ≥2x, pixelSize>1)'}
+          title={zp.showGrid ? i18n.t('hide_pixel_grid') : i18n.t('show_pixel_grid')}
         >#</button>
         <button
           class="zoom-btn"
           class:grid-active={tileMode}
           onclick={() => { tileMode = !tileMode; }}
-          title={tileMode ? 'Exit Tile Preview' : 'Tile Preview (seamless pattern check)'}
+          title={tileMode ? i18n.t('exit_tile') : i18n.t('tile_preview')}
         >⊞</button>
+        <button
+          class="zoom-btn"
+          class:grid-active={eyedropperActive}
+          onclick={() => { eyedropperActive = !eyedropperActive; pickedColor = null; }}
+          title={eyedropperActive ? i18n.t('exit_eyedropper') : i18n.t('eyedropper')}
+        >💧</button>
       {/if}
     </div>
+    <!-- Picked Color Tooltip -->
+    {#if pickedColor}
+      <div class="color-tooltip" style="left:{pickedColorPos.x}px;top:{pickedColorPos.y}px;">
+        <div class="color-swatch" style="background:{pickedColor.hex};"></div>
+        <div class="color-info">
+          <span class="color-hex">{pickedColor.hex.toUpperCase()}</span>
+          <span class="color-rgb">RGB({pickedColor.r}, {pickedColor.g}, {pickedColor.b})</span>
+        </div>
+        <div class="color-actions">
+          <button class="color-action-btn" onclick={copyColor} title={i18n.t('copy_color')}>📋</button>
+          <button class="color-action-btn" onclick={dismissColor}>✕</button>
+        </div>
+      </div>
+    {/if}
     <!-- GIF Frame Controls -->
     {#if isGif && gifFrameCount > 1 && onGifPlay && onGifPause && onGifSeek && onGifExport}
       <GifControls
@@ -244,7 +329,7 @@
         <div class="progress-container progress-wide">
           <div class="progress-bar"></div>
         </div>
-        <span class="processing-text">Processing image...</span>
+        <span class="processing-text">{i18n.t('processing_image')}</span>
       </div>
     </div>
   {:else}
@@ -268,6 +353,60 @@
   }
   .preview-body.panning {
     cursor: grabbing;
+  }
+  .preview-body.eyedropper {
+    cursor: crosshair;
+  }
+
+  /* ===== Eyedropper Color Tooltip ===== */
+  .color-tooltip {
+    position: fixed;
+    z-index: 100;
+    transform: translate(8px, -100%);
+    background: #c0c0c0;
+    border: 2px solid;
+    border-color: #dfdfdf #808080 #808080 #dfdfdf;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    box-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    pointer-events: auto;
+  }
+  .color-swatch {
+    width: 24px;
+    height: 24px;
+    border: 1px solid #000;
+    flex-shrink: 0;
+  }
+  .color-info {
+    display: flex;
+    flex-direction: column;
+    font-size: 10px;
+    font-family: 'Courier New', monospace;
+    font-weight: bold;
+  }
+  .color-hex { color: #000080; }
+  .color-rgb { color: #444; }
+  .color-actions {
+    display: flex;
+    gap: 2px;
+  }
+  .color-action-btn {
+    min-width: 20px;
+    height: 20px;
+    padding: 0 3px;
+    font-size: 11px;
+    background: #c0c0c0;
+    border: none;
+    cursor: pointer;
+    box-shadow: inset 1px 1px #fff, inset -1px -1px #0a0a0a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .color-action-btn:active {
+    box-shadow: inset -1px -1px #fff, inset 1px 1px #0a0a0a;
   }
 
   /* ===== Preview Image ===== */

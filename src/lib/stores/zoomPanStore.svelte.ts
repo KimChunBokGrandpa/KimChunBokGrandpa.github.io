@@ -94,7 +94,12 @@ export function createZoomPan() {
     if (e.touches.length < 2) {
       lastTouchDist = 0;
     }
-    if (e.touches.length === 0) {
+    // Reinitialize pan origin when transitioning from pinch to single-finger pan
+    if (e.touches.length === 1 && zoomLevel > 1) {
+      isTouchPanning = true;
+      panStartX = e.touches[0].clientX - panX;
+      panStartY = e.touches[0].clientY - panY;
+    } else if (e.touches.length === 0) {
       isTouchPanning = false;
     }
   }

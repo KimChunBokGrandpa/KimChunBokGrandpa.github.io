@@ -79,6 +79,12 @@
     } else if (e.key === 'ArrowRight') {
       sliderPosition = Math.min(100, sliderPosition + 2);
       e.preventDefault();
+    } else if (e.key === 'Home') {
+      sliderPosition = 0;
+      e.preventDefault();
+    } else if (e.key === 'End') {
+      sliderPosition = 100;
+      e.preventDefault();
     }
   }
 </script>

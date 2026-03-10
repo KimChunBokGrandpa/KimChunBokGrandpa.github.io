@@ -102,11 +102,11 @@ export function parsePaletteFile(text: string, filename: string): { name: string
 // ─── Exporting ───
 
 function rgbToHex(c: RGB): string {
-  return `${c.r.toString(16).padStart(2, '0')}${c.g.toString(16).padStart(2, '0')}${c.b.toString(16).padStart(2, '0')}`.toUpperCase();
+  return `#${c.r.toString(16).padStart(2, '0')}${c.g.toString(16).padStart(2, '0')}${c.b.toString(16).padStart(2, '0')}`.toUpperCase();
 }
 
 /**
- * Export palette as .hex format (one color per line, no # prefix).
+ * Export palette as .hex format (one color per line, #RRGGBB).
  */
 export function exportAsHex(colors: RGB[]): string {
   return colors.map(c => rgbToHex(c)).join('\n') + '\n';

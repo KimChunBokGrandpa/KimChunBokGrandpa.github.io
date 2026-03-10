@@ -5,6 +5,19 @@
 
 import type { GlitchType } from "../types";
 
+/** RGB split shift percentages per intensity level (fraction of image width) */
+const RGB_SHIFT_PERCENT: Record<number, number> = { 1: 0.005, 2: 0.015, 3: 0.03 };
+/** Noise block density per intensity (fraction of total pixels) */
+const NOISE_DENSITY = 0.001;
+/** Wave base amplitude (fraction of image width) */
+const WAVE_AMP_RATIO = 0.01;
+/** Wave frequency multiplier per intensity */
+const WAVE_FREQ = 0.05;
+/** Slices per intensity level */
+const SLICES_PER_LEVEL = 4;
+/** Slice max horizontal shift (fraction of image width) */
+const SLICE_SHIFT_RATIO = 0.05;
+
 export const applyGlitch = (
   imageData: ImageData,
   glitchType: GlitchType,
@@ -24,9 +37,7 @@ export const applyGlitch = (
 
   // 1. RGB Split (Chromatic Aberration)
   const applyRgbSplit = () => {
-    // Intensity 1: 0.5% shift, 2: 1.5% shift, 3: 3% shift
-    const shiftPercent =
-      intensity === 1 ? 0.005 : intensity === 2 ? 0.015 : 0.03;
+    const shiftPercent = RGB_SHIFT_PERCENT[intensity] ?? RGB_SHIFT_PERCENT[1];
     const shiftAmount = Math.max(1, Math.floor(width * shiftPercent));
 
     for (let y = 0; y < height; y++) {
@@ -50,7 +61,7 @@ export const applyGlitch = (
 
   // 2. Pixel Sorting / Noise
   const applyNoise = () => {
-    const numBlocks = Math.floor(width * height * (intensity * 0.001)); // 0.1%, 0.2%, 0.3% area
+    const numBlocks = Math.floor(width * height * (intensity * NOISE_DENSITY));
     const maxShift = intensity * 5;
 
     for (let b = 0; b < numBlocks; b++) {
@@ -86,8 +97,8 @@ export const applyGlitch = (
   // 3. Wave / Distortion
   const applyWave = () => {
     // Intensity: Amplitude and Frequency
-    const amplitude = intensity * Math.max(2, Math.floor(width * 0.01));
-    const frequency = intensity * 0.05;
+    const amplitude = intensity * Math.max(2, Math.floor(width * WAVE_AMP_RATIO));
+    const frequency = intensity * WAVE_FREQ;
     const phase = seed * 100;
 
     for (let y = 0; y < height; y++) {
@@ -124,8 +135,8 @@ export const applyGlitch = (
 
   // 4. Slice / Interlaced
   const applySlice = () => {
-    const numSlices = intensity * 4; // 4, 8, 12 slices
-    const maxShift = intensity * Math.max(10, Math.floor(width * 0.05));
+    const numSlices = intensity * SLICES_PER_LEVEL;
+    const maxShift = intensity * Math.max(10, Math.floor(width * SLICE_SHIFT_RATIO));
 
     for (let i = 0; i < numSlices; i++) {
       const sliceY = Math.floor(randomValue(i * 3) * height);

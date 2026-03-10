@@ -4,6 +4,28 @@ export const en = {
   cancel: 'Cancel',
   error: 'Error',
   close: 'Close',
+  minimize: 'Minimize',
+  maximize: 'Maximize',
+  message: 'Message',
+  update: 'Update',
+
+  // ─── Palette Editor ───
+  palette_name: 'Palette Name',
+  my_custom_palette: 'My Custom Palette',
+  add_at_least_2: 'Add at least 2 colors',
+  add_color: '+ Add',
+  save_palette: 'Save Palette',
+  swatch_hint: '{0} — Click to edit, right-click to remove',
+  colors_count: 'Colors ({0})',
+
+  // ─── History ───
+  history_pixel: 'Pixel: {0}x',
+  history_crt: '+CRT',
+  history_glitch: '+{0} glitch',
+
+  // ─── Settings ───
+  level: 'Level',
+  reroll_seed: 'Re-roll seed',
 
   // ─── Window Titles ───
   win_preview: 'Preview',
@@ -151,6 +173,26 @@ export const en = {
   shortcut_drag: 'Pan (over preview)',
   shortcut_slider: 'Before/After slider',
   press_to_close: 'Press {0} or {1} to close',
+
+  // ─── Auto-Process ───
+  auto_process: 'Processing Mode',
+  auto_process_label: 'Auto-process on settings change',
+  apply_now: 'Apply Now',
+
+  // ─── Custom Presets ───
+  my_presets: 'My Presets',
+  save_preset: 'Save Preset',
+  preset_name_placeholder: 'Preset name...',
+
+  // ─── Eyedropper ───
+  eyedropper: 'Color Picker (click image to sample)',
+  exit_eyedropper: 'Exit Color Picker',
+  copy_color: 'Copy to clipboard',
+
+  // ─── Transform ───
+  rotate_left: 'Rotate Left 90\u00b0',
+  rotate_right: 'Rotate Right 90\u00b0',
+  reset_transform: 'Reset Rotation',
 
   // ─── Language ───
   language: 'Language',

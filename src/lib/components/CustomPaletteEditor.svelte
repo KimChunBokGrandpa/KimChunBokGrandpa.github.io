@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { RGB } from '../utils/palettes';
+  import { i18n } from '$lib/i18n/index.svelte';
 
   let {
     initialName = '',
@@ -61,7 +62,7 @@
 
   function handleSave() {
     if (colors.length < 2) return;
-    onSave(name || 'Untitled Palette', colors);
+    onSave(name || i18n.t('my_custom_palette'), colors);
   }
 
   let canSave = $derived(colors.length >= 2);
@@ -69,20 +70,20 @@
 
 <div class="cpe-root">
   <fieldset>
-    <legend>Palette Name</legend>
+    <legend>{i18n.t('palette_name')}</legend>
     <div class="field-row">
       <input
         type="text"
         class="cpe-name-input"
         bind:value={name}
-        placeholder="My Custom Palette"
+        placeholder={i18n.t('my_custom_palette')}
         maxlength="40"
       />
     </div>
   </fieldset>
 
   <fieldset>
-    <legend>Colors ({colors.length})</legend>
+    <legend>{i18n.t('colors_count').replace('{0}', String(colors.length))}</legend>
     <div class="cpe-swatches">
       {#each colors as c, i}
         <div class="cpe-swatch-item">
@@ -90,7 +91,7 @@
             class="cpe-swatch"
             class:cpe-editing={editingIndex === i}
             style="background:rgb({c.r},{c.g},{c.b})"
-            title="{rgbToHex(c)} — Click to edit, right-click to remove"
+            title={i18n.t('swatch_hint').replace('{0}', rgbToHex(c))}
             onclick={() => editColor(i)}
             oncontextmenu={(e) => { e.preventDefault(); removeColor(i); }}
             role="button"
@@ -100,7 +101,7 @@
         </div>
       {/each}
       {#if colors.length === 0}
-        <span class="cpe-hint">Add at least 2 colors</span>
+        <span class="cpe-hint">{i18n.t('add_at_least_2')}</span>
       {/if}
     </div>
 
@@ -120,20 +121,20 @@
         onkeydown={(e) => { if (e.key === 'Enter') addColor(); }}
       />
       <button class="cpe-add-btn" onclick={addColor}>
-        {editingIndex !== null ? 'Update' : '+ Add'}
+        {editingIndex !== null ? i18n.t('update') : i18n.t('add_color')}
       </button>
       {#if editingIndex !== null}
         <button class="cpe-add-btn" onclick={() => { editingIndex = null; hexInput = '#000000'; }}>
-          Cancel
+          {i18n.t('cancel')}
         </button>
       {/if}
     </div>
   </fieldset>
 
   <div class="cpe-actions">
-    <button onclick={onCancel}>Cancel</button>
+    <button onclick={onCancel}>{i18n.t('cancel')}</button>
     <button onclick={handleSave} disabled={!canSave}>
-      Save Palette
+      {i18n.t('save_palette')}
     </button>
   </div>
 </div>

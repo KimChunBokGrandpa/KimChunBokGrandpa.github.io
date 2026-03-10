@@ -5,6 +5,25 @@ export const ja: Record<TranslationKey, string> = {
   cancel: '\u30ad\u30e3\u30f3\u30bb\u30eb',
   error: '\u30a8\u30e9\u30fc',
   close: '\u9589\u3058\u308b',
+  minimize: '\u6700\u5c0f\u5316',
+  maximize: '\u6700\u5927\u5316',
+  message: '\u30e1\u30c3\u30bb\u30fc\u30b8',
+  update: '\u66f4\u65b0',
+
+  palette_name: '\u30d1\u30ec\u30c3\u30c8\u540d',
+  my_custom_palette: '\u30de\u30a4\u30d1\u30ec\u30c3\u30c8',
+  add_at_least_2: '2\u8272\u4ee5\u4e0a\u8ffd\u52a0\u3057\u3066\u304f\u3060\u3055\u3044',
+  add_color: '+ \u8ffd\u52a0',
+  save_palette: '\u30d1\u30ec\u30c3\u30c8\u4fdd\u5b58',
+  swatch_hint: '{0} \u2014 \u30af\u30ea\u30c3\u30af\u3067\u7de8\u96c6\u3001\u53f3\u30af\u30ea\u30c3\u30af\u3067\u524a\u9664',
+  colors_count: '\u8272\u6570 ({0})',
+
+  history_pixel: '\u30d4\u30af\u30bb\u30eb: {0}x',
+  history_crt: '+CRT',
+  history_glitch: '+{0} \u30b0\u30ea\u30c3\u30c1',
+
+  level: '\u30ec\u30d9\u30eb',
+  reroll_seed: '\u30b7\u30fc\u30c9\u518d\u751f\u6210',
 
   win_preview: '\u30d7\u30ec\u30d3\u30e5\u30fc',
   win_settings: '\u8a2d\u5b9a',
@@ -143,6 +162,22 @@ export const ja: Record<TranslationKey, string> = {
   shortcut_drag: '\u30d1\u30f3 (\u30d7\u30ec\u30d3\u30e5\u30fc\u4e0a)',
   shortcut_slider: '\u524d/\u5f8c\u30b9\u30e9\u30a4\u30c0\u30fc',
   press_to_close: '{0} \u307e\u305f\u306f {1} \u3067\u9589\u3058\u308b',
+
+  auto_process: '\u51e6\u7406\u30e2\u30fc\u30c9',
+  auto_process_label: '\u8a2d\u5b9a\u5909\u66f4\u6642\u306b\u81ea\u52d5\u51e6\u7406',
+  apply_now: '\u4eca\u3059\u3050\u9069\u7528',
+
+  my_presets: '\u30de\u30a4\u30d7\u30ea\u30bb\u30c3\u30c8',
+  save_preset: '\u30d7\u30ea\u30bb\u30c3\u30c8\u4fdd\u5b58',
+  preset_name_placeholder: '\u30d7\u30ea\u30bb\u30c3\u30c8\u540d...',
+
+  eyedropper: '\u30ab\u30e9\u30fc\u30d4\u30c3\u30ab\u30fc (\u753b\u50cf\u30af\u30ea\u30c3\u30af\u3067\u30b5\u30f3\u30d7\u30ea\u30f3\u30b0)',
+  exit_eyedropper: '\u30ab\u30e9\u30fc\u30d4\u30c3\u30ab\u30fc\u7d42\u4e86',
+  copy_color: '\u30af\u30ea\u30c3\u30d7\u30dc\u30fc\u30c9\u306b\u30b3\u30d4\u30fc',
+
+  rotate_left: '\u5de6\u306b90\u00b0\u56de\u8ee2',
+  rotate_right: '\u53f3\u306b90\u00b0\u56de\u8ee2',
+  reset_transform: '\u56de\u8ee2\u30ea\u30bb\u30c3\u30c8',
 
   language: '\u8a00\u8a9e',
 };

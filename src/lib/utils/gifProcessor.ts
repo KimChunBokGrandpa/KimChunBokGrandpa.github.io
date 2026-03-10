@@ -110,7 +110,7 @@ export function encodeGif(
     writer.addFrame(0, 0, width, height, indexedPixels, {
       palette,
       delay: Math.max(delayCs, 2),
-      transparent: findTransparentIndex(frame.data, indexedPixels, palette),
+      transparent: findTransparentIndex(frame.data, palette),
     });
   }
 
@@ -131,7 +131,6 @@ function quantizeFrame(
 
   // Count unique colors (fast hash approach)
   const colorMap = new Map<number, number>(); // packed RGB -> count
-  const hasTransparent = false;
 
   for (let i = 0; i < pixelCount; i++) {
     const off = i * 4;
@@ -202,13 +201,16 @@ function findNearestColor(r: number, g: number, b: number, colors: number[]): nu
 
 function findTransparentIndex(
   rgba: Uint8ClampedArray,
-  _indexedPixels: Uint8Array,
-  _palette: number[],
+  palette: number[],
 ): number | undefined {
   // Check if any pixel is transparent
+  let hasTransparent = false;
   for (let i = 0; i < rgba.length; i += 4) {
-    if (rgba[i + 3] < 128) return 0;
+    if (rgba[i + 3] < 128) { hasTransparent = true; break; }
   }
+  if (!hasTransparent) return undefined;
+  // Verify palette[0] is the designated transparent slot (0x000000)
+  if (palette.length > 0 && palette[0] === 0x000000) return 0;
   return undefined;
 }
 
@@ -220,11 +222,14 @@ function nextPow2(n: number): number {
 
 /**
  * Create a blob URL from a single frame for preview.
+ * Reuses a single canvas to avoid repeated element creation.
  */
+let _frameCanvas: HTMLCanvasElement | null = null;
 export function frameToBlobUrl(frame: GifFrame): Promise<string> {
-  const canvas = document.createElement('canvas');
-  canvas.width = frame.width;
-  canvas.height = frame.height;
+  if (!_frameCanvas) _frameCanvas = document.createElement('canvas');
+  const canvas = _frameCanvas;
+  if (canvas.width !== frame.width) canvas.width = frame.width;
+  if (canvas.height !== frame.height) canvas.height = frame.height;
   const ctx = canvas.getContext('2d')!;
   const imageData = new ImageData(
     new Uint8ClampedArray(frame.data),
