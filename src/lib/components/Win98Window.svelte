@@ -218,6 +218,12 @@
     onFocus?.();
   }
 
+  function handleKeydown(e: KeyboardEvent) {
+    if (e.key === 'Escape') {
+      onClose?.();
+    }
+  }
+
   function handleTitleDblClick() {
     if (mode === 'maximized') {
       mode = 'windowed';
@@ -242,18 +248,19 @@
 </script>
 
 {#if mode !== 'minimized'}
-  <!-- svelte-ignore a11y_click_events_have_key_events -->
-  <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
     class="window win98-window"
     class:maximized={mode === 'maximized'}
     class:interacting={isDragging || isResizing}
     class:resizing={isResizing}
     style={windowStyle}
+    role="dialog"
+    tabindex="-1"
     onclick={handleWindowClick}
+    onkeydown={handleKeydown}
   >
     <!-- svelte-ignore a11y_no_static_element_interactions -->
-    <div class="title-bar" onmousedown={startDrag} ondblclick={handleTitleDblClick}>
+    <div class="title-bar" onmousedown={startDrag} ontouchstart={startDrag} ondblclick={handleTitleDblClick}>
       <div class="title-bar-text">
         <span class="window-icon">{icon}</span>
         {title}
@@ -336,27 +343,18 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    box-shadow:
-      inset -1px -1px #0a0a0a,
-      inset 1px 1px #dfdfdf,
-      inset -2px -2px grey,
-      inset 2px 2px #fff,
-      4px 4px 12px rgba(0, 0, 0, 0.4);
+    box-shadow: var(--w98-window-shadow);
     user-select: none;
     animation: windowOpen 0.12s ease-out;
   }
   .win98-window.maximized {
-    box-shadow:
-      inset -1px -1px #0a0a0a,
-      inset 1px 1px #dfdfdf,
-      inset -2px -2px grey,
-      inset 2px 2px #fff;
+    box-shadow: var(--w98-outset);
   }
   .win98-window.interacting {
     opacity: 0.92;
   }
   .win98-window.resizing {
-    outline: 2px dashed #000080;
+    outline: 2px dashed var(--w98-highlight);
     outline-offset: -2px;
   }
 
@@ -377,7 +375,7 @@
     cursor: grabbing;
   }
   .window-icon {
-    font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif;
+    font-family: var(--w98-emoji-font);
     color: initial;
     margin-right: 4px;
   }
@@ -460,8 +458,8 @@
   /* ===== Snap Preview ===== */
   .snap-preview {
     position: fixed;
-    background: rgba(0, 0, 128, 0.18);
-    border: 2px solid rgba(0, 0, 128, 0.5);
+    background: var(--w98-highlight-alpha);
+    border: 2px solid var(--w98-highlight-border);
     z-index: 8999;
     pointer-events: none;
     transition: opacity 0.1s;

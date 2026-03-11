@@ -1,7 +1,6 @@
 /**
  * GIF Processing — Decode/encode animated GIFs using omggif.
  */
-// @ts-ignore — omggif has no type declarations
 import { GifReader, GifWriter } from 'omggif';
 
 export interface GifFrame {

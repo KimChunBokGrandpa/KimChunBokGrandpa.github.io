@@ -8,7 +8,8 @@ import { saveImage } from '$lib/services/saveService';
 import type { SaveFormat } from '$lib/services/saveService';
 import type { ProcessingSettings, PostProcessFilters } from '$lib/types';
 import { DEFAULT_POST_FILTERS } from '$lib/types';
-import { decodeGif, encodeGif, frameToBlobUrl, type GifInfo } from '$lib/utils/gifProcessor';
+import { decodeGif, frameToBlobUrl, type GifInfo } from '$lib/utils/gifProcessor';
+import type { GifEncodeWorkerMessage, GifEncodeWorkerResponse } from '$lib/types';
 import { i18n } from '$lib/i18n/index.svelte';
 
 const DEBOUNCE_MS = 150;
@@ -23,6 +24,51 @@ const DEFAULT_SETTINGS: ProcessingSettings = {
   glitchSeed: null,
   ditherType: 'none',
 };
+
+/**
+ * Run GIF encoding in a dedicated Web Worker to avoid blocking the UI.
+ * Spawns a short-lived worker per call since GIF export is infrequent.
+ */
+function encodeGifInWorker(
+  frames: { data: Uint8ClampedArray; delay: number }[],
+  width: number,
+  height: number,
+): Promise<Uint8Array> {
+  return new Promise((resolve, reject) => {
+    const worker = new Worker(
+      new URL('../workers/gifEncodeWorker.ts', import.meta.url),
+      { type: 'module' },
+    );
+
+    worker.onmessage = (e: MessageEvent<GifEncodeWorkerResponse>) => {
+      worker.terminate();
+      if (e.data.error) {
+        reject(new Error(e.data.error));
+      } else {
+        resolve(new Uint8Array(e.data.gifData!));
+      }
+    };
+
+    worker.onerror = (err) => {
+      worker.terminate();
+      reject(err);
+    };
+
+    // Transfer frame ArrayBuffers for zero-copy
+    const transferable: ArrayBuffer[] = [];
+    const message: GifEncodeWorkerMessage = {
+      frames: frames.map((f) => {
+        const buf = f.data.buffer.slice(0);
+        transferable.push(buf);
+        return { data: buf, delay: f.delay };
+      }),
+      width,
+      height,
+    };
+
+    worker.postMessage(message, transferable);
+  });
+}
 
 export function createImageProcessingStore() {
   // ─── Reactive State ───
@@ -346,9 +392,12 @@ export function createImageProcessingStore() {
 
       if (processedFrames.length === 0 || outW === 0) return null;
 
+      gifProcessingProgress = 0.95; // Encoding phase
+
+      // Encode GIF in a Web Worker to prevent UI blocking
+      const gifBytes = await encodeGifInWorker(processedFrames, outW, outH);
       gifProcessingProgress = 1;
 
-      const gifBytes = encodeGif(processedFrames, outW, outH);
       const blob = new Blob([gifBytes], { type: 'image/gif' });
       const url = URL.createObjectURL(blob);
 

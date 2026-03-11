@@ -65,6 +65,48 @@
     onSave(name || i18n.t('my_custom_palette'), colors);
   }
 
+  // ─── Gradient Generation ───
+  let gradStart = $state('#000000');
+  let gradEnd = $state('#ffffff');
+  let gradSteps = $state(6);
+
+  function generateGradient() {
+    const start = hexToRgb(gradStart);
+    const end = hexToRgb(gradEnd);
+    if (!start || !end || gradSteps < 2) return;
+    const newColors: RGB[] = [];
+    for (let i = 0; i < gradSteps; i++) {
+      const t = i / (gradSteps - 1);
+      newColors.push({
+        r: Math.round(start.r + (end.r - start.r) * t),
+        g: Math.round(start.g + (end.g - start.g) * t),
+        b: Math.round(start.b + (end.b - start.b) * t),
+      });
+    }
+    colors = [...colors, ...newColors];
+  }
+
+  // ─── Color Sorting & Reverse ───
+  function rgbToHue(c: RGB): number {
+    const r = c.r / 255, g = c.g / 255, b = c.b / 255;
+    const max = Math.max(r, g, b), min = Math.min(r, g, b);
+    if (max === min) return 0;
+    const d = max - min;
+    let h = 0;
+    if (max === r) h = ((g - b) / d + 6) % 6;
+    else if (max === g) h = (b - r) / d + 2;
+    else h = (r - g) / d + 4;
+    return h * 60;
+  }
+
+  function sortByHue() {
+    colors = [...colors].sort((a, b) => rgbToHue(a) - rgbToHue(b));
+  }
+
+  function reverseColors() {
+    colors = [...colors].reverse();
+  }
+
   let canSave = $derived(colors.length >= 2);
 </script>
 
@@ -133,6 +175,45 @@
           {i18n.t('cancel')}
         </button>
       {/if}
+    </div>
+
+    {#if colors.length > 0}
+      <div class="cpe-tools-row">
+        <button class="cpe-tool-btn" onclick={sortByHue} title={i18n.t('sort_by_hue')}>↕ {i18n.t('sort_by_hue')}</button>
+        <button class="cpe-tool-btn" onclick={reverseColors} title={i18n.t('reverse_colors')}>⇆ {i18n.t('reverse_colors')}</button>
+      </div>
+    {/if}
+  </fieldset>
+
+  <fieldset>
+    <legend>{i18n.t('generate_gradient')}</legend>
+    <div class="cpe-gradient-row">
+      <label class="cpe-grad-label">
+        <span>{i18n.t('gradient_start')}</span>
+        <input type="color" bind:value={gradStart} class="cpe-color-picker" />
+      </label>
+      <label class="cpe-grad-label">
+        <span>{i18n.t('gradient_end')}</span>
+        <input type="color" bind:value={gradEnd} class="cpe-color-picker" />
+      </label>
+      <label class="cpe-grad-label">
+        <span>{i18n.t('gradient_steps')}</span>
+        <input type="number" min="2" max="64" bind:value={gradSteps} class="cpe-step-input" />
+      </label>
+      <button class="cpe-add-btn" onclick={generateGradient}>{i18n.t('generate_gradient')}</button>
+    </div>
+    <div class="cpe-gradient-preview">
+      {#each Array(gradSteps) as _, i}
+        {@const t = gradSteps > 1 ? i / (gradSteps - 1) : 0}
+        {@const sr = hexToRgb(gradStart)}
+        {@const er = hexToRgb(gradEnd)}
+        {#if sr && er}
+          <span
+            class="cpe-grad-swatch"
+            style="background:rgb({Math.round(sr.r + (er.r - sr.r) * t)},{Math.round(sr.g + (er.g - sr.g) * t)},{Math.round(sr.b + (er.b - sr.b) * t)})"
+          ></span>
+        {/if}
+      {/each}
     </div>
   </fieldset>
 
@@ -262,6 +343,53 @@
   .cpe-actions button:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+  }
+
+  /* ── Color Tools Row ── */
+  .cpe-tools-row {
+    display: flex;
+    gap: 4px;
+    margin-top: 4px;
+  }
+  .cpe-tool-btn {
+    padding: 2px 6px;
+    font-size: 10px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+
+  /* ── Gradient Generator ── */
+  .cpe-gradient-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .cpe-grad-label {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-size: 10px;
+    font-weight: bold;
+  }
+  .cpe-step-input {
+    width: 44px;
+    padding: 2px 4px;
+    font-size: 11px;
+  }
+  .cpe-gradient-preview {
+    display: flex;
+    gap: 1px;
+    margin-top: 4px;
+    padding: 3px;
+    background: #fff;
+    border: 2px inset #dfdfdf;
+    min-height: 16px;
+  }
+  .cpe-grad-swatch {
+    flex: 1;
+    height: 14px;
+    min-width: 4px;
   }
 
   @media (max-width: 550px) {

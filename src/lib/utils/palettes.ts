@@ -1,4 +1,5 @@
 import { PALETTE_HEX_DATA } from "./paletteData";
+import type { TranslationKey } from '../i18n/en';
 
 export type RGB = { r: number; g: number; b: number };
 
@@ -236,57 +237,123 @@ export const PALETTES: Record<string, RGB[]> = {
 };
 
 // ─── Palette Display Name Lookup ───
-// PALETTE_GROUPS.theme is for grouping; individual display names defined separately
-const DISPLAY_NAMES: Record<string, string> = {
-  original: "Full Color (Original)",
-  win256: "8-bit Windows 256",
+// Each palette has a nameKey (i18n TranslationKey) and a fallback English name.
+const DISPLAY_NAMES: Record<string, { name: string; nameKey: TranslationKey }> = {
+  original: { name: "Full Color (Original)", nameKey: "palette_original" },
+  win256: { name: "8-bit Windows 256", nameKey: "palette_win256" },
   // Monochrome
-  monochrome: "Monochrome (B&W)",
-  sepia2: "Sepia Duo",
-  blue2: "Blueprint",
-  green2: "Terminal Green",
-  amber2: "Amber CRT",
-  red2: "Darkroom Red",
+  monochrome: { name: "Monochrome (B&W)", nameKey: "palette_monochrome" },
+  sepia2: { name: "Sepia Duo", nameKey: "palette_sepia2" },
+  blue2: { name: "Blueprint", nameKey: "palette_blue2" },
+  green2: { name: "Terminal Green", nameKey: "palette_green2" },
+  amber2: { name: "Amber CRT", nameKey: "palette_amber2" },
+  red2: { name: "Darkroom Red", nameKey: "palette_red2" },
+  earth2: { name: "Earth Tone (2)", nameKey: "palette_earth2" },
+  neon2: { name: "Neon Glow (2)", nameKey: "palette_neon2" },
+  ocean2: { name: "Ocean (2)", nameKey: "palette_ocean2" },
+  sunset2: { name: "Sunset (2)", nameKey: "palette_sunset2" },
+  vintage2: { name: "Vintage Film (2)", nameKey: "palette_vintage2" },
+  forest2: { name: "Forest Canopy (2)", nameKey: "palette_forest2" },
+  pastel2: { name: "Pastel Dream (2)", nameKey: "palette_pastel2" },
   // Gameboy
-  dmg: "DMG Green",
-  pocket: "GB Pocket",
-  gb_warm: "GB Warm Amber",
-  gb_blue: "GB Blue",
-  gb_red: "GB Red",
-  gamewatch: "Game & Watch LCD",
-  // Retro Console
-  pico8: "PICO-8",
-  nes: "NES Standard",
-  gameboy_color: "GBC Color",
-  snes32: "SNES Natural",
-  mega32: "Mega Drive",
-  nes_full: "NES Full (45)",
-  snes_rpg: "SNES RPG (44)",
-  snes_bg: "SNES Background (48)",
-  neogeo_char: "NEO-GEO Character (49)",
-  snes128: "SNES Extended",
-  gba128: "GBA Natural",
-  // Retro PC
-  cga: "CGA Mode4",
-  ega: "IBM EGA",
-  msx: "MSX TMS9918",
-  pc98: "PC-98 Night",
-  c64_full: "Commodore 64",
-  vga64: "VGA Standard",
-  amiga64: "Amiga OCS",
-  retro_pc64: "Retro PC 64",
-  apple2gs: "Apple IIGS",
-  atarist256: "Atari ST",
-  // Artistic
-  arctic4: "Arctic",
-  autumn16: "Autumn Harvest",
-  retro32: "Retro Pop",
-  twilight32: "Twilight Sky",
-  watercolor48: "Watercolor (48)",
-  spectrum256: "Spectrum",
-  // Cyberpunk
-  cyberpunk16: "Cyberpunk City (48)",
-  synthwave48: "Synthwave (46)",
+  dmg: { name: "DMG Green", nameKey: "palette_dmg" },
+  pocket: { name: "GB Pocket", nameKey: "palette_pocket" },
+  gb_warm: { name: "GB Warm Amber", nameKey: "palette_gb_warm" },
+  gb_blue: { name: "GB Blue", nameKey: "palette_gb_blue" },
+  gb_red: { name: "GB Red", nameKey: "palette_gb_red" },
+  gamewatch: { name: "Game & Watch LCD", nameKey: "palette_gamewatch" },
+  arctic4: { name: "Arctic", nameKey: "palette_arctic4" },
+  earth4: { name: "Earth Tone (4)", nameKey: "palette_earth4" },
+  forest4: { name: "Forest Canopy (4)", nameKey: "palette_forest4" },
+  neon4: { name: "Neon Glow (4)", nameKey: "palette_neon4" },
+  ocean4: { name: "Ocean (4)", nameKey: "palette_ocean4" },
+  pastel4: { name: "Pastel Dream (4)", nameKey: "palette_pastel4" },
+  sunset4: { name: "Sunset (4)", nameKey: "palette_sunset4" },
+  vintage4: { name: "Vintage Film (4)", nameKey: "palette_vintage4" },
+  // Retro PC (8 colors)
+  cga: { name: "CGA Mode4", nameKey: "palette_cga" },
+  earth8: { name: "Earth Tone (8)", nameKey: "palette_earth8" },
+  forest8: { name: "Forest Canopy (8)", nameKey: "palette_forest8" },
+  neon8: { name: "Neon Glow (8)", nameKey: "palette_neon8" },
+  ocean8: { name: "Ocean (8)", nameKey: "palette_ocean8" },
+  pastel8: { name: "Pastel Dream (8)", nameKey: "palette_pastel8" },
+  sunset8: { name: "Sunset (8)", nameKey: "palette_sunset8" },
+  vintage8: { name: "Vintage Film (8)", nameKey: "palette_vintage8" },
+  // Retro Console / PC (16 colors)
+  ega: { name: "IBM EGA", nameKey: "palette_ega" },
+  msx: { name: "MSX TMS9918", nameKey: "palette_msx" },
+  pico8: { name: "PICO-8", nameKey: "palette_pico8" },
+  nes: { name: "NES Standard", nameKey: "palette_nes" },
+  gameboy_color: { name: "GBC Color", nameKey: "palette_gameboy_color" },
+  autumn16: { name: "Autumn Harvest", nameKey: "palette_autumn16" },
+  c64_full: { name: "Commodore 64", nameKey: "palette_c64_full" },
+  earth16: { name: "Earth Tone (16)", nameKey: "palette_earth16" },
+  forest16: { name: "Forest Canopy (16)", nameKey: "palette_forest16" },
+  neon16: { name: "Neon Glow (16)", nameKey: "palette_neon16" },
+  ocean16: { name: "Ocean (16)", nameKey: "palette_ocean16" },
+  pastel16: { name: "Pastel Dream (16)", nameKey: "palette_pastel16" },
+  sunset16: { name: "Sunset (16)", nameKey: "palette_sunset16" },
+  vintage16: { name: "Vintage Film (16)", nameKey: "palette_vintage16" },
+  // 32 colors
+  snes32: { name: "SNES Natural", nameKey: "palette_snes32" },
+  mega32: { name: "Mega Drive", nameKey: "palette_mega32" },
+  pc98: { name: "PC-98 Night", nameKey: "palette_pc98" },
+  retro32: { name: "Retro Pop", nameKey: "palette_retro32" },
+  twilight32: { name: "Twilight Sky", nameKey: "palette_twilight32" },
+  earth32: { name: "Earth Tone (32)", nameKey: "palette_earth32" },
+  forest32: { name: "Forest Canopy (32)", nameKey: "palette_forest32" },
+  neon32: { name: "Neon Glow (32)", nameKey: "palette_neon32" },
+  ocean32: { name: "Ocean (32)", nameKey: "palette_ocean32" },
+  pastel32: { name: "Pastel Dream (32)", nameKey: "palette_pastel32" },
+  sunset32: { name: "Sunset (32)", nameKey: "palette_sunset32" },
+  vintage32: { name: "Vintage Film (32)", nameKey: "palette_vintage32" },
+  // 44–54 colors
+  nes_full: { name: "NES Full (45)", nameKey: "palette_nes_full" },
+  snes_rpg: { name: "SNES RPG (44)", nameKey: "palette_snes_rpg" },
+  snes_bg: { name: "SNES Background (48)", nameKey: "palette_snes_bg" },
+  neogeo_char: { name: "NEO-GEO Character (49)", nameKey: "palette_neogeo_char" },
+  cyberpunk16: { name: "Cyberpunk City (48)", nameKey: "palette_cyberpunk16" },
+  synthwave48: { name: "Synthwave (46)", nameKey: "palette_synthwave48" },
+  watercolor48: { name: "Watercolor (48)", nameKey: "palette_watercolor48" },
+  earth48: { name: "Earth Tone (48)", nameKey: "palette_earth48" },
+  forest48: { name: "Forest Canopy (48)", nameKey: "palette_forest48" },
+  neon48: { name: "Neon Glow (48)", nameKey: "palette_neon48" },
+  ocean48: { name: "Ocean (48)", nameKey: "palette_ocean48" },
+  pastel48: { name: "Pastel Dream (48)", nameKey: "palette_pastel48" },
+  sunset48: { name: "Sunset (48)", nameKey: "palette_sunset48" },
+  vintage48: { name: "Vintage Film (48)", nameKey: "palette_vintage48" },
+  // 64 colors
+  vga64: { name: "VGA Standard", nameKey: "palette_vga64" },
+  amiga64: { name: "Amiga OCS", nameKey: "palette_amiga64" },
+  retro_pc64: { name: "Retro PC 64", nameKey: "palette_retro_pc64" },
+  earth64: { name: "Earth Tone (64)", nameKey: "palette_earth64" },
+  forest64: { name: "Forest Canopy (64)", nameKey: "palette_forest64" },
+  neon64: { name: "Neon Glow (64)", nameKey: "palette_neon64" },
+  ocean64: { name: "Ocean (64)", nameKey: "palette_ocean64" },
+  pastel64: { name: "Pastel Dream (64)", nameKey: "palette_pastel64" },
+  sunset64: { name: "Sunset (64)", nameKey: "palette_sunset64" },
+  vintage64: { name: "Vintage Film (64)", nameKey: "palette_vintage64" },
+  // 128 colors
+  snes128: { name: "SNES Extended", nameKey: "palette_snes128" },
+  gba128: { name: "GBA Natural", nameKey: "palette_gba128" },
+  earth128: { name: "Earth Tone (128)", nameKey: "palette_earth128" },
+  forest128: { name: "Forest Canopy (128)", nameKey: "palette_forest128" },
+  neon128: { name: "Neon Glow (128)", nameKey: "palette_neon128" },
+  ocean128: { name: "Ocean (128)", nameKey: "palette_ocean128" },
+  pastel128: { name: "Pastel Dream (128)", nameKey: "palette_pastel128" },
+  sunset128: { name: "Sunset (128)", nameKey: "palette_sunset128" },
+  vintage128: { name: "Vintage Film (128)", nameKey: "palette_vintage128" },
+  // 256 colors
+  apple2gs: { name: "Apple IIGS", nameKey: "palette_apple2gs" },
+  atarist256: { name: "Atari ST", nameKey: "palette_atarist256" },
+  spectrum256: { name: "Spectrum", nameKey: "palette_spectrum256" },
+  earth256: { name: "Earth Tone (256)", nameKey: "palette_earth256" },
+  forest256: { name: "Forest Canopy (256)", nameKey: "palette_forest256" },
+  neon256: { name: "Neon Glow (256)", nameKey: "palette_neon256" },
+  ocean256: { name: "Ocean (256)", nameKey: "palette_ocean256" },
+  pastel256: { name: "Pastel Dream (256)", nameKey: "palette_pastel256" },
+  sunset256: { name: "Sunset (256)", nameKey: "palette_sunset256" },
+  vintage256: { name: "Vintage Film (256)", nameKey: "palette_vintage256" },
 };
 
 // Reverse lookup: palette id → { theme, colorCount } (built once)
@@ -300,8 +367,21 @@ for (const group of PALETTE_GROUPS) {
   }
 }
 
+/**
+ * Register a translate function for i18n palette names.
+ * Called once from the app root to avoid importing svelte runes in utility code.
+ */
+let _translate: ((key: TranslationKey) => string) | null = null;
+export function registerPaletteTranslator(fn: (key: TranslationKey) => string): void {
+  _translate = fn;
+}
+
 export function getPaletteName(id: string): string {
-  if (DISPLAY_NAMES[id]) return DISPLAY_NAMES[id];
+  const entry = DISPLAY_NAMES[id];
+  if (entry) {
+    if (_translate) return _translate(entry.nameKey);
+    return entry.name;
+  }
   const info = _paletteIdLookup.get(id);
   if (info) return `${info.theme} (${info.colorCount})`;
   return id;

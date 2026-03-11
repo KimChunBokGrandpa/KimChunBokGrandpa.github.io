@@ -121,16 +121,16 @@
     bottom: 0;
     left: 0;
     right: 0;
-    height: 30px;
-    background: #c0c0c0;
-    border-top: 1px solid #fff;
+    height: var(--w98-taskbar-height);
+    background: var(--w98-surface);
+    border-top: 1px solid var(--w98-shadow-white);
     display: flex;
     justify-content: space-between;
     align-items: stretch;
     padding: 2px 2px 2px 2px;
     z-index: 9000;
     gap: 2px;
-    box-shadow: inset 0 1px 0 #dfdfdf;
+    box-shadow: inset 0 1px 0 var(--w98-shadow-light);
   }
 
   .taskbar-left {
@@ -152,27 +152,19 @@
     max-width: 160px;
     flex: 0 1 140px;
     padding: 0 18px 0 4px; /* right padding for X overlay */
-    background: #c0c0c0;
+    background: var(--w98-surface);
     border: none;
     cursor: pointer;
-    font-size: 11px;
+    font-size: var(--w98-font-size-base);
     font-family: inherit;
     overflow: hidden;
-    box-shadow:
-      inset 1px 1px #fff,
-      inset -1px -1px #0a0a0a,
-      inset 2px 2px #dfdfdf,
-      inset -2px -2px grey;
+    box-shadow: var(--w98-outset);
     transition: flex-basis 0.15s ease;
   }
 
   .tb-item.tb-active {
-    box-shadow:
-      inset -1px -1px #fff,
-      inset 1px 1px #0a0a0a,
-      inset -2px -2px #dfdfdf,
-      inset 2px 2px grey;
-    background: #d4d0c8;
+    box-shadow: var(--w98-inset);
+    background: var(--w98-surface-active);
     font-weight: bold;
   }
   .tb-item.tb-dim {
@@ -182,7 +174,7 @@
   .tb-icon {
     font-size: 14px;
     flex-shrink: 0;
-    font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif;
+    font-family: var(--w98-emoji-font);
     color: initial;
   }
   .tb-label {
@@ -207,12 +199,10 @@
     height: 14px;
     padding: 0;
     font-size: 0;
-    background: #c0c0c0;
+    background: var(--w98-surface);
     border: none;
     cursor: pointer;
-    box-shadow:
-      inset 1px 1px #fff,
-      inset -1px -1px #0a0a0a;
+    box-shadow: var(--w98-outset-thin);
     opacity: 0;
     transition: opacity 0.1s;
   }
@@ -227,18 +217,16 @@
     color: #000;
   }
   .tb-x:hover {
-    background: #c0c0c0;
-    box-shadow:
-      inset -1px -1px #fff,
-      inset 1px 1px #0a0a0a;
+    background: var(--w98-surface);
+    box-shadow: var(--w98-inset-thin);
   }
   .tb-x:hover::after {
-    color: #000;
+    color: var(--w98-text);
   }
   .tb-x:active {
     box-shadow:
-      inset -1px -1px #dfdfdf,
-      inset 1px 1px #808080;
+      inset -1px -1px var(--w98-shadow-light),
+      inset 1px 1px var(--w98-shadow-808);
   }
 
   /* ── System Tray ── */
@@ -252,15 +240,13 @@
     align-items: center;
     gap: 6px;
     padding: 0 8px;
-    box-shadow:
-      inset -1px -1px #fff,
-      inset 1px 1px #808080;
-    font-size: 11px;
+    box-shadow: var(--w98-inset-thin);
+    font-size: var(--w98-font-size-base);
     font-family: 'Segoe UI', 'MS Sans Serif', Arial, sans-serif;
   }
   .tray-ico {
-    font-size: 13px;
-    font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif;
+    font-size: var(--w98-font-size-icon);
+    font-family: var(--w98-emoji-font);
   }
   .tray-clock {
     cursor: default;
@@ -269,15 +255,13 @@
     font-variant-numeric: tabular-nums;
   }
   .tray-lang {
-    font-size: 10px;
+    font-size: var(--w98-font-size-sm);
     font-weight: bold;
     font-family: inherit;
     padding: 1px 4px;
-    background: #c0c0c0;
+    background: var(--w98-surface);
     border: none;
-    box-shadow:
-      inset 1px 1px #fff,
-      inset -1px -1px #0a0a0a;
+    box-shadow: var(--w98-outset-thin);
     cursor: pointer;
     min-width: 24px;
     text-align: center;
@@ -285,9 +269,7 @@
     line-height: 1;
   }
   .tray-lang:active {
-    box-shadow:
-      inset -1px -1px #fff,
-      inset 1px 1px #0a0a0a;
+    box-shadow: var(--w98-inset-thin);
   }
 
   /* ── Mobile ── */

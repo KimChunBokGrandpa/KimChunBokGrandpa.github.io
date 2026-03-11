@@ -127,6 +127,23 @@
     pickedColor = null;
   }
 
+  // ─── Compare Mode Variants ───
+  type CompareVariant = 'slider' | 'side-by-side' | 'onion';
+  const COMPARE_VARIANTS: CompareVariant[] = ['slider', 'side-by-side', 'onion'];
+  let compareVariant = $state<CompareVariant>('slider');
+  let onionOpacity = $state(0.5);
+
+  function cycleCompareVariant() {
+    const idx = COMPARE_VARIANTS.indexOf(compareVariant);
+    compareVariant = COMPARE_VARIANTS[(idx + 1) % COMPARE_VARIANTS.length];
+  }
+
+  const COMPARE_VARIANT_LABELS: Record<CompareVariant, string> = {
+    'slider': 'compare_slider',
+    'side-by-side': 'compare_side_by_side',
+    'onion': 'compare_onion',
+  };
+
   // Pixel grid: show when grid is on and zoom is high enough to see pixels
   let gridVisible = $derived(zp.showGrid && zp.zoomLevel >= 2 && processingSettings.pixelSize > 1);
 
@@ -201,12 +218,36 @@
         <span class="tile-label">{i18n.t('tile_label')}</span>
       </div>
     {:else if compareMode && originalImageSrc}
-      <BeforeAfterSlider
-        originalSrc={originalImageSrc}
-        processedSrc={processedImageSrc}
-        imageRendering={processingSettings.renderMode === 'bilinear' ? 'auto' : 'pixelated'}
-        altText="Before/After: {getPaletteName(processingSettings.palette)}"
-      />
+      {#if compareVariant === 'slider'}
+        <BeforeAfterSlider
+          originalSrc={originalImageSrc}
+          processedSrc={processedImageSrc}
+          imageRendering={processingSettings.renderMode === 'bilinear' ? 'auto' : 'pixelated'}
+          altText="Before/After: {getPaletteName(processingSettings.palette)}"
+        />
+      {:else if compareVariant === 'side-by-side'}
+        <div class="side-by-side">
+          <div class="sbs-panel">
+            <img src={originalImageSrc} alt={i18n.t('before')} class="sbs-img" style:image-rendering="auto" draggable="false" />
+            <span class="sbs-label">{i18n.t('before')}</span>
+          </div>
+          <div class="sbs-divider"></div>
+          <div class="sbs-panel">
+            <img src={processedImageSrc} alt={i18n.t('after')} class="sbs-img" style:image-rendering={processingSettings.renderMode === 'bilinear' ? 'auto' : 'pixelated'} style:filter={postFilterCss || 'none'} draggable="false" />
+            <span class="sbs-label">{i18n.t('after')}</span>
+          </div>
+        </div>
+      {:else}
+        <div class="onion-skin">
+          <img src={originalImageSrc} alt={i18n.t('before')} class="onion-img onion-base" style:image-rendering="auto" draggable="false" />
+          <img src={processedImageSrc} alt={i18n.t('after')} class="onion-img onion-overlay" style:opacity={onionOpacity} style:image-rendering={processingSettings.renderMode === 'bilinear' ? 'auto' : 'pixelated'} style:filter={postFilterCss || 'none'} draggable="false" />
+          <div class="onion-controls">
+            <span class="onion-label">{i18n.t('onion_opacity')}</span>
+            <input type="range" min="0" max="1" step="0.05" bind:value={onionOpacity} class="onion-slider" />
+            <span class="onion-value">{Math.round(onionOpacity * 100)}%</span>
+          </div>
+        </div>
+      {/if}
     {:else}
       <CrtDisplay active={processingSettings.crtEffect}>
         {#snippet children()}
@@ -276,6 +317,13 @@
         title={compareMode ? i18n.t('exit_compare') : i18n.t('compare_before_after')}
         >{compareMode ? '🔀' : '⚖️'}</button
       >
+      {#if compareMode}
+        <button
+          class="zoom-btn compare-variant-btn"
+          onclick={cycleCompareVariant}
+          title="{i18n.t('compare_mode_cycle')}: {i18n.t(COMPARE_VARIANT_LABELS[compareVariant])}"
+        >{compareVariant === 'slider' ? '↔' : compareVariant === 'side-by-side' ? '⬜⬜' : '🧅'}</button>
+      {/if}
       <div class="zoom-sep"></div>
       {#if !compareMode}
         {#if displayedWidth > 0 && displayedHeight > 0}
@@ -667,6 +715,106 @@
     letter-spacing: 1px;
     pointer-events: none;
     z-index: 4;
+  }
+
+  /* ===== Side-by-Side Compare ===== */
+  .side-by-side {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    background: #000;
+  }
+  .sbs-panel {
+    flex: 1;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 0;
+    overflow: hidden;
+  }
+  .sbs-img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+  }
+  .sbs-divider {
+    width: 2px;
+    background: #fff;
+    flex-shrink: 0;
+    box-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
+  }
+  .sbs-label {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    font-size: 9px;
+    font-weight: bold;
+    padding: 2px 6px;
+    background: rgba(0, 0, 0, 0.6);
+    color: #fff;
+    letter-spacing: 1px;
+    pointer-events: none;
+    z-index: 4;
+  }
+
+  /* ===== Onion Skin Compare ===== */
+  .onion-skin {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .onion-img {
+    position: absolute;
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+  }
+  .onion-base {
+    z-index: 1;
+  }
+  .onion-overlay {
+    z-index: 2;
+  }
+  .onion-controls {
+    position: absolute;
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(0, 0, 0, 0.7);
+    border: 1px solid #808080;
+    padding: 4px 10px;
+    z-index: 5;
+  }
+  .onion-label {
+    font-size: 10px;
+    color: #fff;
+    font-weight: bold;
+    white-space: nowrap;
+  }
+  .onion-slider {
+    width: 100px;
+    accent-color: #000080;
+  }
+  .onion-value {
+    font-size: 10px;
+    color: #0f0;
+    font-family: 'Courier New', monospace;
+    font-weight: bold;
+    min-width: 32px;
+    text-align: right;
+  }
+
+  /* ===== Compare Variant Button ===== */
+  .compare-variant-btn {
+    font-size: 9px !important;
   }
 
   /* ===== Pixel Grid Overlay ===== */

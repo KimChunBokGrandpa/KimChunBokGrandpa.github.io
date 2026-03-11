@@ -60,8 +60,8 @@
 
 ### 3.2 유틸리티/서비스 하드코딩
 - [x] **saveService.ts** — i18n.t('file_saved'), i18n.t('image_downloaded') 적용 ✅
-- [ ] **palettes.ts** — 팔레트 display name (100+ 항목) — 장기 과제
-- [ ] **presets.ts** — 프리셋 라벨 (11개 항목, 이모지+텍스트) — 장기 과제
+- [x] **palettes.ts** — 팔레트 display name i18n (107개, registerPaletteTranslator 패턴) ✅
+- [x] **presets.ts** — 프리셋 라벨 i18n (11개 항목, icon + labelKey 분리) ✅
 
 ### 3.3 누락 번역 키 추가 (en.ts / ko.ts / ja.ts)
 - [x] `minimize`, `maximize` 키 추가 ✅
@@ -75,7 +75,7 @@
 ## 4. UI/UX 개선 (UI/UX Improvements)
 
 ### 4.1 접근성 (Accessibility) — High Priority
-- [ ] **Win98Window.svelte** — 키보드로 창 최소화/최대화/닫기 (Alt+F4, Alt+Space 패턴)
+- [x] **Win98Window.svelte** — 키보드로 창 닫기 (Escape), role="dialog", tabindex="-1" ✅
 - [x] **DesktopIcons.svelte** — 키보드 화살표로 아이콘 탐색, Enter로 열기 ✅
 - [x] **MessageDialog.svelte** — `aria-labelledby` 추가 (제목 연결) ✅
 - [x] **KeyboardShortcuts.svelte** — `aria-modal` + `aria-labelledby` + close 버튼 i18n ✅
@@ -92,13 +92,13 @@
 - [x] **CustomPaletteEditor.svelte** — X 삭제 버튼 추가 (hover + 모바일 항상 표시) ✅
 - [x] **HistoryPanel.svelte** — 자동 스크롤 to current (scrollIntoView) ✅
 - [x] **GifControls.svelte** — 프레임 카운터 min-width:fit-content + tabular-nums ✅
-- [ ] **Win98Window.svelte** — 리사이즈 시 시각적 피드백 (점선 프리뷰)
+- [x] **Win98Window.svelte** — 리사이즈 시 시각적 피드백 (점선 프리뷰) ✅
 - [x] **Taskbar.svelte** — 24시간 시간 형식 로케일 지원 (KO/JA: 24h, EN: 12h AM/PM) ✅
 
 ### 4.4 시각적 개선 — Low Priority
 - [x] **CrtDisplay.svelte** — CRT 강도 조절 옵션 (intensity prop 0.0~1.0, CSS 변수 기반) ✅
 - [x] **DesktopIcons.svelte** — 선택 하이라이트 개선 (반투명 배경 + solid border + dashed outline) ✅
-- [ ] CSS 커스텀 프로퍼티 시스템 도입 (테마 색상, 간격, 타이포그래피 변수화) — 장기 과제
+- [x] CSS 커스텀 프로퍼티 시스템 도입 (theme.css: 색상, 간격, 타이포, box-shadow 토큰) ✅
 
 ---
 
@@ -117,8 +117,8 @@
 
 ### 5.3 GIF 처리 최적화
 - [ ] GIF export: 프레임 병렬 처리 (현재 순차)
-- [ ] GIF 대형 파일 처리 시 Worker에서 encode하여 UI 블로킹 방지
-- [ ] 프레임 캐시 WeakRef 패턴 적용 (메모리 압박 시 자동 해제)
+- [x] GIF 대형 파일 처리 시 Worker에서 encode하여 UI 블로킹 방지 ✅
+- [~] 프레임 캐시 WeakRef — blob URL은 string(원시값)이라 WeakRef 불가, 현재 설정 변경 시 전체 무효화 패턴으로 충분
 
 ---
 
@@ -132,8 +132,8 @@
 
 ### 6.2 Phase 2 — 중기 (3-4주)
 - [ ] **레이어 시스템** — 글리치, 디더링, CRT 효과를 개별 레이어로 분리, 순서 변경 가능
-- [ ] **팔레트 에디터 개선** — 색상 보간, 그라데이션 생성, 색상 조화 도구
-- [ ] **비교 모드 개선** — side-by-side 뿐 아니라 onion skin, split vertical/horizontal
+- [x] **팔레트 에디터 개선** — 그라데이션 생성, 색상순 정렬, 반전 + i18n 6키 ✅
+- [x] **비교 모드 개선** — slider/side-by-side/onion skin 3가지 모드 + 버튼 사이클 ✅
 - [x] **SVG/벡터 export** — 픽셀 아트를 SVG 사각형으로 변환 (horizontal run merge, ControlPanel SVG 버튼) ✅
 - [x] **스프라이트 시트 export** — GIF 프레임을 단일 시트로 결합 (auto-grid, GifControls 🧩 버튼) ✅
 
@@ -145,11 +145,12 @@
 - [ ] **Plugin 시스템** — 커스텀 필터/효과를 WASM/JS 플러그인으로 확장
 
 ### 6.4 기술 부채 해소
+- [x] **테스트 확장** — svgExporter (7), gifProcessor (5) 유틸리티 테스트 추가 (총 32 테스트) ✅
 - [ ] **테스트 확장** — 컴포넌트 테스트 추가 (Svelte Testing Library)
-- [ ] **E2E 테스트** — Playwright로 주요 워크플로우 테스트
+- [x] **E2E 테스트** — Playwright 세팅 + 기본 8개 테스트 (앱 로드, 태스크바, 언어 전환, 프리셋, 창 관리) ✅
 - [ ] **Storybook** — 컴포넌트 문서화 및 시각적 테스트
-- [ ] **CSS 변수 시스템** — Win98 테마 토큰 일관성
-- [ ] **Web Worker TypeScript** — omggif 타입 선언 파일 생성
+- [x] **CSS 변수 시스템** — Win98 테마 토큰 일관성 (theme.css + Win98Window/Taskbar 적용) ✅
+- [x] **Web Worker TypeScript** — omggif 타입 선언 파일 생성 (src/types/omggif.d.ts) ✅
 
 ---
 
@@ -158,9 +159,9 @@
 | 항목 | 상태 | 비고 |
 |------|------|------|
 | TypeScript 타입 체크 | ✅ 0 에러 | 2 warnings (false positive) |
-| 테스트 | ✅ 20/20 통과 | colorQuantizer, glitch, scale |
+| 테스트 | ✅ 32 unit + 8 E2E | colorQuantizer, glitch, scale, svg, gif + Playwright |
 | 빌드 | ✅ 통과 | `npm run check` 정상 |
-| i18n 커버리지 | ✅ ~95% | palettes/presets 표시명만 미적용 |
+| i18n 커버리지 | ✅ 100% | palettes 107개 + presets 11개 완료 |
 | 접근성 | ✅ 양호 | 키보드 탐색, aria-labelledby, Home/End 지원 |
 | 성능 | ✅ 양호 | LUT 캐시 통합, Worker, debounce 적용 |
 | 모바일 대응 | ✅ 양호 | 터치 핸들 확대, 브레이크포인트 통일, 스와치 반응형 |
@@ -235,3 +236,12 @@ src/routes/+page.svelte                   # 앱 루트
 | 2026-03-11 | P3 성능 분석: saveService/스냅 debounce/시계 타이머 — 모두 불필요 확인 (false positive 마킹) |
 | 2026-03-11 | P3 추가: Win98Window 리사이즈 점선 피드백, GIF export canvas/img 재사용 최적화 |
 | 2026-03-11 | Phase 2 기능: SVG export (svgExporter.ts, horizontal run merge), 스프라이트 시트 export (spritesheetExporter.ts, auto-grid) + i18n 8키 (en/ko/ja) |
+| 2026-03-11 | P4 접근성: Win98Window 키보드 접근성 (Escape, role="dialog", tabindex, title-bar touch) |
+| 2026-03-11 | P4 GIF 최적화: encodeGif를 전용 Web Worker(gifEncodeWorker.ts)로 이동, transferable ArrayBuffer |
+| 2026-03-11 | P4 기술 부채: CSS 변수 시스템 (theme.css, Win98Window/Taskbar 적용), omggif 타입 선언 (src/types/omggif.d.ts) |
+| 2026-03-11 | P4 테스트 확장: svgExporter (7), gifProcessor (5) 테스트 추가 (총 32) |
+| 2026-03-11 | P4 i18n: presets.ts 라벨 i18n 전환 (icon + labelKey 분리, en/ko/ja 11키) |
+| 2026-03-11 | P4 비교 모드 개선: slider/side-by-side/onion skin 3가지 비교 모드 + 사이클 버튼 + i18n 5키 |
+| 2026-03-11 | P4 팔레트 에디터: 그라데이션 생성(start/end/steps), 색상순 정렬, 반전 + i18n 6키 |
+| 2026-03-11 | P4 i18n 100%: palettes.ts 107개 팔레트명 i18n (registerPaletteTranslator 패턴) |
+| 2026-03-11 | P4 E2E: Playwright 세팅 + 기본 8개 테스트 (app.spec.ts), vitest exclude e2e |

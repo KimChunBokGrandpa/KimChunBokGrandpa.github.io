@@ -14,7 +14,7 @@
   import { createWindowStore, WINDOW_CONFIGS } from '$lib/stores/windowStore.svelte';
   import { createZoomPan } from '$lib/stores/zoomPanStore.svelte';
   import { createImageProcessingStore } from '$lib/stores/imageProcessingStore.svelte';
-  import { getPaletteName } from '$lib/utils/palettes';
+  import { getPaletteName, registerPaletteTranslator } from '$lib/utils/palettes';
   import { imageDataToSvg, downloadSvg } from '$lib/utils/svgExporter';
   import { createSpritesheet, downloadSpritesheet } from '$lib/utils/spritesheetExporter';
   import { frameToBlobUrl } from '$lib/utils/gifProcessor';
@@ -23,6 +23,9 @@
   import type { ProcessingSettings, WindowId } from '$lib/types';
   import { i18n } from '$lib/i18n/index.svelte';
   import { getWindowTitle } from '$lib/stores/windowStore.svelte';
+
+  // Register i18n translator for palette names
+  registerPaletteTranslator((key) => i18n.t(key));
 
   // ─── Stores ───
   const wm = createWindowStore();

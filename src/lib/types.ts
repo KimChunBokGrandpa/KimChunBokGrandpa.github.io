@@ -76,3 +76,15 @@ export interface ImageWorkerResponse {
   progress?: number; // 0–1, sent during processing stages
   error?: string;
 }
+
+// ─── GIF Encode Worker Types ───
+export interface GifEncodeWorkerMessage {
+  frames: { data: ArrayBuffer; delay: number }[];
+  width: number;
+  height: number;
+}
+
+export interface GifEncodeWorkerResponse {
+  gifData?: ArrayBuffer;
+  error?: string;
+}

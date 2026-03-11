@@ -1,0 +1,50 @@
+/**
+ * Win98 Theme — CSS Custom Properties
+ * Central token definitions for consistent theming across components.
+ */
+:root {
+  /* ── Colors ── */
+  --w98-desktop-bg: #008080;
+  --w98-surface: #c0c0c0;
+  --w98-surface-active: #d4d0c8;
+  --w98-text: #000;
+  --w98-highlight: #000080;
+  --w98-highlight-alpha: rgba(0, 0, 128, 0.18);
+  --w98-highlight-border: rgba(0, 0, 128, 0.5);
+
+  /* ── Border / Shadow Colors ── */
+  --w98-shadow-dark: #0a0a0a;
+  --w98-shadow-mid: grey;
+  --w98-shadow-light: #dfdfdf;
+  --w98-shadow-white: #fff;
+  --w98-shadow-808: #808080;
+
+  /* ── Common Box Shadows (outset = raised, inset = pressed) ── */
+  --w98-outset: inset 1px 1px var(--w98-shadow-white),
+    inset -1px -1px var(--w98-shadow-dark),
+    inset 2px 2px var(--w98-shadow-light),
+    inset -2px -2px var(--w98-shadow-mid);
+  --w98-inset: inset -1px -1px var(--w98-shadow-white),
+    inset 1px 1px var(--w98-shadow-dark),
+    inset -2px -2px var(--w98-shadow-light),
+    inset 2px 2px var(--w98-shadow-mid);
+  --w98-outset-thin: inset 1px 1px var(--w98-shadow-white),
+    inset -1px -1px var(--w98-shadow-dark);
+  --w98-inset-thin: inset -1px -1px var(--w98-shadow-white),
+    inset 1px 1px var(--w98-shadow-dark);
+  --w98-window-shadow: var(--w98-outset), 4px 4px 12px rgba(0, 0, 0, 0.4);
+
+  /* ── Layout ── */
+  --w98-taskbar-height: 30px;
+  --w98-mobile-breakpoint: 550px;
+
+  /* ── Typography ── */
+  --w98-font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji",
+    "Pixelated MS Sans Serif", "Microsoft Sans Serif", "MS Sans Serif", Roboto,
+    sans-serif;
+  --w98-font-size-sm: 10px;
+  --w98-font-size-base: 11px;
+  --w98-font-size-icon: 13px;
+  --w98-emoji-font: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji",
+    sans-serif;
+}

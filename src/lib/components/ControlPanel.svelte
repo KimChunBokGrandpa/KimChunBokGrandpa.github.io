@@ -213,7 +213,7 @@
           class="preset-btn"
           onclick={() => applyPreset(preset)}
           title="{i18n.t('pixel_size')}: {preset.pixelSize}px | {i18n.t('palette')}: {getPaletteName(preset.palette)}"
-        >{preset.label}</button>
+        >{preset.icon} {i18n.t(preset.labelKey)}</button>
       {/each}
     </div>
     <div class="field-row preset-share-row">
