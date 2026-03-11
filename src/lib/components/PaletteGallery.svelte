@@ -4,6 +4,7 @@
   import { customPaletteStore } from '../stores/customPaletteStore.svelte';
   import CustomPaletteEditor from './CustomPaletteEditor.svelte';
   import { parsePaletteFile, exportAsHex, exportAsGpl, downloadFile } from '../utils/paletteIO';
+  import { i18n } from '$lib/i18n/index.svelte';
 
   let {
     selectedPaletteId = 'original',
@@ -131,8 +132,8 @@
 
   const themeTabs: ThemeTab[] = [
     { id: '_favorites', label: '⭐' },
-    { id: '_custom', label: '✏️ Custom' },
-    { id: '_core', label: '📁 Core' },
+    { id: '_custom', label: `✏️ ${i18n.t('gallery_custom')}` },
+    { id: '_core', label: `📁 ${i18n.t('gallery_core')}` },
     ...PALETTE_THEMES.map((t) => ({ id: t.themeId, label: t.themeName })),
   ];
 
@@ -194,13 +195,13 @@
       }));
     }
     if (activeThemeId === '_core') {
-      return [{ id: 'original', name: 'Original (Full Color)', colorCount: 0, colors: null }];
+      return [{ id: 'original', name: i18n.t('palette_original'), colorCount: 0, colors: null }];
     }
     const theme = PALETTE_THEMES.find((t) => t.themeId === activeThemeId);
     if (!theme) return [];
     return theme.variants.map((v) => ({
       id: v.id,
-      name: `${v.colorCount} colors`,
+      name: i18n.t('gallery_n_colors').replace('{0}', String(v.colorCount)),
       colorCount: v.colorCount,
       colors: PALETTES[v.id] || null,
     }));
@@ -250,8 +251,8 @@
       <div class="pg-list-panel">
         {#if activeThemeId === '_custom'}
           <div class="pg-custom-toolbar">
-            <button class="pg-new-btn" onclick={openNewPaletteEditor}> + New </button>
-            <button class="pg-new-btn" onclick={handleImportClick}> 📥 Import </button>
+            <button class="pg-new-btn" onclick={openNewPaletteEditor}>{i18n.t('new_palette')}</button>
+            <button class="pg-new-btn" onclick={handleImportClick}>📥 {i18n.t('import_palette')}</button>
           </div>
           <input
             bind:this={importFileInput}
@@ -304,8 +305,8 @@
                 <button
                   class="pg-export-btn"
                   onclick={(e) => handleExportPalette(item.id, 'hex', e)}
-                  title="Export as .hex"
-                  aria-label="Export {item.name}">💾</button
+                  title={i18n.t('export_as_hex')}
+                  aria-label="{i18n.t('export_as_hex')} {item.name}">💾</button
                 >
                 <button
                   class="pg-edit-btn"
@@ -313,28 +314,28 @@
                     e.stopPropagation();
                     openEditPaletteEditor(item.id);
                   }}
-                  title="Edit palette"
-                  aria-label="Edit {item.name}">✎</button
+                  title={i18n.t('edit_palette')}
+                  aria-label="{i18n.t('edit_palette')} {item.name}">✎</button
                 >
                 <button
                   class="pg-del-btn"
                   onclick={(e) => handleDeletePalette(item.id, e)}
-                  title="Delete palette"
-                  aria-label="Delete {item.name}">×</button
+                  title={i18n.t('delete_palette')}
+                  aria-label="{i18n.t('delete_palette')} {item.name}">×</button
                 >
               {:else}
                 <button
                   class="pg-fav-btn"
                   class:fav-active={favorites.has(item.id)}
                   onclick={(e) => toggleFavorite(item.id, e)}
-                  title={favorites.has(item.id) ? 'Remove from favorites' : 'Add to favorites'}
-                  aria-label="Toggle favorite">{favorites.has(item.id) ? '★' : '☆'}</button
+                  title={favorites.has(item.id) ? i18n.t('remove_from_favorites') : i18n.t('add_to_favorites')}
+                  aria-label={favorites.has(item.id) ? i18n.t('remove_from_favorites') : i18n.t('add_to_favorites')}>{favorites.has(item.id) ? '★' : '☆'}</button
                 >
               {/if}
             </div>
           {/each}
           {#if activeThemeId === '_custom' && activeVariants.length === 0}
-            <div class="pg-empty">No custom palettes yet. Click "+ New Palette" to create one.</div>
+            <div class="pg-empty">{i18n.t('no_custom_palettes')}</div>
           {/if}
         </div>
       </div>
@@ -346,8 +347,8 @@
             <legend>{activeThemeName} — {detailItem.name}</legend>
             <p class="pg-desc">
               {detailItem.colorCount > 0
-                ? `${detailItem.colorCount} colors`
-                : 'Full color spectrum preserved'}
+                ? i18n.t('gallery_n_colors').replace('{0}', String(detailItem.colorCount))
+                : i18n.t('full_color_desc')}
             </p>
             {#if detailItem.colors}
               <div class="pg-grid">
@@ -361,12 +362,12 @@
               </div>
             {:else}
               <div class="pg-info-box">
-                <p>Full color spectrum preserved</p>
+                <p>{i18n.t('full_color_desc')}</p>
               </div>
             {/if}
           </fieldset>
         {:else}
-          <p class="pg-hint">Select a palette to view details</p>
+          <p class="pg-hint">{i18n.t('select_palette_hint')}</p>
         {/if}
       </div>
     </div>
@@ -374,10 +375,10 @@
     <!-- Status bar -->
     <div class="status-bar pg-status">
       <p class="status-bar-field">
-        {activeThemeName} — {activeVariants.length} variant(s)
+        {activeThemeName} — {i18n.t('gallery_variants').replace('{0}', String(activeVariants.length))}
       </p>
       <p class="status-bar-field">
-        Active: {selectedPaletteId}
+        {i18n.t('gallery_active')}: {selectedPaletteId}
       </p>
     </div>
   {/if}

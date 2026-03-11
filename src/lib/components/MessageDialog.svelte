@@ -65,10 +65,10 @@
         <button aria-label={i18n.t('close')} onclick={onClose}></button>
       </div>
     </div>
-    <div class="window-body" style="padding: 12px;">
-      <p style="margin: 0 0 16px 0;">{message}</p>
-      <div class="field-row" style="justify-content: flex-end;">
-        <button bind:this={okBtn} onclick={onClose} style="min-width: 75px;">{i18n.t('ok')}</button>
+    <div class="window-body dialog-body">
+      <p class="dialog-message">{message}</p>
+      <div class="field-row dialog-actions">
+        <button class="dialog-ok-btn" bind:this={okBtn} onclick={onClose}>{i18n.t('ok')}</button>
       </div>
     </div>
   </div>
@@ -88,5 +88,17 @@
     min-width: 280px;
     max-width: 400px;
     box-shadow: 4px 4px 12px rgba(0, 0, 0, 0.5);
+  }
+  .dialog-body {
+    padding: 12px;
+  }
+  .dialog-message {
+    margin: 0 0 16px 0;
+  }
+  .dialog-actions {
+    justify-content: flex-end;
+  }
+  .dialog-ok-btn {
+    min-width: 75px;
   }
 </style>

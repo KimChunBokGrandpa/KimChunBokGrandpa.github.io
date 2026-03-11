@@ -158,7 +158,7 @@
 
   function exportPreset() {
     const preset = {
-      name: 'Custom Preset',
+      name: i18n.t('custom_preset'),
       version: 1,
       settings: { ...settings, glitchFilters: settings.glitchFilters.map(f => ({ ...f })) },
     };
@@ -197,7 +197,7 @@
       };
       update();
     } catch {
-      alert('Failed to load preset file. Please check the format.');
+      console.error(i18n.t('preset_load_error'));
     }
     input.value = '';
   }

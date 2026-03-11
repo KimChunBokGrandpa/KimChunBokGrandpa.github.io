@@ -17,7 +17,7 @@
 
   function handleDragLeave(e: DragEvent) {
     e.preventDefault();
-    // 자식 요소에서 발생한 이벤트면 무시 (깜빡임 방지)
+    // Ignore events from child elements (prevents flicker)
     if (e.currentTarget && (e.currentTarget as HTMLElement).contains(e.relatedTarget as Node)) {
       return;
     }
@@ -43,7 +43,7 @@
     if (input.files && input.files.length > 0) {
       onImageSelected(input.files[0]);
     }
-    // 같은 파일을 다시 선택할 수 있도록 초기화
+    // Reset so the same file can be selected again
     input.value = '';
   }
 
@@ -65,8 +65,7 @@
 <svelte:window onpaste={handlePaste} />
 
 <div
-  class="window"
-  style="margin: 0; flex: 1; display: flex; flex-direction: column; box-sizing: border-box; overflow: hidden;"
+  class="window dropzone-wrapper"
 >
   <div class="title-bar">
     <div class="title-bar-text">{i18n.t('open_image')}</div>
@@ -96,6 +95,14 @@
 </div>
 
 <style>
+  .dropzone-wrapper {
+    margin: 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    overflow: hidden;
+  }
   .dropzone {
     flex: 1;
     display: flex;

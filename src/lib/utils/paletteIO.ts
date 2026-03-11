@@ -2,18 +2,9 @@
  * Palette Import/Export — Supports .hex and .gpl (GIMP Palette) formats.
  */
 import type { RGB } from './palettes';
+import { hexToRgb, rgbToHex } from './colorUtils';
 
 // ─── Parsing ───
-
-function hexToRgb(hex: string): RGB | null {
-  const clean = hex.replace(/^#/, '').trim();
-  if (!/^[0-9a-f]{6}$/i.test(clean)) return null;
-  return {
-    r: parseInt(clean.slice(0, 2), 16),
-    g: parseInt(clean.slice(2, 4), 16),
-    b: parseInt(clean.slice(4, 6), 16),
-  };
-}
 
 /**
  * Parse a .hex file — one hex color per line (e.g. "#FF0000" or "FF0000").
@@ -100,10 +91,6 @@ export function parsePaletteFile(text: string, filename: string): { name: string
 }
 
 // ─── Exporting ───
-
-function rgbToHex(c: RGB): string {
-  return `#${c.r.toString(16).padStart(2, '0')}${c.g.toString(16).padStart(2, '0')}${c.b.toString(16).padStart(2, '0')}`.toUpperCase();
-}
 
 /**
  * Export palette as .hex format (one color per line, #RRGGBB).

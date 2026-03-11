@@ -370,9 +370,14 @@
   .title-bar {
     cursor: grab;
     flex-shrink: 0;
+    position: relative;
   }
   .interacting .title-bar {
     cursor: grabbing;
+  }
+  .title-bar-controls {
+    position: relative;
+    z-index: 110;
   }
   .window-icon {
     font-family: var(--w98-emoji-font);
@@ -387,59 +392,59 @@
     touch-action: none;
   }
   .rh-top {
-    top: -4px;
+    top: -6px;
     left: 0;
     width: 100%;
-    height: 12px;
+    height: 8px;
     cursor: ns-resize;
   }
   .rh-right {
-    right: -4px;
+    right: -6px;
     top: 0;
-    width: 12px;
+    width: 8px;
     height: 100%;
     cursor: ew-resize;
   }
   .rh-bottom {
-    bottom: -4px;
+    bottom: -6px;
     left: 0;
     width: 100%;
-    height: 12px;
+    height: 8px;
     cursor: ns-resize;
   }
   .rh-left {
-    left: -4px;
+    left: -6px;
     top: 0;
-    width: 12px;
+    width: 8px;
     height: 100%;
     cursor: ew-resize;
   }
   .rh-corner-rt {
-    right: -4px;
-    top: -4px;
-    width: 24px;
-    height: 24px;
+    right: -6px;
+    top: -6px;
+    width: 18px;
+    height: 18px;
     cursor: nesw-resize;
   }
   .rh-corner-rb {
-    right: -4px;
-    bottom: -4px;
-    width: 24px;
-    height: 24px;
+    right: -6px;
+    bottom: -6px;
+    width: 18px;
+    height: 18px;
     cursor: nwse-resize;
   }
   .rh-corner-lt {
-    left: -4px;
-    top: -4px;
-    width: 24px;
-    height: 24px;
+    left: -6px;
+    top: -6px;
+    width: 18px;
+    height: 18px;
     cursor: nwse-resize;
   }
   .rh-corner-lb {
-    left: -4px;
-    bottom: -4px;
-    width: 24px;
-    height: 24px;
+    left: -6px;
+    bottom: -6px;
+    width: 18px;
+    height: 18px;
     cursor: nesw-resize;
   }
 

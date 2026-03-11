@@ -1,14 +1,8 @@
 import { PALETTE_HEX_DATA } from "./paletteData";
 import type { TranslationKey } from '../i18n/en';
+import { hexToRgbUnsafe as hexToRgb } from './colorUtils';
 
 export type RGB = { r: number; g: number; b: number };
-
-function hexToRgb(hex: string): RGB {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  return { r, g, b };
-}
 
 export interface PaletteGroup {
   groupId: string;

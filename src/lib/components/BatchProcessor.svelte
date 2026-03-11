@@ -191,15 +191,15 @@
       <!-- Items grid -->
       <div class="batch-grid">
         {#each items as item (item.id)}
-          <!-- svelte-ignore a11y_click_events_have_key_events -->
-          <!-- svelte-ignore a11y_interactive_supports_focus -->
           <div
             class="batch-item"
             class:item-done={item.status === 'done'}
             class:item-error={item.status === 'error'}
             class:item-processing={item.status === 'processing'}
             onclick={() => onItemClick?.(item.file)}
+            onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onItemClick?.(item.file); } }}
             role="button"
+            tabindex="0"
           >
             <img src={item.thumbnailUrl} alt={item.name} class="batch-thumb" draggable="false" />
             <div class="batch-item-info">
@@ -220,8 +220,8 @@
             <button
               class="batch-item-remove"
               onclick={(e) => { e.stopPropagation(); removeItem(item.id); }}
-              title="Remove"
-              aria-label="Remove {item.name}"
+              title={i18n.t('remove')}
+              aria-label="{i18n.t('remove')} {item.name}"
             >×</button>
           </div>
         {/each}

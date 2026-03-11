@@ -7,6 +7,7 @@
   import { i18n } from '$lib/i18n/index.svelte';
   import type { createZoomPan } from '../stores/zoomPanStore.svelte';
   import type { ProcessingSettings } from '../types';
+  import type { TranslationKey } from '../i18n/en';
 
   let {
     zp,
@@ -138,7 +139,7 @@
     compareVariant = COMPARE_VARIANTS[(idx + 1) % COMPARE_VARIANTS.length];
   }
 
-  const COMPARE_VARIANT_LABELS: Record<CompareVariant, string> = {
+  const COMPARE_VARIANT_LABELS: Record<CompareVariant, TranslationKey> = {
     'slider': 'compare_slider',
     'side-by-side': 'compare_side_by_side',
     'onion': 'compare_onion',

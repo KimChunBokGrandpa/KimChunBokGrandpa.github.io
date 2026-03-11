@@ -18,6 +18,26 @@ export const en = {
   swatch_hint: '{0} — Click to edit, right-click to remove',
   colors_count: 'Colors ({0})',
 
+  // ─── Palette Gallery ───
+  export_as_hex: 'Export as .hex',
+  edit_palette: 'Edit palette',
+  delete_palette: 'Delete palette',
+  remove_from_favorites: 'Remove from favorites',
+  add_to_favorites: 'Add to favorites',
+  no_custom_palettes: 'No custom palettes yet. Click "+ New Palette" to create one.',
+  gallery_custom: 'Custom',
+  gallery_core: 'Core',
+  gallery_n_colors: '{0} colors',
+  new_palette: '+ New',
+  import_palette: 'Import',
+  full_color_desc: 'Full color spectrum preserved',
+  select_palette_hint: 'Select a palette to view details',
+  gallery_variants: '{0} variant(s)',
+  gallery_active: 'Active',
+  custom_preset: 'Custom Preset',
+  remove: 'Remove',
+  preset_load_error: 'Failed to load preset file. Please check the format.',
+
   // ─── History ───
   history_pixel: 'Pixel: {0}x',
   history_crt: '+CRT',

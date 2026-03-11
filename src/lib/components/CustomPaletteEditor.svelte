@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { RGB } from '../utils/palettes';
+  import { rgbToHex, hexToRgb } from '../utils/colorUtils';
   import { i18n } from '$lib/i18n/index.svelte';
 
   let {
@@ -14,24 +15,12 @@
     onCancel: () => void;
   } = $props();
 
-  let name = $state(initialName);
-  let colors = $state<RGB[]>(initialColors.map(c => ({ ...c })));
+  let name = $state('');
+  let colors = $state<RGB[]>([]);
+  $effect(() => { name = initialName; });
+  $effect(() => { colors = initialColors.map(c => ({ ...c })); });
   let hexInput = $state('#000000');
   let editingIndex = $state<number | null>(null);
-
-  function rgbToHex(c: RGB): string {
-    return `#${c.r.toString(16).padStart(2, '0')}${c.g.toString(16).padStart(2, '0')}${c.b.toString(16).padStart(2, '0')}`;
-  }
-
-  function hexToRgb(hex: string): RGB | null {
-    const m = hex.match(/^#?([0-9a-f]{6})$/i);
-    if (!m) return null;
-    return {
-      r: parseInt(m[1].slice(0, 2), 16),
-      g: parseInt(m[1].slice(2, 4), 16),
-      b: parseInt(m[1].slice(4, 6), 16),
-    };
-  }
 
   function addColor() {
     const rgb = hexToRgb(hexInput);

@@ -8,7 +8,7 @@ import { ja } from './ja';
 
 export type Locale = 'en' | 'ko' | 'ja';
 
-const translations: Record<Locale, Record<TranslationKey, string>> = { en, ko, ja };
+const translations: Record<Locale, Record<TranslationKey, string>> = { ja, en, ko };
 
 export const LOCALE_LABELS: Record<Locale, string> = {
   en: 'English',
