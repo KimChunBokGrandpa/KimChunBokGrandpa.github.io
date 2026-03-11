@@ -29,6 +29,7 @@
     onGifPause,
     onGifSeek,
     onGifExport,
+    onGifExportSpritesheet,
     // Color count
     colorCount = 0,
     // Tile mode
@@ -60,6 +61,7 @@
     onGifPause?: () => void;
     onGifSeek?: (frame: number) => void;
     onGifExport?: () => void;
+    onGifExportSpritesheet?: () => void;
     // Color count
     colorCount?: number;
     // Tile mode
@@ -359,6 +361,7 @@
         onPause={onGifPause}
         onSeek={onGifSeek}
         onExport={onGifExport}
+        onExportSpritesheet={onGifExportSpritesheet}
       />
     {/if}
   {:else if originalImageSrc}

@@ -43,6 +43,7 @@
     saveQuality = 0.92,
     onChange,
     onSave,
+    onExportSvg,
     onOpenGallery,
     onFormatChange,
     onQualityChange,
@@ -56,6 +57,7 @@
     saveQuality?: number;
     onChange: (settings: ProcessingSettings) => void;
     onSave: () => void;
+    onExportSvg?: () => void;
     onOpenGallery: () => void;
     onFormatChange?: (format: SaveFormat) => void;
     onQualityChange?: (quality: number) => void;
@@ -499,6 +501,16 @@
     >
       💾 {i18n.t('save_as')}
     </button>
+    {#if onExportSvg}
+      <button
+        class="save-btn svg-btn"
+        onclick={onExportSvg}
+        disabled={!hasImage}
+        title={i18n.t('export_svg')}
+      >
+        🖼 SVG
+      </button>
+    {/if}
   </div>
 
   <div class="shortcuts-hint">
@@ -781,6 +793,7 @@
   .save-row {
     margin-top: 10px;
     justify-content: flex-end;
+    gap: 4px;
   }
   .save-btn {
     font-weight: bold;

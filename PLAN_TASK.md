@@ -134,8 +134,8 @@
 - [ ] **레이어 시스템** — 글리치, 디더링, CRT 효과를 개별 레이어로 분리, 순서 변경 가능
 - [ ] **팔레트 에디터 개선** — 색상 보간, 그라데이션 생성, 색상 조화 도구
 - [ ] **비교 모드 개선** — side-by-side 뿐 아니라 onion skin, split vertical/horizontal
-- [ ] **SVG/벡터 export** — 픽셀 아트를 SVG 사각형으로 변환
-- [ ] **스프라이트 시트 export** — GIF 프레임을 단일 시트로 결합
+- [x] **SVG/벡터 export** — 픽셀 아트를 SVG 사각형으로 변환 (horizontal run merge, ControlPanel SVG 버튼) ✅
+- [x] **스프라이트 시트 export** — GIF 프레임을 단일 시트로 결합 (auto-grid, GifControls 🧩 버튼) ✅
 
 ### 6.3 Phase 3 — 장기 (1-2개월)
 - [ ] **드로잉 도구** — 처리된 이미지 위에 직접 픽셀 편집 (펜, 지우개, 페인트 버킷)
@@ -233,3 +233,5 @@ src/routes/+page.svelte                   # 앱 루트
 | 2026-03-11 | P3 사용성: Toast variant(success/error/warning), CustomPaletteEditor X 삭제 버튼, HistoryPanel 자동 스크롤, GifControls 프레임 카운터 가변폭, Taskbar 24h/12h 로케일 시간 |
 | 2026-03-11 | P3 시각적: CrtDisplay intensity prop(CSS 변수), DesktopIcons 선택 하이라이트 개선(반투명+outline) |
 | 2026-03-11 | P3 성능 분석: saveService/스냅 debounce/시계 타이머 — 모두 불필요 확인 (false positive 마킹) |
+| 2026-03-11 | P3 추가: Win98Window 리사이즈 점선 피드백, GIF export canvas/img 재사용 최적화 |
+| 2026-03-11 | Phase 2 기능: SVG export (svgExporter.ts, horizontal run merge), 스프라이트 시트 export (spritesheetExporter.ts, auto-grid) + i18n 8키 (en/ko/ja) |

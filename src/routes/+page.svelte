@@ -15,6 +15,9 @@
   import { createZoomPan } from '$lib/stores/zoomPanStore.svelte';
   import { createImageProcessingStore } from '$lib/stores/imageProcessingStore.svelte';
   import { getPaletteName } from '$lib/utils/palettes';
+  import { imageDataToSvg, downloadSvg } from '$lib/utils/svgExporter';
+  import { createSpritesheet, downloadSpritesheet } from '$lib/utils/spritesheetExporter';
+  import { frameToBlobUrl } from '$lib/utils/gifProcessor';
   import type { SaveFormat } from '$lib/services/saveService';
   import type { TaskbarWindowInfo } from '$lib/components/Taskbar.svelte';
   import type { ProcessingSettings, WindowId } from '$lib/types';
@@ -126,6 +129,56 @@
       if (message) toastMessage = message;
     } catch (err) {
       console.error('Failed to save file:', err);
+      showDialog(i18n.t('save_error'), i18n.t('error'));
+    }
+  }
+
+  async function handleExportSvg() {
+    const src = ip.processedImageSrc;
+    if (!src) return;
+    try {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      await new Promise<void>((resolve, reject) => {
+        img.onload = () => resolve();
+        img.onerror = () => reject(new Error('Failed to load image'));
+        img.src = src;
+      });
+      const canvas = document.createElement('canvas');
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      const ctx = canvas.getContext('2d')!;
+      ctx.drawImage(img, 0, 0);
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const svgString = imageDataToSvg(imageData);
+      downloadSvg(svgString, `pixel-art-${Date.now()}.svg`);
+      toastMessage = i18n.t('svg_exported');
+    } catch (err) {
+      console.error('SVG export error:', err);
+      showDialog(i18n.t('save_error'), i18n.t('error'));
+    }
+  }
+
+  async function handleExportSpritesheet() {
+    const gifInfo = ip.gifInfo;
+    if (!gifInfo || gifInfo.frames.length === 0) return;
+    try {
+      // Generate blob URLs for all frames
+      const frameSrcs: string[] = [];
+      for (const frame of gifInfo.frames) {
+        frameSrcs.push(await frameToBlobUrl(frame));
+      }
+      const canvas = await createSpritesheet(
+        frameSrcs,
+        gifInfo.width,
+        gifInfo.height,
+      );
+      downloadSpritesheet(canvas, `spritesheet-${Date.now()}.png`);
+      // Cleanup blob URLs
+      frameSrcs.forEach(URL.revokeObjectURL);
+      toastMessage = i18n.t('spritesheet_exported');
+    } catch (err) {
+      console.error('Spritesheet export error:', err);
       showDialog(i18n.t('save_error'), i18n.t('error'));
     }
   }
@@ -273,6 +326,7 @@
           hasImage={!!originalImageSrc}
           onChange={handleSettingsChange}
           onSave={handleSave}
+          onExportSvg={handleExportSvg}
           onOpenGallery={() => { setTimeout(() => wm.openWindow('gallery'), 0); }}
           onFormatChange={handleFormatChange}
           onQualityChange={handleQualityChange}
@@ -323,6 +377,9 @@
         onGifExport={async () => {
           const msg = await ip.exportGif();
           if (msg) toastMessage = msg;
+        }}
+        onGifExportSpritesheet={async () => {
+          await handleExportSpritesheet();
         }}
         onRotate={(deg) => ip.rotate(deg)}
         onResetTransform={() => ip.resetTransform()}

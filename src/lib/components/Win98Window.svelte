@@ -248,6 +248,7 @@
     class="window win98-window"
     class:maximized={mode === 'maximized'}
     class:interacting={isDragging || isResizing}
+    class:resizing={isResizing}
     style={windowStyle}
     onclick={handleWindowClick}
   >
@@ -353,6 +354,10 @@
   }
   .win98-window.interacting {
     opacity: 0.92;
+  }
+  .win98-window.resizing {
+    outline: 2px dashed #000080;
+    outline-offset: -2px;
   }
 
   .win98-body {

@@ -296,6 +296,11 @@ export function createImageProcessingStore() {
       let outW = 0;
       let outH = 0;
 
+      // Reuse canvas and image elements across frames to reduce GC pressure
+      const reusableImg = new Image();
+      let reusableCanvas: HTMLCanvasElement | null = null;
+      let reusableCtx: CanvasRenderingContext2D | null = null;
+
       for (let i = 0; i < gifInfo.frames.length; i++) {
         gifProcessingProgress = i / gifInfo.frames.length;
         const frame = gifInfo.frames[i];
@@ -307,23 +312,26 @@ export function createImageProcessingStore() {
           const resultUrl = await processorService.processImage(blobUrl, settings, handleDimensionCapped);
           if (!resultUrl) continue;
 
-          // Read the processed result back as ImageData
-          const img = new Image();
+          // Read the processed result back as ImageData (reuse Image element)
           await new Promise<void>((resolve, reject) => {
-            img.onload = () => resolve();
-            img.onerror = () => reject(new Error('Failed to load processed frame'));
-            img.src = resultUrl;
+            reusableImg.onload = () => resolve();
+            reusableImg.onerror = () => reject(new Error('Failed to load processed frame'));
+            reusableImg.src = resultUrl;
           });
 
           // Track output dimensions from first frame
-          if (i === 0) { outW = img.width; outH = img.height; }
+          if (i === 0) {
+            outW = reusableImg.width;
+            outH = reusableImg.height;
+            reusableCanvas = document.createElement('canvas');
+            reusableCanvas.width = outW;
+            reusableCanvas.height = outH;
+            reusableCtx = reusableCanvas.getContext('2d')!;
+          }
 
-          const canvas = document.createElement('canvas');
-          canvas.width = outW;
-          canvas.height = outH;
-          const ctx = canvas.getContext('2d')!;
-          ctx.drawImage(img, 0, 0, outW, outH);
-          const imageData = ctx.getImageData(0, 0, outW, outH);
+          reusableCtx!.clearRect(0, 0, outW, outH);
+          reusableCtx!.drawImage(reusableImg, 0, 0, outW, outH);
+          const imageData = reusableCtx!.getImageData(0, 0, outW, outH);
 
           processedFrames.push({
             data: imageData.data,

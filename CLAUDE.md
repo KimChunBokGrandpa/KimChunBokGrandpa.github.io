@@ -70,7 +70,13 @@ PreviewContent has an eyedropper mode toggled via the 💧 button. When active, 
 
 ### GIF Processing
 
-Animated GIFs are decoded into frames, each processed individually through the full pipeline. For export, frames are re-quantized to 256 colors per frame and encoded back to GIF. Frame cache uses settings hash for invalidation.
+Animated GIFs are decoded into frames, each processed individually through the full pipeline. For export, frames are re-quantized to 256 colors per frame and encoded back to GIF. Frame cache uses settings hash for invalidation. Sprite sheet export combines all frames into a single PNG grid.
+
+### Export Formats
+
+- **PNG/JPEG/WebP** — Standard image export via `saveService.ts`
+- **SVG** — Pixel art converted to `<rect>` elements with horizontal run merging (`svgExporter.ts`)
+- **Sprite Sheet** — GIF frames arranged in auto-calculated grid as PNG (`spritesheetExporter.ts`)
 
 ## Testing
 

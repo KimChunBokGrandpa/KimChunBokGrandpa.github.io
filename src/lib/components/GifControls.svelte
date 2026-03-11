@@ -11,6 +11,7 @@
     onPause,
     onSeek,
     onExport,
+    onExportSpritesheet,
   }: {
     currentFrame: number;
     frameCount: number;
@@ -21,6 +22,7 @@
     onPause: () => void;
     onSeek: (frame: number) => void;
     onExport: () => void;
+    onExportSpritesheet?: () => void;
   } = $props();
 </script>
 
@@ -68,6 +70,16 @@
     >
       {isExporting ? `${Math.round(exportProgress * 100)}%` : `💾 ${i18n.t('gif_btn')}`}
     </button>
+    {#if onExportSpritesheet}
+      <button
+        class="gif-btn gif-export-btn"
+        onclick={onExportSpritesheet}
+        disabled={isExporting}
+        title={i18n.t('export_spritesheet')}
+      >
+        🧩
+      </button>
+    {/if}
   </div>
   <div class="gif-slider-row">
     <input
