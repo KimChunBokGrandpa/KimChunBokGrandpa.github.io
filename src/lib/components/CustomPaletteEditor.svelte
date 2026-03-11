@@ -98,6 +98,11 @@
             tabindex="0"
             onkeydown={(e) => { if (e.key === 'Delete' || e.key === 'Backspace') removeColor(i); else if (e.key === 'Enter') editColor(i); }}
           ></span>
+          <button
+            class="cpe-swatch-remove"
+            onclick={() => removeColor(i)}
+            aria-label={i18n.t('close')}
+          >&times;</button>
         </div>
       {/each}
       {#if colors.length === 0}
@@ -168,6 +173,27 @@
     position: relative;
   }
 
+  .cpe-swatch-remove {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    width: 14px;
+    height: 14px;
+    padding: 0;
+    font-size: 10px;
+    line-height: 1;
+    background: #c0c0c0;
+    border: 1px solid #808080;
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+  }
+  .cpe-swatch-item:hover .cpe-swatch-remove {
+    display: flex;
+  }
+
   .cpe-swatch {
     display: block;
     width: 18px;
@@ -236,5 +262,29 @@
   .cpe-actions button:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+  }
+
+  @media (max-width: 550px) {
+    .cpe-swatch {
+      width: 28px;
+      height: 28px;
+    }
+    .cpe-swatches {
+      gap: 6px;
+    }
+    .cpe-add-row {
+      flex-wrap: wrap;
+    }
+    .cpe-color-picker {
+      width: 36px;
+      height: 28px;
+    }
+    .cpe-hex-input {
+      flex: 1;
+      min-width: 60px;
+    }
+    .cpe-swatch-remove {
+      display: flex;
+    }
   }
 </style>

@@ -144,8 +144,10 @@
     font-weight: bold;
     color: #fff;
     padding: 0 6px;
-    min-width: 48px;
+    min-width: fit-content;
     text-align: center;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
   }
 
   .gif-sep {

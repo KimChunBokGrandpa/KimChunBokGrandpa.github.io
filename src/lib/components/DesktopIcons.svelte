@@ -77,13 +77,16 @@
   }
 
   .desktop-icon.icon-selected {
-    background: #000080;
-    border: 1px dotted #ff0;
+    background: rgba(0, 0, 128, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    outline: 1px dashed #fff;
+    outline-offset: 1px;
   }
 
   .desktop-icon.icon-selected .icon-label {
     background: #000080;
     color: #fff;
+    padding: 1px 4px;
   }
 
   .icon-img {

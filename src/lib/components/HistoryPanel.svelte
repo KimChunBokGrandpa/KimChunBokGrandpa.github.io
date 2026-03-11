@@ -23,6 +23,21 @@
     onRedo: () => void;
   } = $props();
 
+  let listEl = $state<HTMLDivElement | null>(null);
+
+  // Auto-scroll to the current item when history changes
+  $effect(() => {
+    // Track history length to trigger on changes
+    const _len = history.length + redoHistory.length;
+    if (listEl) {
+      // Use tick to ensure DOM is updated
+      requestAnimationFrame(() => {
+        const currentEl = listEl?.querySelector('.current');
+        currentEl?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      });
+    }
+  });
+
   // Helper to concisely describe a setting state
   function describeSettings(s: ProcessingSettings) {
     let desc = i18n.t('history_pixel').replace('{0}', String(s.pixelSize)) + ', ';
@@ -39,7 +54,7 @@
     <button onclick={onRedo} disabled={redoHistory.length === 0} title="{i18n.t('redo')} (Ctrl+Y)">↪ {i18n.t('redo')}</button>
   </div>
 
-  <div class="history-list">
+  <div class="history-list" bind:this={listEl}>
     <!-- Past states -->
     {#each history as step, i}
       <button class="history-item past" onclick={() => onJumpToHistory(i, false)}>

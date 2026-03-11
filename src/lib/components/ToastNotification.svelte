@@ -1,12 +1,22 @@
 <script lang="ts">
   import { onMount } from 'svelte';
 
+  export type ToastVariant = 'success' | 'error' | 'warning';
+
+  const VARIANT_ICONS: Record<ToastVariant, string> = {
+    success: '\u2705',
+    error: '\u274C',
+    warning: '\u26A0\uFE0F',
+  };
+
   let {
     message,
+    variant = 'success' as ToastVariant,
     duration = 3000,
     onDone,
   }: {
     message: string;
+    variant?: ToastVariant;
     duration?: number;
     onDone: () => void;
   } = $props();
@@ -23,8 +33,8 @@
 </script>
 
 {#if visible}
-  <div class="toast" role="status" aria-live="polite">
-    <span class="toast-icon">✅</span>
+  <div class="toast toast-{variant}" role="status" aria-live="polite">
+    <span class="toast-icon">{VARIANT_ICONS[variant]}</span>
     <span class="toast-msg">{message}</span>
   </div>
 {/if}
@@ -32,7 +42,7 @@
 <style>
   .toast {
     position: fixed;
-    bottom: 40px;
+    bottom: 38px;
     left: 50%;
     transform: translateX(-50%);
     z-index: 9998;
@@ -47,12 +57,22 @@
     font-size: 12px;
     font-weight: bold;
     animation: toastIn 0.3s ease-out;
-    white-space: nowrap;
+    white-space: normal;
+    max-width: calc(100vw - 32px);
+    word-break: break-word;
+  }
+
+  .toast-error {
+    border-color: #ff6b6b #808080 #808080 #ff6b6b;
+  }
+  .toast-warning {
+    border-color: #ffa500 #808080 #808080 #ffa500;
   }
 
   .toast-icon {
     font-size: 14px;
     font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif;
+    flex-shrink: 0;
   }
 
   .toast-msg {

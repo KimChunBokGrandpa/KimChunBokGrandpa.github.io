@@ -93,3 +93,7 @@ Test setup (`vitest.setup.ts`) polyfills `ImageData` for the Node.js environment
 - Custom palette IDs: `custom_${crypto.randomUUID()}`
 - Custom preset IDs: `preset_${crypto.randomUUID()}`
 - Magic numbers extracted to named constants (glitchEngine, zoomPanStore, Win98Window)
+- Mobile breakpoint: 550px (consistent across Win98Window, Taskbar, CustomPaletteEditor)
+- Toast notifications support `variant` prop: `'success' | 'error' | 'warning'`
+- CrtDisplay supports `intensity` prop (0.0~1.0) for adjustable CRT effect strength
+- Taskbar clock format: 12h AM/PM for `en`, 24h for `ko`/`ja`

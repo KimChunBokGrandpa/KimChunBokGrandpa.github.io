@@ -31,14 +31,26 @@
 
   let timeString = $state('');
 
+  // 12h for EN, 24h for KO/JA
   function updateTime() {
     const now = new Date();
-    let hours = now.getHours();
+    const hours = now.getHours();
     const minutes = now.getMinutes().toString().padStart(2, '0');
-    const ampm = hours >= 12 ? 'PM' : 'AM';
-    hours = hours % 12 || 12;
-    timeString = `${hours}:${minutes} ${ampm}`;
+    if (i18n.locale === 'en') {
+      const h12 = hours % 12 || 12;
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      timeString = `${h12}:${minutes} ${ampm}`;
+    } else {
+      timeString = `${hours.toString().padStart(2, '0')}:${minutes}`;
+    }
   }
+
+  // Re-format when locale changes
+  $effect(() => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+    i18n.locale;
+    updateTime();
+  });
 
   onMount(() => {
     updateTime();
@@ -279,7 +291,7 @@
   }
 
   /* ── Mobile ── */
-  @media (max-width: 400px) {
+  @media (max-width: 550px) {
     .tb-label {
       display: none;
     }
@@ -290,6 +302,13 @@
       padding-right: 4px;
     }
     .tb-x {
+      display: none;
+    }
+    .tray {
+      gap: 4px;
+      padding: 0 4px;
+    }
+    .tray-ico {
       display: none;
     }
   }

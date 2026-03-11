@@ -273,41 +273,49 @@
         class="resize-handle rh-top"
         aria-hidden="true"
         onmousedown={(e) => startResize('t', e)}
+        ontouchstart={(e) => startResize('t', e)}
       ></div>
       <div
         class="resize-handle rh-right"
         aria-hidden="true"
         onmousedown={(e) => startResize('r', e)}
+        ontouchstart={(e) => startResize('r', e)}
       ></div>
       <div
         class="resize-handle rh-bottom"
         aria-hidden="true"
         onmousedown={(e) => startResize('b', e)}
+        ontouchstart={(e) => startResize('b', e)}
       ></div>
       <div
         class="resize-handle rh-left"
         aria-hidden="true"
         onmousedown={(e) => startResize('l', e)}
+        ontouchstart={(e) => startResize('l', e)}
       ></div>
       <div
         class="resize-handle rh-corner-rt"
         aria-hidden="true"
         onmousedown={(e) => startResize('rt', e)}
+        ontouchstart={(e) => startResize('rt', e)}
       ></div>
       <div
         class="resize-handle rh-corner-rb"
         aria-hidden="true"
         onmousedown={(e) => startResize('rb', e)}
+        ontouchstart={(e) => startResize('rb', e)}
       ></div>
       <div
         class="resize-handle rh-corner-lt"
         aria-hidden="true"
         onmousedown={(e) => startResize('lt', e)}
+        ontouchstart={(e) => startResize('lt', e)}
       ></div>
       <div
         class="resize-handle rh-corner-lb"
         aria-hidden="true"
         onmousedown={(e) => startResize('lb', e)}
+        ontouchstart={(e) => startResize('lb', e)}
       ></div>
     {/if}
   </div>
@@ -373,61 +381,62 @@
   .resize-handle {
     position: absolute;
     z-index: 100;
+    touch-action: none;
   }
   .rh-top {
-    top: 0;
+    top: -4px;
     left: 0;
     width: 100%;
-    height: 5px;
+    height: 12px;
     cursor: ns-resize;
   }
   .rh-right {
-    right: 0;
+    right: -4px;
     top: 0;
-    width: 5px;
+    width: 12px;
     height: 100%;
     cursor: ew-resize;
   }
   .rh-bottom {
-    bottom: 0;
+    bottom: -4px;
     left: 0;
     width: 100%;
-    height: 5px;
+    height: 12px;
     cursor: ns-resize;
   }
   .rh-left {
-    left: 0;
+    left: -4px;
     top: 0;
-    width: 5px;
+    width: 12px;
     height: 100%;
     cursor: ew-resize;
   }
   .rh-corner-rt {
-    right: 0;
-    top: 0;
-    width: 14px;
-    height: 14px;
+    right: -4px;
+    top: -4px;
+    width: 24px;
+    height: 24px;
     cursor: nesw-resize;
   }
   .rh-corner-rb {
-    right: 0;
-    bottom: 0;
-    width: 14px;
-    height: 14px;
+    right: -4px;
+    bottom: -4px;
+    width: 24px;
+    height: 24px;
     cursor: nwse-resize;
   }
   .rh-corner-lt {
-    left: 0;
-    top: 0;
-    width: 14px;
-    height: 14px;
+    left: -4px;
+    top: -4px;
+    width: 24px;
+    height: 24px;
     cursor: nwse-resize;
   }
   .rh-corner-lb {
-    left: 0;
-    bottom: 0;
-    width: 14px;
-    height: 14px;
+    left: -4px;
+    bottom: -4px;
+    width: 24px;
+    height: 24px;
     cursor: nesw-resize;
   }
 

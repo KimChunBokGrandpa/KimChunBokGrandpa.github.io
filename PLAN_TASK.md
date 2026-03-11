@@ -1,6 +1,6 @@
 # PLAN_TASK — Retro Pixel Converter 개선 계획
 
-> 최종 업데이트: 2026-03-10 (Phase 1 기능 완료)
+> 최종 업데이트: 2026-03-11 (P3 UI/UX 개선 완료)
 > 전체 코드 리뷰 기반 (44개 소스 파일, ~9,230 LOC)
 
 ---
@@ -82,23 +82,23 @@
 - [x] **BeforeAfterSlider.svelte** — Home/End 키 지원 ✅
 
 ### 4.2 반응형/모바일 — Medium Priority
-- [ ] **Win98Window.svelte** — 리사이즈 핸들 터치 영역 확대 (14px → 24px+)
-- [ ] **Taskbar.svelte** — 모바일에서 트레이 아이템 오버플로우 처리
-- [ ] **ToastNotification.svelte** — 하단 40px → 태스크바 위 동적 위치
-- [ ] **CustomPaletteEditor.svelte** — 모바일에서 색상 스와치 그리드 반응형
+- [x] **Win98Window.svelte** — 리사이즈 핸들 터치 영역 확대 (edge 5→12px, corner 14→24px) + touch-action:none + ontouchstart ✅
+- [x] **Taskbar.svelte** — 모바일 트레이 오버플로우 처리 + 브레이크포인트 550px 통일 ✅
+- [x] **ToastNotification.svelte** — 태스크바 위 동적 위치 (bottom:38px) + 줄바꿈/max-width ✅
+- [x] **CustomPaletteEditor.svelte** — 모바일 색상 스와치 반응형 (18→28px, gap 확대, flex-wrap) ✅
 
 ### 4.3 사용성 개선 — Medium Priority
-- [ ] **ToastNotification.svelte** — 성공/에러/경고 variant 추가 (아이콘/색상 분리)
-- [ ] **CustomPaletteEditor.svelte** — 우클릭 삭제 대신 X 버튼 추가 (터치 기기 지원)
-- [ ] **HistoryPanel.svelte** — 자동 스크롤 to current, 타임스탬프 표시
-- [ ] **GifControls.svelte** — 프레임 카운터 3자리 이상 지원
+- [x] **ToastNotification.svelte** — 성공/에러/경고 variant 추가 (아이콘/색상 분리) ✅
+- [x] **CustomPaletteEditor.svelte** — X 삭제 버튼 추가 (hover + 모바일 항상 표시) ✅
+- [x] **HistoryPanel.svelte** — 자동 스크롤 to current (scrollIntoView) ✅
+- [x] **GifControls.svelte** — 프레임 카운터 min-width:fit-content + tabular-nums ✅
 - [ ] **Win98Window.svelte** — 리사이즈 시 시각적 피드백 (점선 프리뷰)
-- [ ] **Taskbar.svelte** — 24시간 시간 형식 로케일 지원
+- [x] **Taskbar.svelte** — 24시간 시간 형식 로케일 지원 (KO/JA: 24h, EN: 12h AM/PM) ✅
 
 ### 4.4 시각적 개선 — Low Priority
-- [ ] **CrtDisplay.svelte** — CRT 강도 조절 옵션
-- [ ] **DesktopIcons.svelte** — 선택 상태 하이라이트 개선 (노란 점선 → 더 명확한 표시)
-- [ ] CSS 커스텀 프로퍼티 시스템 도입 (테마 색상, 간격, 타이포그래피 변수화)
+- [x] **CrtDisplay.svelte** — CRT 강도 조절 옵션 (intensity prop 0.0~1.0, CSS 변수 기반) ✅
+- [x] **DesktopIcons.svelte** — 선택 하이라이트 개선 (반투명 배경 + solid border + dashed outline) ✅
+- [ ] CSS 커스텀 프로퍼티 시스템 도입 (테마 색상, 간격, 타이포그래피 변수화) — 장기 과제
 
 ---
 
@@ -107,12 +107,12 @@
 ### 5.1 메모리
 - [x] **imageProcessor.ts** — `imageCache` LRU 캐시 (최대 10개, Map insertion-order 기반) ✅
 - [x] **gifProcessor.ts** — `frameToBlobUrl()` canvas 재사용 (`_frameCanvas` 모듈 캐시) ✅
-- [ ] **saveService.ts** — Tauri save 취소 시 Image element 정리
+- [~] **saveService.ts** — Image/Canvas는 함수 스코프 로컬, GC가 자동 정리 (불필요)
 
 ### 5.2 CPU/렌더링
 - [x] **colorQuantizer.ts** — `buildLut()`, `buildLutRgb()` → `buildBothLuts()` 단일 패스 통합 ✅
-- [ ] **Win98Window.svelte** — 스냅 감지 debounce 추가 (현재 매 mousemove마다 실행)
-- [ ] **Taskbar.svelte** — 시계 업데이트: 보이지 않을 때 타이머 정지
+- [~] **Win98Window.svelte** — 스냅 감지는 2개 비교 연산(매우 경량), Svelte가 값 변경 시만 렌더링하므로 debounce 불필요
+- [~] **Taskbar.svelte** — 60초 간격 타이머는 무시할 수준, 브라우저가 백그라운드 탭 throttling 처리
 - [~] **HistoryPanel.svelte** — redoHistory는 보통 소량, Svelte가 변경 시만 렌더링하므로 최적화 불필요 (marginal)
 
 ### 5.3 GIF 처리 최적화
@@ -163,7 +163,7 @@
 | i18n 커버리지 | ✅ ~95% | palettes/presets 표시명만 미적용 |
 | 접근성 | ✅ 양호 | 키보드 탐색, aria-labelledby, Home/End 지원 |
 | 성능 | ✅ 양호 | LUT 캐시 통합, Worker, debounce 적용 |
-| 모바일 대응 | 🟡 기본 | 반응형 있으나 터치 UX 미흡 |
+| 모바일 대응 | ✅ 양호 | 터치 핸들 확대, 브레이크포인트 통일, 스와치 반응형 |
 
 ---
 
@@ -181,9 +181,12 @@
   │ P2: 성능 최적화 (5.1, 5.2) ✅ 완료│
   │ P2: Phase 1 기능 (6.1)    ✅ 완료│
   ├─────────────────────────────────────┤
-  │ P3: UI/UX 개선 (4.2, 4.3)         │ 낮음
-  │ P3: Phase 2-3 기능 (6.2, 6.3)     │
-  │ P3: 기술 부채 (6.4)               │
+  │ P3: UI/UX 개선 (4.2~4.4)  ✅ 완료│ 낮음
+  │ P3: 성능 분석 (5.1~5.2)   ✅ 완료│
+  ├─────────────────────────────────────┤
+  │ P4: Phase 2-3 기능 (6.2, 6.3)     │ 장기
+  │ P4: 기술 부채 (6.4)               │
+  │ P4: GIF 최적화 (5.3)              │
   └─────────────────────────────────────┘
 ```
 
@@ -226,3 +229,7 @@ src/routes/+page.svelte                   # 앱 루트
 | 2026-03-10 | P2 코드 정리: glitchEngine 매직넘버 상수화, Win98Window TASKBAR_HEIGHT, palettes.ts O(1) 역방향 룩업 |
 | 2026-03-10 | P2 성능: imageProcessor LRU 캐시(10), gifProcessor canvas 재사용 |
 | 2026-03-10 | P2 Phase 1 기능 완료: 실시간 미리보기 토글 (autoProcess + Apply Now), 커스텀 프리셋 저장/로드 (localStorage), 색상 피커 (eyedropper), 이미지 회전 (90° 단위) + i18n 12키 (en/ko/ja) |
+| 2026-03-11 | P3 반응형/모바일: Win98Window 리사이즈 핸들 터치 확대(12/24px)+touch-action, Taskbar 브레이크포인트 550px 통일+트레이 축소, Toast 위치/줄바꿈, CustomPaletteEditor 스와치 반응형 |
+| 2026-03-11 | P3 사용성: Toast variant(success/error/warning), CustomPaletteEditor X 삭제 버튼, HistoryPanel 자동 스크롤, GifControls 프레임 카운터 가변폭, Taskbar 24h/12h 로케일 시간 |
+| 2026-03-11 | P3 시각적: CrtDisplay intensity prop(CSS 변수), DesktopIcons 선택 하이라이트 개선(반투명+outline) |
+| 2026-03-11 | P3 성능 분석: saveService/스냅 debounce/시계 타이머 — 모두 불필요 확인 (false positive 마킹) |
