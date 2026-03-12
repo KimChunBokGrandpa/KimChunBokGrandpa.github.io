@@ -8,9 +8,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 npm run dev          # Web dev server (port 1420)
 npm run build        # Production build (static adapter → build/)
 npm run check        # svelte-check (type checking)
-npx vitest run       # Run all tests (20 tests across 3 files)
+npx vitest run       # Run all tests (112 tests across 14 files)
 npx vitest run src/lib/utils/colorQuantizer.test.ts  # Single test file
 npm run td           # Tauri desktop dev (requires Rust toolchain)
+npm run storybook    # Storybook dev server (port 6006)
+npm run build-storybook  # Storybook static build
 ```
 
 No dedicated `test` script in package.json — use `npx vitest` directly.
@@ -22,6 +24,7 @@ No dedicated `test` script in package.json — use `npx vitest` directly.
 - **98.css** for Windows 98 themed UI
 - **Web Worker** (`src/lib/workers/imageWorker.ts`) for heavy image processing via OffscreenCanvas
 - **omggif** for animated GIF decode/encode
+- **Storybook 10** for component documentation and visual testing (`@storybook/sveltekit`)
 - Store files use `.svelte.ts` extension for rune support in pure TypeScript
 
 ## Architecture
@@ -80,12 +83,30 @@ Animated GIFs are decoded into frames, each processed individually through the f
 
 ## Testing
 
-Tests cover pure utility functions only (no component tests):
+**Utility tests** (5 files, 32 tests):
 - `colorQuantizer.test.ts` — Quantization, dithering correctness
 - `scaleEngine.test.ts` — HQx upscaling
 - `glitchEngine.test.ts` — Glitch effect output
+- `svgExporter.test.ts` — SVG generation, cellSize options
+- `gifProcessor.test.ts` — GIF frame processing
 
-Test setup (`vitest.setup.ts`) polyfills `ImageData` for the Node.js environment.
+**Component tests** (9 files, 80 tests) — `@testing-library/svelte` + jsdom:
+- `ToastNotification` — Variants, icons, auto-dismiss timer
+- `MessageDialog` — Modal rendering, ESC close, focus trap, aria attributes
+- `CrtDisplay` — Active/inactive states, scanlines, CSS variables
+- `KeyboardShortcuts` — Shortcut entries, ESC/? close, aria
+- `DesktopIcons` — Icon rendering, click/dblclick, keyboard navigation
+- `ImageDropZone` — Drag-drop, file validation, error callback
+- `GifControls` — Play/pause, frame seek, export, progress
+- `HistoryPanel` — Undo/redo, history items, jump navigation
+- `BeforeAfterSlider` — Slider rendering, keyboard (Arrow/Home/End), aria
+
+**Storybook** (7 stories) — Visual component documentation:
+- Stories in `src/lib/components/__stories__/`
+- Configured with 98.css theme, a11y addon, autodocs
+
+Test setup (`vitest.setup.ts`) polyfills `ImageData` and `ResizeObserver` for jsdom.
+Storybook vitest integration is in `vitest.workspace.ts` (separate from unit tests).
 
 ## Conventions
 

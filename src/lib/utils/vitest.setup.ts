@@ -28,3 +28,12 @@ if (typeof globalThis.ImageData === "undefined") {
   }
   (globalThis as any).ImageData = ImageDataPolyfill;
 }
+
+// Polyfill ResizeObserver for jsdom environment
+if (typeof globalThis.ResizeObserver === "undefined") {
+  (globalThis as any).ResizeObserver = class ResizeObserver {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  };
+}

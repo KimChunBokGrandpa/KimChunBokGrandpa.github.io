@@ -1,247 +1,219 @@
 # PLAN_TASK — Retro Pixel Converter 개선 계획
 
-> 최종 업데이트: 2026-03-11 (P3 UI/UX 개선 완료)
+> 최종 업데이트: 2026-03-12 (P6 기술 부채 완료 — 컴포넌트 테스트 + Storybook)
 > 전체 코드 리뷰 기반 (44개 소스 파일, ~9,230 LOC)
 
 ---
 
-## 1. 코드 정리 (Code Cleanup)
+## ✅ 완료 항목 요약 (P0~P4)
 
-### 1.1 한국어 주석 → 영어 통일
-- [x] `src/lib/utils/colorQuantizer.ts` — line 8, 15, 27 한국어 주석 ✅
-- [x] `src/lib/utils/paletteData.ts` — line 7, 27, 49, 53 한국어 주석 ✅
-- [x] `src/lib/utils/imageProcessor.ts` — line 99 한국어 주석 ✅
-- [x] `src/lib/components/ControlPanel.svelte` — 11개 한국어 주석 ✅
-- [x] `src/routes/+page.svelte` — line 51, 81 한국어 주석 ✅
-- [x] `src/lib/utils/palettes.ts` — line 239 한국어 주석 ✅
+<details>
+<summary>P0: 버그 수정 + 코드 정리 (완료)</summary>
 
-### 1.2 Dead Code / 미사용 코드 제거
-- [x] `src/lib/utils/gifProcessor.ts` — `findTransparentIndex`의 미사용 파라미터 `_indexedPixels`, `_palette` 정리 ✅
-- [~] `src/lib/utils/paletteData.ts` — `rgbToHsl()` 함수: 실제 line 70에서 사용 중, dead code 아님 (false positive)
+- [x] paletteIO.ts — hex export '#' prefix 추가
+- [x] gifProcessor.ts — findTransparentIndex 투명 검증 + 미사용 파라미터 정리
+- [x] zoomPanStore — handleTouchEnd pinch→1-finger 전환 시 panStart 재초기화
+- [x] customPaletteStore — ID 생성 Math.random() → crypto.randomUUID()
+- [x] imageProcessor.ts — Worker 에러 시 workerErrorCount + MAX_WORKER_RETRIES(3) 가드
+- [x] 한국어 주석 → 영어 통일 (6파일)
+- [x] colorQuantizer — buildLut()+buildLutRgb() → buildBothLuts() 통합
 
-### 1.3 Magic Number → Named Constant
-- [x] `src/lib/utils/glitchEngine.ts` — RGB_SHIFT_PERCENT, NOISE_DENSITY, WAVE_AMP_RATIO, WAVE_FREQ, SLICES_PER_LEVEL, SLICE_SHIFT_RATIO ✅
-- [~] `src/lib/utils/scaleEngine.ts` — 2x는 Scale2x 알고리즘 고유값, 상수화 불필요 (false positive)
-- [~] `src/lib/stores/zoomPanStore.svelte.ts` — 이미 MIN_ZOOM, MAX_ZOOM, ZOOM_STEP_WHEEL, ZOOM_STEP_BUTTON 상수 정의됨 (false positive)
-- [x] `src/lib/components/Win98Window.svelte` — TASKBAR_HEIGHT 상수 추출 ✅
+</details>
 
-### 1.4 중복 로직 리팩토링
-- [x] `src/lib/utils/colorQuantizer.ts` — `buildLut()`와 `buildLutRgb()` → `buildBothLuts()` 통합 (단일 패스) ✅
-- [x] `src/lib/utils/palettes.ts` — `getPaletteName()` O(1) reverse lookup map 캐시 ✅
+<details>
+<summary>P1: i18n 완성 + 접근성 (완료)</summary>
 
----
+- [x] CustomPaletteEditor, HistoryPanel, MessageDialog, ControlPanel, saveService i18n
+- [x] palettes.ts 107개 + presets.ts 11개 i18n (100% 커버리지)
+- [x] Win98Window 키보드 접근성 (Escape, role="dialog", tabindex)
+- [x] DesktopIcons 키보드 화살표 탐색, BeforeAfterSlider Home/End
+- [x] MessageDialog/KeyboardShortcuts aria-labelledby
 
-## 2. 버그 수정 (Bug Fixes)
+</details>
 
-### 2.1 Critical
-- [x] **paletteIO.ts** — hex export에 '#' prefix 추가 (`RRGGBB` → `#RRGGBB`) ✅
-- [x] **gifProcessor.ts** — `findTransparentIndex()`에 palette[0] === 0x000000 투명 검증 추가 ✅
+<details>
+<summary>P2: 성능 + Phase 1 기능 (완료)</summary>
 
-### 2.2 Medium
-- [x] **zoomPanStore.svelte.ts** — `handleTouchEnd`에서 pinch→1-finger 전환 시 panStart 재초기화 ✅
-- [~] **paletteData.ts** — `Math.sin(t * Math.PI)` 값 범위 0~1 (t ∈ [0,1]), 음수 불가 (false positive)
-- [x] **customPaletteStore.svelte.ts** — ID 생성 `Math.random()` → `crypto.randomUUID()` ✅
+- [x] glitchEngine 매직넘버 상수화, Win98Window TASKBAR_HEIGHT
+- [x] palettes.ts O(1) reverse lookup, imageProcessor LRU 캐시(10)
+- [x] gifProcessor canvas 재사용
+- [x] 실시간 미리보기 토글 (autoProcess + Apply Now)
+- [x] 커스텀 프리셋 저장/로드 (localStorage)
+- [x] 색상 피커 (eyedropper), 이미지 회전 (90° 단위)
 
-### 2.3 Low
-- [x] **imageProcessor.ts** — Worker 에러 시 `workerErrorCount` + `MAX_WORKER_RETRIES(3)` 가드 추가 ✅
-- [~] **BeforeAfterSlider.svelte** — ResizeObserver cleanup 이미 `$effect` return으로 처리됨 (false positive)
+</details>
 
----
+<details>
+<summary>P3: UI/UX 개선 (완료)</summary>
 
-## 3. i18n 완성 (Internationalization)
+- [x] 반응형/모바일: 터치 핸들 확대, 브레이크포인트 550px 통일, 스와치 반응형
+- [x] 사용성: Toast variant, X 삭제 버튼, 자동 스크롤, 24h/12h 로케일 시간
+- [x] 시각적: CRT intensity prop, DesktopIcons 선택 하이라이트, CSS 변수 시스템
+- [x] Win98Window 리사이즈 점선 피드백
 
-### 3.1 컴포넌트 하드코딩 문자열
-- [x] **Win98Window.svelte** — "Minimize", "Maximize", "Close" aria-label ✅
-- [x] **Taskbar.svelte** — 이미 i18n 적용 완료 ✅
-- [x] **CustomPaletteEditor.svelte** — "Palette Name", "Colors", "My Custom Palette", "Add at least 2 colors", "Update", "Add", "Cancel", "Save Palette" ✅
-- [x] **HistoryPanel.svelte** — `describeSettings()` i18n 키 적용 (history_pixel, history_crt, history_glitch) ✅
-- [x] **MessageDialog.svelte** — "Message" 기본 제목, "Close" aria-label, "OK" 버튼 ✅
-- [x] **ControlPanel.svelte** — intensity "Level" 텍스트, "Re-roll seed" ✅
+</details>
 
-### 3.2 유틸리티/서비스 하드코딩
-- [x] **saveService.ts** — i18n.t('file_saved'), i18n.t('image_downloaded') 적용 ✅
-- [x] **palettes.ts** — 팔레트 display name i18n (107개, registerPaletteTranslator 패턴) ✅
-- [x] **presets.ts** — 프리셋 라벨 i18n (11개 항목, icon + labelKey 분리) ✅
+<details>
+<summary>P4: Phase 2 기능 + 기술 부채 (완료)</summary>
 
-### 3.3 누락 번역 키 추가 (en.ts / ko.ts / ja.ts)
-- [x] `minimize`, `maximize` 키 추가 ✅
-- [x] `palette_name`, `colors_count`, `add_color`, `save_palette`, `cancel`, `update` 키 추가 ✅
-- [x] `image_downloaded`, `file_saved` 키 (기존 존재) ✅
-- [x] `level` (강도 레벨) 키 추가 ✅
-- [x] `reroll_seed` 키 추가 ✅
+- [x] SVG export (svgExporter.ts, horizontal run merge)
+- [x] 스프라이트 시트 export (spritesheetExporter.ts, auto-grid)
+- [x] 비교 모드 개선: slider/side-by-side/onion skin
+- [x] 팔레트 에디터: 그라데이션 생성, 정렬, 반전
+- [x] GIF encode → 전용 Worker (gifEncodeWorker.ts)
+- [x] CSS 변수 시스템 (theme.css), omggif 타입 선언
+- [x] 테스트 확장: svgExporter(7) + gifProcessor(5) = 총 32 unit + 8 E2E
+
+</details>
 
 ---
 
-## 4. UI/UX 개선 (UI/UX Improvements)
+## 🔴 신규 발견 이슈 — 코드 리뷰 #2 (2026-03-12)
 
-### 4.1 접근성 (Accessibility) — High Priority
-- [x] **Win98Window.svelte** — 키보드로 창 닫기 (Escape), role="dialog", tabindex="-1" ✅
-- [x] **DesktopIcons.svelte** — 키보드 화살표로 아이콘 탐색, Enter로 열기 ✅
-- [x] **MessageDialog.svelte** — `aria-labelledby` 추가 (제목 연결) ✅
-- [x] **KeyboardShortcuts.svelte** — `aria-modal` + `aria-labelledby` + close 버튼 i18n ✅
-- [x] **BeforeAfterSlider.svelte** — Home/End 키 지원 ✅
+### P5-A: 버그 수정 (HIGH) ✅
 
-### 4.2 반응형/모바일 — Medium Priority
-- [x] **Win98Window.svelte** — 리사이즈 핸들 터치 영역 확대 (edge 5→12px, corner 14→24px) + touch-action:none + ontouchstart ✅
-- [x] **Taskbar.svelte** — 모바일 트레이 오버플로우 처리 + 브레이크포인트 550px 통일 ✅
-- [x] **ToastNotification.svelte** — 태스크바 위 동적 위치 (bottom:38px) + 줄바꿈/max-width ✅
-- [x] **CustomPaletteEditor.svelte** — 모바일 색상 스와치 반응형 (18→28px, gap 확대, flex-wrap) ✅
+- [x] **imageProcessor.ts — Worker 에러 카운트 성공 시 리셋**
+  - 성공적인 응답 수신 시 `workerErrorCount = 0` 추가
 
-### 4.3 사용성 개선 — Medium Priority
-- [x] **ToastNotification.svelte** — 성공/에러/경고 variant 추가 (아이콘/색상 분리) ✅
-- [x] **CustomPaletteEditor.svelte** — X 삭제 버튼 추가 (hover + 모바일 항상 표시) ✅
-- [x] **HistoryPanel.svelte** — 자동 스크롤 to current (scrollIntoView) ✅
-- [x] **GifControls.svelte** — 프레임 카운터 min-width:fit-content + tabular-nums ✅
-- [x] **Win98Window.svelte** — 리사이즈 시 시각적 피드백 (점선 프리뷰) ✅
-- [x] **Taskbar.svelte** — 24시간 시간 형식 로케일 지원 (KO/JA: 24h, EN: 12h AM/PM) ✅
+- [x] **imageProcessingStore.svelte.ts — GIF export 중 gifInfo null 체크**
+  - 루프 매 반복에서 gifInfo null 체크 + totalFrames 사전 캡처
 
-### 4.4 시각적 개선 — Low Priority
-- [x] **CrtDisplay.svelte** — CRT 강도 조절 옵션 (intensity prop 0.0~1.0, CSS 변수 기반) ✅
-- [x] **DesktopIcons.svelte** — 선택 하이라이트 개선 (반투명 배경 + solid border + dashed outline) ✅
-- [x] CSS 커스텀 프로퍼티 시스템 도입 (theme.css: 색상, 간격, 타이포, box-shadow 토큰) ✅
+- [x] **imageProcessingStore.svelte.ts — applyTransform 에러 시 blob URL 정리**
+  - try-catch 래핑, catch에서 transformedObjectUrl revoke + 초기화
 
----
+- [x] **BatchProcessor.svelte — 컴포넌트 언마운트 시 blob URL 정리**
+  - `$effect` cleanup에서 모든 thumbnail/result blob URL revoke
 
-## 5. 성능 최적화 (Performance Optimization)
+### P5-B: 코드 품질 개선 (MEDIUM) ✅
 
-### 5.1 메모리
-- [x] **imageProcessor.ts** — `imageCache` LRU 캐시 (최대 10개, Map insertion-order 기반) ✅
-- [x] **gifProcessor.ts** — `frameToBlobUrl()` canvas 재사용 (`_frameCanvas` 모듈 캐시) ✅
-- [~] **saveService.ts** — Image/Canvas는 함수 스코프 로컬, GC가 자동 정리 (불필요)
+- [x] **paletteIO.ts — RGB 값 범위 검증 완전화** (`>= 0` 조건 추가)
+- [x] **spritesheetExporter.ts — 다운로드 실패 시 Promise reject** (silent failure 제거)
+- [x] **spritesheetExporter.ts — 프레임 크기 0 검증 추가**
+- [x] **PreviewContent.svelte — eyedropper canvas 캐시** (동일 이미지 재사용)
+- [~] **colorQuantizer.ts — `clearPaletteCachesExcept`**: Worker에서 실제 사용 중 (false positive)
 
-### 5.2 CPU/렌더링
-- [x] **colorQuantizer.ts** — `buildLut()`, `buildLutRgb()` → `buildBothLuts()` 단일 패스 통합 ✅
-- [~] **Win98Window.svelte** — 스냅 감지는 2개 비교 연산(매우 경량), Svelte가 값 변경 시만 렌더링하므로 debounce 불필요
-- [~] **Taskbar.svelte** — 60초 간격 타이머는 무시할 수준, 브라우저가 백그라운드 탭 throttling 처리
-- [~] **HistoryPanel.svelte** — redoHistory는 보통 소량, Svelte가 변경 시만 렌더링하므로 최적화 불필요 (marginal)
+### P5-C: 접근성 보완 (MEDIUM) ✅
 
-### 5.3 GIF 처리 최적화
-- [ ] GIF export: 프레임 병렬 처리 (현재 순차)
-- [x] GIF 대형 파일 처리 시 Worker에서 encode하여 UI 블로킹 방지 ✅
-- [~] 프레임 캐시 WeakRef — blob URL은 string(원시값)이라 WeakRef 불가, 현재 설정 변경 시 전체 무효화 패턴으로 충분
+- [x] **PreviewContent.svelte — 토글 버튼 aria-label/aria-pressed 추가** (그리드, 타일, 아이드로퍼)
+- [x] **MessageDialog.svelte — 포커스 복원** (onMount에서 이전 요소 저장, unmount 시 복원)
+
+### P5-D: 방어적 코드 (LOW) ✅
+
+- [x] **imageWorker.ts — 메시지 필드 null 체크** (id/imageBitmap/width/height 검증 + 에러 응답)
+- [x] **windowStore.svelte.ts — localStorage 실패 시 console.warn** (silent catch 제거)
+- [x] **svgExporter.ts — 배경색 감지 개선** (가장자리 픽셀 최다 빈도 색상 + 배경색 run 스킵 최적화)
+- [x] **gifProcessor.ts — frameToBlobUrl JSDoc에 revoke 책임 명시**
 
 ---
 
-## 6. 새로운 기능 계획 (Feature Roadmap)
+## 🟡 미구현 기능 (Feature Roadmap)
 
-### 6.1 Phase 1 — 단기 (1-2주)
-- [x] **커스텀 프리셋 저장/로드** — 사용자가 자주 쓰는 설정 조합을 이름 붙여 저장
-- [x] **이미지 크롭/회전** — 처리 전 기본 편집 기능 (회전 구현, 크롭은 store 준비됨)
-- [x] **색상 피커 (eyedropper)** — 프리뷰 이미지에서 클릭하여 색상 추출
-- [x] **실시간 미리보기 토글** — 대형 이미지에서 auto-process 끄고 수동 적용
+### Phase 2 잔여 — 중기
 
-### 6.2 Phase 2 — 중기 (3-4주)
 - [ ] **레이어 시스템** — 글리치, 디더링, CRT 효과를 개별 레이어로 분리, 순서 변경 가능
-- [x] **팔레트 에디터 개선** — 그라데이션 생성, 색상순 정렬, 반전 + i18n 6키 ✅
-- [x] **비교 모드 개선** — slider/side-by-side/onion skin 3가지 모드 + 버튼 사이클 ✅
-- [x] **SVG/벡터 export** — 픽셀 아트를 SVG 사각형으로 변환 (horizontal run merge, ControlPanel SVG 버튼) ✅
-- [x] **스프라이트 시트 export** — GIF 프레임을 단일 시트로 결합 (auto-grid, GifControls 🧩 버튼) ✅
+- [x] **이미지 크롭** — CropOverlay 컴포넌트 (드래그 선택, clip-path 마스크, Enter/Esc, 터치 지원) ✅
 
-### 6.3 Phase 3 — 장기 (1-2개월)
-- [ ] **드로잉 도구** — 처리된 이미지 위에 직접 픽셀 편집 (펜, 지우개, 페인트 버킷)
+### Phase 3 — 장기
+
+- [ ] **드로잉 도구** — 처리된 이미지 위 픽셀 편집 (펜, 지우개, 페인트 버킷)
 - [ ] **애니메이션 에디터** — 프레임별 편집, 오니온 스킨, 프레임 추가/삭제
 - [ ] **AI 팔레트 추천** — 이미지 분석 후 최적 팔레트 자동 추천
 - [ ] **클라우드 갤러리** — 작품 공유/다운로드 커뮤니티
 - [ ] **Plugin 시스템** — 커스텀 필터/효과를 WASM/JS 플러그인으로 확장
 
-### 6.4 기술 부채 해소
-- [x] **테스트 확장** — svgExporter (7), gifProcessor (5) 유틸리티 테스트 추가 (총 32 테스트) ✅
-- [ ] **테스트 확장** — 컴포넌트 테스트 추가 (Svelte Testing Library)
-- [x] **E2E 테스트** — Playwright 세팅 + 기본 8개 테스트 (앱 로드, 태스크바, 언어 전환, 프리셋, 창 관리) ✅
-- [ ] **Storybook** — 컴포넌트 문서화 및 시각적 테스트
-- [x] **CSS 변수 시스템** — Win98 테마 토큰 일관성 (theme.css + Win98Window/Taskbar 적용) ✅
-- [x] **Web Worker TypeScript** — omggif 타입 선언 파일 생성 (src/types/omggif.d.ts) ✅
+### 기술 부채
+
+- [x] **컴포넌트 테스트** — @testing-library/svelte, 9파일 80개 테스트 (총 112개) ✅
+- [x] **Storybook** — @storybook/sveltekit 10, 7개 컴포넌트 스토리, autodocs + a11y addon ✅
+- [x] **GIF export 최적화** — blob→Image→Canvas 왕복 제거, getLastCanvas() 직접 ImageData 추출 ✅
 
 ---
 
-## 7. 현재 코드 상태 요약
+## 📊 현재 코드 상태 요약
 
 | 항목 | 상태 | 비고 |
 |------|------|------|
 | TypeScript 타입 체크 | ✅ 0 에러 | 2 warnings (false positive) |
-| 테스트 | ✅ 32 unit + 8 E2E | colorQuantizer, glitch, scale, svg, gif + Playwright |
+| 테스트 | ✅ 112 tests (32 unit + 80 component) + 8 E2E | 14 test files, @testing-library/svelte |
 | 빌드 | ✅ 통과 | `npm run check` 정상 |
 | i18n 커버리지 | ✅ 100% | palettes 107개 + presets 11개 완료 |
-| 접근성 | ✅ 양호 | 키보드 탐색, aria-labelledby, Home/End 지원 |
-| 성능 | ✅ 양호 | LUT 캐시 통합, Worker, debounce 적용 |
+| 접근성 | ✅ 양호 | aria-label/pressed, 포커스 복원, 키보드 탐색 |
+| 성능 | ✅ 양호 | Worker 에러 리셋, blob URL 누수 수정, canvas 캐시 |
 | 모바일 대응 | ✅ 양호 | 터치 핸들 확대, 브레이크포인트 통일, 스와치 반응형 |
 
 ---
 
-## 8. 우선순위 매트릭스
+## 📋 우선순위 매트릭스
 
 ```
            긴급 ←────────────────→ 여유
   ┌─────────────────────────────────────┐
-  │ P0: 버그 수정 (2.1)         ✅ 완료 │ 높음
-  │ P0: 코드 정리 (1.1, 1.2, 1.4) ✅   │
-  │ P1: i18n 완성 (3.1, 3.2)     ✅ 완료│
-  │ P1: 접근성 개선 (4.1)        ✅ 완료│
+  │ P0~P4: 전체 완료              ✅   │ 높음
+  │ P5-A: 버그 수정 (4건)        ✅   │
+  │ P5-B: 코드 품질 (5건)        ✅   │ 중간
+  │ P5-C: 접근성 보완 (2건)      ✅   │
+  │ P5-D: 방어적 코드 (4건)      ✅   │ 낮음
   ├─────────────────────────────────────┤
-  │ P2: 코드 정리 (1.3, 1.4)    ✅ 완료│ 중간
-  │ P2: 성능 최적화 (5.1, 5.2) ✅ 완료│
-  │ P2: Phase 1 기능 (6.1)    ✅ 완료│
+  │ Phase 2-3 기능               ◻️   │ 장기
+  │   레이어, 크롭 UI, 드로잉,         │
+  │   애니메이션 에디터, AI 추천       │
   ├─────────────────────────────────────┤
-  │ P3: UI/UX 개선 (4.2~4.4)  ✅ 완료│ 낮음
-  │ P3: 성능 분석 (5.1~5.2)   ✅ 완료│
-  ├─────────────────────────────────────┤
-  │ P4: Phase 2-3 기능 (6.2, 6.3)     │ 장기
-  │ P4: 기술 부채 (6.4)               │
-  │ P4: GIF 최적화 (5.3)              │
+  │ P6: 기술 부채               ✅   │ 완료
+  │   컴포넌트 테스트 (80개),          │
+  │   Storybook (7 stories)           │
   └─────────────────────────────────────┘
 ```
 
 ---
 
-## 9. 작업 시작 가이드
+## 🔧 작업 시작 가이드
 
-이 문서를 기반으로 작업할 때:
+### 다음 작업 시 이 순서로 진행:
+
+```
+1. ✅ P5-A~D 완료 (버그 수정, 코드 품질, 접근성, 방어적 코드)
+2. ✅ P6 기술 부채 (컴포넌트 테스트 80개 + Storybook 7 stories)
+3. Phase 2 잔여: 레이어 시스템
+4. Phase 3: 드로잉 도구, 애니메이션 에디터, AI 팔레트, 클라우드, 플러그인
+```
+
+### 빌드/테스트 명령어
 
 ```bash
-# 빌드/테스트 명령어
 npm run dev          # 개발 서버 (port 1420)
 npm run check        # 타입 체크
-npx vitest run       # 테스트 실행
+npx vitest run       # 테스트 실행 (112개)
+npm run storybook    # Storybook 개발 서버 (port 6006)
+```
 
-# 주요 파일 위치
-src/lib/types.ts                          # 중앙 타입 허브
-src/lib/utils/imageProcessor.ts           # Worker 관리 싱글톤
-src/lib/workers/imageWorker.ts            # 이미지 처리 파이프라인
-src/lib/utils/colorQuantizer.ts           # 팔레트 양자화 엔진
+### 주요 파일 위치
+
+```
+src/lib/types.ts                               # 중앙 타입 허브
+src/lib/utils/imageProcessor.ts                # Worker 관리 싱글톤
+src/lib/workers/imageWorker.ts                 # 이미지 처리 파이프라인
+src/lib/utils/colorQuantizer.ts                # 팔레트 양자화 엔진
 src/lib/stores/imageProcessingStore.svelte.ts  # 메인 앱 상태
-src/lib/i18n/en.ts                        # 번역 키 정의 (기준)
-src/routes/+page.svelte                   # 앱 루트
+src/lib/i18n/en.ts                             # 번역 키 정의 (기준)
+src/routes/+page.svelte                        # 앱 루트
 ```
 
 각 섹션의 체크박스를 완료 시 `[x]`로 표시하세요.
 
 ---
 
-## 10. 변경 이력
+## 📜 변경 이력
 
 | 날짜 | 작업 내용 |
 |------|-----------|
 | 2026-03-10 | 초기 문서 작성 (전체 코드 리뷰 기반) |
 | 2026-03-10 | P0 버그 수정 완료: paletteIO '#' prefix, gifProcessor 투명 검증, zoomPan 터치 점프, customPaletteStore UUID, imageProcessor worker retry |
-| 2026-03-10 | P1 코드 정리 완료: 한국어 주석 영문화 (6파일), 미사용 파라미터 제거, colorQuantizer LUT 빌드 통합 |
-| 2026-03-10 | false positive 항목 식별 및 마킹: paletteData rgbToHsl, zoomPan 상수, paletteData 채도 계산, BeforeAfterSlider cleanup |
-| 2026-03-10 | P1 i18n 완성: CustomPaletteEditor, HistoryPanel, MessageDialog, ControlPanel, saveService + 번역 키 17개 추가 (en/ko/ja) |
-| 2026-03-10 | P1 접근성 개선: DesktopIcons 키보드 탐색, MessageDialog/KeyboardShortcuts aria-labelledby, BeforeAfterSlider Home/End |
-| 2026-03-10 | P2 코드 정리: glitchEngine 매직넘버 상수화, Win98Window TASKBAR_HEIGHT, palettes.ts O(1) 역방향 룩업 |
-| 2026-03-10 | P2 성능: imageProcessor LRU 캐시(10), gifProcessor canvas 재사용 |
-| 2026-03-10 | P2 Phase 1 기능 완료: 실시간 미리보기 토글 (autoProcess + Apply Now), 커스텀 프리셋 저장/로드 (localStorage), 색상 피커 (eyedropper), 이미지 회전 (90° 단위) + i18n 12키 (en/ko/ja) |
-| 2026-03-11 | P3 반응형/모바일: Win98Window 리사이즈 핸들 터치 확대(12/24px)+touch-action, Taskbar 브레이크포인트 550px 통일+트레이 축소, Toast 위치/줄바꿈, CustomPaletteEditor 스와치 반응형 |
-| 2026-03-11 | P3 사용성: Toast variant(success/error/warning), CustomPaletteEditor X 삭제 버튼, HistoryPanel 자동 스크롤, GifControls 프레임 카운터 가변폭, Taskbar 24h/12h 로케일 시간 |
-| 2026-03-11 | P3 시각적: CrtDisplay intensity prop(CSS 변수), DesktopIcons 선택 하이라이트 개선(반투명+outline) |
-| 2026-03-11 | P3 성능 분석: saveService/스냅 debounce/시계 타이머 — 모두 불필요 확인 (false positive 마킹) |
-| 2026-03-11 | P3 추가: Win98Window 리사이즈 점선 피드백, GIF export canvas/img 재사용 최적화 |
-| 2026-03-11 | Phase 2 기능: SVG export (svgExporter.ts, horizontal run merge), 스프라이트 시트 export (spritesheetExporter.ts, auto-grid) + i18n 8키 (en/ko/ja) |
-| 2026-03-11 | P4 접근성: Win98Window 키보드 접근성 (Escape, role="dialog", tabindex, title-bar touch) |
-| 2026-03-11 | P4 GIF 최적화: encodeGif를 전용 Web Worker(gifEncodeWorker.ts)로 이동, transferable ArrayBuffer |
-| 2026-03-11 | P4 기술 부채: CSS 변수 시스템 (theme.css, Win98Window/Taskbar 적용), omggif 타입 선언 (src/types/omggif.d.ts) |
-| 2026-03-11 | P4 테스트 확장: svgExporter (7), gifProcessor (5) 테스트 추가 (총 32) |
-| 2026-03-11 | P4 i18n: presets.ts 라벨 i18n 전환 (icon + labelKey 분리, en/ko/ja 11키) |
-| 2026-03-11 | P4 비교 모드 개선: slider/side-by-side/onion skin 3가지 비교 모드 + 사이클 버튼 + i18n 5키 |
-| 2026-03-11 | P4 팔레트 에디터: 그라데이션 생성(start/end/steps), 색상순 정렬, 반전 + i18n 6키 |
-| 2026-03-11 | P4 i18n 100%: palettes.ts 107개 팔레트명 i18n (registerPaletteTranslator 패턴) |
-| 2026-03-11 | P4 E2E: Playwright 세팅 + 기본 8개 테스트 (app.spec.ts), vitest exclude e2e |
+| 2026-03-10 | P1 코드 정리 + i18n 완성 + 접근성 개선 |
+| 2026-03-10 | P2 코드 정리 + 성능 최적화 + Phase 1 기능 완료 |
+| 2026-03-11 | P3 UI/UX 개선 (반응형/모바일, 사용성, 시각적) |
+| 2026-03-11 | P4 Phase 2 기능 + 기술 부채 해소 (SVG/스프라이트 export, 비교 모드, 팔레트 에디터, 테스트 확장, E2E) |
+| 2026-03-12 | 전체 코드 리뷰 #2: P5 신규 이슈 16건 식별 (버그 4, 코드품질 6, 접근성 2, 방어적 코드 4) |
+| 2026-03-12 | P5-A~D 전체 수정 완료 (15건): Worker 에러 리셋, GIF export race guard, transform blob 누수, BatchProcessor unmount 정리, paletteIO 범위 검증, spritesheet Promise/검증, eyedropper canvas 캐시, 토글 버튼 aria, MessageDialog 포커스 복원, Worker 메시지 검증, localStorage warn, SVG 배경 감지 개선, frameToBlobUrl 문서화 |
+| 2026-03-12 | 이미지 크롭 UI: CropOverlay.svelte (드래그 선택, clip-path 마스크, 코너 핸들, Enter/Esc 단축키, 터치 지원) + PreviewContent ✂ 버튼 + i18n 5키 (en/ko/ja) |
+| 2026-03-12 | GIF export 최적화: blob→Image→Canvas 왕복 제거, getLastCanvas()에서 직접 ImageData 추출 (프레임당 Image 로드 + Canvas 드로우 2단계 제거) |
+| 2026-03-12 | P6 기술 부채 완료: 컴포넌트 테스트 80개 추가 (8개 컴포넌트, @testing-library/svelte), Storybook 10 세팅 (7 stories, autodocs, a11y addon), vitest $lib alias + ResizeObserver polyfill |
