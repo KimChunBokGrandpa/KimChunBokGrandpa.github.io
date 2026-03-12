@@ -1,6 +1,7 @@
 # Retro Pixel Converter
 
 이미지를 레트로 스타일의 픽셀 아트로 변환하는 데스크탑/웹 애플리케이션입니다.
+- Only AI
 
 ## 주요 기능
 
