@@ -1,10 +1,11 @@
 <script lang="ts">
   import { getPaletteName } from '../utils/palettes';
   import { PRESETS, type Preset } from '../utils/presets';
-  import type { DitherType, GlitchFilter, GlitchType, RenderMode, ProcessingSettings, PostProcessFilters } from '../types';
+  import type { DitherType, EffectLayer, GlitchFilter, GlitchType, RenderMode, ProcessingSettings, PostProcessFilters } from '../types';
   import { DEFAULT_POST_FILTERS } from '../types';
   import type { SaveFormat } from '../services/saveService';
   import { i18n } from '$lib/i18n/index.svelte';
+  import type { TranslationKey } from '$lib/i18n/en';
   import { getCustomPresets, addCustomPreset, removeCustomPreset } from '$lib/stores/customPresetStore.svelte';
 
   // Glitch filter options
@@ -15,11 +16,10 @@
     { id: 'slice',     icon: '🔪', labelKey: 'slice' as const },
   ] as const;
 
-  // Render mode options
-  const RENDER_OPTIONS = [
+  // CSS render mode options (HQx moved to effect layers)
+  const CSS_RENDER_OPTIONS = [
     { id: 'pixel_perfect', labelKey: 'pixel_perfect' as const, titleKey: 'pixel_perfect_desc' as const },
     { id: 'bilinear', labelKey: 'bilinear_blur' as const, titleKey: 'bilinear_desc' as const },
-    { id: 'hqx', labelKey: 'hqx_upscale' as const, titleKey: 'hqx_desc' as const },
   ] as const;
 
   // Dithering options
@@ -72,14 +72,32 @@
   }
 
   function applyPreset(preset: Preset) {
+    // Build effectLayers from preset
+    const layers: EffectLayer[] = [
+      ...preset.glitchFilters
+        .filter(f => f.type !== 'none')
+        .map(f => ({
+          id: crypto.randomUUID(),
+          type: 'glitch' as const,
+          enabled: true,
+          glitchType: f.type,
+          intensity: f.intensity,
+        })),
+      ...(preset.renderMode === 'hqx' ? [{
+        id: crypto.randomUUID(),
+        type: 'hqx' as const,
+        enabled: true,
+      }] : []),
+    ];
     settings = {
       pixelSize: preset.pixelSize,
       palette: preset.palette,
       crtEffect: preset.crtEffect,
       glitchFilters: preset.glitchFilters.map(f => ({ ...f })),
-      renderMode: preset.renderMode,
+      renderMode: preset.renderMode === 'hqx' ? 'pixel_perfect' : preset.renderMode,
       glitchSeed: settings.glitchSeed,
       ditherType: preset.ditherType,
+      effectLayers: layers,
     };
     update();
   }
@@ -133,6 +151,109 @@
     update();
   }
 
+  // ─── Effect Layer Management ───
+  const EFFECT_OPTIONS: { type: EffectLayer['type']; glitchType?: GlitchType; icon: string; labelKey: TranslationKey }[] = [
+    { type: 'glitch', glitchType: 'rgb_split', icon: '🔴', labelKey: 'effect_glitch_rgb_split' },
+    { type: 'glitch', glitchType: 'wave',      icon: '📺', labelKey: 'effect_glitch_wave' },
+    { type: 'glitch', glitchType: 'noise',     icon: '🧩', labelKey: 'effect_glitch_noise' },
+    { type: 'glitch', glitchType: 'slice',     icon: '🔪', labelKey: 'effect_glitch_slice' },
+    { type: 'hqx',                             icon: '✨', labelKey: 'effect_hqx' },
+  ];
+
+  function addEffectLayer(opt: typeof EFFECT_OPTIONS[number]) {
+    const layer: EffectLayer = {
+      id: crypto.randomUUID(),
+      type: opt.type,
+      enabled: true,
+      ...(opt.glitchType ? { glitchType: opt.glitchType, intensity: 1 } : {}),
+    };
+    settings.effectLayers = [...(settings.effectLayers || []), layer];
+    syncLegacyFromLayers();
+    update();
+  }
+
+  function removeEffectLayer(id: string) {
+    settings.effectLayers = (settings.effectLayers || []).filter(l => l.id !== id);
+    syncLegacyFromLayers();
+    update();
+  }
+
+  function toggleEffectLayer(id: string) {
+    settings.effectLayers = (settings.effectLayers || []).map(l =>
+      l.id === id ? { ...l, enabled: !l.enabled } : { ...l }
+    );
+    syncLegacyFromLayers();
+    update();
+  }
+
+  function setLayerIntensity(id: string, intensity: number) {
+    settings.effectLayers = (settings.effectLayers || []).map(l =>
+      l.id === id ? { ...l, intensity } : { ...l }
+    );
+    syncLegacyFromLayers();
+    update();
+  }
+
+  // Keep legacy fields in sync for backward compat (presets, export, etc.)
+  function syncLegacyFromLayers() {
+    const layers = settings.effectLayers || [];
+    settings.glitchFilters = layers
+      .filter(l => l.type === 'glitch' && l.enabled && l.glitchType && l.glitchType !== 'none')
+      .map(l => ({ type: l.glitchType!, intensity: l.intensity || 1 }));
+    const hasHqx = layers.some(l => l.type === 'hqx' && l.enabled);
+    if (hasHqx && settings.renderMode !== 'hqx') {
+      // Only override to hqx if an hqx layer is enabled
+      // but keep the CSS render mode as is for pixel_perfect / bilinear
+    }
+  }
+
+  function getEffectLabel(layer: EffectLayer): string {
+    const opt = EFFECT_OPTIONS.find(o =>
+      o.type === layer.type && (layer.type === 'hqx' || o.glitchType === layer.glitchType)
+    );
+    return opt ? `${opt.icon} ${i18n.t(opt.labelKey)}` : layer.type;
+  }
+
+  // ─── Drag & Drop Reorder ───
+  let dragIdx = $state<number | null>(null);
+  let dragOverIdx = $state<number | null>(null);
+
+  function onDragStart(idx: number, e: DragEvent) {
+    dragIdx = idx;
+    e.dataTransfer!.effectAllowed = 'move';
+    e.dataTransfer!.setData('text/plain', String(idx));
+  }
+
+  function onDragOver(idx: number, e: DragEvent) {
+    e.preventDefault();
+    e.dataTransfer!.dropEffect = 'move';
+    dragOverIdx = idx;
+  }
+
+  function onDragLeave() {
+    dragOverIdx = null;
+  }
+
+  function onDrop(idx: number, e: DragEvent) {
+    e.preventDefault();
+    if (dragIdx === null || dragIdx === idx) { dragIdx = null; dragOverIdx = null; return; }
+    const layers = [...(settings.effectLayers || [])];
+    const [moved] = layers.splice(dragIdx, 1);
+    layers.splice(idx, 0, moved);
+    settings.effectLayers = layers;
+    syncLegacyFromLayers();
+    update();
+    dragIdx = null;
+    dragOverIdx = null;
+  }
+
+  function onDragEnd() {
+    dragIdx = null;
+    dragOverIdx = null;
+  }
+
+  let showAddMenu = $state(false);
+
   // ─── Custom Presets ───
   let showSavePreset = $state(false);
   let newPresetName = $state('');
@@ -149,8 +270,26 @@
     settings = {
       ...preset.settings,
       glitchFilters: preset.settings.glitchFilters.map(f => ({ ...f })),
+      effectLayers: preset.settings.effectLayers?.map(l => ({ ...l })) || migrateToEffectLayers(preset.settings),
     };
     update();
+  }
+
+  // Migrate legacy settings to effectLayers
+  function migrateToEffectLayers(s: ProcessingSettings): EffectLayer[] {
+    const layers: EffectLayer[] = s.glitchFilters
+      .filter(f => f.type !== 'none')
+      .map(f => ({
+        id: crypto.randomUUID(),
+        type: 'glitch' as const,
+        enabled: true,
+        glitchType: f.type,
+        intensity: f.intensity,
+      }));
+    if (s.renderMode === 'hqx') {
+      layers.push({ id: crypto.randomUUID(), type: 'hqx', enabled: true });
+    }
+    return layers;
   }
 
   // ─── Preset Sharing ───
@@ -186,7 +325,7 @@
       if (!s || typeof s.pixelSize !== 'number' || typeof s.palette !== 'string') {
         throw new Error('Invalid preset format');
       }
-      settings = {
+      const imported: ProcessingSettings = {
         pixelSize: Math.max(1, Math.min(64, s.pixelSize)),
         palette: s.palette,
         crtEffect: !!s.crtEffect,
@@ -195,6 +334,10 @@
         glitchSeed: s.glitchSeed ?? null,
         ditherType: ['none', 'floyd_steinberg', 'ordered'].includes(s.ditherType) ? s.ditherType : 'none',
       };
+      imported.effectLayers = Array.isArray(s.effectLayers)
+        ? s.effectLayers.map((l: EffectLayer) => ({ ...l, id: l.id || crypto.randomUUID() }))
+        : migrateToEffectLayers(imported);
+      settings = imported;
       update();
     } catch {
       console.error(i18n.t('preset_load_error'));
@@ -320,85 +463,9 @@
       <label for="crt-effect">{i18n.t('crt_scanlines')}</label>
     </div>
 
-    <div class="section-label">
-      {i18n.t('glitch_filters')} <span class="section-hint">({i18n.t('multi_select')})</span>:
-    </div>
-    <div class="field-row glitch-toggles">
-      <button
-        class:preset-active={settings.glitchFilters.length === 0}
-        class="glitch-toggle-btn"
-        onclick={clearAllGlitch}
-        title={i18n.t('none')}
-      >
-        🚫 <span class="hide-on-small">{i18n.t('none')}</span>
-      </button>
-      {#each GLITCH_OPTIONS as opt}
-        <button
-          class:preset-active={isFilterActive(opt.id)}
-          class="glitch-toggle-btn"
-          onclick={() => toggleGlitch(opt.id)}
-          aria-label="{i18n.t(opt.labelKey)} Glitch Filter"
-          title={i18n.t(opt.labelKey)}
-        >
-          {opt.icon} <span class="hide-on-small">{i18n.t(opt.labelKey)}</span>
-        </button>
-      {/each}
-    </div>
-
-    <!-- Per-filter intensity sliders -->
-    {#if settings.glitchFilters.length > 0}
-    <div class="glitch-intensity-panel">
-      {#each GLITCH_OPTIONS.filter(o => isFilterActive(o.id)) as opt}
-        <div class="glitch-intensity-row">
-          <span class="glitch-intensity-label">{opt.icon} {i18n.t(opt.labelKey)}</span>
-          <div class="glitch-intensity-btns">
-            {#each [1, 2, 3] as lv}
-              <button
-                class:preset-active={getFilterIntensity(opt.id) === lv}
-                class="intensity-btn"
-                onclick={() => setFilterIntensity(opt.id, lv)}
-                title="{i18n.t('level')} {lv}"
-              >
-                {lv}
-              </button>
-            {/each}
-          </div>
-        </div>
-      {/each}
-    </div>
-    {/if}
-
-    <!-- Glitch seed lock/random toggle -->
-    {#if settings.glitchFilters.length > 0}
-    <div class="glitch-intensity-panel glitch-seed-panel">
-      <div class="glitch-intensity-row">
-        <span class="glitch-intensity-label">🎲 {i18n.t('seed')}</span>
-        <div class="glitch-intensity-btns">
-          <button
-            class:preset-active={settings.glitchSeed === null}
-            class="intensity-btn seed-btn"
-            onclick={() => { settings.glitchSeed = null; update(); }}
-          >{i18n.t('random')}</button>
-          <button
-            class:preset-active={settings.glitchSeed !== null}
-            class="intensity-btn seed-btn"
-            onclick={() => { settings.glitchSeed = Math.round(Math.random() * 10000) / 10000; update(); }}
-          >{settings.glitchSeed !== null ? `${i18n.t('fixed')} (${settings.glitchSeed})` : i18n.t('fix')}</button>
-          {#if settings.glitchSeed !== null}
-            <button
-              class="intensity-btn"
-              title={i18n.t('reroll_seed')}
-              onclick={() => { settings.glitchSeed = Math.round(Math.random() * 10000) / 10000; update(); }}
-            >🔄</button>
-          {/if}
-        </div>
-      </div>
-    </div>
-    {/if}
-
-    <div class="section-label">{i18n.t('scaling_render')}:</div>
+    <div class="section-label">{i18n.t('css_render_mode')}:</div>
     <div class="field-row render-row">
-      {#each RENDER_OPTIONS as opt}
+      {#each CSS_RENDER_OPTIONS as opt}
         <button
           class:preset-active={settings.renderMode === opt.id}
           class="render-btn"
@@ -408,6 +475,112 @@
           {i18n.t(opt.labelKey)}
         </button>
       {/each}
+    </div>
+  </fieldset>
+
+  <!-- Effect Stack -->
+  <fieldset class="cp-section">
+    <legend>{i18n.t('effect_stack')} <span class="section-hint">({i18n.t('effect_stack_hint')})</span></legend>
+
+    {#if !settings.effectLayers || settings.effectLayers.length === 0}
+      <div class="no-effects">{i18n.t('no_effects')}</div>
+    {:else}
+      <div class="effect-layer-list">
+        {#each settings.effectLayers as layer, idx (layer.id)}
+          <div
+            class="effect-layer-item"
+            class:drag-over={dragOverIdx === idx}
+            class:dragging={dragIdx === idx}
+            class:disabled={!layer.enabled}
+            draggable="true"
+            ondragstart={(e) => onDragStart(idx, e)}
+            ondragover={(e) => onDragOver(idx, e)}
+            ondragleave={onDragLeave}
+            ondrop={(e) => onDrop(idx, e)}
+            ondragend={onDragEnd}
+            role="listitem"
+          >
+            <button
+              class="layer-toggle"
+              class:active={layer.enabled}
+              onclick={() => toggleEffectLayer(layer.id)}
+              title={layer.enabled ? i18n.t('effect_enabled') : i18n.t('effect_disabled')}
+            >{layer.enabled ? '✓' : '○'}</button>
+
+            <span class="layer-label">{getEffectLabel(layer)}</span>
+
+            {#if layer.type === 'glitch'}
+              <div class="layer-intensity">
+                {#each [1, 2, 3] as lv}
+                  <button
+                    class:preset-active={layer.intensity === lv}
+                    class="intensity-btn"
+                    onclick={() => setLayerIntensity(layer.id, lv)}
+                    title="{i18n.t('level')} {lv}"
+                  >{lv}</button>
+                {/each}
+              </div>
+            {/if}
+
+            <button
+              class="layer-remove"
+              onclick={() => removeEffectLayer(layer.id)}
+              title={i18n.t('remove_effect')}
+            >×</button>
+
+            <span class="drag-handle" aria-hidden="true">≡</span>
+          </div>
+        {/each}
+      </div>
+    {/if}
+
+    <!-- Glitch seed (shown when any glitch layer exists) -->
+    {#if settings.effectLayers?.some(l => l.type === 'glitch' && l.enabled)}
+      <div class="glitch-intensity-panel glitch-seed-panel">
+        <div class="glitch-intensity-row">
+          <span class="glitch-intensity-label">🎲 {i18n.t('seed')}</span>
+          <div class="glitch-intensity-btns">
+            <button
+              class:preset-active={settings.glitchSeed === null}
+              class="intensity-btn seed-btn"
+              onclick={() => { settings.glitchSeed = null; update(); }}
+            >{i18n.t('random')}</button>
+            <button
+              class:preset-active={settings.glitchSeed !== null}
+              class="intensity-btn seed-btn"
+              onclick={() => { settings.glitchSeed = Math.round(Math.random() * 10000) / 10000; update(); }}
+            >{settings.glitchSeed !== null ? `${i18n.t('fixed')} (${settings.glitchSeed})` : i18n.t('fix')}</button>
+            {#if settings.glitchSeed !== null}
+              <button
+                class="intensity-btn"
+                title={i18n.t('reroll_seed')}
+                onclick={() => { settings.glitchSeed = Math.round(Math.random() * 10000) / 10000; update(); }}
+              >🔄</button>
+            {/if}
+          </div>
+        </div>
+      </div>
+    {/if}
+
+    <!-- Add Effect Button -->
+    <div class="add-effect-row">
+      <div class="add-effect-wrapper">
+        <button class="add-effect-btn" onclick={() => { showAddMenu = !showAddMenu; }}>
+          + {i18n.t('add_effect')}
+        </button>
+        {#if showAddMenu}
+          <div class="add-effect-menu">
+            {#each EFFECT_OPTIONS as opt}
+              <button
+                class="add-effect-option"
+                onclick={() => { addEffectLayer(opt); showAddMenu = false; }}
+              >
+                {opt.icon} {i18n.t(opt.labelKey)}
+              </button>
+            {/each}
+          </div>
+        {/if}
+      </div>
     </div>
   </fieldset>
 
@@ -456,8 +629,8 @@
       <span>📌 {settings.pixelSize}px</span>
       <span>🎨 {getPaletteName(settings.palette)}</span>
       {#if settings.crtEffect}<span>📺 CRT</span>{/if}
-      {#each settings.glitchFilters as f}
-        <span>⚡ {f.type} Lv{f.intensity}</span>
+      {#each (settings.effectLayers || []).filter(l => l.enabled) as layer}
+        <span>⚡ {layer.type === 'hqx' ? 'HQx' : (layer.glitchType || layer.type)}{layer.intensity ? ` Lv${layer.intensity}` : ''}</span>
       {/each}
       <span>🔍 {settings.renderMode === 'pixel_perfect' ? 'Pixel' : settings.renderMode === 'bilinear' ? 'Smooth' : 'HQx'}</span>
       {#if settings.ditherType && settings.ditherType !== 'none'}<span>🔳 {settings.ditherType === 'floyd_steinberg' ? 'FS Dither' : 'Ordered'}</span>{/if}

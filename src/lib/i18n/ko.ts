@@ -232,7 +232,21 @@ export const ko: Record<TranslationKey, string> = {
   preset_dither_fs: '\ub514\ub354 FS',
   preset_original: '\uc6d0\ubcf8',
 
-  language: '\uc5b8\uc5b4',
+  effect_stack: '이펙트 스택',
+  effect_stack_hint: '드래그하여 순서 변경',
+  add_effect: '이펙트 추가',
+  remove_effect: '제거',
+  effect_enabled: '활성',
+  effect_disabled: '비활성',
+  effect_glitch_rgb_split: 'RGB 분리',
+  effect_glitch_wave: '웨이브',
+  effect_glitch_noise: '노이즈',
+  effect_glitch_slice: '슬라이스',
+  effect_hqx: 'HQx 업스케일',
+  no_effects: '추가된 이펙트 없음',
+  css_render_mode: '렌더 모드',
+
+  language: '언어',
 
   // ─── Palette Names ───
   palette_original: '\ud480 \ucee8\ub7ec (\uc6d0\ubcf8)',

@@ -251,6 +251,21 @@ export const en = {
   preset_dither_fs: 'Dither FS',
   preset_original: 'Original',
 
+  // ─── Effect Layers ───
+  effect_stack: 'Effect Stack',
+  effect_stack_hint: 'Drag to reorder',
+  add_effect: 'Add Effect',
+  remove_effect: 'Remove',
+  effect_enabled: 'Enabled',
+  effect_disabled: 'Disabled',
+  effect_glitch_rgb_split: 'RGB Split',
+  effect_glitch_wave: 'Wave',
+  effect_glitch_noise: 'Noise',
+  effect_glitch_slice: 'Slice',
+  effect_hqx: 'HQx Upscale',
+  no_effects: 'No effects added',
+  css_render_mode: 'Render Mode',
+
   // ─── Language ───
   language: 'Language',
 

@@ -23,6 +23,7 @@ const DEFAULT_SETTINGS: ProcessingSettings = {
   renderMode: 'pixel_perfect',
   glitchSeed: null,
   ditherType: 'none',
+  effectLayers: [],
 };
 
 /**
@@ -181,7 +182,11 @@ export function createImageProcessingStore() {
   let redoHistory = $state<ProcessingSettings[]>([]);
 
   function cloneSettings(s: ProcessingSettings): ProcessingSettings {
-    return { ...s, glitchFilters: s.glitchFilters.map(f => ({ ...f })) };
+    return {
+      ...s,
+      glitchFilters: s.glitchFilters.map(f => ({ ...f })),
+      effectLayers: s.effectLayers?.map(l => ({ ...l })),
+    };
   }
 
   function pushHistory(s: ProcessingSettings) {
@@ -243,7 +248,7 @@ export function createImageProcessingStore() {
     return JSON.stringify({
       p: settings.pixelSize, pal: settings.palette, crt: settings.crtEffect,
       g: settings.glitchFilters, r: settings.renderMode, s: settings.glitchSeed,
-      d: settings.ditherType,
+      d: settings.ditherType, el: settings.effectLayers,
     });
   }
 

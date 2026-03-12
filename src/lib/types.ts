@@ -28,6 +28,17 @@ export interface GlitchFilter {
   intensity: number; // 1, 2, 3
 }
 
+// ─── Effect Layer Types ───
+export type EffectLayerType = 'glitch' | 'hqx';
+
+export interface EffectLayer {
+  id: string;
+  type: EffectLayerType;
+  enabled: boolean;
+  glitchType?: GlitchType;   // for type === 'glitch'
+  intensity?: number;         // 1-3, for type === 'glitch'
+}
+
 export interface ProcessingSettings {
   pixelSize: number;
   palette: string;
@@ -36,6 +47,7 @@ export interface ProcessingSettings {
   renderMode: RenderMode;
   glitchSeed: number | null; // null = random each time, number = fixed seed
   ditherType: DitherType;
+  effectLayers?: EffectLayer[]; // ordered post-processing layers
 }
 
 // ─── Post-Process Filter Types ───
@@ -66,6 +78,7 @@ export interface ImageWorkerMessage {
   glitchSeed?: number | null;
   ditherType?: DitherType;
   customPaletteColors?: { r: number; g: number; b: number }[];
+  effectLayers?: EffectLayer[];
 }
 
 export interface ImageWorkerResponse {

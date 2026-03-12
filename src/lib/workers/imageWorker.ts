@@ -5,6 +5,7 @@ import {
 import { applyGlitch } from "../utils/glitchEngine";
 import { applyScaling } from "../utils/scaleEngine";
 import type {
+  EffectLayer,
   ImageWorkerMessage,
   ImageWorkerResponse,
 } from "../types";
@@ -22,6 +23,7 @@ onmessage = (e: MessageEvent<ImageWorkerMessage>) => {
     glitchSeed,
     ditherType,
     customPaletteColors,
+    effectLayers,
   } = e.data;
 
   // Validate required fields
@@ -56,23 +58,46 @@ onmessage = (e: MessageEvent<ImageWorkerMessage>) => {
 
     postMessage({ id, type: 'progress', progress: 0.4 } as ImageWorkerResponse);
 
-    if (glitchFilters && glitchFilters.length > 0) {
-      for (const filter of glitchFilters) {
-        if (filter.type && filter.type !== "none") {
+    // Use effectLayers if present, otherwise fall back to legacy fields
+    const hasEffectLayers = effectLayers && effectLayers.length > 0;
+
+    if (hasEffectLayers) {
+      const enabledLayers = effectLayers.filter((l: EffectLayer) => l.enabled);
+      const totalLayers = enabledLayers.length;
+      for (let i = 0; i < totalLayers; i++) {
+        const layer = enabledLayers[i];
+        if (layer.type === 'glitch' && layer.glitchType && layer.glitchType !== 'none') {
           processedData = applyGlitch(
             processedData,
-            filter.type,
-            filter.intensity || 1,
+            layer.glitchType,
+            layer.intensity || 1,
             glitchSeed ?? undefined,
           );
+        } else if (layer.type === 'hqx') {
+          processedData = applyScaling(processedData, 'hqx');
+        }
+        postMessage({ id, type: 'progress', progress: 0.4 + 0.5 * ((i + 1) / totalLayers) } as ImageWorkerResponse);
+      }
+    } else {
+      // Legacy path: glitchFilters then hqx
+      if (glitchFilters && glitchFilters.length > 0) {
+        for (const filter of glitchFilters) {
+          if (filter.type && filter.type !== "none") {
+            processedData = applyGlitch(
+              processedData,
+              filter.type,
+              filter.intensity || 1,
+              glitchSeed ?? undefined,
+            );
+          }
         }
       }
-    }
 
-    postMessage({ id, type: 'progress', progress: 0.7 } as ImageWorkerResponse);
+      postMessage({ id, type: 'progress', progress: 0.7 } as ImageWorkerResponse);
 
-    if (renderMode === "hqx") {
-      processedData = applyScaling(processedData, renderMode);
+      if (renderMode === "hqx") {
+        processedData = applyScaling(processedData, renderMode);
+      }
     }
 
     postMessage({ id, type: 'progress', progress: 0.9 } as ImageWorkerResponse);

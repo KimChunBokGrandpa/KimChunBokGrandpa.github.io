@@ -270,6 +270,7 @@ class ImageProcessorService {
           ? customPaletteStore.getPaletteById(settings.palette)?.colors
               ?.map(c => ({ r: c.r, g: c.g, b: c.b }))
           : undefined,
+        effectLayers: settings.effectLayers?.map(l => ({ ...l })),
       };
 
       this.ensureWorker().postMessage(message, [bitmap]);

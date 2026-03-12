@@ -232,7 +232,21 @@ export const ja: Record<TranslationKey, string> = {
   preset_dither_fs: '\u30c7\u30a3\u30b6FS',
   preset_original: '\u30aa\u30ea\u30b8\u30ca\u30eb',
 
-  language: '\u8a00\u8a9e',
+  effect_stack: 'エフェクトスタック',
+  effect_stack_hint: 'ドラッグして並べ替え',
+  add_effect: 'エフェクト追加',
+  remove_effect: '削除',
+  effect_enabled: '有効',
+  effect_disabled: '無効',
+  effect_glitch_rgb_split: 'RGB分離',
+  effect_glitch_wave: 'ウェーブ',
+  effect_glitch_noise: 'ノイズ',
+  effect_glitch_slice: 'スライス',
+  effect_hqx: 'HQxアップスケール',
+  no_effects: 'エフェクトなし',
+  css_render_mode: 'レンダーモード',
+
+  language: '言語',
 
   // ─── Palette Names ───
   palette_original: '\u30d5\u30eb\u30ab\u30e9\u30fc (\u30aa\u30ea\u30b8\u30ca\u30eb)',
