@@ -24,6 +24,7 @@ export async function createSpritesheet(
 ): Promise<HTMLCanvasElement> {
   const count = frameSrcs.length;
   if (count === 0) throw new Error('No frames to export');
+  if (frameWidth <= 0 || frameHeight <= 0) throw new Error('Frame dimensions must be positive');
 
   const padding = options.padding ?? 0;
   const cols = options.columns ?? Math.ceil(Math.sqrt(count));
@@ -69,16 +70,22 @@ export async function createSpritesheet(
 export function downloadSpritesheet(
   canvas: HTMLCanvasElement,
   filename = 'spritesheet.png',
-): void {
-  canvas.toBlob((blob) => {
-    if (!blob) return;
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  }, 'image/png');
+): Promise<void> {
+  return new Promise<void>((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (!blob) {
+        reject(new Error('Failed to create spritesheet blob'));
+        return;
+      }
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      resolve();
+    }, 'image/png');
+  });
 }

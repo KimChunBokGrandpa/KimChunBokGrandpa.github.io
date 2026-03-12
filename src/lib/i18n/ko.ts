@@ -198,9 +198,14 @@ export const ko: Record<TranslationKey, string> = {
   exit_eyedropper: '\uc0c9\uc0c1 \ucd94\ucd9c \uc885\ub8cc',
   copy_color: '\ud074\ub9bd\ubcf4\ub4dc\uc5d0 \ubcf5\uc0ac',
 
-  rotate_left: '\uc67c\ucabd\uc73c\ub85c 90\u00b0 \ud68c\uc804',
-  rotate_right: '\uc624\ub978\ucabd\uc73c\ub85c 90\u00b0 \ud68c\uc804',
-  reset_transform: '\ud68c\uc804 \ucd08\uae30\ud654',
+  rotate_left: '왼쪽으로 90° 회전',
+  rotate_right: '오른쪽으로 90° 회전',
+  reset_transform: '변환 초기화',
+  crop: '자르기',
+  crop_active: '자르기 종료',
+  crop_apply: '자르기 적용',
+  crop_cancel: '자르기 취소',
+  crop_drag_hint: '드래그하여 영역 선택',
 
   generate_gradient: '\uadf8\ub77c\ub370\uc774\uc158 \uc0dd\uc131',
   gradient_start: '\uc2dc\uc791',

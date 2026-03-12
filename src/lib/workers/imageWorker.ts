@@ -24,6 +24,13 @@ onmessage = (e: MessageEvent<ImageWorkerMessage>) => {
     customPaletteColors,
   } = e.data;
 
+  // Validate required fields
+  if (!id || !imageBitmap || !width || !height) {
+    const errorId = id || 'unknown';
+    postMessage({ id: errorId, type: 'complete', error: 'Invalid worker message: missing required fields' } as ImageWorkerResponse);
+    return;
+  }
+
   try {
     const canvas = new OffscreenCanvas(width, height);
     const ctx = canvas.getContext("2d", {

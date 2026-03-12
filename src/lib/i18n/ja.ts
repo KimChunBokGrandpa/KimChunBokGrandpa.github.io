@@ -198,9 +198,14 @@ export const ja: Record<TranslationKey, string> = {
   exit_eyedropper: '\u30ab\u30e9\u30fc\u30d4\u30c3\u30ab\u30fc\u7d42\u4e86',
   copy_color: '\u30af\u30ea\u30c3\u30d7\u30dc\u30fc\u30c9\u306b\u30b3\u30d4\u30fc',
 
-  rotate_left: '\u5de6\u306b90\u00b0\u56de\u8ee2',
-  rotate_right: '\u53f3\u306b90\u00b0\u56de\u8ee2',
-  reset_transform: '\u56de\u8ee2\u30ea\u30bb\u30c3\u30c8',
+  rotate_left: '左に90°回転',
+  rotate_right: '右に90°回転',
+  reset_transform: '変換リセット',
+  crop: 'トリミング',
+  crop_active: 'トリミング終了',
+  crop_apply: 'トリミング適用',
+  crop_cancel: 'トリミングキャンセル',
+  crop_drag_hint: 'ドラッグして範囲を選択',
 
   generate_gradient: '\u30b0\u30e9\u30c7\u30fc\u30b7\u30e7\u30f3\u751f\u6210',
   gradient_start: '\u958b\u59cb',

@@ -57,7 +57,7 @@ export function parseGplFile(text: string): { name: string; colors: RGB[] } | nu
       const r = parseInt(match[1]);
       const g = parseInt(match[2]);
       const b = parseInt(match[3]);
-      if (r <= 255 && g <= 255 && b <= 255) {
+      if (r >= 0 && r <= 255 && g >= 0 && g <= 255 && b >= 0 && b <= 255) {
         colors.push({ r, g, b });
       }
     }

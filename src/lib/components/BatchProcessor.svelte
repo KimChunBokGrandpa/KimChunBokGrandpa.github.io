@@ -145,6 +145,16 @@
     }
   }
 
+  // Cleanup blob URLs on component unmount
+  $effect(() => {
+    return () => {
+      for (const item of items) {
+        URL.revokeObjectURL(item.thumbnailUrl);
+        if (item.resultUrl) URL.revokeObjectURL(item.resultUrl);
+      }
+    };
+  });
+
   let doneCount = $derived(items.filter(i => i.status === 'done').length);
   let errorCount = $derived(items.filter(i => i.status === 'error').length);
   let processingCount = $derived(items.filter(i => i.status === 'processing').length);

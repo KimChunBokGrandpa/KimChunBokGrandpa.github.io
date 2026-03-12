@@ -222,6 +222,9 @@ function nextPow2(n: number): number {
 /**
  * Create a blob URL from a single frame for preview.
  * Reuses a single canvas to avoid repeated element creation.
+ *
+ * **Important:** The caller is responsible for revoking the returned blob URL
+ * via `URL.revokeObjectURL()` when no longer needed.
  */
 let _frameCanvas: HTMLCanvasElement | null = null;
 export function frameToBlobUrl(frame: GifFrame): Promise<string> {

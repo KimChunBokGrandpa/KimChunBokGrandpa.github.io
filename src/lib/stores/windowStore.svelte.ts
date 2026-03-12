@@ -44,7 +44,7 @@ function saveLayout(wins: Record<WindowId, WindowState>) {
       data[id] = { x: wins[id].x, y: wins[id].y, w: wins[id].w, h: wins[id].h };
     }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-  } catch { /* ignore storage errors */ }
+  } catch (err) { console.warn('Failed to save window layout:', err); }
 }
 
 /**

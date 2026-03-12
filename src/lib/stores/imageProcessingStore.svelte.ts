@@ -106,48 +106,58 @@ export function createImageProcessingStore() {
       return null;
     }
 
-    const img = new Image();
-    await new Promise<void>((resolve, reject) => {
-      img.onload = () => resolve();
-      img.onerror = () => reject(new Error('Failed to load image for transform'));
-      img.src = originalImageSrc!;
-    });
+    try {
+      const img = new Image();
+      await new Promise<void>((resolve, reject) => {
+        img.onload = () => resolve();
+        img.onerror = () => reject(new Error('Failed to load image for transform'));
+        img.src = originalImageSrc!;
+      });
 
-    let srcX = 0, srcY = 0, srcW = img.naturalWidth, srcH = img.naturalHeight;
-    if (cropRect) {
-      srcX = cropRect.x;
-      srcY = cropRect.y;
-      srcW = cropRect.w;
-      srcH = cropRect.h;
+      let srcX = 0, srcY = 0, srcW = img.naturalWidth, srcH = img.naturalHeight;
+      if (cropRect) {
+        srcX = cropRect.x;
+        srcY = cropRect.y;
+        srcW = cropRect.w;
+        srcH = cropRect.h;
+      }
+
+      const isRotated90 = rotation === 90 || rotation === 270;
+      const outW = isRotated90 ? srcH : srcW;
+      const outH = isRotated90 ? srcW : srcH;
+
+      const canvas = document.createElement('canvas');
+      canvas.width = outW;
+      canvas.height = outH;
+      const ctx = canvas.getContext('2d')!;
+
+      ctx.save();
+      ctx.translate(outW / 2, outH / 2);
+      ctx.rotate((rotation * Math.PI) / 180);
+
+      // After rotation, draw centered
+      const drawW = srcW;
+      const drawH = srcH;
+      ctx.drawImage(img, srcX, srcY, srcW, srcH, -drawW / 2, -drawH / 2, drawW, drawH);
+      ctx.restore();
+
+      const blob = await new Promise<Blob>((resolve) => {
+        canvas.toBlob((b) => resolve(b!), 'image/png');
+      });
+
+      if (transformedObjectUrl) URL.revokeObjectURL(transformedObjectUrl);
+      transformedObjectUrl = URL.createObjectURL(blob);
+      transformedSrc = transformedObjectUrl;
+      return transformedObjectUrl;
+    } catch (err) {
+      // Clean up stale URL on error to prevent memory leak
+      if (transformedObjectUrl) {
+        URL.revokeObjectURL(transformedObjectUrl);
+        transformedObjectUrl = null;
+      }
+      transformedSrc = null;
+      throw err;
     }
-
-    const isRotated90 = rotation === 90 || rotation === 270;
-    const outW = isRotated90 ? srcH : srcW;
-    const outH = isRotated90 ? srcW : srcH;
-
-    const canvas = document.createElement('canvas');
-    canvas.width = outW;
-    canvas.height = outH;
-    const ctx = canvas.getContext('2d')!;
-
-    ctx.save();
-    ctx.translate(outW / 2, outH / 2);
-    ctx.rotate((rotation * Math.PI) / 180);
-
-    // After rotation, draw centered
-    const drawW = srcW;
-    const drawH = srcH;
-    ctx.drawImage(img, srcX, srcY, srcW, srcH, -drawW / 2, -drawH / 2, drawW, drawH);
-    ctx.restore();
-
-    const blob = await new Promise<Blob>((resolve) => {
-      canvas.toBlob((b) => resolve(b!), 'image/png');
-    });
-
-    if (transformedObjectUrl) URL.revokeObjectURL(transformedObjectUrl);
-    transformedObjectUrl = URL.createObjectURL(blob);
-    transformedSrc = transformedObjectUrl;
-    return transformedObjectUrl;
   }
 
   // ─── Internal State ───
@@ -342,13 +352,11 @@ export function createImageProcessingStore() {
       let outW = 0;
       let outH = 0;
 
-      // Reuse canvas and image elements across frames to reduce GC pressure
-      const reusableImg = new Image();
-      let reusableCanvas: HTMLCanvasElement | null = null;
-      let reusableCtx: CanvasRenderingContext2D | null = null;
-
-      for (let i = 0; i < gifInfo.frames.length; i++) {
-        gifProcessingProgress = i / gifInfo.frames.length;
+      const totalFrames = gifInfo.frames.length;
+      for (let i = 0; i < totalFrames; i++) {
+        // Guard against gifInfo becoming null mid-export (e.g. user loads new image)
+        if (!gifInfo) break;
+        gifProcessingProgress = (i / totalFrames) * 0.9;
         const frame = gifInfo.frames[i];
 
         // Create blob URL from raw frame
@@ -358,31 +366,20 @@ export function createImageProcessingStore() {
           const resultUrl = await processorService.processImage(blobUrl, settings, handleDimensionCapped);
           if (!resultUrl) continue;
 
-          // Read the processed result back as ImageData (reuse Image element)
-          await new Promise<void>((resolve, reject) => {
-            reusableImg.onload = () => resolve();
-            reusableImg.onerror = () => reject(new Error('Failed to load processed frame'));
-            reusableImg.src = resultUrl;
-          });
-
-          // Track output dimensions from first frame
-          if (i === 0) {
-            outW = reusableImg.width;
-            outH = reusableImg.height;
-            reusableCanvas = document.createElement('canvas');
-            reusableCanvas.width = outW;
-            reusableCanvas.height = outH;
-            reusableCtx = reusableCanvas.getContext('2d')!;
+          // Get ImageData directly from cached canvas (avoids blob→Image→Canvas roundtrip)
+          const lastCanvas = processorService.getLastCanvas();
+          if (lastCanvas) {
+            if (i === 0) {
+              outW = lastCanvas.width;
+              outH = lastCanvas.height;
+            }
+            const ctx = lastCanvas.getContext('2d')!;
+            const imageData = ctx.getImageData(0, 0, lastCanvas.width, lastCanvas.height);
+            processedFrames.push({
+              data: imageData.data,
+              delay: frame.delay,
+            });
           }
-
-          reusableCtx!.clearRect(0, 0, outW, outH);
-          reusableCtx!.drawImage(reusableImg, 0, 0, outW, outH);
-          const imageData = reusableCtx!.getImageData(0, 0, outW, outH);
-
-          processedFrames.push({
-            data: imageData.data,
-            delay: frame.delay,
-          });
 
           URL.revokeObjectURL(resultUrl);
         } finally {
@@ -392,7 +389,7 @@ export function createImageProcessingStore() {
 
       if (processedFrames.length === 0 || outW === 0) return null;
 
-      gifProcessingProgress = 0.95; // Encoding phase
+      gifProcessingProgress = 0.92; // Encoding phase
 
       // Encode GIF in a Web Worker to prevent UI blocking
       const gifBytes = await encodeGifInWorker(processedFrames, outW, outH);

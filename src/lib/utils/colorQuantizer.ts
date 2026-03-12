@@ -93,6 +93,16 @@ function lutLookupRgb(rgbLut: Uint8Array, r: number, g: number, b: number): [num
   return [rgbLut[off], rgbLut[off + 1], rgbLut[off + 2]];
 }
 
+/** Clear cached LUTs for palettes not currently in use (called from Worker) */
+export function clearPaletteCachesExcept(activePalette: string) {
+  for (const cache of [lutCache, lutRgbCache]) {
+    const toDelete = [...cache.keys()].filter(k => k !== activePalette);
+    for (const key of toDelete) {
+      cache.delete(key);
+    }
+  }
+}
+
 // ─── Bayer 8×8 Ordered Dithering Matrix ───
 const BAYER_8X8 = [
    0, 48, 12, 60,  3, 51, 15, 63,
@@ -104,16 +114,6 @@ const BAYER_8X8 = [
   10, 58,  6, 54,  9, 57,  5, 53,
   42, 26, 38, 22, 41, 25, 37, 21,
 ];
-
-/** Clear caches for palettes not currently in use */
-export function clearPaletteCachesExcept(activePalette: string) {
-  for (const cache of [lutCache, lutRgbCache]) {
-    const toDelete = [...cache.keys()].filter(k => k !== activePalette);
-    for (const key of toDelete) {
-      cache.delete(key);
-    }
-  }
-}
 
 export function applyPixelationAndPalette(
   imageData: ImageData,

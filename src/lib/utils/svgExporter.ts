@@ -26,10 +26,22 @@ export function imageDataToSvg(
 
   const rects: string[] = [];
 
+  // Detect background color from edge pixels (most frequent color on borders)
+  let bgHex = '#000000';
   if (includeBackground) {
-    // Detect if there's a dominant background color (top-left pixel)
-    const bgR = data[0], bgG = data[1], bgB = data[2];
-    const bgHex = rgbToHex(bgR, bgG, bgB);
+    const edgeColors = new Map<string, number>();
+    const sampleEdge = (x: number, y: number) => {
+      const off = (y * width + x) * 4;
+      if (data[off + 3] < 128) return; // skip transparent
+      const hex = rgbToHex(data[off], data[off + 1], data[off + 2]);
+      edgeColors.set(hex, (edgeColors.get(hex) || 0) + 1);
+    };
+    for (let x = 0; x < width; x++) { sampleEdge(x, 0); sampleEdge(x, height - 1); }
+    for (let y = 1; y < height - 1; y++) { sampleEdge(0, y); sampleEdge(width - 1, y); }
+    let maxCount = 0;
+    for (const [hex, count] of edgeColors) {
+      if (count > maxCount) { maxCount = count; bgHex = hex; }
+    }
     rects.push(`<rect width="${svgW}" height="${svgH}" fill="${bgHex}"/>`);
   }
 
@@ -52,9 +64,9 @@ export function imageDataToSvg(
 
       // Emit the completed run
       if (runA > 0) {
-        // Skip if this is the background color and includeBackground is on
-        if (!(includeBackground && runStart === 0 && y === 0 && x === width)) {
-          const hex = rgbToHex(runR, runG, runB);
+        // Skip runs that match the background color (already covered by bg rect)
+        const hex = rgbToHex(runR, runG, runB);
+        if (!(includeBackground && hex === bgHex)) {
           const rx = runStart * cellSize;
           const ry = y * cellSize;
           const rw = (x - runStart) * cellSize;

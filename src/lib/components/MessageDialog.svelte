@@ -39,9 +39,14 @@
     }
   }
 
-  // Auto-focus OK button on mount
+  // Auto-focus OK button on mount, restore focus on unmount
+  let previousFocus: HTMLElement | null = null;
   onMount(() => {
+    previousFocus = document.activeElement as HTMLElement | null;
     okBtn?.focus();
+    return () => {
+      previousFocus?.focus?.();
+    };
   });
 </script>
 

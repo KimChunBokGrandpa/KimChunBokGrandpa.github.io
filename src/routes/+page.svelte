@@ -176,7 +176,7 @@
         gifInfo.width,
         gifInfo.height,
       );
-      downloadSpritesheet(canvas, `spritesheet-${Date.now()}.png`);
+      await downloadSpritesheet(canvas, `spritesheet-${Date.now()}.png`);
       // Cleanup blob URLs
       frameSrcs.forEach(URL.revokeObjectURL);
       toastMessage = i18n.t('spritesheet_exported');
@@ -386,7 +386,9 @@
         }}
         onRotate={(deg) => ip.rotate(deg)}
         onResetTransform={() => ip.resetTransform()}
+        onCrop={(rect) => ip.setCrop(rect)}
         currentRotation={ip.rotation}
+        hasCrop={ip.cropRect !== null}
       />
     </Win98Window>
   {/if}

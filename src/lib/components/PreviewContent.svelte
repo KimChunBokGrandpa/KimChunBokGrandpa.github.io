@@ -3,6 +3,7 @@
   import BeforeAfterSlider from './BeforeAfterSlider.svelte';
   import CrtDisplay from './CrtDisplay.svelte';
   import GifControls from './GifControls.svelte';
+  import CropOverlay from './CropOverlay.svelte';
   import { getPaletteName } from '../utils/palettes';
   import { i18n } from '$lib/i18n/index.svelte';
   import type { createZoomPan } from '../stores/zoomPanStore.svelte';
@@ -40,7 +41,9 @@
     // Transform
     onRotate,
     onResetTransform,
+    onCrop,
     currentRotation = 0,
+    hasCrop = false,
   }: {
     zp: ReturnType<typeof createZoomPan>;
     originalImageSrc: string | null;
@@ -72,16 +75,24 @@
     // Transform
     onRotate?: (degrees: 90 | -90 | 180) => void;
     onResetTransform?: () => void;
+    onCrop?: (rect: { x: number; y: number; w: number; h: number } | null) => void;
     currentRotation?: number;
+    hasCrop?: boolean;
   } = $props();
 
   let displayedWidth = $derived(zp.previewImg?.naturalWidth ?? 0);
   let displayedHeight = $derived(zp.previewImg?.naturalHeight ?? 0);
 
+  // ─── Crop Mode ───
+  let cropModeActive = $state(false);
+
   // ─── Eyedropper ───
   let eyedropperActive = $state(false);
   let pickedColor = $state<{ r: number; g: number; b: number; hex: string } | null>(null);
   let pickedColorPos = $state<{ x: number; y: number }>({ x: 0, y: 0 });
+  let eyedropperCanvas: HTMLCanvasElement | null = null;
+  let eyedropperCtx: CanvasRenderingContext2D | null = null;
+  let eyedropperCachedSrc: string | null = null;
 
   function handlePreviewClick(e: MouseEvent) {
     if (!eyedropperActive || !zp.previewImg || !processedImageSrc) return;
@@ -102,13 +113,16 @@
 
     if (imgX < 0 || imgY < 0 || imgX >= img.naturalWidth || imgY >= img.naturalHeight) return;
 
-    // Read pixel from a canvas
-    const canvas = document.createElement('canvas');
-    canvas.width = img.naturalWidth;
-    canvas.height = img.naturalHeight;
-    const ctx = canvas.getContext('2d')!;
-    ctx.drawImage(img, 0, 0);
-    const pixel = ctx.getImageData(imgX, imgY, 1, 1).data;
+    // Read pixel from a cached canvas (reuse across clicks for same image)
+    if (!eyedropperCanvas || eyedropperCachedSrc !== processedImageSrc) {
+      eyedropperCanvas = document.createElement('canvas');
+      eyedropperCanvas.width = img.naturalWidth;
+      eyedropperCanvas.height = img.naturalHeight;
+      eyedropperCtx = eyedropperCanvas.getContext('2d')!;
+      eyedropperCtx.drawImage(img, 0, 0);
+      eyedropperCachedSrc = processedImageSrc;
+    }
+    const pixel = eyedropperCtx!.getImageData(imgX, imgY, 1, 1).data;
 
     const r = pixel[0],
       g = pixel[1],
@@ -273,6 +287,15 @@
     {#if gridVisible && gridStyle}
       <div class="pixel-grid-overlay" style={gridStyle}></div>
     {/if}
+    <!-- Crop Overlay -->
+    {#if cropModeActive && processedImageSrc && !compareMode && !tileMode}
+      <CropOverlay
+        imageEl={zp.previewImg ?? null}
+        containerEl={zp.previewContainer ?? null}
+        onApply={(rect) => { onCrop?.(rect); cropModeActive = false; }}
+        onCancel={() => { cropModeActive = false; }}
+      />
+    {/if}
     {#if isProcessing}
       <div class="processing-overlay">
         <div class="processing-indicator">
@@ -301,10 +324,21 @@
       <button class="zoom-btn" onclick={() => onRotate?.(90)} title={i18n.t('rotate_right')}
         >↻</button
       >
-      {#if currentRotation !== 0}
+      <button
+        class="zoom-btn"
+        class:grid-active={cropModeActive}
+        onclick={() => {
+          cropModeActive = !cropModeActive;
+          if (cropModeActive) { eyedropperActive = false; pickedColor = null; }
+        }}
+        title={cropModeActive ? i18n.t('crop_active') : i18n.t('crop')}
+        aria-label={cropModeActive ? i18n.t('crop_active') : i18n.t('crop')}
+        aria-pressed={cropModeActive}>✂</button
+      >
+      {#if currentRotation !== 0 || hasCrop}
         <button
           class="zoom-btn"
-          onclick={() => onResetTransform?.()}
+          onclick={() => { onResetTransform?.(); cropModeActive = false; }}
           title={i18n.t('reset_transform')}>⟲</button
         >
       {/if}
@@ -361,7 +395,9 @@
           onclick={() => {
             zp.showGrid = !zp.showGrid;
           }}
-          title={zp.showGrid ? i18n.t('hide_pixel_grid') : i18n.t('show_pixel_grid')}>#</button
+          title={zp.showGrid ? i18n.t('hide_pixel_grid') : i18n.t('show_pixel_grid')}
+          aria-label={zp.showGrid ? i18n.t('hide_pixel_grid') : i18n.t('show_pixel_grid')}
+          aria-pressed={zp.showGrid}>#</button
         >
         <button
           class="zoom-btn"
@@ -369,7 +405,9 @@
           onclick={() => {
             tileMode = !tileMode;
           }}
-          title={tileMode ? i18n.t('exit_tile') : i18n.t('tile_preview')}>⊞</button
+          title={tileMode ? i18n.t('exit_tile') : i18n.t('tile_preview')}
+          aria-label={tileMode ? i18n.t('exit_tile') : i18n.t('tile_preview')}
+          aria-pressed={tileMode}>⊞</button
         >
         <button
           class="zoom-btn"
@@ -378,7 +416,9 @@
             eyedropperActive = !eyedropperActive;
             pickedColor = null;
           }}
-          title={eyedropperActive ? i18n.t('exit_eyedropper') : i18n.t('eyedropper')}>💧</button
+          title={eyedropperActive ? i18n.t('exit_eyedropper') : i18n.t('eyedropper')}
+          aria-label={eyedropperActive ? i18n.t('exit_eyedropper') : i18n.t('eyedropper')}
+          aria-pressed={eyedropperActive}>💧</button
         >
       {/if}
     </div>

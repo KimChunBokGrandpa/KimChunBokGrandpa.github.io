@@ -92,6 +92,8 @@ class ImageProcessorService {
         }
 
         this.pendingResolvers.delete(id);
+        // Reset error count on successful response
+        this.workerErrorCount = 0;
 
         if (error) {
           pending.reject(new Error(error));

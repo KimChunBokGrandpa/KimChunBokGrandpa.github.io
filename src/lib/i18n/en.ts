@@ -216,7 +216,12 @@ export const en = {
   // ─── Transform ───
   rotate_left: 'Rotate Left 90\u00b0',
   rotate_right: 'Rotate Right 90\u00b0',
-  reset_transform: 'Reset Rotation',
+  reset_transform: 'Reset Transform',
+  crop: 'Crop',
+  crop_active: 'Exit Crop',
+  crop_apply: 'Apply Crop',
+  crop_cancel: 'Cancel Crop',
+  crop_drag_hint: 'Drag to select crop area',
 
   // ─── Palette Editor Extras ───
   generate_gradient: 'Generate Gradient',
