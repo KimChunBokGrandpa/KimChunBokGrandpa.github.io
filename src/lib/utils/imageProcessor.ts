@@ -176,7 +176,8 @@ class ImageProcessorService {
     const img = await this.loadImage(imageSrc);
     if (this.currentRequestId !== requestId) return null;
     const c = this.getOrCreateCanvas('early', img.width, img.height);
-    const ctx = c.getContext("2d")!;
+    const ctx = c.getContext("2d");
+    if (!ctx) throw new Error("Failed to get 2d context");
     ctx.drawImage(img, 0, 0);
     this.lastCanvas = c;
     return new Promise<string>((resolve, reject) => {
@@ -249,7 +250,11 @@ class ImageProcessorService {
     return new Promise<string | null>((resolve, reject) => {
       // Create canvas for the final export
       const canvas = this.getOrCreateCanvas('worker', procWidth, procHeight);
-      const ctx = canvas.getContext("2d")!;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) {
+        reject(new Error("Failed to get 2d context"));
+        return;
+      }
       this.pendingResolvers.set(requestId, { resolve, reject, canvas, ctx, onProgress });
 
       const message: ImageWorkerMessage = {

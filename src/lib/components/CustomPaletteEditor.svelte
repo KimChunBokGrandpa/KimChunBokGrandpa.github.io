@@ -22,6 +22,18 @@
   let hexInput = $state('#000000');
   let editingIndex = $state<number | null>(null);
 
+  // Track unsaved changes
+  let isDirty = $derived(
+    name !== initialName ||
+    colors.length !== initialColors.length ||
+    colors.some((c, i) => !initialColors[i] || c.r !== initialColors[i].r || c.g !== initialColors[i].g || c.b !== initialColors[i].b)
+  );
+
+  function handleCancel() {
+    if (isDirty && !confirm(i18n.t('unsaved_changes_confirm'))) return;
+    onCancel();
+  }
+
   function addColor() {
     const rgb = hexToRgb(hexInput);
     if (!rgb) return;
@@ -207,7 +219,7 @@
   </fieldset>
 
   <div class="cpe-actions">
-    <button onclick={onCancel}>{i18n.t('cancel')}</button>
+    <button onclick={handleCancel}>{i18n.t('cancel')}</button>
     <button onclick={handleSave} disabled={!canSave}>
       {i18n.t('save_palette')}
     </button>

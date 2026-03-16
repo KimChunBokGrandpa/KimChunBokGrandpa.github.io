@@ -10,7 +10,7 @@ const meta = {
     variant: { control: 'select', options: ['success', 'error', 'warning'] },
     duration: { control: 'number' },
   },
-} satisfies Meta<ToastNotification>;
+} satisfies Meta;
 
 export default meta;
 type Story = StoryObj<typeof meta>;

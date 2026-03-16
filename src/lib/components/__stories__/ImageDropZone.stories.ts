@@ -5,7 +5,7 @@ const meta = {
   title: 'Components/ImageDropZone',
   component: ImageDropZone,
   tags: ['autodocs'],
-} satisfies Meta<ImageDropZone>;
+} satisfies Meta;
 
 export default meta;
 type Story = StoryObj<typeof meta>;

@@ -41,6 +41,7 @@ export function addCustomPreset(name: string, settings: ProcessingSettings): Cus
     settings: {
       ...settings,
       glitchFilters: settings.glitchFilters.map(f => ({ ...f })),
+      effectLayers: settings.effectLayers?.map(l => ({ ...l })) || [],
     },
     createdAt: Date.now(),
   };

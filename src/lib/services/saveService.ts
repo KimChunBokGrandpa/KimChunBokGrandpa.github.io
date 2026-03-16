@@ -26,6 +26,9 @@ const EXT_MAP: Record<SaveFormat, string> = {
   webp: "webp",
 };
 
+/** Timeout for image loading in imageSrcToBlob to prevent indefinite hangs */
+const IMAGE_LOAD_TIMEOUT_MS = 30_000;
+
 /**
  * Load an image src into a canvas and export as Blob.
  * This avoids blob: URL fetch issues in Tauri.
@@ -38,15 +41,28 @@ async function imageSrcToBlob(
   const img = new Image();
   img.crossOrigin = "anonymous";
   return new Promise<HTMLCanvasElement>((resolve, reject) => {
+    const timer = setTimeout(() => {
+      img.src = "";
+      reject(new Error("Image load timed out"));
+    }, IMAGE_LOAD_TIMEOUT_MS);
+
     img.onload = () => {
+      clearTimeout(timer);
       const c = document.createElement("canvas");
       c.width = img.naturalWidth;
       c.height = img.naturalHeight;
-      const ctx = c.getContext("2d")!;
+      const ctx = c.getContext("2d");
+      if (!ctx) {
+        reject(new Error("Failed to get 2d context"));
+        return;
+      }
       ctx.drawImage(img, 0, 0);
       resolve(c);
     };
-    img.onerror = () => reject(new Error("Failed to load image for save"));
+    img.onerror = () => {
+      clearTimeout(timer);
+      reject(new Error("Failed to load image for save"));
+    };
     img.src = src;
   }).then((canvas) => canvasToBlob(canvas, format, quality));
 }
@@ -90,7 +106,8 @@ export async function saveImage(
     const filtered = document.createElement("canvas");
     filtered.width = sourceCanvas.width;
     filtered.height = sourceCanvas.height;
-    const fctx = filtered.getContext("2d")!;
+    const fctx = filtered.getContext("2d");
+    if (!fctx) throw new Error("Failed to get 2d context for filtered canvas");
     fctx.filter = cssFilter;
     fctx.drawImage(sourceCanvas, 0, 0);
     blobData = await canvasToBlob(filtered, options.format, options.quality);
@@ -110,10 +127,14 @@ export async function saveImage(
       defaultPath: filename,
     });
     if (filePath) {
-      const arrayBuffer = await blobData.arrayBuffer();
-      const bytes = new Uint8Array(arrayBuffer);
-      await writeFile(filePath, bytes);
-      return i18n.t('file_saved');
+      try {
+        const arrayBuffer = await blobData.arrayBuffer();
+        const bytes = new Uint8Array(arrayBuffer);
+        await writeFile(filePath, bytes);
+        return i18n.t('file_saved');
+      } catch (err) {
+        throw new Error(`Failed to write file: ${err instanceof Error ? err.message : String(err)}`);
+      }
     }
     return ""; // User cancelled
   } else {

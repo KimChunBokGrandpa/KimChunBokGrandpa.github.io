@@ -8,6 +8,17 @@
 
   let isDragging = $state(false);
 
+  // Onboarding: show quick start guide for first-time users
+  const ONBOARDING_KEY = 'retropixel_onboarding_dismissed';
+  let onboardingDismissed = $state(
+    typeof localStorage !== 'undefined' && localStorage.getItem(ONBOARDING_KEY) === '1'
+  );
+
+  function dismissOnboarding() {
+    onboardingDismissed = true;
+    localStorage.setItem(ONBOARDING_KEY, '1');
+  }
+
   const ACCEPTED_TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/bmp', 'image/webp'];
 
   function handleDragEnter(e: DragEvent) {
@@ -49,7 +60,7 @@
 
   function handlePaste(e: ClipboardEvent) {
     const items = e.clipboardData?.items;
-    if (!items) return;
+    if (!items || items.length === 0) return;
     for (const item of items) {
       if (item.type.startsWith('image/')) {
         const file = item.getAsFile();
@@ -59,6 +70,8 @@
         }
       }
     }
+    // Clipboard had items but none were images
+    onError?.(i18n.t('not_an_image'));
   }
 </script>
 
@@ -91,6 +104,40 @@
       <p class="drop-hint">{i18n.t('paste_hint')}</p>
       <p class="drop-formats">{i18n.t('supported_formats')}</p>
     </div>
+    <!-- Onboarding Quick Start -->
+    {#if !onboardingDismissed}
+      <div class="onboarding-guide">
+        <div class="onboarding-header">
+          <span class="onboarding-title">💡 {i18n.t('onboarding_title')}</span>
+          <button class="onboarding-dismiss" onclick={dismissOnboarding} title={i18n.t('onboarding_dont_show')}>✕</button>
+        </div>
+        <div class="onboarding-steps">
+          <div class="onboarding-step">
+            <span class="step-icon">📐</span>
+            <div class="step-text">
+              <span class="step-title">{i18n.t('onboarding_step1_title')}</span>
+              <span class="step-desc">{i18n.t('onboarding_step1_desc')}</span>
+            </div>
+          </div>
+          <div class="onboarding-arrow">→</div>
+          <div class="onboarding-step">
+            <span class="step-icon">🎨</span>
+            <div class="step-text">
+              <span class="step-title">{i18n.t('onboarding_step2_title')}</span>
+              <span class="step-desc">{i18n.t('onboarding_step2_desc')}</span>
+            </div>
+          </div>
+          <div class="onboarding-arrow">→</div>
+          <div class="onboarding-step">
+            <span class="step-icon">💾</span>
+            <div class="step-text">
+              <span class="step-title">{i18n.t('onboarding_step3_title')}</span>
+              <span class="step-desc">{i18n.t('onboarding_step3_desc')}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    {/if}
   </div>
 </div>
 
@@ -178,6 +225,82 @@
   @keyframes bounce {
     from { transform: scale(1.2) translateY(0); }
     to { transform: scale(1.2) translateY(-6px); }
+  }
+
+  /* ===== Onboarding Guide ===== */
+  .onboarding-guide {
+    margin-top: 12px;
+    padding: 8px 12px;
+    background: #f0f0e8;
+    border: 1px solid #c0c0c0;
+    border-radius: 0;
+    max-width: 340px;
+    width: 90%;
+    box-shadow: inset 1px 1px #fff;
+  }
+  .onboarding-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  .onboarding-title {
+    font-size: 11px;
+    font-weight: bold;
+    color: #000080;
+  }
+  .onboarding-dismiss {
+    font-size: 10px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #808080;
+    padding: 0 2px;
+    line-height: 1;
+  }
+  .onboarding-dismiss:hover {
+    color: #c00;
+  }
+  .onboarding-steps {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    justify-content: center;
+  }
+  .onboarding-step {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex: 1;
+    min-width: 0;
+  }
+  .step-icon {
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+  .step-text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+  .step-title {
+    font-size: 9px;
+    font-weight: bold;
+    color: #333;
+    white-space: nowrap;
+  }
+  .step-desc {
+    font-size: 8px;
+    color: #808080;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .onboarding-arrow {
+    font-size: 12px;
+    color: #000080;
+    font-weight: bold;
+    flex-shrink: 0;
   }
 
   /* Mobile: larger browse button, hide drag hint */

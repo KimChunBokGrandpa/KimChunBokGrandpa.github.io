@@ -58,14 +58,27 @@ onmessage = (e: MessageEvent<ImageWorkerMessage>) => {
 
     postMessage({ id, type: 'progress', progress: 0.4 } as ImageWorkerResponse);
 
+    // Effect weight map: heavier effects get proportionally more progress
+    const EFFECT_WEIGHTS: Record<string, number> = {
+      noise: 1,
+      rgb_split: 1,
+      wave: 2,
+      slice: 3,
+      hqx: 4,
+    };
+
     // Use effectLayers if present, otherwise fall back to legacy fields
     const hasEffectLayers = effectLayers && effectLayers.length > 0;
 
     if (hasEffectLayers) {
       const enabledLayers = effectLayers.filter((l: EffectLayer) => l.enabled);
-      const totalLayers = enabledLayers.length;
-      for (let i = 0; i < totalLayers; i++) {
-        const layer = enabledLayers[i];
+      const totalWeight = enabledLayers.reduce((sum, l) => {
+        const key = l.type === 'glitch' ? (l.glitchType || 'noise') : l.type;
+        return sum + (EFFECT_WEIGHTS[key] || 1);
+      }, 0);
+      let completedWeight = 0;
+
+      for (const layer of enabledLayers) {
         if (layer.type === 'glitch' && layer.glitchType && layer.glitchType !== 'none') {
           processedData = applyGlitch(
             processedData,
@@ -76,7 +89,9 @@ onmessage = (e: MessageEvent<ImageWorkerMessage>) => {
         } else if (layer.type === 'hqx') {
           processedData = applyScaling(processedData, 'hqx');
         }
-        postMessage({ id, type: 'progress', progress: 0.4 + 0.5 * ((i + 1) / totalLayers) } as ImageWorkerResponse);
+        const key = layer.type === 'glitch' ? (layer.glitchType || 'noise') : layer.type;
+        completedWeight += EFFECT_WEIGHTS[key] || 1;
+        postMessage({ id, type: 'progress', progress: 0.4 + 0.5 * (completedWeight / totalWeight) } as ImageWorkerResponse);
       }
     } else {
       // Legacy path: glitchFilters then hqx

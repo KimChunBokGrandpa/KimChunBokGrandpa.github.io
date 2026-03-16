@@ -232,6 +232,29 @@ export const ko: Record<TranslationKey, string> = {
   preset_dither_fs: '\ub514\ub354 FS',
   preset_original: '\uc6d0\ubcf8',
 
+  section_effects_styling: '효과 및 스타일링',
+  section_fine_tuning: '미세 조정',
+  section_presets: '프리셋',
+
+  tab_basic: '기본',
+  tab_effects: '효과',
+  tab_adjust: '조정',
+  tab_presets: '프리셋',
+
+  onboarding_title: '빠른 시작',
+  onboarding_step1_title: '1. 픽셀 크기',
+  onboarding_step1_desc: '픽셀화 수준을 조절하세요',
+  onboarding_step2_title: '2. 팔레트',
+  onboarding_step2_desc: '색상 팔레트를 선택하세요',
+  onboarding_step3_title: '3. 저장',
+  onboarding_step3_desc: '픽셀 아트를 내보내세요',
+  onboarding_got_it: '알겠습니다!',
+  onboarding_dont_show: '다시 표시하지 않기',
+
+  toolbar_transform: '변환',
+  toolbar_view: '보기',
+  toolbar_zoom: '줌',
+
   effect_stack: '이펙트 스택',
   effect_stack_hint: '드래그하여 순서 변경',
   add_effect: '이펙트 추가',
@@ -355,4 +378,10 @@ export const ko: Record<TranslationKey, string> = {
   palette_pastel256: '\ud30c\uc2a4\ud154 \ub4dc\ub9bc (256)',
   palette_sunset256: '\uc120\uc14b (256)',
   palette_vintage256: '\ube48\ud2f0\uc9c0 \ud544\ub984 (256)',
+
+  // ─── UI Feedback ───
+  loading: '로딩 중...',
+  preset_import_error: '프리셋 파일을 불러오는데 실패했습니다.',
+  not_an_image: '클립보드에 이미지가 없습니다.',
+  unsaved_changes_confirm: '저장하지 않은 변경사항이 있습니다. 취소하시겠습니까?',
 };

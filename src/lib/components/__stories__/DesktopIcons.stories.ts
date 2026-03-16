@@ -11,7 +11,7 @@ const meta = {
       options: [null, 'preview', 'settings', 'gallery', 'batch', 'history'],
     },
   },
-} satisfies Meta<DesktopIcons>;
+} satisfies Meta;
 
 export default meta;
 type Story = StoryObj<typeof meta>;

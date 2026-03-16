@@ -142,6 +142,25 @@
     pickedColor = null;
   }
 
+  // Keyboard handler for preview area accessibility
+  function handlePreviewKeydown(e: KeyboardEvent) {
+    if (e.key === 'Escape') {
+      if (eyedropperActive) { eyedropperActive = false; pickedColor = null; }
+      if (cropModeActive) { cropModeActive = false; }
+      return;
+    }
+    if (e.key === 'e' || e.key === 'E') {
+      eyedropperActive = !eyedropperActive;
+      pickedColor = null;
+    }
+    if (e.key === 'g' || e.key === 'G') {
+      zp.showGrid = !zp.showGrid;
+    }
+    if (e.key === '+' || e.key === '=') { zp.zoomIn(); }
+    if (e.key === '-') { zp.zoomOut(); }
+    if (e.key === '0') { zp.zoomToFit(); }
+  }
+
   // ─── Compare Mode Variants ───
   type CompareVariant = 'slider' | 'side-by-side' | 'onion';
   const COMPARE_VARIANTS: CompareVariant[] = ['slider', 'side-by-side', 'onion'];
@@ -199,13 +218,14 @@
 </script>
 
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-<!-- svelte-ignore a11y_click_events_have_key_events -->
+<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 <div
   class="preview-body"
   class:panning={zp.isPanning}
   class:eyedropper={eyedropperActive}
   bind:this={zp.previewContainer}
   onclick={handlePreviewClick}
+  onkeydown={handlePreviewKeydown}
   onwheel={zp.handleWheel}
   onmousedown={zp.handleMouseDown}
   onmousemove={zp.handleMouseMove}
@@ -214,7 +234,8 @@
   ontouchstart={zp.handleTouchStart}
   ontouchmove={zp.handleTouchMove}
   ontouchend={zp.handleTouchEnd}
-  role="img"
+  role="application"
+  tabindex="0"
   aria-label={i18n.t('image_preview')}
 >
   {#if !originalImageSrc}
@@ -307,119 +328,116 @@
         </div>
       </div>
     {/if}
-    <!-- Zoom Controls -->
-    <div class="zoom-controls">
-      <button
-        class="zoom-btn"
-        onclick={(e) => {
-          e.stopPropagation();
-          onOpenSettings();
-        }}
-        title={i18n.t('open_settings')}>⚙️</button
-      >
-      <div class="zoom-sep"></div>
-      <button class="zoom-btn" onclick={() => onRotate?.(-90)} title={i18n.t('rotate_left')}
-        >↺</button
-      >
-      <button class="zoom-btn" onclick={() => onRotate?.(90)} title={i18n.t('rotate_right')}
-        >↻</button
-      >
-      <button
-        class="zoom-btn"
-        class:grid-active={cropModeActive}
-        onclick={() => {
-          cropModeActive = !cropModeActive;
-          if (cropModeActive) { eyedropperActive = false; pickedColor = null; }
-        }}
-        title={cropModeActive ? i18n.t('crop_active') : i18n.t('crop')}
-        aria-label={cropModeActive ? i18n.t('crop_active') : i18n.t('crop')}
-        aria-pressed={cropModeActive}>✂</button
-      >
-      {#if currentRotation !== 0 || hasCrop}
-        <button
-          class="zoom-btn"
-          onclick={() => { onResetTransform?.(); cropModeActive = false; }}
-          title={i18n.t('reset_transform')}>⟲</button
-        >
-      {/if}
-      <div class="zoom-sep"></div>
-      <button
-        class="zoom-btn"
-        class:compare-active={compareMode}
-        onclick={() => {
-          compareMode = !compareMode;
-        }}
-        title={compareMode ? i18n.t('exit_compare') : i18n.t('compare_before_after')}
-        >{compareMode ? '🔀' : '⚖️'}</button
-      >
-      {#if compareMode}
-        <button
-          class="zoom-btn compare-variant-btn"
-          onclick={cycleCompareVariant}
-          title="{i18n.t('compare_mode_cycle')}: {i18n.t(COMPARE_VARIANT_LABELS[compareVariant])}"
-        >{compareVariant === 'slider' ? '↔' : compareVariant === 'side-by-side' ? '⬜⬜' : '🧅'}</button>
-      {/if}
-      <div class="zoom-sep"></div>
-      {#if !compareMode}
-        {#if displayedWidth > 0 && displayedHeight > 0}
-          <div class="zoom-info" title={i18n.t('image_resolution')}>
-            {displayedWidth}×{displayedHeight}
-          </div>
-          {#if colorCount > 0}
-            <div class="zoom-info color-count" title={i18n.t('unique_colors')}>{colorCount}c</div>
-          {/if}
-          <div class="zoom-sep"></div>
-        {/if}
-        <button class="zoom-btn" onclick={zp.zoomIn} title={i18n.t('zoom_in')}>+</button>
-        <div class="zoom-input-container">
-          <input
-            type="number"
-            class="zoom-input"
-            min="25"
-            max="800"
-            value={Math.round(zp.zoomLevel * 100)}
-            onchange={(e) => {
-              const val = parseInt(e.currentTarget.value);
-              if (!isNaN(val)) zp.setZoom(val / 100);
-            }}
-            title={i18n.t('set_zoom')}
-          />
-          <span class="zoom-percent">%</span>
+    <!-- Toolbar: grouped and labeled for clarity -->
+    <div class="toolbar-container">
+      <!-- Row 1: Settings + Transform + Compare + Info -->
+      <div class="toolbar-row toolbar-top">
+        <div class="toolbar-group">
+          <button
+            class="zoom-btn"
+            onclick={(e) => { e.stopPropagation(); onOpenSettings(); }}
+            title={i18n.t('open_settings')}>⚙️</button>
         </div>
-        <button class="zoom-btn" onclick={zp.zoomOut} title={i18n.t('zoom_out')}>−</button>
-        <button class="zoom-btn" onclick={zp.zoomToFit} title={i18n.t('fit_to_window')}>⊡</button>
-        <div class="zoom-sep"></div>
-        <button
-          class="zoom-btn"
-          class:grid-active={zp.showGrid}
-          onclick={() => {
-            zp.showGrid = !zp.showGrid;
-          }}
-          title={zp.showGrid ? i18n.t('hide_pixel_grid') : i18n.t('show_pixel_grid')}
-          aria-label={zp.showGrid ? i18n.t('hide_pixel_grid') : i18n.t('show_pixel_grid')}
-          aria-pressed={zp.showGrid}>#</button
-        >
-        <button
-          class="zoom-btn"
-          class:grid-active={tileMode}
-          onclick={() => {
-            tileMode = !tileMode;
-          }}
-          title={tileMode ? i18n.t('exit_tile') : i18n.t('tile_preview')}
-          aria-label={tileMode ? i18n.t('exit_tile') : i18n.t('tile_preview')}
-          aria-pressed={tileMode}>⊞</button
-        >
-        <button
-          class="zoom-btn"
-          class:grid-active={eyedropperActive}
-          onclick={() => {
-            eyedropperActive = !eyedropperActive;
-            pickedColor = null;
-          }}
-          title={eyedropperActive ? i18n.t('exit_eyedropper') : i18n.t('eyedropper')}
-          aria-label={eyedropperActive ? i18n.t('exit_eyedropper') : i18n.t('eyedropper')}
-          aria-pressed={eyedropperActive}>💧</button
-        >
+        <div class="toolbar-group" aria-label={i18n.t('toolbar_transform')}>
+          <span class="toolbar-group-label">{i18n.t('toolbar_transform')}</span>
+          <div class="toolbar-group-buttons">
+            <button class="zoom-btn" onclick={() => onRotate?.(-90)} title={i18n.t('rotate_left')}>↺</button>
+            <button class="zoom-btn" onclick={() => onRotate?.(90)} title={i18n.t('rotate_right')}>↻</button>
+            <button
+              class="zoom-btn"
+              class:grid-active={cropModeActive}
+              onclick={() => { cropModeActive = !cropModeActive; if (cropModeActive) { eyedropperActive = false; pickedColor = null; } }}
+              title={cropModeActive ? i18n.t('crop_active') : i18n.t('crop')}
+              aria-label={cropModeActive ? i18n.t('crop_active') : i18n.t('crop')}
+              aria-pressed={cropModeActive}>✂</button>
+            {#if currentRotation !== 0 || hasCrop}
+              <button
+                class="zoom-btn"
+                onclick={() => { onResetTransform?.(); cropModeActive = false; }}
+                title={i18n.t('reset_transform')}>⟲</button>
+            {/if}
+          </div>
+        </div>
+        <div class="toolbar-group">
+          <button
+            class="zoom-btn"
+            class:compare-active={compareMode}
+            onclick={() => { compareMode = !compareMode; }}
+            title={compareMode ? i18n.t('exit_compare') : i18n.t('compare_before_after')}
+          >{compareMode ? '🔀' : '⚖️'}</button>
+          {#if compareMode}
+            <button
+              class="zoom-btn compare-variant-btn"
+              onclick={cycleCompareVariant}
+              title="{i18n.t('compare_mode_cycle')}: {i18n.t(COMPARE_VARIANT_LABELS[compareVariant])}"
+            >{compareVariant === 'slider' ? '↔' : compareVariant === 'side-by-side' ? '⬜⬜' : '🧅'}</button>
+          {/if}
+        </div>
+        {#if !compareMode && displayedWidth > 0 && displayedHeight > 0}
+          <div class="toolbar-group toolbar-info">
+            <div class="zoom-info" title={i18n.t('image_resolution')}>{displayedWidth}×{displayedHeight}</div>
+            {#if colorCount > 0}
+              <div class="zoom-info color-count" title={i18n.t('unique_colors')}>{colorCount}c</div>
+            {/if}
+          </div>
+        {/if}
+      </div>
+      <!-- Row 2: Zoom + View tools (only in normal mode) -->
+      {#if !compareMode}
+        <div class="toolbar-row toolbar-bottom">
+          <div class="toolbar-group" aria-label={i18n.t('toolbar_zoom')}>
+            <span class="toolbar-group-label">{i18n.t('toolbar_zoom')}</span>
+            <div class="toolbar-group-buttons">
+              <button class="zoom-btn" onclick={zp.zoomIn} title={i18n.t('zoom_in')}>+</button>
+              <div class="zoom-input-container">
+                <input
+                  type="number"
+                  class="zoom-input"
+                  min="25"
+                  max="800"
+                  value={Math.round(zp.zoomLevel * 100)}
+                  onchange={(e) => {
+                    const val = parseInt(e.currentTarget.value);
+                    if (!isNaN(val)) {
+                      const clamped = Math.max(10, Math.min(800, val));
+                      zp.setZoom(clamped / 100);
+                    }
+                  }}
+                  title={i18n.t('set_zoom')}
+                />
+                <span class="zoom-percent">%</span>
+              </div>
+              <button class="zoom-btn" onclick={zp.zoomOut} title={i18n.t('zoom_out')}>−</button>
+              <button class="zoom-btn" onclick={zp.zoomToFit} title={i18n.t('fit_to_window')}>⊡</button>
+            </div>
+          </div>
+          <div class="toolbar-group" aria-label={i18n.t('toolbar_view')}>
+            <span class="toolbar-group-label">{i18n.t('toolbar_view')}</span>
+            <div class="toolbar-group-buttons">
+              <button
+                class="zoom-btn"
+                class:grid-active={zp.showGrid}
+                onclick={() => { zp.showGrid = !zp.showGrid; }}
+                title={zp.showGrid ? i18n.t('hide_pixel_grid') : i18n.t('show_pixel_grid')}
+                aria-label={zp.showGrid ? i18n.t('hide_pixel_grid') : i18n.t('show_pixel_grid')}
+                aria-pressed={zp.showGrid}>#</button>
+              <button
+                class="zoom-btn"
+                class:grid-active={tileMode}
+                onclick={() => { tileMode = !tileMode; }}
+                title={tileMode ? i18n.t('exit_tile') : i18n.t('tile_preview')}
+                aria-label={tileMode ? i18n.t('exit_tile') : i18n.t('tile_preview')}
+                aria-pressed={tileMode}>⊞</button>
+              <button
+                class="zoom-btn"
+                class:grid-active={eyedropperActive}
+                onclick={() => { eyedropperActive = !eyedropperActive; pickedColor = null; }}
+                title={eyedropperActive ? i18n.t('exit_eyedropper') : i18n.t('eyedropper')}
+                aria-label={eyedropperActive ? i18n.t('exit_eyedropper') : i18n.t('eyedropper')}
+                aria-pressed={eyedropperActive}>💧</button>
+            </div>
+          </div>
+        </div>
       {/if}
     </div>
     <!-- Picked Color Tooltip -->
@@ -487,6 +505,10 @@
   }
   .preview-body.eyedropper {
     cursor: crosshair;
+  }
+  .preview-body:focus-visible {
+    outline: 2px solid #000080;
+    outline-offset: -2px;
   }
 
   /* ===== Eyedropper Color Tooltip ===== */
@@ -574,6 +596,13 @@
   .initial-spinner {
     font-size: 24px;
     margin-bottom: 8px;
+    display: inline-block;
+    animation: spin-pulse 1.2s ease-in-out infinite;
+  }
+  @keyframes spin-pulse {
+    0% { transform: rotate(0deg) scale(1); }
+    50% { transform: rotate(180deg) scale(1.15); }
+    100% { transform: rotate(360deg) scale(1); }
   }
   .progress-wide {
     width: 200px;
@@ -635,14 +664,50 @@
     }
   }
 
-  /* ===== Zoom Controls ===== */
-  .zoom-controls {
+  /* ===== Toolbar Container ===== */
+  .toolbar-container {
     position: absolute;
     bottom: 6px;
     right: 6px;
     display: flex;
+    flex-direction: column;
     gap: 2px;
     z-index: 6;
+    align-items: flex-end;
+  }
+  .toolbar-row {
+    display: flex;
+    gap: 2px;
+    align-items: center;
+  }
+  .toolbar-group {
+    display: flex;
+    gap: 1px;
+    align-items: center;
+    background: rgba(192, 192, 192, 0.6);
+    border-radius: 2px;
+    padding: 1px;
+  }
+  .toolbar-group + .toolbar-group {
+    margin-left: 3px;
+  }
+  .toolbar-group-label {
+    font-size: 8px;
+    color: #fff;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 0 3px;
+    opacity: 0.7;
+    font-weight: bold;
+    white-space: nowrap;
+  }
+  .toolbar-group-buttons {
+    display: flex;
+    gap: 1px;
+    align-items: center;
+  }
+  .toolbar-info {
+    background: transparent;
   }
   .zoom-btn {
     min-width: 22px;
@@ -707,9 +772,6 @@
     font-family: inherit;
     color: #000;
     margin-left: 1px;
-  }
-  .zoom-sep {
-    width: 4px;
   }
   .compare-active,
   .grid-active {

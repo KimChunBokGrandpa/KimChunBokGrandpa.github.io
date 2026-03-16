@@ -63,10 +63,11 @@ describe('CrtDisplay', () => {
 });
 
 // Helper to create a simple snippet for Svelte 5
+// Cast to any because @testing-library/svelte renders it correctly at runtime
 function createSnippet(text: string) {
-  return (anchor: Node) => {
+  return ((anchor: Node) => {
     const node = document.createTextNode(text);
     anchor.parentNode?.insertBefore(node, anchor);
     return () => node.remove();
-  };
+  }) as any;
 }

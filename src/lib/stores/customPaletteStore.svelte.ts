@@ -24,7 +24,11 @@ function loadFromStorage(): CustomPalette[] {
 
 function saveToStorage(palettes: CustomPalette[]) {
   if (!browser) return;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(palettes));
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(palettes));
+  } catch (err) {
+    console.error('Failed to save custom palettes to localStorage:', err);
+  }
 }
 
 export function createCustomPaletteStore() {

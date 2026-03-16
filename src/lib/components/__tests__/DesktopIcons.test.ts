@@ -3,12 +3,13 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, cleanup } from '@testing-library/svelte';
 import { fireEvent } from '@testing-library/svelte';
 import DesktopIcons from '../DesktopIcons.svelte';
+import type { WindowId } from '$lib/types';
 
 afterEach(() => cleanup());
 
 describe('DesktopIcons', () => {
   const defaultProps = () => ({
-    selectedIcon: null as string | null,
+    selectedIcon: null as WindowId | null,
     onIconClick: vi.fn(),
     onIconDblClick: vi.fn(),
   });
@@ -42,7 +43,7 @@ describe('DesktopIcons', () => {
   });
 
   it('applies selected class to the selected icon', () => {
-    const props = { ...defaultProps(), selectedIcon: 'preview' };
+    const props = { ...defaultProps(), selectedIcon: 'preview' as WindowId };
     const { container } = render(DesktopIcons, { props });
     const selected = container.querySelector('.icon-selected');
     expect(selected).toBeTruthy();

@@ -93,12 +93,17 @@ function lutLookupRgb(rgbLut: Uint8Array, r: number, g: number, b: number): [num
   return [rgbLut[off], rgbLut[off + 1], rgbLut[off + 2]];
 }
 
+/** Maximum number of cached LUTs to keep (each ~130KB packed + ~98KB RGB) */
+const MAX_LUT_CACHE_SIZE = 3;
+
 /** Clear cached LUTs for palettes not currently in use (called from Worker) */
 export function clearPaletteCachesExcept(activePalette: string) {
   for (const cache of [lutCache, lutRgbCache]) {
-    const toDelete = [...cache.keys()].filter(k => k !== activePalette);
-    for (const key of toDelete) {
-      cache.delete(key);
+    if (cache.size > MAX_LUT_CACHE_SIZE) {
+      const toDelete = [...cache.keys()].filter(k => k !== activePalette);
+      for (const key of toDelete) {
+        cache.delete(key);
+      }
     }
   }
 }

@@ -232,6 +232,29 @@ export const ja: Record<TranslationKey, string> = {
   preset_dither_fs: '\u30c7\u30a3\u30b6FS',
   preset_original: '\u30aa\u30ea\u30b8\u30ca\u30eb',
 
+  section_effects_styling: 'エフェクト＆スタイリング',
+  section_fine_tuning: '微調整',
+  section_presets: 'プリセット',
+
+  tab_basic: '基本',
+  tab_effects: 'エフェクト',
+  tab_adjust: '調整',
+  tab_presets: 'プリセット',
+
+  onboarding_title: 'クイックスタート',
+  onboarding_step1_title: '1. ピクセルサイズ',
+  onboarding_step1_desc: 'ピクセル化レベルを調整',
+  onboarding_step2_title: '2. パレット',
+  onboarding_step2_desc: 'カラーパレットを選択',
+  onboarding_step3_title: '3. 保存',
+  onboarding_step3_desc: 'ピクセルアートをエクスポート',
+  onboarding_got_it: 'わかりました！',
+  onboarding_dont_show: '今後表示しない',
+
+  toolbar_transform: '変換',
+  toolbar_view: '表示',
+  toolbar_zoom: 'ズーム',
+
   effect_stack: 'エフェクトスタック',
   effect_stack_hint: 'ドラッグして並べ替え',
   add_effect: 'エフェクト追加',
@@ -355,4 +378,10 @@ export const ja: Record<TranslationKey, string> = {
   palette_pastel256: '\u30d1\u30b9\u30c6\u30eb\u30c9\u30ea\u30fc\u30e0 (256)',
   palette_sunset256: '\u30b5\u30f3\u30bb\u30c3\u30c8 (256)',
   palette_vintage256: '\u30f4\u30a3\u30f3\u30c6\u30fc\u30b8\u30d5\u30a3\u30eb\u30e0 (256)',
+
+  // ─── UI Feedback ───
+  loading: '読み込み中...',
+  preset_import_error: 'プリセットファイルの読み込みに失敗しました。',
+  not_an_image: 'クリップボードに画像がありません。',
+  unsaved_changes_confirm: '保存されていない変更があります。破棄しますか？',
 };

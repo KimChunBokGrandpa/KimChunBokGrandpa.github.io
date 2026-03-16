@@ -251,6 +251,33 @@ export const en = {
   preset_dither_fs: 'Dither FS',
   preset_original: 'Original',
 
+  // ─── Collapsible Sections ───
+  section_effects_styling: 'Effects & Styling',
+  section_fine_tuning: 'Fine Tuning',
+  section_presets: 'Presets',
+
+  // ─── Tab Labels ───
+  tab_basic: 'Basic',
+  tab_effects: 'Effects',
+  tab_adjust: 'Adjust',
+  tab_presets: 'Presets',
+
+  // ─── Onboarding ───
+  onboarding_title: 'Quick Start',
+  onboarding_step1_title: '1. Pixel Size',
+  onboarding_step1_desc: 'Adjust the pixelation level',
+  onboarding_step2_title: '2. Palette',
+  onboarding_step2_desc: 'Choose a color palette',
+  onboarding_step3_title: '3. Save',
+  onboarding_step3_desc: 'Export your pixel art',
+  onboarding_got_it: 'Got it!',
+  onboarding_dont_show: "Don't show again",
+
+  // ─── Preview Toolbar Groups ───
+  toolbar_transform: 'Transform',
+  toolbar_view: 'View',
+  toolbar_zoom: 'Zoom',
+
   // ─── Effect Layers ───
   effect_stack: 'Effect Stack',
   effect_stack_hint: 'Drag to reorder',
@@ -376,6 +403,12 @@ export const en = {
   palette_pastel256: 'Pastel Dream (256)',
   palette_sunset256: 'Sunset (256)',
   palette_vintage256: 'Vintage Film (256)',
+
+  // ─── UI Feedback ───
+  loading: 'Loading...',
+  preset_import_error: 'Failed to import preset file.',
+  not_an_image: 'Clipboard does not contain an image.',
+  unsaved_changes_confirm: 'You have unsaved changes. Discard them?',
 } as const;
 
 export type TranslationKey = keyof typeof en;

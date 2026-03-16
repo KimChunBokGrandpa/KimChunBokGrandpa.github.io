@@ -79,10 +79,10 @@ export const applyGlitch = (
 
       // Noise or Swap
       if (randomValue(b + 3) > 0.5) {
-        // Swap
+        // Swap (read both from resultData to avoid data race with original)
         for (let c = 0; c < 3; c++) {
           const temp = resultData[i1 + c];
-          resultData[i1 + c] = data[i2 + c];
+          resultData[i1 + c] = resultData[i2 + c];
           resultData[i2 + c] = temp;
         }
       } else {

@@ -57,6 +57,7 @@
 
   // ─── Palette Import/Export ───
   let importFileInput = $state<HTMLInputElement>();
+  let isImporting = $state(false);
 
   function handleImportClick() {
     importFileInput?.click();
@@ -66,6 +67,9 @@
     const input = e.target as HTMLInputElement;
     const files = input.files;
     if (!files || files.length === 0) return;
+
+    isImporting = true;
+    let pending = files.length;
 
     for (const file of files) {
       const reader = new FileReader();
@@ -77,6 +81,10 @@
           onSelect(newPalette.id);
           activeThemeId = '_custom';
         }
+        if (--pending === 0) isImporting = false;
+      };
+      reader.onerror = () => {
+        if (--pending === 0) isImporting = false;
       };
       reader.readAsText(file);
     }
@@ -252,7 +260,9 @@
         {#if activeThemeId === '_custom'}
           <div class="pg-custom-toolbar">
             <button class="pg-new-btn" onclick={openNewPaletteEditor}>{i18n.t('new_palette')}</button>
-            <button class="pg-new-btn" onclick={handleImportClick}>📥 {i18n.t('import_palette')}</button>
+            <button class="pg-new-btn" onclick={handleImportClick} disabled={isImporting}>
+              {isImporting ? '⏳' : '📥'} {isImporting ? i18n.t('loading') : i18n.t('import_palette')}
+            </button>
           </div>
           <input
             bind:this={importFileInput}

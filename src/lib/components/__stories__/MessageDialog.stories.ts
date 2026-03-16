@@ -9,7 +9,7 @@ const meta = {
     message: { control: 'text' },
     title: { control: 'text' },
   },
-} satisfies Meta<MessageDialog>;
+} satisfies Meta;
 
 export default meta;
 type Story = StoryObj<typeof meta>;

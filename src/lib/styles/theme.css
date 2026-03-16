@@ -48,3 +48,11 @@
   --w98-emoji-font: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji",
     sans-serif;
 }
+
+/* ── Disabled button contrast fix ── */
+/* Default 98.css uses #808080 on #d0d0c8 (3.2:1 ratio), increase to meet WCAG AA */
+button:disabled,
+input[type="button"]:disabled,
+input[type="submit"]:disabled {
+  color: #6d6d6d;
+}

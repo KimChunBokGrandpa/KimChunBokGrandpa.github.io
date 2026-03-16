@@ -61,9 +61,9 @@ export function decodeGif(buffer: ArrayBuffer): GifInfo {
       }
     }
 
-    // Blit frame pixels onto composite (alpha-aware)
-    for (let y = 0; y < height; y++) {
-      for (let x = 0; x < width; x++) {
+    // Blit frame pixels onto composite (alpha-aware, only within frame bounds)
+    for (let y = fy; y < fy + fh && y < height; y++) {
+      for (let x = fx; x < fx + fw && x < width; x++) {
         const idx = (y * width + x) * 4;
         const a = framePixels[idx + 3];
         if (a > 0) {
@@ -97,8 +97,8 @@ export function encodeGif(
   width: number,
   height: number,
 ): Uint8Array {
-  // Estimate output buffer size (generous)
-  const bufSize = width * height * frames.length * 2 + 1024;
+  // Estimate output buffer: indexed (1 byte/pixel) + palette + headers per frame
+  const bufSize = width * height * frames.length + 1024 * frames.length + 1024;
   const buf = new Uint8Array(bufSize);
   const writer = new GifWriter(buf, width, height, { loop: 0 });
 
@@ -232,7 +232,8 @@ export function frameToBlobUrl(frame: GifFrame): Promise<string> {
   const canvas = _frameCanvas;
   if (canvas.width !== frame.width) canvas.width = frame.width;
   if (canvas.height !== frame.height) canvas.height = frame.height;
-  const ctx = canvas.getContext('2d')!;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('Failed to get 2d context for frame');
   const imageData = new ImageData(
     new Uint8ClampedArray(frame.data),
     frame.width,

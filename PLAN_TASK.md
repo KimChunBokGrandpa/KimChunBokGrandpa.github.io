@@ -104,6 +104,32 @@
 - [x] **svgExporter.ts — 배경색 감지 개선** (가장자리 픽셀 최다 빈도 색상 + 배경색 run 스킵 최적화)
 - [x] **gifProcessor.ts — frameToBlobUrl JSDoc에 revoke 책임 명시**
 
+### P7: 코드 리뷰 #3 — 남은 작업 (13건) ✅
+
+#### 코드 정리 / 버그 — Medium (3건)
+- [x] **saveService.ts** — `imageSrcToBlob`에 30초 timeout 추가 + `getContext("2d")!` null 체크
+- [x] **imageProcessor.ts / imageProcessingStore / gifProcessor** — 모든 `getContext("2d")!` → null 체크 + 에러 throw (6곳)
+- [x] **imageProcessingStore.svelte.ts** — GIF export 루프 진입 전 `frames` 참조 사전 캡처
+
+#### 코드 정리 / 버그 — Low (2건)
+- [x] **gifProcessor.ts** — 버퍼 할당량 축소 (`*2` → `*1 + header`)
+- [x] **imageWorker.ts** — effect 타입별 가중치 progress (noise:1, wave:2, slice:3, hqx:4)
+
+#### UI/UX 개선 — Medium (3건)
+- [x] **PaletteGallery.svelte** — import 버튼에 loading 상태 표시
+- [x] **ControlPanel.svelte** — 프리셋 import 실패 → `onError` 콜백 → 토스트 알림
+- [x] **MessageDialog.svelte** — 모달 배경 `aria-hidden="true"` 적용/해제
+
+#### UI/UX 개선 — Low (5건)
+- [x] **ImageDropZone.svelte** — 클립보드 비이미지 붙여넣기 알림
+- [x] **CustomPaletteEditor.svelte** — 편집 중 취소 시 미저장 변경사항 confirm
+- [x] **DesktopIcons.svelte** — `:focus-visible` 강화 (2px solid #fff + box-shadow)
+- [x] **theme.css** — 비활성 버튼 color `#6d6d6d` WCAG AA 대비 개선
+- [x] **PreviewContent.svelte** — 초기 처리 오버레이 CSS spin-pulse 애니메이션
+
+#### i18n 추가 (4키, en/ko/ja)
+- [x] `loading`, `preset_import_error`, `not_an_image`, `unsaved_changes_confirm`
+
 ---
 
 ## 🟡 미구현 기능 (Feature Roadmap)
@@ -154,13 +180,12 @@
   │ P5-C: 접근성 보완 (2건)      ✅   │
   │ P5-D: 방어적 코드 (4건)      ✅   │ 낮음
   ├─────────────────────────────────────┤
-  │ Phase 2-3 기능               ◻️   │ 장기
-  │   레이어, 크롭 UI, 드로잉,         │
-  │   애니메이션 에디터, AI 추천       │
-  ├─────────────────────────────────────┤
   │ P6: 기술 부채               ✅   │ 완료
-  │   컴포넌트 테스트 (80개),          │
-  │   Storybook (7 stories)           │
+  │ P7: 코드 리뷰 남은 13건     ✅   │ 완료
+  ├─────────────────────────────────────┤
+  │ Phase 2-3 기능               ◻️   │ 장기
+  │   레이어 시스템, 드로잉 도구,      │
+  │   애니메이션 에디터, AI 추천       │
   └─────────────────────────────────────┘
 ```
 
@@ -173,8 +198,9 @@
 ```
 1. ✅ P5-A~D 완료 (버그 수정, 코드 품질, 접근성, 방어적 코드)
 2. ✅ P6 기술 부채 (컴포넌트 테스트 80개 + Storybook 7 stories)
-3. Phase 2 잔여: 레이어 시스템
-4. Phase 3: 드로잉 도구, 애니메이션 에디터, AI 팔레트, 클라우드, 플러그인
+3. ✅ P7 코드 리뷰 남은 13건 (timeout, null 체크, race condition, UI 피드백, 접근성)
+4. Phase 2 잔여: 레이어 시스템 (feature/layoutsystem 브랜치 진행 중)
+5. Phase 3: 드로잉 도구, 애니메이션 에디터, AI 팔레트, 클라우드, 플러그인
 ```
 
 ### 빌드/테스트 명령어
@@ -217,3 +243,5 @@ src/routes/+page.svelte                        # 앱 루트
 | 2026-03-12 | 이미지 크롭 UI: CropOverlay.svelte (드래그 선택, clip-path 마스크, 코너 핸들, Enter/Esc 단축키, 터치 지원) + PreviewContent ✂ 버튼 + i18n 5키 (en/ko/ja) |
 | 2026-03-12 | GIF export 최적화: blob→Image→Canvas 왕복 제거, getLastCanvas()에서 직접 ImageData 추출 (프레임당 Image 로드 + Canvas 드로우 2단계 제거) |
 | 2026-03-12 | P6 기술 부채 완료: 컴포넌트 테스트 80개 추가 (8개 컴포넌트, @testing-library/svelte), Storybook 10 세팅 (7 stories, autodocs, a11y addon), vitest $lib alias + ResizeObserver polyfill |
+| 2026-03-16 | 코드 리뷰 #3 (P7): 전체 수정 11건 + 남은 13건 식별 |
+| 2026-03-16 | P7 남은 13건 전체 완료: timeout 30s, getContext null 체크(6곳), GIF frames 캡처, 버퍼 축소, progress 가중치, PaletteGallery loading, 프리셋 import 토스트, MessageDialog aria-hidden, 클립보드 알림, 미저장 변경 confirm, DesktopIcons focus, 비활성 버튼 대비, 처리 오버레이 애니메이션, i18n 4키 추가 |

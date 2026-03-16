@@ -40,11 +40,29 @@
   }
 
   // Auto-focus OK button on mount, restore focus on unmount
+  // Also apply aria-hidden to background content for screen readers
   let previousFocus: HTMLElement | null = null;
+  let hiddenSiblings: Element[] = [];
   onMount(() => {
     previousFocus = document.activeElement as HTMLElement | null;
+
+    // Hide sibling elements from screen readers while dialog is open
+    const parent = dialogEl?.closest('.dialog-overlay')?.parentElement;
+    if (parent) {
+      for (const child of parent.children) {
+        if (child.contains(dialogEl!) || child.getAttribute('aria-hidden') === 'true') continue;
+        child.setAttribute('aria-hidden', 'true');
+        hiddenSiblings.push(child);
+      }
+    }
+
     okBtn?.focus();
     return () => {
+      // Restore aria-hidden on unmount
+      for (const el of hiddenSiblings) {
+        el.removeAttribute('aria-hidden');
+      }
+      hiddenSiblings = [];
       previousFocus?.focus?.();
     };
   });

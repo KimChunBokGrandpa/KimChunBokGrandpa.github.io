@@ -25,7 +25,7 @@ const meta = {
       template: '<div style="width:300px;height:400px;"><story/></div>',
     }),
   ],
-} satisfies Meta<HistoryPanel>;
+} satisfies Meta;
 
 export default meta;
 type Story = StoryObj<typeof meta>;

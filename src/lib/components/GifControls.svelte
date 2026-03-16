@@ -26,7 +26,7 @@
   } = $props();
 </script>
 
-<div class="gif-controls">
+<div class="gif-controls" aria-busy={isExporting}>
   <div class="gif-controls-row">
     <button
       class="gif-btn"
@@ -68,7 +68,7 @@
       disabled={isExporting}
       title={i18n.t('export_gif')}
     >
-      {isExporting ? `${Math.round(exportProgress * 100)}%` : `💾 ${i18n.t('gif_btn')}`}
+      {isExporting ? `${Math.round(exportProgress * 100)}% (${Math.min(Math.ceil(exportProgress * frameCount), frameCount)}/${frameCount})` : `💾 ${i18n.t('gif_btn')}`}
     </button>
     {#if onExportSpritesheet}
       <button

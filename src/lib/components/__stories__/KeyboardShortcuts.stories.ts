@@ -5,7 +5,7 @@ const meta = {
   title: 'Components/KeyboardShortcuts',
   component: KeyboardShortcuts,
   tags: ['autodocs'],
-} satisfies Meta<KeyboardShortcuts>;
+} satisfies Meta;
 
 export default meta;
 type Story = StoryObj<typeof meta>;

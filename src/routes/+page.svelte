@@ -36,6 +36,7 @@
   let dialogMessage: string | null = $state(null);
   let dialogTitle = $state('Message');
   let toastMessage: string | null = $state(null);
+  let toastVariant: 'success' | 'error' | 'warning' = $state('success');
 
   // ─── Compare Mode ───
   let compareMode = $state(false);
@@ -334,6 +335,7 @@
           onFormatChange={handleFormatChange}
           onQualityChange={handleQualityChange}
           onApplyNow={() => ip.applyNow()}
+          onError={(msg) => { toastMessage = msg; toastVariant = 'error'; }}
         />
       </div>
     </Win98Window>
@@ -493,7 +495,8 @@
 {#if toastMessage}
   <ToastNotification
     message={toastMessage}
-    onDone={() => { toastMessage = null; }}
+    variant={toastVariant}
+    onDone={() => { toastMessage = null; toastVariant = 'success'; }}
   />
 {/if}
 

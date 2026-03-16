@@ -76,6 +76,13 @@
     background: rgba(255, 255, 255, 0.1);
   }
 
+  .desktop-icon:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 1px;
+    box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.5);
+    background: rgba(255, 255, 255, 0.15);
+  }
+
   .desktop-icon.icon-selected {
     background: rgba(0, 0, 128, 0.6);
     border: 1px solid rgba(255, 255, 255, 0.5);

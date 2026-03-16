@@ -18,7 +18,7 @@ const meta = {
       template: '<div style="position:relative;height:200px;background:#333;"><story/></div>',
     }),
   ],
-} satisfies Meta<GifControls>;
+} satisfies Meta;
 
 export default meta;
 type Story = StoryObj<typeof meta>;

@@ -130,7 +130,8 @@ export function createImageProcessingStore() {
       const canvas = document.createElement('canvas');
       canvas.width = outW;
       canvas.height = outH;
-      const ctx = canvas.getContext('2d')!;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) throw new Error('Failed to get 2d context for transform');
 
       ctx.save();
       ctx.translate(outW / 2, outH / 2);
@@ -357,12 +358,13 @@ export function createImageProcessingStore() {
       let outW = 0;
       let outH = 0;
 
-      const totalFrames = gifInfo.frames.length;
+      // Capture frames reference before the async loop to prevent race condition
+      // (user may load a new image mid-export, nullifying gifInfo)
+      const frames = gifInfo.frames;
+      const totalFrames = frames.length;
       for (let i = 0; i < totalFrames; i++) {
-        // Guard against gifInfo becoming null mid-export (e.g. user loads new image)
-        if (!gifInfo) break;
         gifProcessingProgress = (i / totalFrames) * 0.9;
-        const frame = gifInfo.frames[i];
+        const frame = frames[i];
 
         // Create blob URL from raw frame
         const blobUrl = await frameToBlobUrl(frame);
@@ -378,7 +380,8 @@ export function createImageProcessingStore() {
               outW = lastCanvas.width;
               outH = lastCanvas.height;
             }
-            const ctx = lastCanvas.getContext('2d')!;
+            const ctx = lastCanvas.getContext('2d');
+            if (!ctx) continue;
             const imageData = ctx.getImageData(0, 0, lastCanvas.width, lastCanvas.height);
             processedFrames.push({
               data: imageData.data,
