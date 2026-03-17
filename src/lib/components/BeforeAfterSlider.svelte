@@ -198,9 +198,9 @@
     width: 28px;
     height: 28px;
     border-radius: 50%;
-    background: #c0c0c0;
+    background: var(--w98-surface);
     border: 2px solid;
-    border-color: #dfdfdf #808080 #808080 #dfdfdf;
+    border-color: var(--w98-shadow-light) var(--w98-shadow-808) var(--w98-shadow-808) var(--w98-shadow-light);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -215,7 +215,7 @@
   }
 
   .ba-arrow {
-    font-size: 8px;
+    font-size: var(--w98-font-size-micro);
     color: #000;
     line-height: 1;
   }
@@ -225,7 +225,7 @@
     position: absolute;
     top: 8px;
     z-index: 4;
-    font-size: 9px;
+    font-size: var(--w98-font-size-caption);
     font-weight: bold;
     padding: 2px 6px;
     background: rgba(0, 0, 0, 0.6);
@@ -237,7 +237,7 @@
   .ba-label-after { right: 8px; }
 
   .ba-container:focus-visible {
-    outline: 2px solid #000080;
+    outline: 2px solid var(--w98-highlight);
     outline-offset: -2px;
   }
 </style>

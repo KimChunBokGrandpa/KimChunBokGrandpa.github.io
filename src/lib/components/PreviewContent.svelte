@@ -90,6 +90,8 @@
   let eyedropperActive = $state(false);
   let pickedColor = $state<{ r: number; g: number; b: number; hex: string } | null>(null);
   let pickedColorPos = $state<{ x: number; y: number }>({ x: 0, y: 0 });
+  let colorCopied = $state(false);
+  let colorCopiedTimer: ReturnType<typeof setTimeout> | null = null;
   let eyedropperCanvas: HTMLCanvasElement | null = null;
   let eyedropperCtx: CanvasRenderingContext2D | null = null;
   let eyedropperCachedSrc: string | null = null;
@@ -134,7 +136,11 @@
 
   function copyColor() {
     if (pickedColor) {
-      navigator.clipboard.writeText(pickedColor.hex);
+      navigator.clipboard.writeText(pickedColor.hex).then(() => {
+        colorCopied = true;
+        if (colorCopiedTimer) clearTimeout(colorCopiedTimer);
+        colorCopiedTimer = setTimeout(() => { colorCopied = false; }, 1500);
+      });
     }
   }
 
@@ -399,7 +405,7 @@
                   onchange={(e) => {
                     const val = parseInt(e.currentTarget.value);
                     if (!isNaN(val)) {
-                      const clamped = Math.max(10, Math.min(800, val));
+                      const clamped = Math.max(25, Math.min(800, val));
                       zp.setZoom(clamped / 100);
                     }
                   }}
@@ -450,7 +456,7 @@
         </div>
         <div class="color-actions">
           <button class="color-action-btn" onclick={copyColor} title={i18n.t('copy_color')}
-            >📋</button
+            >{colorCopied ? '✅' : '📋'}</button
           >
           <button class="color-action-btn" onclick={dismissColor}>✕</button>
         </div>
@@ -507,7 +513,7 @@
     cursor: crosshair;
   }
   .preview-body:focus-visible {
-    outline: 2px solid #000080;
+    outline: 2px solid var(--w98-highlight);
     outline-offset: -2px;
   }
 
@@ -516,9 +522,9 @@
     position: fixed;
     z-index: 100;
     transform: translate(8px, -100%);
-    background: #c0c0c0;
+    background: var(--w98-surface);
     border: 2px solid;
-    border-color: #dfdfdf #808080 #808080 #dfdfdf;
+    border-color: var(--w98-shadow-light) var(--w98-shadow-808) var(--w98-shadow-808) var(--w98-shadow-light);
     padding: 4px;
     display: flex;
     align-items: center;
@@ -535,12 +541,12 @@
   .color-info {
     display: flex;
     flex-direction: column;
-    font-size: 10px;
+    font-size: var(--w98-font-size-sm);
     font-family: 'Courier New', monospace;
     font-weight: bold;
   }
   .color-hex {
-    color: #000080;
+    color: var(--w98-highlight);
   }
   .color-rgb {
     color: #444;
@@ -553,21 +559,17 @@
     min-width: 20px;
     height: 20px;
     padding: 0 3px;
-    font-size: 11px;
-    background: #c0c0c0;
+    font-size: var(--w98-font-size-base);
+    background: var(--w98-surface);
     border: none;
     cursor: pointer;
-    box-shadow:
-      inset 1px 1px #fff,
-      inset -1px -1px #0a0a0a;
+    box-shadow: var(--w98-outset-thin);
     display: flex;
     align-items: center;
     justify-content: center;
   }
   .color-action-btn:active {
-    box-shadow:
-      inset -1px -1px #fff,
-      inset 1px 1px #0a0a0a;
+    box-shadow: var(--w98-inset-thin);
   }
 
   /* ===== Preview Image ===== */
@@ -625,10 +627,10 @@
     align-items: center;
     gap: 4px;
     background: rgba(0, 0, 128, 0.9);
-    border: 2px outset #dfdfdf;
+    border: 2px outset var(--w98-shadow-light);
     padding: 8px 16px;
     color: #fff;
-    font-size: 11px;
+    font-size: var(--w98-font-size-base);
     font-family: 'Courier New', Courier, monospace;
     font-weight: bold;
     text-shadow: 1px 1px 0 #000;
@@ -637,7 +639,7 @@
     width: 120px;
     height: 12px;
     background: #000;
-    border: 2px inset #dfdfdf;
+    border: 2px inset var(--w98-shadow-light);
     position: relative;
     overflow: hidden;
   }
@@ -648,8 +650,8 @@
     bottom: 0;
     background: repeating-linear-gradient(
       90deg,
-      #000080 0px,
-      #000080 8px,
+      var(--w98-highlight) 0px,
+      var(--w98-highlight) 8px,
       transparent 8px,
       transparent 10px
     );
@@ -687,14 +689,14 @@
     gap: 1px;
     align-items: center;
     background: rgba(192, 192, 192, 0.6);
-    border-radius: 2px;
+    border-radius: var(--w98-radius-sm);
     padding: 1px;
   }
   .toolbar-group + .toolbar-group {
     margin-left: 3px;
   }
   .toolbar-group-label {
-    font-size: 8px;
+    font-size: var(--w98-font-size-micro);
     color: #fff;
     text-transform: uppercase;
     letter-spacing: 0.5px;
@@ -715,27 +717,23 @@
     min-width: 22px;
     height: 20px;
     padding: 0 4px;
-    font-size: 11px;
+    font-size: var(--w98-font-size-base);
     font-weight: bold;
     font-family: inherit;
-    background: #c0c0c0;
+    background: var(--w98-surface);
     border: none;
     cursor: pointer;
-    box-shadow:
-      inset 1px 1px #fff,
-      inset -1px -1px #0a0a0a;
+    box-shadow: var(--w98-outset-thin);
     display: flex;
     align-items: center;
     justify-content: center;
   }
   .zoom-btn:active {
-    box-shadow:
-      inset -1px -1px #fff,
-      inset 1px 1px #0a0a0a;
+    box-shadow: var(--w98-inset-thin);
     padding: 1px 3px -1px 5px;
   }
   .zoom-info {
-    font-size: 11px;
+    font-size: var(--w98-font-size-base);
     font-family: 'Courier New', Courier, monospace;
     font-weight: bold;
     color: #fff;
@@ -743,13 +741,13 @@
     align-items: center;
     padding: 0 4px;
     background: #000;
-    border: 1px inset #dfdfdf;
+    border: 1px inset var(--w98-shadow-light);
   }
   .zoom-input-container {
     display: flex;
     align-items: center;
     background: #fff;
-    border: 2px inset #dfdfdf;
+    border: 2px inset var(--w98-shadow-light);
     height: 20px;
     padding: 0 2px 0 4px;
   }
@@ -758,7 +756,7 @@
     height: 14px;
     border: none;
     font-family: inherit;
-    font-size: 11px;
+    font-size: var(--w98-font-size-base);
     text-align: right;
     outline: none;
     background: transparent;
@@ -770,26 +768,24 @@
     margin: 0;
   }
   .zoom-percent {
-    font-size: 11px;
+    font-size: var(--w98-font-size-base);
     font-family: inherit;
     color: #000;
     margin-left: 1px;
   }
   .compare-active,
   .grid-active {
-    background: #000080;
+    background: var(--w98-highlight);
     color: #fff;
-    box-shadow:
-      inset -1px -1px #fff,
-      inset 1px 1px #0a0a0a;
+    box-shadow: var(--w98-inset-thin);
   }
 
   /* ===== Color Count ===== */
   .color-count {
-    background: #000080;
+    background: var(--w98-highlight);
     color: #0f0;
-    border-color: #000080;
-    font-size: 10px;
+    border-color: var(--w98-highlight);
+    font-size: var(--w98-font-size-sm);
     margin-left: 2px;
   }
 
@@ -808,7 +804,7 @@
     .zoom-btn {
       min-width: 20px;
       height: 18px;
-      font-size: 10px;
+      font-size: var(--w98-font-size-sm);
     }
   }
 
@@ -831,7 +827,7 @@
     position: absolute;
     top: 8px;
     right: 8px;
-    font-size: 9px;
+    font-size: var(--w98-font-size-caption);
     font-weight: bold;
     padding: 2px 6px;
     background: rgba(0, 0, 128, 0.8);
@@ -872,7 +868,7 @@
     position: absolute;
     top: 8px;
     left: 8px;
-    font-size: 9px;
+    font-size: var(--w98-font-size-caption);
     font-weight: bold;
     padding: 2px 6px;
     background: rgba(0, 0, 0, 0.6);
@@ -913,22 +909,22 @@
     align-items: center;
     gap: 6px;
     background: rgba(0, 0, 0, 0.7);
-    border: 1px solid #808080;
+    border: 1px solid var(--w98-shadow-808);
     padding: 4px 10px;
     z-index: 5;
   }
   .onion-label {
-    font-size: 10px;
+    font-size: var(--w98-font-size-sm);
     color: #fff;
     font-weight: bold;
     white-space: nowrap;
   }
   .onion-slider {
     width: 100px;
-    accent-color: #000080;
+    accent-color: var(--w98-highlight);
   }
   .onion-value {
-    font-size: 10px;
+    font-size: var(--w98-font-size-sm);
     color: #0f0;
     font-family: 'Courier New', monospace;
     font-weight: bold;
@@ -938,7 +934,7 @@
 
   /* ===== Compare Variant Button ===== */
   .compare-variant-btn {
-    font-size: 9px !important;
+    font-size: var(--w98-font-size-caption) !important;
   }
 
   /* ===== Pixel Grid Overlay ===== */

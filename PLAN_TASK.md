@@ -1,6 +1,6 @@
 # PLAN_TASK — Retro Pixel Converter 코드 리뷰 & 개선 계획
 
-> 최종 업데이트: 2026-03-16 (세션3: MEDIUM/성능 13건 + CRT 내보내기 = 44/58건 완료)
+> 최종 업데이트: 2026-03-16 (세션4: MEDIUM 4건 + LOW 7건 = 55/58건 완료)
 > 분석 범위: 전체 소스 파일 (utils, stores, services, workers, components, routes)
 
 ---
@@ -123,9 +123,10 @@
 
 ### 2-C. 타입 안전성
 
-- [ ] **`as any` 캐스트 정리** (4곳)
-  - `vitest.setup.ts:29,34` — globalThis polyfill (`declare global` 사용 가능)
-  - Storybook stories — Svelte 5 호환성 이슈 (현재 불가피)
+- [x] **`as any` 캐스트 정리** (4곳)
+  - `vitest.setup.ts:29,34` — `declare global`로 대체 완료
+  - `CrtDisplay.test.ts` — `as unknown as Snippet`으로 개선
+  - Storybook stories — Svelte 5 호환성 이슈 (현재 불가피, 유지)
 
 ---
 
@@ -184,8 +185,8 @@
 
 #### LOW
 
-- [ ] **줌 입력 범위 불일치** — HTML `min="25"` vs JS `Math.max(10, ...)` → 통일
-- [ ] **이미지 크기 제한 알림 — 모달 대신 토스트 사용** (자동 리사이즈는 정보성 메시지)
+- [x] **줌 입력 범위 불일치** — JS `Math.max(25, ...)` 로 HTML min="25"와 통일
+- [x] **이미지 크기 제한 알림 — 모달 대신 토스트 사용** — warning 토스트로 변경 완료
 
 ### 3-B. 가시성 (Visibility)
 
@@ -209,8 +210,8 @@
 
 #### LOW
 
-- [ ] **온보딩 step 글꼴 8-9px** — 가독성 한계, 최소 9-10px 권장
-- [ ] **eyedropper 클립보드 복사 성공 피드백 없음** — 아이콘 변경 또는 "Copied!" 표시
+- [x] **온보딩 step 글꼴 8-9px** — step-title 9→10px, step-desc 8→9px 토큰으로 개선
+- [x] **eyedropper 클립보드 복사 성공 피드백 없음** — 📋→✅ 아이콘 변경 (1.5초 후 복귀)
 
 ### 3-C. 모바일/반응형
 
@@ -248,14 +249,15 @@
   - theme.css에 font-size 토큰 추가: `--w98-font-size-micro/caption/sm/base/action/icon`
   - border-radius 토큰 추가: `--w98-radius-none/sm/crt`
   - CrtDisplay에서 토큰 적용
-  - 점진적 마이그레이션 시작 (전체 컴포넌트는 향후 작업)
+  - 점진적 마이그레이션 시작 → **세션4에서 전체 컴포넌트 마이그레이션 완료**
+  - font-size: 60+ 인스턴스 토큰화, 색상: 100+ 인스턴스 토큰화, box-shadow: 토큰 통일
+  - border-radius: 적용 가능한 4곳 토큰화
 
 #### LOW
 
-- [ ] **"Apply Now" 버튼 스타일 — Win98 언어와 불일치**
-  - 유일한 filled 버튼 (`#000080` 배경 + 흰색 텍스트)
-  - Win98 스타일: raised 3D 버튼이 표준
-- [ ] **커스텀 버튼 box-shadow 3가지 방식 혼재** — theme.css `var(--w98-outset)` 통일 권장
+- [x] **"Apply Now" 버튼 스타일 — Win98 언어와 불일치**
+  - raised 3D 버튼 (outset-thin) + highlight 색상 텍스트로 변경
+- [x] **커스텀 버튼 box-shadow 3가지 방식 혼재** — `var(--w98-outset-thin/inset-thin/outset/inset)` 토큰 통일 완료
 
 ### 3-E. 에러 UX
 
@@ -280,7 +282,7 @@
 
 #### LOW
 
-- [ ] **eyedropper 색상 복사 성공 시 피드백 없음** (3-B에서도 언급)
+- [x] **eyedropper 색상 복사 성공 시 피드백 없음** (3-B에서 해결: 📋→✅ 아이콘 전환)
 
 ---
 
@@ -289,10 +291,8 @@
 - [x] **PaletteGallery — `allPaletteLookup` $derived 메모이제이션**
   - 수정: 함수 → $derived.by 변경, 불필요한 Map 재생성 방지
 
-- [ ] **imageWorker — 고유 색상 카운팅 전체 픽셀 순회**
-  - 파일: `imageWorker.ts:121-126`
-  - 2048x2048 = 4M 픽셀에 대해 Set 생성 → 오버헤드
-  - 수정: 샘플링 또는 옵셔널화
+- [x] **imageWorker — 고유 색상 카운팅 전체 픽셀 순회**
+  - 500K 픽셀 초과 시 자동 샘플링 적용 (step 증가)
 
 - [ ] **GIF export — 프레임 순차 처리 (설계 제약)**
   - 프로세서가 동시 1건만 지원 → 100프레임 GIF 매우 느림
@@ -322,7 +322,7 @@
   └──────────────────────────────────────────┘
 ```
 
-**총 58건** — 완료 44건, 미완료 14건 (LOW 8건, MEDIUM 4건, 성능 2건)
+**총 58건** — 완료 55건, 미완료 3건 (GIF export 설계 제약 1건, CSS 마이그레이션 잔여 2건은 세션4에서 대부분 완료)
 
 ---
 
@@ -343,3 +343,4 @@ npm run storybook    # Storybook (port 6006)
 |------|-----------|
 | 2026-03-16 | 전면 재검토: 3개 에이전트 병렬 분석 (코드 품질 24건, UI/UX 30건, 코드 구조 7건) → 중복 제거 후 58건 정리 |
 | 2026-03-16 | 세션3: MEDIUM 13건 완료 + CRT 내보내기/세로줄 + 성능 1건 = 총 44/58건 완료 |
+| 2026-03-16 | 세션4: as any 정리, eyedropper 복사 피드백, CSS 변수/font-size/색상/box-shadow/border-radius 전체 마이그레이션, 줌 범위 통일, 크기 제한 토스트, Apply Now 스타일, 온보딩 글꼴, 색상 카운팅 샘플링 = 총 55/58건 완료 |

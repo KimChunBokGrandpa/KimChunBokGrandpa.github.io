@@ -87,8 +87,8 @@
     flex-direction: column;
     height: 100%;
     background: #fff;
-    border: 2px inset #dfdfdf;
-    font-size: 11px;
+    border: 2px inset var(--w98-shadow-light);
+    font-size: var(--w98-font-size-base);
     overflow: hidden;
   }
 
@@ -96,8 +96,8 @@
     display: flex;
     gap: 4px;
     padding: 4px;
-    background: #c0c0c0;
-    border-bottom: 1px solid #808080;
+    background: var(--w98-surface);
+    border-bottom: 1px solid var(--w98-shadow-808);
   }
 
   .history-controls button {
@@ -125,12 +125,12 @@
     border: 1px solid transparent;
     cursor: pointer;
     font-family: inherit;
-    font-size: 11px;
+    font-size: var(--w98-font-size-base);
     width: 100%;
   }
 
   .history-item:hover:not(.current) {
-    background: #000080;
+    background: var(--w98-highlight);
     color: #fff;
   }
 
@@ -139,7 +139,7 @@
   }
 
   .history-item.current {
-    background: #d4d0c8;
+    background: var(--w98-surface-active);
     border: 1px dotted #000;
     font-weight: bold;
     cursor: default;
@@ -158,11 +158,11 @@
     display: inline-block;
     width: 20px;
     min-width: 20px;
-    color: #808080;
+    color: var(--w98-shadow-808);
     text-align: right;
   }
   .history-item:hover:not(.current) .step-num {
-    color: #c0c0c0;
+    color: var(--w98-surface);
   }
 
   .step-desc {
@@ -173,10 +173,10 @@
   }
 
   .current-badge {
-    font-size: 9px;
-    background: #000080;
+    font-size: var(--w98-font-size-caption);
+    background: var(--w98-highlight);
     color: #fff;
     padding: 1px 4px;
-    border-radius: 2px;
+    border-radius: var(--w98-radius-sm);
   }
 </style>

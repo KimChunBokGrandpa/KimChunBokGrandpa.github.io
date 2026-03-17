@@ -166,7 +166,7 @@
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    border: 2px dashed #808080;
+    border: 2px dashed var(--w98-shadow-808);
     margin: 8px;
     background-color: #fff;
     overflow: hidden;
@@ -176,7 +176,7 @@
 
   .dropzone.dragging {
     background-color: #d0d8e0;
-    border-color: #000080;
+    border-color: var(--w98-highlight);
     border-width: 3px;
     box-shadow: inset 0 0 20px rgba(0, 0, 128, 0.08);
   }
@@ -208,26 +208,26 @@
   }
 
   .drop-or {
-    font-size: 11px;
-    color: #808080;
+    font-size: var(--w98-font-size-base);
+    color: var(--w98-shadow-808);
     margin: 2px 0;
   }
 
   .browse-btn {
     font-weight: bold;
     padding: 4px 16px;
-    font-size: 12px;
+    font-size: var(--w98-font-size-action);
   }
 
   .drop-hint {
-    font-size: 10px;
-    color: #808080;
+    font-size: var(--w98-font-size-sm);
+    color: var(--w98-shadow-808);
     margin: 6px 0 0 0;
     font-style: italic;
   }
 
   .drop-formats {
-    font-size: 10px;
+    font-size: var(--w98-font-size-sm);
     color: #a0a0a0;
     margin: 2px 0 0 0;
   }
@@ -242,11 +242,11 @@
     margin-top: 12px;
     padding: 8px 12px;
     background: #f0f0e8;
-    border: 1px solid #c0c0c0;
-    border-radius: 0;
+    border: 1px solid var(--w98-surface);
+    border-radius: var(--w98-radius-none);
     max-width: 340px;
     width: 90%;
-    box-shadow: inset 1px 1px #fff;
+    box-shadow: inset 1px 1px var(--w98-shadow-white);
   }
   .onboarding-header {
     display: flex;
@@ -255,16 +255,16 @@
     margin-bottom: 8px;
   }
   .onboarding-title {
-    font-size: 11px;
+    font-size: var(--w98-font-size-base);
     font-weight: bold;
-    color: #000080;
+    color: var(--w98-highlight);
   }
   .onboarding-dismiss {
-    font-size: 10px;
+    font-size: var(--w98-font-size-sm);
     background: none;
     border: none;
     cursor: pointer;
-    color: #808080;
+    color: var(--w98-shadow-808);
     padding: 0 2px;
     line-height: 1;
   }
@@ -294,21 +294,21 @@
     min-width: 0;
   }
   .step-title {
-    font-size: 9px;
+    font-size: var(--w98-font-size-sm);
     font-weight: bold;
     color: #333;
     white-space: nowrap;
   }
   .step-desc {
-    font-size: 8px;
-    color: #808080;
+    font-size: var(--w98-font-size-caption);
+    color: var(--w98-shadow-808);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
   .onboarding-arrow {
-    font-size: 12px;
-    color: #000080;
+    font-size: var(--w98-font-size-action);
+    color: var(--w98-highlight);
     font-weight: bold;
     flex-shrink: 0;
   }
@@ -323,7 +323,7 @@
       display: none;
     }
     .drop-title {
-      font-size: 12px;
+      font-size: var(--w98-font-size-action);
     }
   }
 </style>

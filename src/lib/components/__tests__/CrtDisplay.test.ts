@@ -63,11 +63,11 @@ describe('CrtDisplay', () => {
 });
 
 // Helper to create a simple snippet for Svelte 5
-// Cast to any because @testing-library/svelte renders it correctly at runtime
-function createSnippet(text: string) {
+// Runtime-compatible mock; Svelte 5 Snippet type is opaque so we use unknown cast
+function createSnippet(text: string): import('svelte').Snippet {
   return ((anchor: Node) => {
     const node = document.createTextNode(text);
     anchor.parentNode?.insertBefore(node, anchor);
     return () => node.remove();
-  }) as any;
+  }) as unknown as import('svelte').Snippet;
 }

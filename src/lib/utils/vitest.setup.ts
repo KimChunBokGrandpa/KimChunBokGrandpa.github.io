@@ -1,39 +1,46 @@
 /**
- * Vitest setup: Polyfill ImageData for Node.js environment.
- * ImageData is a browser API used by the image processing utilities.
+ * Vitest setup: Polyfill ImageData and ResizeObserver for Node.js/jsdom environment.
  */
-if (typeof globalThis.ImageData === "undefined") {
-  class ImageDataPolyfill {
-    data: Uint8ClampedArray;
-    width: number;
-    height: number;
-    colorSpace: string;
 
-    constructor(
-      dataOrWidth: Uint8ClampedArray | number,
-      widthOrHeight: number,
-      height?: number,
-    ) {
-      if (dataOrWidth instanceof Uint8ClampedArray) {
-        this.data = dataOrWidth;
-        this.width = widthOrHeight;
-        this.height = height ?? dataOrWidth.length / (widthOrHeight * 4);
-      } else {
-        this.width = dataOrWidth;
-        this.height = widthOrHeight;
-        this.data = new Uint8ClampedArray(this.width * this.height * 4);
-      }
-      this.colorSpace = "srgb";
-    }
-  }
-  (globalThis as any).ImageData = ImageDataPolyfill;
+declare global {
+  var ImageData: typeof ImageDataPolyfill;
+  var ResizeObserver: typeof ResizeObserverPolyfill;
 }
 
-// Polyfill ResizeObserver for jsdom environment
+class ImageDataPolyfill {
+  data: Uint8ClampedArray;
+  width: number;
+  height: number;
+  colorSpace: string;
+
+  constructor(
+    dataOrWidth: Uint8ClampedArray | number,
+    widthOrHeight: number,
+    height?: number,
+  ) {
+    if (dataOrWidth instanceof Uint8ClampedArray) {
+      this.data = dataOrWidth;
+      this.width = widthOrHeight;
+      this.height = height ?? dataOrWidth.length / (widthOrHeight * 4);
+    } else {
+      this.width = dataOrWidth;
+      this.height = widthOrHeight;
+      this.data = new Uint8ClampedArray(this.width * this.height * 4);
+    }
+    this.colorSpace = "srgb";
+  }
+}
+
+class ResizeObserverPolyfill {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
+
+if (typeof globalThis.ImageData === "undefined") {
+  globalThis.ImageData = ImageDataPolyfill;
+}
+
 if (typeof globalThis.ResizeObserver === "undefined") {
-  (globalThis as any).ResizeObserver = class ResizeObserver {
-    observe() {}
-    unobserve() {}
-    disconnect() {}
-  };
+  globalThis.ResizeObserver = ResizeObserverPolyfill;
 }

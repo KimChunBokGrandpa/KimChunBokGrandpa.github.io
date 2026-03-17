@@ -63,22 +63,22 @@
   }
 
   .ks-window {
-    background: #c0c0c0;
+    background: var(--w98-surface);
     border: 2px solid;
-    border-color: #dfdfdf #808080 #808080 #dfdfdf;
+    border-color: var(--w98-shadow-light) var(--w98-shadow-808) var(--w98-shadow-808) var(--w98-shadow-light);
     box-shadow: 4px 4px 12px rgba(0, 0, 0, 0.5);
     min-width: 280px;
     max-width: 360px;
   }
 
   .ks-titlebar {
-    background: #000080;
+    background: var(--w98-highlight);
     color: #fff;
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 2px 4px;
-    font-size: 12px;
+    font-size: var(--w98-font-size-action);
     font-weight: bold;
   }
 
@@ -87,10 +87,10 @@
   }
 
   .ks-close {
-    background: #c0c0c0;
+    background: var(--w98-surface);
     border: 2px solid;
-    border-color: #dfdfdf #808080 #808080 #dfdfdf;
-    font-size: 10px;
+    border-color: var(--w98-shadow-light) var(--w98-shadow-808) var(--w98-shadow-808) var(--w98-shadow-light);
+    font-size: var(--w98-font-size-sm);
     width: 16px;
     height: 14px;
     display: flex;
@@ -101,7 +101,7 @@
     line-height: 1;
   }
   .ks-close:active {
-    border-color: #808080 #dfdfdf #dfdfdf #808080;
+    border-color: var(--w98-shadow-808) var(--w98-shadow-light) var(--w98-shadow-light) var(--w98-shadow-808);
   }
 
   .ks-body {
@@ -128,19 +128,19 @@
 
   .ks-action {
     padding: 5px 0 5px 8px;
-    font-size: 11px;
+    font-size: var(--w98-font-size-base);
     color: #222;
   }
 
   .ks-key {
     display: inline-block;
     background: #fff;
-    border: 1px solid #808080;
+    border: 1px solid var(--w98-shadow-808);
     border-bottom-width: 2px;
     border-right-width: 2px;
-    border-radius: 2px;
+    border-radius: var(--w98-radius-sm);
     padding: 1px 5px;
-    font-size: 10px;
+    font-size: var(--w98-font-size-sm);
     font-family: 'Courier New', Courier, monospace;
     font-weight: bold;
     color: #000;
@@ -149,15 +149,15 @@
   }
 
   .ks-plus {
-    font-size: 9px;
-    color: #808080;
+    font-size: var(--w98-font-size-caption);
+    color: var(--w98-shadow-808);
     margin: 0 2px;
   }
 
   .ks-hint {
     margin-top: 10px;
     text-align: center;
-    font-size: 9px;
-    color: #808080;
+    font-size: var(--w98-font-size-caption);
+    color: var(--w98-shadow-808);
   }
 </style>

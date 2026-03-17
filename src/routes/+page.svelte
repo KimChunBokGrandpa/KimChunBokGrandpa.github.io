@@ -68,10 +68,8 @@
 
   // ─── Dimension cap callback ───
   ip.setDimensionCapCallback((original, capped) => {
-    showDialog(
-      i18n.t('image_resized', `${original.w}×${original.h}`, `${capped.w}×${capped.h}px`),
-      i18n.t('image_resized_title')
-    );
+    toastVariant = 'warning';
+    toastMessage = i18n.t('image_resized', `${original.w}×${original.h}`, `${capped.w}×${capped.h}px`);
   });
 
   // ─── Mobile split layout ───
@@ -537,7 +535,7 @@
 <style>
   .desktop {
     --taskbar-h: 30px;
-    background-color: #008080;
+    background-color: var(--w98-desktop-bg);
     background-image:
       radial-gradient(circle at 20px 20px, rgba(255,255,255,0.03) 1px, transparent 1px),
       radial-gradient(circle at 10px 10px, rgba(0,0,0,0.04) 1px, transparent 1px);
@@ -554,7 +552,7 @@
     inset: 0;
     z-index: 9998;
     background: rgba(0, 0, 128, 0.2);
-    border: 3px dashed #000080;
+    border: 3px dashed var(--w98-highlight);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -567,13 +565,13 @@
     align-items: center;
     gap: 6px;
     padding: 16px 32px;
-    background: #c0c0c0;
+    background: var(--w98-surface);
     border: 2px solid;
-    border-color: #dfdfdf #808080 #808080 #dfdfdf;
+    border-color: var(--w98-shadow-light) var(--w98-shadow-808) var(--w98-shadow-808) var(--w98-shadow-light);
     box-shadow: 4px 4px 12px rgba(0, 0, 0, 0.4);
     font-size: 14px;
     font-weight: bold;
-    color: #000080;
+    color: var(--w98-highlight);
   }
 
   .desktop-drop-icon {

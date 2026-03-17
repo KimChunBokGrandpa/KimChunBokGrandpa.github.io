@@ -222,7 +222,7 @@
   }
   .tb-x::after {
     content: '×';
-    font-size: 11px;
+    font-size: var(--w98-font-size-base);
     font-weight: bold;
     line-height: 1;
     color: #000;
@@ -295,7 +295,7 @@
     text-align: center;
     height: 18px;
     line-height: 1;
-    color: #000080;
+    color: var(--w98-highlight);
   }
   .tray-help:active {
     box-shadow: var(--w98-inset-thin);
@@ -315,7 +315,7 @@
     .tb-x {
       width: 14px;
       height: 14px;
-      font-size: 8px;
+      font-size: var(--w98-font-size-micro);
       padding: 0;
     }
     .tray {

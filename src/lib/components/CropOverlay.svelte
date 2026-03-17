@@ -338,7 +338,7 @@
   }
 
   .crop-hint-text {
-    font-size: 13px;
+    font-size: var(--w98-font-size-icon);
     font-weight: bold;
     color: #fff;
     text-shadow: 1px 1px 2px #000;
@@ -380,14 +380,14 @@
 
   .crop-action-btn {
     padding: 4px 12px;
-    font-size: 11px;
+    font-size: var(--w98-font-size-base);
     font-weight: bold;
     cursor: pointer;
     border: none;
-    box-shadow: inset 1px 1px #fff, inset -1px -1px #0a0a0a;
+    box-shadow: var(--w98-outset-thin);
   }
   .crop-action-btn:active {
-    box-shadow: inset -1px -1px #fff, inset 1px 1px #0a0a0a;
+    box-shadow: var(--w98-inset-thin);
   }
   .crop-action-btn:disabled {
     opacity: 0.5;
@@ -395,11 +395,11 @@
   }
 
   .crop-apply {
-    background: #c0c0c0;
+    background: var(--w98-surface);
     color: #000;
   }
   .crop-cancel {
-    background: #c0c0c0;
+    background: var(--w98-surface);
     color: #000;
   }
 </style>

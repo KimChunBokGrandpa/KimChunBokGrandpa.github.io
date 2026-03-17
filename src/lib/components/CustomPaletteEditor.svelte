@@ -229,7 +229,7 @@
 <style>
   .cpe-root {
     padding: 6px;
-    font-size: 11px;
+    font-size: var(--w98-font-size-base);
     display: flex;
     flex-direction: column;
     gap: 6px;
@@ -248,7 +248,7 @@
     min-height: 28px;
     padding: 4px;
     background: #fff;
-    border: 2px inset #dfdfdf;
+    border: 2px inset var(--w98-shadow-light);
   }
 
   .cpe-swatch-item {
@@ -262,10 +262,10 @@
     width: 14px;
     height: 14px;
     padding: 0;
-    font-size: 10px;
+    font-size: var(--w98-font-size-sm);
     line-height: 1;
-    background: #c0c0c0;
-    border: 1px solid #808080;
+    background: var(--w98-surface);
+    border: 1px solid var(--w98-shadow-808);
     cursor: pointer;
     display: none;
     align-items: center;
@@ -285,7 +285,7 @@
   }
 
   .cpe-swatch:hover {
-    outline: 2px solid #000080;
+    outline: 2px solid var(--w98-highlight);
     outline-offset: -1px;
     z-index: 1;
     position: relative;
@@ -313,7 +313,7 @@
     width: 28px;
     height: 22px;
     padding: 0;
-    border: 1px solid #808080;
+    border: 1px solid var(--w98-shadow-808);
     cursor: pointer;
   }
 
@@ -321,12 +321,12 @@
     width: 70px;
     padding: 2px 4px;
     font-family: 'Courier New', monospace;
-    font-size: 11px;
+    font-size: var(--w98-font-size-base);
   }
 
   .cpe-add-btn {
     padding: 2px 8px;
-    font-size: 10px;
+    font-size: var(--w98-font-size-sm);
     font-weight: bold;
   }
 
@@ -354,7 +354,7 @@
   }
   .cpe-tool-btn {
     padding: 2px 6px;
-    font-size: 10px;
+    font-size: var(--w98-font-size-sm);
     font-weight: bold;
     cursor: pointer;
   }
@@ -370,13 +370,13 @@
     display: flex;
     flex-direction: column;
     gap: 2px;
-    font-size: 10px;
+    font-size: var(--w98-font-size-sm);
     font-weight: bold;
   }
   .cpe-step-input {
     width: 44px;
     padding: 2px 4px;
-    font-size: 11px;
+    font-size: var(--w98-font-size-base);
   }
   .cpe-gradient-preview {
     display: flex;
@@ -384,7 +384,7 @@
     margin-top: 4px;
     padding: 3px;
     background: #fff;
-    border: 2px inset #dfdfdf;
+    border: 2px inset var(--w98-shadow-light);
     min-height: 16px;
   }
   .cpe-grad-swatch {

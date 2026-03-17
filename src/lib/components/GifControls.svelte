@@ -106,7 +106,7 @@
     left: 50%;
     transform: translateX(-50%);
     background: rgba(0, 0, 0, 0.85);
-    border: 2px outset #dfdfdf;
+    border: 2px outset var(--w98-shadow-light);
     padding: 4px 8px;
     z-index: 6;
     display: flex;
@@ -128,19 +128,19 @@
     min-width: 22px;
     height: 20px;
     padding: 0 4px;
-    font-size: 11px;
+    font-size: var(--w98-font-size-base);
     font-weight: bold;
     font-family: inherit;
-    background: #c0c0c0;
+    background: var(--w98-surface);
     border: none;
     cursor: pointer;
-    box-shadow: inset 1px 1px #fff, inset -1px -1px #0a0a0a;
+    box-shadow: var(--w98-outset-thin);
     display: flex;
     align-items: center;
     justify-content: center;
   }
   .gif-btn:active {
-    box-shadow: inset -1px -1px #fff, inset 1px 1px #0a0a0a;
+    box-shadow: var(--w98-inset-thin);
   }
   .gif-btn:disabled {
     opacity: 0.5;
@@ -149,11 +149,11 @@
 
   .gif-export-btn {
     padding: 0 8px;
-    font-size: 10px;
+    font-size: var(--w98-font-size-sm);
   }
 
   .gif-frame-info {
-    font-size: 11px;
+    font-size: var(--w98-font-size-base);
     font-family: 'Courier New', Courier, monospace;
     font-weight: bold;
     color: #fff;
@@ -177,19 +177,19 @@
     width: 100%;
     height: 12px;
     cursor: pointer;
-    accent-color: #000080;
+    accent-color: var(--w98-highlight);
   }
 
   .gif-export-progress {
     height: 8px;
     background: #000;
-    border: 1px inset #dfdfdf;
+    border: 1px inset var(--w98-shadow-light);
     overflow: hidden;
   }
 
   .gif-export-bar {
     height: 100%;
-    background: #000080;
+    background: var(--w98-highlight);
     transition: width 0.2s;
   }
 

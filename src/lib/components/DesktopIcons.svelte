@@ -68,7 +68,7 @@
     border: 1px dotted transparent;
     cursor: pointer;
     font-family: inherit;
-    font-size: 11px;
+    font-size: var(--w98-font-size-base);
     color: #fff;
     text-shadow: 1px 1px 1px #000;
   }
@@ -92,7 +92,7 @@
   }
 
   .desktop-icon.icon-selected .icon-label {
-    background: #000080;
+    background: var(--w98-highlight);
     color: #fff;
     padding: 1px 4px;
   }

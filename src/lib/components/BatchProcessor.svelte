@@ -278,29 +278,29 @@
     display: flex;
     flex-direction: column;
     min-height: 0;
-    font-size: 11px;
-    background: #c0c0c0;
+    font-size: var(--w98-font-size-base);
+    background: var(--w98-surface);
   }
 
   /* Settings Info */
   .batch-settings-info {
     padding: 4px 6px;
-    background: #000080;
+    background: var(--w98-highlight);
     color: #fff;
-    font-size: 11px;
+    font-size: var(--w98-font-size-base);
     display: flex;
     justify-content: space-between;
     align-items: center;
   }
   .batch-settings-hint {
     color: #aaa;
-    font-size: 9px;
+    font-size: var(--w98-font-size-caption);
   }
 
   .batch-dropzone {
     flex: 1;
     overflow-y: auto;
-    border: 2px dashed #808080;
+    border: 2px dashed var(--w98-shadow-808);
     margin: 4px;
     background: #fff;
     transition: all 0.2s;
@@ -308,7 +308,7 @@
   }
   .batch-dropzone.dragging {
     background: #d0d8e0;
-    border-color: #000080;
+    border-color: var(--w98-highlight);
   }
 
   .batch-empty {
@@ -321,7 +321,7 @@
     color: #555;
   }
   .batch-empty-icon { font-size: 32px; }
-  .batch-hint { font-size: 10px; color: #999; margin: 0; }
+  .batch-hint { font-size: var(--w98-font-size-sm); color: #999; margin: 0; }
   .batch-browse-btn { font-weight: bold; padding: 4px 12px; }
 
   /* Grid */
@@ -344,7 +344,7 @@
     border: 1px solid #ccc;
     cursor: pointer;
   }
-  .batch-item:hover { background: #e0e8f0; border-color: #000080; }
+  .batch-item:hover { background: #e0e8f0; border-color: var(--w98-highlight); }
   .batch-item.item-done { border-color: #4a4; background: #f0f8f0; }
   .batch-item.item-error { border-color: #a44; background: #f8f0f0; }
   .batch-item.item-processing { border-color: #44a; background: #f0f0f8; }
@@ -372,7 +372,7 @@
     font-weight: 500;
   }
   .batch-item-status {
-    font-size: 9px;
+    font-size: var(--w98-font-size-caption);
     color: #666;
   }
   .batch-item-progress {
@@ -385,7 +385,7 @@
   }
   .batch-item-progress-fill {
     height: 100%;
-    background: #000080;
+    background: var(--w98-highlight);
     transition: width 0.15s ease;
   }
   .batch-item-remove {
@@ -395,13 +395,13 @@
     width: 16px;
     height: 16px;
     padding: 0;
-    font-size: 11px;
+    font-size: var(--w98-font-size-base);
     line-height: 1;
     font-weight: bold;
-    background: #c0c0c0;
+    background: var(--w98-surface);
     border: none;
     cursor: pointer;
-    box-shadow: inset 1px 1px #fff, inset -1px -1px #808080;
+    box-shadow: inset 1px 1px var(--w98-shadow-white), inset -1px -1px var(--w98-shadow-808);
     min-width: 0;
     min-height: 0;
     display: flex;
@@ -413,7 +413,7 @@
   .batch-add-more {
     width: 100%;
     padding: 6px;
-    font-size: 11px;
+    font-size: var(--w98-font-size-base);
     cursor: pointer;
     color: #555;
   }
@@ -421,7 +421,7 @@
   /* Controls */
   .batch-controls {
     padding: 4px;
-    border-top: 1px solid #808080;
+    border-top: 1px solid var(--w98-shadow-808);
     display: flex;
     flex-direction: column;
     gap: 4px;
@@ -436,7 +436,7 @@
     flex: 1;
     height: 12px;
     background: #000;
-    border: 2px inset #dfdfdf;
+    border: 2px inset var(--w98-shadow-light);
     position: relative;
     overflow: hidden;
   }
@@ -444,20 +444,20 @@
     height: 100%;
     background: repeating-linear-gradient(
       90deg,
-      #000080 0px, #000080 8px,
+      var(--w98-highlight) 0px, var(--w98-highlight) 8px,
       #0000a0 8px, #0000a0 10px
     );
     transition: width 0.2s ease;
   }
   .batch-overall-text {
-    font-size: 10px;
+    font-size: var(--w98-font-size-sm);
     font-weight: bold;
-    color: #000080;
+    color: var(--w98-highlight);
     white-space: nowrap;
     font-family: 'Courier New', monospace;
   }
   .batch-status {
-    font-size: 10px;
+    font-size: var(--w98-font-size-sm);
     color: #444;
   }
   .error-text { color: #a00; }
@@ -468,7 +468,7 @@
   .batch-actions button {
     flex: 1;
     padding: 3px 6px;
-    font-size: 10px;
+    font-size: var(--w98-font-size-sm);
     font-weight: bold;
   }
   .batch-actions button:disabled {
@@ -479,11 +479,11 @@
   @media (max-width: 550px) {
     .batch-browse-btn {
       padding: 10px 24px;
-      font-size: 13px;
+      font-size: var(--w98-font-size-icon);
     }
     .batch-actions button {
       padding: 8px 6px;
-      font-size: 12px;
+      font-size: var(--w98-font-size-action);
     }
   }
 </style>

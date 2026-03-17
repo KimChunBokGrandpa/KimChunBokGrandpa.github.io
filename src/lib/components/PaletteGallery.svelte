@@ -405,10 +405,10 @@
     flex: 1;
     display: flex;
     flex-direction: column;
-    background: #c0c0c0;
+    background: var(--w98-surface);
     min-height: 0;
     overflow: hidden;
-    font-size: 11px;
+    font-size: var(--w98-font-size-base);
   }
 
   /* ── Toolbar ── */
@@ -417,31 +417,31 @@
     flex-wrap: wrap;
     gap: 1px;
     padding: 2px 3px;
-    border-bottom: 1px solid #808080;
+    border-bottom: 1px solid var(--w98-shadow-808);
     flex-shrink: 0;
-    background: #c0c0c0;
+    background: var(--w98-surface);
   }
   .pg-toolbtn {
     padding: 2px 6px;
-    font-size: 10px;
+    font-size: var(--w98-font-size-sm);
     font-family: inherit;
-    background: #d4d0c8;
+    background: var(--w98-surface-active);
     border: 1px solid transparent;
     border-bottom: none;
     cursor: pointer;
     box-shadow:
-      inset 1px 1px #fff,
-      inset -1px -1px #808080;
+      inset 1px 1px var(--w98-shadow-white),
+      inset -1px -1px var(--w98-shadow-808);
   }
   .pg-toolbtn:hover {
     background: #e0dcd4;
   }
   .pg-toolbtn.tb-sel {
-    background: #c0c0c0;
+    background: var(--w98-surface);
     font-weight: bold;
     box-shadow:
-      inset -1px -1px #fff,
-      inset 1px 1px #808080;
+      inset -1px -1px var(--w98-shadow-white),
+      inset 1px 1px var(--w98-shadow-808);
   }
 
   /* ── Custom Toolbar (New + Import) ── */
@@ -452,15 +452,15 @@
   .pg-new-btn {
     flex: 1;
     padding: 4px 8px;
-    font-size: 11px;
+    font-size: var(--w98-font-size-base);
     font-weight: bold;
     cursor: pointer;
-    background: #d4d0c8;
+    background: var(--w98-surface-active);
     border: none;
-    border-bottom: 1px solid #808080;
+    border-bottom: 1px solid var(--w98-shadow-808);
     box-shadow:
-      inset 1px 1px #fff,
-      inset -1px -1px #808080;
+      inset 1px 1px var(--w98-shadow-white),
+      inset -1px -1px var(--w98-shadow-808);
     text-align: center;
   }
   .pg-new-btn:hover {
@@ -504,7 +504,7 @@
     background: #efefef;
   }
   .pg-item.sel {
-    background: #000080;
+    background: var(--w98-highlight);
     color: #fff;
   }
 
@@ -534,7 +534,7 @@
 
   .pg-color-badge {
     flex-shrink: 0;
-    font-size: 9px;
+    font-size: var(--w98-font-size-caption);
     padding: 0 4px;
     border-radius: 3px;
     background: #e8e4e0;
@@ -548,7 +548,7 @@
 
   .pg-check {
     flex-shrink: 0;
-    font-size: 12px;
+    font-size: var(--w98-font-size-action);
     font-weight: bold;
     color: #0a0;
   }
@@ -562,7 +562,7 @@
     background: none;
     border: none;
     cursor: pointer;
-    font-size: 13px;
+    font-size: var(--w98-font-size-icon);
     padding: 0 2px;
     color: #ccc;
     min-width: 0;
@@ -589,7 +589,7 @@
     background: none;
     border: none;
     cursor: pointer;
-    font-size: 10px;
+    font-size: var(--w98-font-size-sm);
     padding: 0 2px;
     color: #888;
     min-width: 0;
@@ -613,7 +613,7 @@
     background: none;
     border: none;
     cursor: pointer;
-    font-size: 12px;
+    font-size: var(--w98-font-size-action);
     padding: 0 2px;
     color: #888;
     min-width: 0;
@@ -622,7 +622,7 @@
     line-height: 1;
   }
   .pg-edit-btn:hover {
-    color: #000080;
+    color: var(--w98-highlight);
   }
   .pg-del-btn:hover {
     color: #cc0000;
@@ -684,7 +684,7 @@
     flex-shrink: 0;
   }
   .pg-swatch:hover {
-    outline: 2px solid #000080;
+    outline: 2px solid var(--w98-highlight);
     outline-offset: -1px;
     z-index: 1;
     position: relative;
@@ -730,7 +730,7 @@
       max-height: 100px;
       overflow-y: auto;
       padding: 3px 0 0 0;
-      border-top: 1px solid #808080;
+      border-top: 1px solid var(--w98-shadow-808);
     }
     .pg-toolbar {
       gap: 0;
@@ -738,7 +738,7 @@
     }
     .pg-toolbtn {
       padding: 2px 4px;
-      font-size: 9px;
+      font-size: var(--w98-font-size-caption);
     }
   }
 </style>

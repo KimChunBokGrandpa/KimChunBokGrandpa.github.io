@@ -117,10 +117,13 @@ onmessage = (e: MessageEvent<ImageWorkerMessage>) => {
 
     postMessage({ id, type: 'progress', progress: 0.9 } as ImageWorkerResponse);
 
-    // Count unique colors
+    // Count unique colors (sample for large images to reduce overhead)
     const colorSet = new Set<number>();
     const pd = processedData.data;
-    for (let i = 0; i < pd.length; i += 4) {
+    const totalPixels = pd.length / 4;
+    const SAMPLE_THRESHOLD = 500_000;
+    const step = totalPixels > SAMPLE_THRESHOLD ? Math.ceil(totalPixels / SAMPLE_THRESHOLD) * 4 : 4;
+    for (let i = 0; i < pd.length; i += step) {
       if (pd[i + 3] < 128) continue; // skip transparent
       colorSet.add((pd[i] << 16) | (pd[i + 1] << 8) | pd[i + 2]);
     }
