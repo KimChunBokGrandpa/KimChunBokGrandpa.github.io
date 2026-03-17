@@ -2,7 +2,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, cleanup } from '@testing-library/svelte';
 import { fireEvent } from '@testing-library/svelte';
-import DesktopIcons from '../DesktopIcons.svelte';
+import DesktopIcons from '../window/DesktopIcons.svelte';
 import type { WindowId } from '$lib/types';
 
 afterEach(() => cleanup());

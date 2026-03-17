@@ -396,4 +396,32 @@ export const ja: Record<TranslationKey, string> = {
   move_up: '上に移動',
   move_down: '下に移動',
   processing_failed: '処理に失敗しました。',
+  confirm_load_new_image: '新しい画像を読み込むと、現在の作業が失われます。続行しますか？',
+  confirm_load_new_title: '新しい画像を読み込む',
+  btn_open_settings: '設定を開く',
+  btn_rotate_left: '左に回転',
+  btn_rotate_right: '右に回転',
+  btn_reset_transform: '変換リセット',
+  btn_compare_toggle: '比較モード切り替え',
+  btn_compare_variant: '比較方式変更',
+  btn_zoom_in: '拡大',
+  btn_zoom_out: '縮小',
+  btn_fit_to_window: 'ウィンドウに合わせる',
+  btn_grid_toggle: 'ピクセルグリッド切り替え',
+  btn_tile_toggle: 'タイルプレビュー切り替え',
+  btn_eyedropper_toggle: 'カラーピッカー切り替え',
+  btn_copy_color: '色をコピー',
+  btn_dismiss_color: '色を閉じる',
+
+  // ─── Empty States ───
+  history_empty: 'まだ履歴がありません。設定を変更すると記録が開始されます。',
+  history_empty_hint: '設定を調整して履歴を確認',
+  batch_empty_hint: '対応: PNG, JPEG, GIF, BMP, WebP',
+
+  // ─── Processing States ───
+  loading_image: '画像を読み込み中...',
+  applying_settings: '設定を適用中...',
+
+  // ─── Unsaved Changes ───
+  unsaved_changes: '未適用',
 };

@@ -2,7 +2,7 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import { render, screen, cleanup } from '@testing-library/svelte';
 import { fireEvent } from '@testing-library/svelte';
-import BeforeAfterSlider from '../BeforeAfterSlider.svelte';
+import BeforeAfterSlider from '../media/BeforeAfterSlider.svelte';
 
 afterEach(() => cleanup());
 

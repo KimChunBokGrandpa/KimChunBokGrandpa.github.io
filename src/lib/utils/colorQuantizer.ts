@@ -154,17 +154,17 @@ export function applyPixelationAndPalette(
   const outPixels = outData.data;
   const outPixels32 = new Uint32Array(outPixels.buffer);
   const packed = usePalette ? buildLut(paletteName, customPaletteColors) : null;
+  const sampleStride = effectivePixelSize >= 5 ? 2 : 1;
 
   for (let y = 0; y < height; y += effectivePixelSize) {
     for (let x = 0; x < width; x += effectivePixelSize) {
       let r = 0, g = 0, b = 0, a = 0, count = 0;
       const blockH = Math.min(effectivePixelSize, height - y);
       const blockW = Math.min(effectivePixelSize, width - x);
-      const stride = effectivePixelSize >= 5 ? 2 : 1;
 
-      for (let by = 0; by < blockH; by += stride) {
+      for (let by = 0; by < blockH; by += sampleStride) {
         const rowBase = ((y + by) * width + x) * 4;
-        for (let bx = 0; bx < blockW; bx += stride) {
+        for (let bx = 0; bx < blockW; bx += sampleStride) {
           const idx = rowBase + bx * 4;
           r += pixels[idx];
           g += pixels[idx + 1];
@@ -216,6 +216,7 @@ function applyFloydSteinberg(
 
   // Float buffers for error diffusion (r, g, b per reduced pixel)
   const buf = new Float32Array(rw * rh * 3);
+  const fsStride = pixelSize >= 5 ? 2 : 1;
 
   // Fill with block averages
   for (let ry = 0; ry < rh; ry++) {
@@ -225,11 +226,10 @@ function applyFloydSteinberg(
       const blockW = Math.min(pixelSize, width - sx);
       const blockH = Math.min(pixelSize, height - sy);
       let r = 0, g = 0, b = 0, count = 0;
-      const stride = pixelSize >= 5 ? 2 : 1;
 
-      for (let by = 0; by < blockH; by += stride) {
+      for (let by = 0; by < blockH; by += fsStride) {
         const rowBase = ((sy + by) * width + sx) * 4;
-        for (let bx = 0; bx < blockW; bx += stride) {
+        for (let bx = 0; bx < blockW; bx += fsStride) {
           const idx = rowBase + bx * 4;
           r += pixels[idx];
           g += pixels[idx + 1];
@@ -333,6 +333,7 @@ function applyOrderedDither(
   // Scale by approximate palette step size for natural results.
   const palette = customColors || PALETTES[paletteName] || PALETTES["win256"];
   const spread = Math.max(8, Math.round(384 / Math.max(2, palette.length)));
+  const odStride = pixelSize >= 5 ? 2 : 1;
 
   for (let y = 0; y < height; y += pixelSize) {
     for (let x = 0; x < width; x += pixelSize) {
@@ -341,10 +342,9 @@ function applyOrderedDither(
 
       // Average block color
       let r = 0, g = 0, b = 0, a = 0, count = 0;
-      const stride = pixelSize >= 5 ? 2 : 1;
-      for (let by = 0; by < blockH; by += stride) {
+      for (let by = 0; by < blockH; by += odStride) {
         const rowBase = ((y + by) * width + x) * 4;
-        for (let bx = 0; bx < blockW; bx += stride) {
+        for (let bx = 0; bx < blockW; bx += odStride) {
           const idx = rowBase + bx * 4;
           r += pixels[idx];
           g += pixels[idx + 1];

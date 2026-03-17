@@ -1,6 +1,6 @@
 <script lang="ts">
-  import type { RGB } from '../utils/palettes';
-  import { rgbToHex, hexToRgb } from '../utils/colorUtils';
+  import type { RGB } from '$lib/utils/palettes';
+  import { rgbToHex, hexToRgb } from '$lib/utils/colorUtils';
   import { i18n } from '$lib/i18n/index.svelte';
 
   let {

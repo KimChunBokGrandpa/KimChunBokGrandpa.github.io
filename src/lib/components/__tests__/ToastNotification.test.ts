@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, cleanup } from '@testing-library/svelte';
-import ToastNotification from '../ToastNotification.svelte';
+import ToastNotification from '../feedback/ToastNotification.svelte';
 
 afterEach(() => cleanup());
 

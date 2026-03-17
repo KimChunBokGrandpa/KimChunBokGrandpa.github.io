@@ -3,15 +3,16 @@
  * settings state, undo history, and save operations.
  * Extracted from +page.svelte for separation of concerns.
  */
-import { processorService } from '$lib/utils/imageProcessor';
+import { processorService } from '$lib/services/imageProcessor';
 import { saveImage } from '$lib/services/saveService';
 import type { SaveFormat } from '$lib/services/saveService';
-import type { ProcessingSettings, PostProcessFilters } from '$lib/types';
+import type { ProcessingSettings, PostProcessFilters, ImageWorkerMessage } from '$lib/types';
 import { DEFAULT_POST_FILTERS } from '$lib/types';
 import { decodeGif, frameToBlobUrl, type GifInfo } from '$lib/utils/gifProcessor';
 import type { GifEncodeWorkerMessage, GifEncodeWorkerResponse } from '$lib/types';
 import { i18n } from '$lib/i18n/index.svelte';
 import { applyCrtEffect } from '$lib/utils/crtRenderer';
+import { customPaletteStore } from '$lib/stores/customPaletteStore.svelte';
 
 const DEBOUNCE_MS = 150;
 const MAX_HISTORY = 20;
@@ -84,6 +85,7 @@ export function createImageProcessingStore() {
   let colorCount = $state(0);
   let postFilters = $state<PostProcessFilters>({ ...DEFAULT_POST_FILTERS });
   let autoProcess = $state(true);
+  let hasUnappliedChanges = $state(false);
 
   // ─── Transform State (pre-processing) ───
   let rotation = $state(0); // 0, 90, 180, 270
@@ -250,13 +252,11 @@ export function createImageProcessingStore() {
   let gifFrameCache = new Map<string, string>(); // "settingsHash:frameIdx" → blobUrl
   let gifCacheSettingsHash = '';
 
-  function settingsHash(): string {
-    return JSON.stringify({
-      p: settings.pixelSize, pal: settings.palette, crt: settings.crtEffect,
-      g: settings.glitchFilters, r: settings.renderMode, s: settings.glitchSeed,
-      d: settings.ditherType, el: settings.effectLayers,
-    });
-  }
+  let currentSettingsHash = $derived(JSON.stringify({
+    p: settings.pixelSize, pal: settings.palette, crt: settings.crtEffect,
+    g: settings.glitchFilters, r: settings.renderMode, s: settings.glitchSeed,
+    d: settings.ditherType, el: settings.effectLayers,
+  }));
 
   function invalidateGifCache() {
     for (const url of gifFrameCache.values()) URL.revokeObjectURL(url);
@@ -293,13 +293,16 @@ export function createImageProcessingStore() {
       const result = await processorService.processImage(blobUrl, settings, handleDimensionCapped);
       return result;
     } finally {
+      // Safe to revoke: processImage awaits Image load before returning,
+      // and we clear image cache for GIF frames to avoid stale blob URL refs
+      processorService.evictFromImageCache(blobUrl);
       URL.revokeObjectURL(blobUrl);
     }
   }
 
   async function showGifFrame(index: number) {
     gifCurrentFrame = index;
-    const hash = settingsHash();
+    const hash = currentSettingsHash;
     // Invalidate cache if settings changed
     if (hash !== gifCacheSettingsHash) {
       invalidateGifCache();
@@ -339,6 +342,9 @@ export function createImageProcessingStore() {
         if (gifPlaying && gifInfo) {
           gifAnimTimer = setTimeout(nextFrame, gifInfo.frames[nextIdx].delay);
         }
+      }).catch((err) => {
+        console.error('GIF playback error:', err);
+        stopGifPlayback();
       });
     }
     nextFrame();
@@ -359,66 +365,100 @@ export function createImageProcessingStore() {
     gifProcessingProgress = 0;
 
     try {
-      const processedFrames: { data: Uint8ClampedArray; delay: number }[] = [];
-      let outW = 0;
-      let outH = 0;
+      const { ImageWorkerPool } = await import('$lib/utils/workerPool');
+      const pool = new ImageWorkerPool();
 
-      // Capture frames reference before the async loop to prevent race condition
-      // (user may load a new image mid-export, nullifying gifInfo)
-      const frames = gifInfo.frames;
-      const totalFrames = frames.length;
-      for (let i = 0; i < totalFrames; i++) {
-        gifProcessingProgress = (i / totalFrames) * 0.9;
-        const frame = frames[i];
+      try {
+        // Capture frames reference to prevent race condition
+        const frames = gifInfo.frames;
+        const totalFrames = frames.length;
+        let completedFrames = 0;
 
-        // Create blob URL from raw frame
-        const blobUrl = await frameToBlobUrl(frame);
-        try {
-          // Process through the pipeline
-          const resultUrl = await processorService.processImage(blobUrl, settings, handleDimensionCapped);
-          if (!resultUrl) continue;
+        // Resolve custom palette colors once for all frames
+        const customPaletteColors = settings.palette.startsWith('custom_')
+          ? customPaletteStore.getPaletteById(settings.palette)?.colors
+              ?.map(c => ({ r: c.r, g: c.g, b: c.b }))
+          : undefined;
 
-          // Get ImageData directly from cached canvas (avoids blob→Image→Canvas roundtrip)
-          const lastCanvas = processorService.getLastCanvas();
-          if (lastCanvas) {
-            if (i === 0) {
-              outW = lastCanvas.width;
-              outH = lastCanvas.height;
-            }
-            const ctx = lastCanvas.getContext('2d');
-            if (!ctx) continue;
-            const imageData = ctx.getImageData(0, 0, lastCanvas.width, lastCanvas.height);
-            processedFrames.push({
-              data: imageData.data,
-              delay: frame.delay,
-            });
-          }
-
-          URL.revokeObjectURL(resultUrl);
-        } finally {
-          URL.revokeObjectURL(blobUrl);
+        // Cap dimensions (same logic as imageProcessor)
+        const MAX_DIM = settings.renderMode === 'hqx' ? 1024 : 2048;
+        const frameW = frames[0].width;
+        const frameH = frames[0].height;
+        let procW = frameW;
+        let procH = frameH;
+        if (procW > MAX_DIM || procH > MAX_DIM) {
+          const scale = MAX_DIM / Math.max(procW, procH);
+          procW = Math.round(procW * scale);
+          procH = Math.round(procH * scale);
         }
+
+        // Submit all frames to worker pool in parallel
+        const framePromises = frames.map(async (frame, i) => {
+          const imageData = new ImageData(
+            new Uint8ClampedArray(frame.data),
+            frame.width,
+            frame.height,
+          );
+          const bitmap = await createImageBitmap(imageData, {
+            resizeWidth: procW,
+            resizeHeight: procH,
+          });
+
+          const message: ImageWorkerMessage = {
+            id: `gif-frame-${i}`,
+            imageBitmap: bitmap,
+            width: procW,
+            height: procH,
+            pixelSize: settings.pixelSize,
+            palette: settings.palette,
+            glitchFilters: settings.glitchFilters.map(f => ({
+              type: f.type,
+              intensity: f.intensity,
+            })),
+            renderMode: settings.renderMode,
+            glitchSeed: settings.glitchSeed,
+            ditherType: settings.ditherType,
+            customPaletteColors,
+            effectLayers: settings.effectLayers?.map(l => ({ ...l })),
+          };
+
+          const result = await pool.submit(message, [bitmap]);
+          completedFrames++;
+          gifProcessingProgress = (completedFrames / totalFrames) * 0.9;
+          return { imageData: result, delay: frame.delay };
+        });
+
+        const results = await Promise.all(framePromises);
+
+        if (results.length === 0) return null;
+        const outW = results[0].imageData.width;
+        const outH = results[0].imageData.height;
+
+        const processedFrames = results.map(r => ({
+          data: r.imageData.data,
+          delay: r.delay,
+        }));
+
+        gifProcessingProgress = 0.92; // Encoding phase
+
+        // Encode GIF in a Web Worker to prevent UI blocking
+        const gifBytes = await encodeGifInWorker(processedFrames, outW, outH);
+        gifProcessingProgress = 1;
+
+        const blob = new Blob([gifBytes], { type: 'image/gif' });
+        const url = URL.createObjectURL(blob);
+
+        // Trigger download
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'pixel-art-animation.gif';
+        a.click();
+        URL.revokeObjectURL(url);
+
+        return i18n.t('gif_exported');
+      } finally {
+        pool.destroy();
       }
-
-      if (processedFrames.length === 0 || outW === 0) return null;
-
-      gifProcessingProgress = 0.92; // Encoding phase
-
-      // Encode GIF in a Web Worker to prevent UI blocking
-      const gifBytes = await encodeGifInWorker(processedFrames, outW, outH);
-      gifProcessingProgress = 1;
-
-      const blob = new Blob([gifBytes], { type: 'image/gif' });
-      const url = URL.createObjectURL(blob);
-
-      // Trigger download
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'pixel-art-animation.gif';
-      a.click();
-      URL.revokeObjectURL(url);
-
-      return i18n.t('gif_exported');
     } catch (err) {
       console.error('GIF export error:', err);
       lastError = err instanceof Error ? err.message : String(err);
@@ -427,6 +467,35 @@ export function createImageProcessingStore() {
       gifIsExporting = false;
       gifProcessingProgress = 0;
     }
+  }
+
+  // ─── GIF Loading ───
+  async function loadGifFile(file: File) {
+    try {
+      const buffer = await file.arrayBuffer();
+      try {
+        const info = decodeGif(buffer);
+        if (info.frames.length > 1) {
+          isGif = true;
+          gifInfo = info;
+          gifCurrentFrame = 0;
+          currentObjectUrl = URL.createObjectURL(file);
+          originalImageSrc = currentObjectUrl;
+          dimensionCapShown = false;
+          showGifFrame(0);
+          return;
+        }
+      } catch (err) {
+        console.warn('GIF decode failed, treating as static image:', err);
+      }
+    } catch (err) {
+      console.error('Failed to read GIF file:', err);
+    }
+    // Single-frame or failed GIF: treat as normal image
+    currentObjectUrl = URL.createObjectURL(file);
+    originalImageSrc = currentObjectUrl;
+    dimensionCapShown = false;
+    processImmediate();
   }
 
   // ─── Public Actions ───
@@ -440,36 +509,7 @@ export function createImageProcessingStore() {
     // Check if it's a GIF
     if (file.type === 'image/gif') {
       isProcessing = true;
-      file.arrayBuffer().then((buffer) => {
-        try {
-          const info = decodeGif(buffer);
-          if (info.frames.length > 1) {
-            // It's an animated GIF
-            isGif = true;
-            gifInfo = info;
-            gifCurrentFrame = 0;
-            // Also set originalImageSrc for the preview
-            currentObjectUrl = URL.createObjectURL(file);
-            originalImageSrc = currentObjectUrl;
-            dimensionCapShown = false;
-            // Process first frame
-            showGifFrame(0);
-            return;
-          }
-        } catch {
-          // Not a valid animated GIF, fall through to normal handling
-        }
-        // Single-frame GIF: treat as normal image
-        currentObjectUrl = URL.createObjectURL(file);
-        originalImageSrc = currentObjectUrl;
-        dimensionCapShown = false;
-        processImmediate();
-      }).catch(() => {
-        currentObjectUrl = URL.createObjectURL(file);
-        originalImageSrc = currentObjectUrl;
-        dimensionCapShown = false;
-        processImmediate();
-      });
+      loadGifFile(file);
       return;
     }
 
@@ -493,7 +533,10 @@ export function createImageProcessingStore() {
   function updateSettings(newSettings: ProcessingSettings) {
     pushHistory(settings);
     settings = { ...newSettings };
-    if (!autoProcess) return;
+    if (!autoProcess) {
+      hasUnappliedChanges = true;
+      return;
+    }
     if (isGif && gifInfo) {
       stopGifPlayback();
       showGifFrame(gifCurrentFrame);
@@ -505,7 +548,10 @@ export function createImageProcessingStore() {
   function selectPalette(paletteId: string) {
     pushHistory(settings);
     settings.palette = paletteId;
-    if (!autoProcess) return;
+    if (!autoProcess) {
+      hasUnappliedChanges = true;
+      return;
+    }
     if (isGif && gifInfo) {
       stopGifPlayback();
       showGifFrame(gifCurrentFrame);
@@ -517,6 +563,7 @@ export function createImageProcessingStore() {
   /** Manual apply — used when autoProcess is off */
   function applyNow() {
     if (!originalImageSrc) return;
+    hasUnappliedChanges = false;
     if (isGif && gifInfo) {
       stopGifPlayback();
       showGifFrame(gifCurrentFrame);
@@ -636,6 +683,7 @@ export function createImageProcessingStore() {
     get postFilterCss() { return postFilterCssString(); },
     get autoProcess() { return autoProcess; },
     set autoProcess(v: boolean) { autoProcess = v; },
+    get hasUnappliedChanges() { return hasUnappliedChanges; },
 
     // Transform state
     get rotation() { return rotation; },

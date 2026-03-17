@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/sveltekit';
-import GifControls from '../GifControls.svelte';
+import GifControls from '../media/GifControls.svelte';
 
 const meta = {
   title: 'Components/GifControls',

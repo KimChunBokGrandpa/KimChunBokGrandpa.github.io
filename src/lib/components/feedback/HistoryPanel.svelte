@@ -55,13 +55,21 @@
   </div>
 
   <div class="history-list" bind:this={listEl}>
-    <!-- Past states -->
-    {#each history as step, i}
-      <button class="history-item past" onclick={() => onJumpToHistory(i, false)}>
-        <span class="step-num">{i + 1}</span>
-        <span class="step-desc">{describeSettings(step)}</span>
-      </button>
-    {/each}
+    {#if history.length === 0 && redoHistory.length === 0}
+      <div class="history-empty">
+        <span class="history-empty-icon">📜</span>
+        <p class="history-empty-text">{i18n.t('history_empty')}</p>
+        <p class="history-empty-hint">{i18n.t('history_empty_hint')}</p>
+      </div>
+    {:else}
+      <!-- Past states -->
+      {#each history as step, i}
+        <button class="history-item past" onclick={() => onJumpToHistory(i, false)}>
+          <span class="step-num">{i + 1}</span>
+          <span class="step-desc">{describeSettings(step)}</span>
+        </button>
+      {/each}
+    {/if}
 
     <!-- Current state -->
     <div class="history-item current">
@@ -178,5 +186,30 @@
     color: #fff;
     padding: 1px 4px;
     border-radius: var(--w98-radius-sm);
+  }
+
+  .history-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 16px 8px;
+    gap: 4px;
+    color: #888;
+    text-align: center;
+  }
+  .history-empty-icon {
+    font-size: 24px;
+    opacity: 0.6;
+  }
+  .history-empty-text {
+    font-size: var(--w98-font-size-base);
+    color: #666;
+    margin: 0;
+  }
+  .history-empty-hint {
+    font-size: var(--w98-font-size-sm);
+    color: #999;
+    margin: 0;
   }
 </style>

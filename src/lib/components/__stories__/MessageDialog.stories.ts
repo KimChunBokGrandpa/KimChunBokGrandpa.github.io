@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/sveltekit';
-import MessageDialog from '../MessageDialog.svelte';
+import MessageDialog from '../feedback/MessageDialog.svelte';
 
 const meta = {
   title: 'Components/MessageDialog',

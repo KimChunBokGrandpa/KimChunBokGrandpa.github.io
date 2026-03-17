@@ -1,25 +1,23 @@
 <script lang="ts">
   import { onDestroy } from 'svelte';
-  import Win98Window from '$lib/components/Win98Window.svelte';
-  import ControlPanel from '$lib/components/ControlPanel.svelte';
-  import Taskbar from '$lib/components/Taskbar.svelte';
-  import PaletteGallery from '$lib/components/PaletteGallery.svelte';
-  import MessageDialog from '$lib/components/MessageDialog.svelte';
-  import BatchProcessor from '$lib/components/BatchProcessor.svelte';
-  import HistoryPanel from '$lib/components/HistoryPanel.svelte';
-  import DesktopIcons from '$lib/components/DesktopIcons.svelte';
-  import PreviewContent from '$lib/components/PreviewContent.svelte';
-  import ToastNotification from '$lib/components/ToastNotification.svelte';
-  import KeyboardShortcuts from '$lib/components/KeyboardShortcuts.svelte';
+  import Win98Window from '$lib/components/window/Win98Window.svelte';
+  import ControlPanel from '$lib/components/editor/ControlPanel.svelte';
+  import Taskbar from '$lib/components/window/Taskbar.svelte';
+  import PaletteGallery from '$lib/components/palette/PaletteGallery.svelte';
+  import MessageDialog from '$lib/components/feedback/MessageDialog.svelte';
+  import BatchProcessor from '$lib/components/media/BatchProcessor.svelte';
+  import HistoryPanel from '$lib/components/feedback/HistoryPanel.svelte';
+  import DesktopIcons from '$lib/components/window/DesktopIcons.svelte';
+  import PreviewContent from '$lib/components/editor/PreviewContent.svelte';
+  import ToastNotification from '$lib/components/feedback/ToastNotification.svelte';
+  import KeyboardShortcuts from '$lib/components/feedback/KeyboardShortcuts.svelte';
   import { createWindowStore, WINDOW_CONFIGS } from '$lib/stores/windowStore.svelte';
   import { createZoomPan } from '$lib/stores/zoomPanStore.svelte';
   import { createImageProcessingStore } from '$lib/stores/imageProcessingStore.svelte';
   import { getPaletteName, registerPaletteTranslator } from '$lib/utils/palettes';
-  import { imageDataToSvg, downloadSvg } from '$lib/utils/svgExporter';
-  import { createSpritesheet, downloadSpritesheet } from '$lib/utils/spritesheetExporter';
-  import { frameToBlobUrl } from '$lib/utils/gifProcessor';
+  import { exportSvg, exportSpritesheet } from '$lib/services/exportService';
   import type { SaveFormat } from '$lib/services/saveService';
-  import type { TaskbarWindowInfo } from '$lib/components/Taskbar.svelte';
+  import type { TaskbarWindowInfo } from '$lib/components/window/Taskbar.svelte';
   import type { ProcessingSettings, WindowId } from '$lib/types';
   import { i18n } from '$lib/i18n/index.svelte';
   import { getWindowTitle } from '$lib/stores/windowStore.svelte';
@@ -35,8 +33,34 @@
   // ─── Dialog & Toast State ───
   let dialogMessage: string | null = $state(null);
   let dialogTitle = $state('Message');
-  let toastMessage: string | null = $state(null);
-  let toastVariant: 'success' | 'error' | 'warning' = $state('success');
+  let dialogConfirmCallback: (() => void) | undefined = $state(undefined);
+
+  // Toast queue: max 3 items, drop oldest if exceeded
+  const TOAST_QUEUE_MAX = 3;
+  type ToastItem = { message: string; variant: 'success' | 'error' | 'warning' };
+  let toastQueue: ToastItem[] = $state([]);
+  let activeToast: ToastItem | null = $state(null);
+
+  function enqueueToast(message: string, variant: 'success' | 'error' | 'warning' = 'success') {
+    const item: ToastItem = { message, variant };
+    if (!activeToast) {
+      activeToast = item;
+    } else {
+      toastQueue.push(item);
+      // Drop oldest queued items if exceeding max
+      while (toastQueue.length > TOAST_QUEUE_MAX) {
+        toastQueue.shift();
+      }
+    }
+  }
+
+  function advanceToastQueue() {
+    if (toastQueue.length > 0) {
+      activeToast = toastQueue.shift()!;
+    } else {
+      activeToast = null;
+    }
+  }
 
   // ─── Compare Mode ───
   let compareMode = $state(false);
@@ -68,8 +92,7 @@
 
   // ─── Dimension cap callback ───
   ip.setDimensionCapCallback((original, capped) => {
-    toastVariant = 'warning';
-    toastMessage = i18n.t('image_resized', `${original.w}×${original.h}`, `${capped.w}×${capped.h}px`);
+    enqueueToast(i18n.t('image_resized', `${original.w}×${original.h}`, `${capped.w}×${capped.h}px`), 'warning');
   });
 
   // ─── Mobile split layout ───
@@ -92,7 +115,7 @@
     }
 
     // 3+ windows: focused window expands, others collapse to title bar
-    const COMPACT_H = 28;
+    const COMPACT_H = 34;
     const compactTotal = (count - 1) * COMPACT_H;
     const isFocused = wm.focusedWindow === id;
     const focusedIdx = Math.max(0, mobileVisibleIds.indexOf(wm.focusedWindow as typeof WINDOW_ORDER[number]));
@@ -154,7 +177,7 @@
   async function handleSave() {
     try {
       const message = await ip.save();
-      if (message) toastMessage = message;
+      if (message) enqueueToast(message);
     } catch (err) {
       console.error('Failed to save file:', err);
       showDialog(i18n.t('save_error'), i18n.t('error'));
@@ -162,25 +185,10 @@
   }
 
   async function handleExportSvg() {
-    const src = ip.processedImageSrc;
-    if (!src) return;
+    if (!ip.processedImageSrc) return;
     try {
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      await new Promise<void>((resolve, reject) => {
-        img.onload = () => resolve();
-        img.onerror = () => reject(new Error('Failed to load image'));
-        img.src = src;
-      });
-      const canvas = document.createElement('canvas');
-      canvas.width = img.naturalWidth;
-      canvas.height = img.naturalHeight;
-      const ctx = canvas.getContext('2d')!;
-      ctx.drawImage(img, 0, 0);
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const svgString = imageDataToSvg(imageData);
-      downloadSvg(svgString, `pixel-art-${Date.now()}.svg`);
-      toastMessage = i18n.t('svg_exported');
+      await exportSvg(ip.processedImageSrc);
+      enqueueToast(i18n.t('svg_exported'));
     } catch (err) {
       console.error('SVG export error:', err);
       showDialog(i18n.t('save_error'), i18n.t('error'));
@@ -188,23 +196,10 @@
   }
 
   async function handleExportSpritesheet() {
-    const gifInfo = ip.gifInfo;
-    if (!gifInfo || gifInfo.frames.length === 0) return;
+    if (!ip.gifInfo || ip.gifInfo.frames.length === 0) return;
     try {
-      // Generate blob URLs for all frames
-      const frameSrcs: string[] = [];
-      for (const frame of gifInfo.frames) {
-        frameSrcs.push(await frameToBlobUrl(frame));
-      }
-      const canvas = await createSpritesheet(
-        frameSrcs,
-        gifInfo.width,
-        gifInfo.height,
-      );
-      await downloadSpritesheet(canvas, `spritesheet-${Date.now()}.png`);
-      // Cleanup blob URLs
-      frameSrcs.forEach(URL.revokeObjectURL);
-      toastMessage = i18n.t('spritesheet_exported');
+      await exportSpritesheet(ip.gifInfo);
+      enqueueToast(i18n.t('spritesheet_exported'));
     } catch (err) {
       console.error('Spritesheet export error:', err);
       showDialog(i18n.t('save_error'), i18n.t('error'));
@@ -215,7 +210,17 @@
   function handleQualityChange(quality: number) { ip.setQuality(quality); }
 
   function handleLoadNewImage() {
-    ip.loadNewImage();
+    if (originalImageSrc) {
+      dialogTitle = i18n.t('confirm_load_new_title');
+      dialogMessage = i18n.t('confirm_load_new_image');
+      dialogConfirmCallback = () => {
+        dialogMessage = null;
+        dialogConfirmCallback = undefined;
+        ip.loadNewImage();
+      };
+    } else {
+      ip.loadNewImage();
+    }
   }
 
   function handleIconClick(id: WindowId) {
@@ -351,6 +356,7 @@
           bind:settings={processingSettings}
           bind:postFilters={ip.postFilters}
           bind:autoProcess={ip.autoProcess}
+          hasUnappliedChanges={ip.hasUnappliedChanges}
           {saveFormat}
           {saveQuality}
           hasImage={!!originalImageSrc}
@@ -361,7 +367,7 @@
           onFormatChange={handleFormatChange}
           onQualityChange={handleQualityChange}
           onApplyNow={() => ip.applyNow()}
-          onError={(msg) => { toastMessage = msg; toastVariant = 'error'; }}
+          onError={(msg) => { enqueueToast(msg, 'error'); }}
         />
       </div>
     </Win98Window>
@@ -407,7 +413,7 @@
         onGifSeek={(frame) => ip.seekGifFrame(frame)}
         onGifExport={async () => {
           const msg = await ip.exportGif();
-          if (msg) toastMessage = msg;
+          if (msg) enqueueToast(msg);
         }}
         onGifExportSpritesheet={async () => {
           await handleExportSpritesheet();
@@ -514,17 +520,20 @@
   <MessageDialog
     message={dialogMessage}
     title={dialogTitle}
-    onClose={() => { dialogMessage = null; }}
+    onConfirm={dialogConfirmCallback}
+    onClose={() => { dialogMessage = null; dialogConfirmCallback = undefined; }}
   />
 {/if}
 
 <!-- ═══ Toast ═══ -->
-{#if toastMessage}
-  <ToastNotification
-    message={toastMessage}
-    variant={toastVariant}
-    onDone={() => { toastMessage = null; toastVariant = 'success'; }}
-  />
+{#if activeToast}
+  {#key activeToast}
+    <ToastNotification
+      message={activeToast.message}
+      variant={activeToast.variant}
+      onDone={advanceToastQueue}
+    />
+  {/key}
 {/if}
 
 <!-- ═══ Keyboard Shortcuts ═══ -->

@@ -2,7 +2,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, cleanup } from '@testing-library/svelte';
 import { fireEvent } from '@testing-library/svelte';
-import KeyboardShortcuts from '../KeyboardShortcuts.svelte';
+import KeyboardShortcuts from '../feedback/KeyboardShortcuts.svelte';
 
 afterEach(() => cleanup());
 

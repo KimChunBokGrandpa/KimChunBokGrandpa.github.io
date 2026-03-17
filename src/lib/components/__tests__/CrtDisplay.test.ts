@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, afterEach } from 'vitest';
 import { render, cleanup } from '@testing-library/svelte';
-import CrtDisplay from '../CrtDisplay.svelte';
+import CrtDisplay from '../media/CrtDisplay.svelte';
 
 afterEach(() => cleanup());
 

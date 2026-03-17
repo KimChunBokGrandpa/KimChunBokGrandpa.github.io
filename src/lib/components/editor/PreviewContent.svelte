@@ -1,14 +1,14 @@
 <script lang="ts">
   import ImageDropZone from './ImageDropZone.svelte';
-  import BeforeAfterSlider from './BeforeAfterSlider.svelte';
-  import CrtDisplay from './CrtDisplay.svelte';
-  import GifControls from './GifControls.svelte';
+  import BeforeAfterSlider from '../media/BeforeAfterSlider.svelte';
+  import CrtDisplay from '../media/CrtDisplay.svelte';
+  import GifControls from '../media/GifControls.svelte';
   import CropOverlay from './CropOverlay.svelte';
-  import { getPaletteName } from '../utils/palettes';
+  import { getPaletteName } from '$lib/utils/palettes';
   import { i18n } from '$lib/i18n/index.svelte';
-  import type { createZoomPan } from '../stores/zoomPanStore.svelte';
-  import type { ProcessingSettings } from '../types';
-  import type { TranslationKey } from '../i18n/en';
+  import type { createZoomPan } from '$lib/stores/zoomPanStore.svelte';
+  import type { ProcessingSettings } from '$lib/types';
+  import type { TranslationKey } from '$lib/i18n/en';
 
   let {
     zp,
@@ -140,6 +140,8 @@
         colorCopied = true;
         if (colorCopiedTimer) clearTimeout(colorCopiedTimer);
         colorCopiedTimer = setTimeout(() => { colorCopied = false; }, 1500);
+      }).catch((err) => {
+        console.warn('Clipboard write failed:', err);
       });
     }
   }
@@ -329,7 +331,7 @@
           <div class="progress-container">
             <div class="progress-bar"></div>
           </div>
-          <span class="processing-text">{i18n.t('rendering')}</span>
+          <span class="processing-text">{i18n.t('applying_settings')}</span>
           <span class="processing-palette">🎨 {getPaletteName(processingSettings.palette)}</span>
         </div>
       </div>
@@ -342,13 +344,14 @@
           <button
             class="zoom-btn"
             onclick={(e) => { e.stopPropagation(); onOpenSettings(); }}
-            title={i18n.t('open_settings')}>⚙️</button>
+            title={i18n.t('open_settings')}
+            aria-label={i18n.t('btn_open_settings')}>⚙️</button>
         </div>
         <div class="toolbar-group" aria-label={i18n.t('toolbar_transform')}>
           <span class="toolbar-group-label">{i18n.t('toolbar_transform')}</span>
           <div class="toolbar-group-buttons">
-            <button class="zoom-btn" onclick={() => onRotate?.(-90)} title={i18n.t('rotate_left')}>↺</button>
-            <button class="zoom-btn" onclick={() => onRotate?.(90)} title={i18n.t('rotate_right')}>↻</button>
+            <button class="zoom-btn" onclick={() => onRotate?.(-90)} title={i18n.t('rotate_left')} aria-label={i18n.t('btn_rotate_left')}>↺</button>
+            <button class="zoom-btn" onclick={() => onRotate?.(90)} title={i18n.t('rotate_right')} aria-label={i18n.t('btn_rotate_right')}>↻</button>
             <button
               class="zoom-btn"
               class:grid-active={cropModeActive}
@@ -360,7 +363,8 @@
               <button
                 class="zoom-btn"
                 onclick={() => { onResetTransform?.(); cropModeActive = false; }}
-                title={i18n.t('reset_transform')}>⟲</button>
+                title={i18n.t('reset_transform')}
+                aria-label={i18n.t('btn_reset_transform')}>⟲</button>
             {/if}
           </div>
         </div>
@@ -370,12 +374,15 @@
             class:compare-active={compareMode}
             onclick={() => { compareMode = !compareMode; }}
             title={compareMode ? i18n.t('exit_compare') : i18n.t('compare_before_after')}
+            aria-label={i18n.t('btn_compare_toggle')}
+            aria-pressed={compareMode}
           >{compareMode ? '🔀' : '⚖️'}</button>
           {#if compareMode}
             <button
               class="zoom-btn compare-variant-btn"
               onclick={cycleCompareVariant}
               title="{i18n.t('compare_mode_cycle')}: {i18n.t(COMPARE_VARIANT_LABELS[compareVariant])}"
+              aria-label={i18n.t('btn_compare_variant')}
             >{compareVariant === 'slider' ? '↔' : compareVariant === 'side-by-side' ? '⬜⬜' : '🧅'}</button>
           {/if}
         </div>
@@ -394,7 +401,7 @@
           <div class="toolbar-group" aria-label={i18n.t('toolbar_zoom')}>
             <span class="toolbar-group-label">{i18n.t('toolbar_zoom')}</span>
             <div class="toolbar-group-buttons">
-              <button class="zoom-btn" onclick={zp.zoomIn} title={i18n.t('zoom_in')}>+</button>
+              <button class="zoom-btn" onclick={zp.zoomIn} title={i18n.t('zoom_in')} aria-label={i18n.t('btn_zoom_in')}>+</button>
               <div class="zoom-input-container">
                 <input
                   type="number"
@@ -413,8 +420,8 @@
                 />
                 <span class="zoom-percent">%</span>
               </div>
-              <button class="zoom-btn" onclick={zp.zoomOut} title={i18n.t('zoom_out')}>−</button>
-              <button class="zoom-btn" onclick={zp.zoomToFit} title={i18n.t('fit_to_window')}>⊡</button>
+              <button class="zoom-btn" onclick={zp.zoomOut} title={i18n.t('zoom_out')} aria-label={i18n.t('btn_zoom_out')}>−</button>
+              <button class="zoom-btn" onclick={zp.zoomToFit} title={i18n.t('fit_to_window')} aria-label={i18n.t('btn_fit_to_window')}>⊡</button>
             </div>
           </div>
           <div class="toolbar-group" aria-label={i18n.t('toolbar_view')}>
@@ -455,10 +462,10 @@
           <span class="color-rgb">RGB({pickedColor.r}, {pickedColor.g}, {pickedColor.b})</span>
         </div>
         <div class="color-actions">
-          <button class="color-action-btn" onclick={copyColor} title={i18n.t('copy_color')}
+          <button class="color-action-btn" onclick={copyColor} title={i18n.t('copy_color')} aria-label={i18n.t('btn_copy_color')}
             >{colorCopied ? '✅' : '📋'}</button
           >
-          <button class="color-action-btn" onclick={dismissColor}>✕</button>
+          <button class="color-action-btn" onclick={dismissColor} aria-label={i18n.t('btn_dismiss_color')}>✕</button>
         </div>
       </div>
     {/if}
@@ -484,7 +491,7 @@
         <div class="progress-container progress-wide">
           <div class="progress-bar"></div>
         </div>
-        <span class="processing-text">{i18n.t('processing_image')}</span>
+        <span class="processing-text">{i18n.t('loading_image')}</span>
       </div>
     </div>
   {:else}
@@ -792,19 +799,39 @@
   @media (max-width: 550px) {
     .toolbar-container {
       bottom: 2px;
+      left: 2px;
       right: 2px;
       gap: 1px;
+      align-items: stretch;
+    }
+    .toolbar-row {
+      overflow-x: auto;
+      flex-wrap: nowrap;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    .toolbar-row::-webkit-scrollbar {
+      display: none;
     }
     .toolbar-group {
       padding: 0;
+      flex-shrink: 0;
     }
     .toolbar-group-label {
       display: none;
     }
     .zoom-btn {
-      min-width: 20px;
-      height: 18px;
+      min-width: 32px;
+      height: 32px;
+      padding: 0 4px;
+      font-size: var(--w98-font-size-base);
+    }
+    .zoom-input-container {
+      display: none;
+    }
+    .zoom-info {
       font-size: var(--w98-font-size-sm);
+      height: 32px;
     }
   }
 

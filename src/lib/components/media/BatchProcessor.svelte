@@ -4,7 +4,7 @@
    * Drag & drop or browse to add images, then process all with one click.
    */
 
-  import { processorService } from '$lib/utils/imageProcessor';
+  import { processorService } from '$lib/services/imageProcessor';
   import { saveImage } from '$lib/services/saveService';
   import { i18n } from '$lib/i18n/index.svelte';
   import { getPaletteName } from '$lib/utils/palettes';
@@ -193,6 +193,7 @@
       <div class="batch-empty">
         <span class="batch-empty-icon">📦</span>
         <p>{i18n.t('drag_drop_multiple')}</p>
+        <p class="batch-hint">{i18n.t('batch_empty_hint')}</p>
         <p class="batch-hint">{i18n.t('or')}</p>
         <input type="file" accept={ACCEPTED_TYPES.join(',')} multiple id="batch-upload" onchange={handleFileInput} style="display: none;" />
         <button class="batch-browse-btn" onclick={() => document.getElementById('batch-upload')?.click()}>📂 {i18n.t('browse')}</button>

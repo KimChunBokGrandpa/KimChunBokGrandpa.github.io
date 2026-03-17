@@ -279,6 +279,11 @@ class ImageProcessorService {
     this.imageCache.clear();
   }
 
+  /** Remove a single entry from the image cache (e.g. before revoking its blob URL) */
+  evictFromImageCache(src: string) {
+    this.imageCache.delete(src);
+  }
+
   /** Get the last rendered canvas for direct export (avoids re-decoding) */
   getLastCanvas(): HTMLCanvasElement | null {
     return this.lastCanvas;

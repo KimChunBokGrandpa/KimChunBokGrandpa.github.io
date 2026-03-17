@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/sveltekit';
-import DesktopIcons from '../DesktopIcons.svelte';
+import DesktopIcons from '../window/DesktopIcons.svelte';
 
 const meta = {
   title: 'Components/DesktopIcons',

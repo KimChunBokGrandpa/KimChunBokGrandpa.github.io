@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/sveltekit';
-import KeyboardShortcuts from '../KeyboardShortcuts.svelte';
+import KeyboardShortcuts from '../feedback/KeyboardShortcuts.svelte';
 
 const meta = {
   title: 'Components/KeyboardShortcuts',

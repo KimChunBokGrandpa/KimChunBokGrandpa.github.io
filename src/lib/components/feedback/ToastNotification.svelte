@@ -9,10 +9,14 @@
     warning: '\u26A0\uFE0F',
   };
 
+  const SHORT_MSG_THRESHOLD = 50;
+  const SHORT_DURATION = 3000;
+  const LONG_DURATION = 5000;
+
   let {
     message,
     variant = 'success' as ToastVariant,
-    duration = 3000,
+    duration,
     onDone,
   }: {
     message: string;
@@ -20,6 +24,10 @@
     duration?: number;
     onDone: () => void;
   } = $props();
+
+  const effectiveDuration = $derived(
+    duration ?? (message.length >= SHORT_MSG_THRESHOLD ? LONG_DURATION : SHORT_DURATION)
+  );
 
   let visible = $state(true);
 
@@ -29,7 +37,7 @@
   }
 
   onMount(() => {
-    const timer = setTimeout(dismiss, duration);
+    const timer = setTimeout(dismiss, effectiveDuration);
     return () => clearTimeout(timer);
   });
 </script>
@@ -47,8 +55,9 @@
   .toast {
     position: fixed;
     bottom: 38px;
-    left: 50%;
-    transform: translateX(-50%);
+    right: 12px;
+    left: auto;
+    transform: none;
     z-index: 9998;
     display: flex;
     align-items: center;
@@ -107,11 +116,11 @@
   @keyframes toastIn {
     from {
       opacity: 0;
-      transform: translateX(-50%) translateY(10px);
+      transform: translateY(10px);
     }
     to {
       opacity: 1;
-      transform: translateX(-50%) translateY(0);
+      transform: translateY(0);
     }
   }
 </style>

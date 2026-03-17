@@ -396,4 +396,32 @@ export const ko: Record<TranslationKey, string> = {
   move_up: '위로 이동',
   move_down: '아래로 이동',
   processing_failed: '처리에 실패했습니다.',
+  confirm_load_new_image: '새 이미지를 불러오면 현재 작업이 사라집니다. 계속하시겠습니까?',
+  confirm_load_new_title: '새 이미지 불러오기',
+  btn_open_settings: '설정 열기',
+  btn_rotate_left: '왼쪽 회전',
+  btn_rotate_right: '오른쪽 회전',
+  btn_reset_transform: '변환 초기화',
+  btn_compare_toggle: '비교 모드 전환',
+  btn_compare_variant: '비교 방식 변경',
+  btn_zoom_in: '확대',
+  btn_zoom_out: '축소',
+  btn_fit_to_window: '창에 맞춤',
+  btn_grid_toggle: '픽셀 그리드 전환',
+  btn_tile_toggle: '타일 미리보기 전환',
+  btn_eyedropper_toggle: '색상 추출 전환',
+  btn_copy_color: '색상 복사',
+  btn_dismiss_color: '색상 닫기',
+
+  // ─── Empty States ───
+  history_empty: '아직 히스토리가 없습니다. 설정을 변경하면 기록이 시작됩니다.',
+  history_empty_hint: '설정을 조정하여 히스토리를 확인하세요',
+  batch_empty_hint: '지원: PNG, JPEG, GIF, BMP, WebP',
+
+  // ─── Processing States ───
+  loading_image: '이미지 로딩 중...',
+  applying_settings: '설정 적용 중...',
+
+  // ─── Unsaved Changes ───
+  unsaved_changes: '미적용',
 };

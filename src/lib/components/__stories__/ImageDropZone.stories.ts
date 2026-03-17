@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/sveltekit';
-import ImageDropZone from '../ImageDropZone.svelte';
+import ImageDropZone from '../editor/ImageDropZone.svelte';
 
 const meta = {
   title: 'Components/ImageDropZone',

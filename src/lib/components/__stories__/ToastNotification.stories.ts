@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/sveltekit';
-import ToastNotification from '../ToastNotification.svelte';
+import ToastNotification from '../feedback/ToastNotification.svelte';
 
 const meta = {
   title: 'Components/ToastNotification',

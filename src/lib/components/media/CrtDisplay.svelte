@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  import type { CrtMode } from '../types';
+  import type { CrtMode } from '$lib/types';
 
   let { active = false, intensity = 1.0, mode = 'horizontal' as CrtMode, children }: {
     active?: boolean;

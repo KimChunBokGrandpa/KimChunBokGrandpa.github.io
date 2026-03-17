@@ -2,7 +2,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, cleanup } from '@testing-library/svelte';
 import { fireEvent } from '@testing-library/svelte';
-import MessageDialog from '../MessageDialog.svelte';
+import MessageDialog from '../feedback/MessageDialog.svelte';
 
 afterEach(() => cleanup());
 

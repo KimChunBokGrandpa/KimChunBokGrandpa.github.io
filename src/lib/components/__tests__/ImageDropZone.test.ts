@@ -2,7 +2,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, cleanup } from '@testing-library/svelte';
 import { fireEvent } from '@testing-library/svelte';
-import ImageDropZone from '../ImageDropZone.svelte';
+import ImageDropZone from '../editor/ImageDropZone.svelte';
 
 afterEach(() => cleanup());
 

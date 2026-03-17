@@ -421,6 +421,34 @@ export const en = {
   no_favorites: 'No favorite palettes yet. Click the ★ icon to add one.',
   move_up: 'Move Up',
   move_down: 'Move Down',
+  confirm_load_new_image: 'Loading a new image will discard your current work. Continue?',
+  confirm_load_new_title: 'Load New Image',
+  btn_open_settings: 'Open Settings',
+  btn_rotate_left: 'Rotate Left',
+  btn_rotate_right: 'Rotate Right',
+  btn_reset_transform: 'Reset Transform',
+  btn_compare_toggle: 'Toggle Compare Mode',
+  btn_compare_variant: 'Change Compare Variant',
+  btn_zoom_in: 'Zoom In',
+  btn_zoom_out: 'Zoom Out',
+  btn_fit_to_window: 'Fit to Window',
+  btn_grid_toggle: 'Toggle Pixel Grid',
+  btn_tile_toggle: 'Toggle Tile Preview',
+  btn_eyedropper_toggle: 'Toggle Color Picker',
+  btn_copy_color: 'Copy Color',
+  btn_dismiss_color: 'Dismiss Color',
+
+  // ─── Empty States ───
+  history_empty: 'No history yet. Make changes to start recording.',
+  history_empty_hint: 'Adjust settings to see history',
+  batch_empty_hint: 'Supported: PNG, JPEG, GIF, BMP, WebP',
+
+  // ─── Processing States ───
+  loading_image: 'Loading image...',
+  applying_settings: 'Applying settings...',
+
+  // ─── Unsaved Changes ───
+  unsaved_changes: 'Unsaved',
 } as const;
 
 export type TranslationKey = keyof typeof en;

@@ -264,6 +264,7 @@
       <div class="title-bar-text">
         <span class="window-icon">{icon}</span>
         {title}
+        {#if mobileSlot}<span class="compact-expand-arrow" aria-hidden="true">&#9660;</span>{/if}
       </div>
       <div class="title-bar-controls">
         <button aria-label={i18n.t('minimize')} onclick={handleMinimize}></button>
@@ -448,6 +449,11 @@
     cursor: nesw-resize;
   }
 
+  /* ── Compact expand arrow (mobile collapsed windows) ── */
+  .compact-expand-arrow {
+    display: none;
+  }
+
   @media (max-width: 550px) {
     .win98-window {
       width: 100% !important;
@@ -455,8 +461,20 @@
       left: 0 !important;
       top: var(--mobile-t, 0) !important;
     }
+    .title-bar {
+      min-height: 34px;
+      display: flex;
+      align-items: center;
+    }
     .resize-handle {
       display: none;
+    }
+    .compact-expand-arrow {
+      display: inline;
+      font-size: 8px;
+      margin-left: 4px;
+      opacity: 0.7;
+      vertical-align: middle;
     }
   }
 

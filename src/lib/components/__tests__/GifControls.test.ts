@@ -2,7 +2,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, cleanup } from '@testing-library/svelte';
 import { fireEvent } from '@testing-library/svelte';
-import GifControls from '../GifControls.svelte';
+import GifControls from '../media/GifControls.svelte';
 
 afterEach(() => cleanup());
 

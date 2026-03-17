@@ -1,9 +1,9 @@
 <script lang="ts">
-  import { PALETTE_THEMES, PALETTES, getPaletteName } from '../utils/palettes';
-  import type { RGB, PaletteTheme } from '../utils/palettes';
-  import { customPaletteStore } from '../stores/customPaletteStore.svelte';
+  import { PALETTE_THEMES, PALETTES, getPaletteName } from '$lib/utils/palettes';
+  import type { RGB, PaletteTheme } from '$lib/utils/palettes';
+  import { customPaletteStore } from '$lib/stores/customPaletteStore.svelte';
   import CustomPaletteEditor from './CustomPaletteEditor.svelte';
-  import { parsePaletteFile, exportAsHex, exportAsGpl, downloadFile } from '../utils/paletteIO';
+  import { parsePaletteFile, exportAsHex, exportAsGpl, downloadFile } from '$lib/utils/paletteIO';
   import { i18n } from '$lib/i18n/index.svelte';
 
   let {
@@ -725,6 +725,10 @@
     .pg-list {
       overflow-y: auto;
     }
+    .pg-item {
+      padding: 6px 5px;
+      min-height: 36px;
+    }
     .pg-detail {
       flex: 0 0 auto;
       max-height: 100px;
@@ -739,6 +743,17 @@
     .pg-toolbtn {
       padding: 2px 4px;
       font-size: var(--w98-font-size-caption);
+    }
+    .pg-export-btn,
+    .pg-edit-btn,
+    .pg-del-btn,
+    .pg-fav-btn {
+      min-width: 32px;
+      min-height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: var(--w98-font-size-icon);
     }
   }
 </style>

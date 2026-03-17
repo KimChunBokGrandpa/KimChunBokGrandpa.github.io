@@ -6,10 +6,12 @@
     message,
     title = i18n.t('message'),
     onClose,
+    onConfirm,
   }: {
     message: string;
     title?: string;
     onClose: () => void;
+    onConfirm?: () => void;
   } = $props();
 
   let okBtn: HTMLButtonElement | undefined = $state();
@@ -91,7 +93,12 @@
     <div class="window-body dialog-body">
       <p class="dialog-message">{message}</p>
       <div class="field-row dialog-actions">
-        <button class="dialog-ok-btn" bind:this={okBtn} onclick={onClose}>{i18n.t('ok')}</button>
+        {#if onConfirm}
+          <button class="dialog-ok-btn" bind:this={okBtn} onclick={onConfirm}>{i18n.t('ok')}</button>
+          <button class="dialog-ok-btn" onclick={onClose}>{i18n.t('cancel')}</button>
+        {:else}
+          <button class="dialog-ok-btn" bind:this={okBtn} onclick={onClose}>{i18n.t('ok')}</button>
+        {/if}
       </div>
     </div>
   </div>

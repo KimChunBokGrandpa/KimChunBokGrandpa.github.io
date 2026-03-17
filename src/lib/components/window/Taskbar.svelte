@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import type { WindowId, WindowMode } from '../types';
+  import type { WindowId, WindowMode } from '$lib/types';
   import { i18n, LOCALE_LABELS, type Locale } from '$lib/i18n/index.svelte';
   import { getWindowTitle } from '$lib/stores/windowStore.svelte';
 

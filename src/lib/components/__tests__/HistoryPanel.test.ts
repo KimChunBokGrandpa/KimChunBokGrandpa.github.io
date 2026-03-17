@@ -2,7 +2,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, cleanup } from '@testing-library/svelte';
 import { fireEvent } from '@testing-library/svelte';
-import HistoryPanel from '../HistoryPanel.svelte';
+import HistoryPanel from '../feedback/HistoryPanel.svelte';
 import type { ProcessingSettings } from '$lib/types';
 
 afterEach(() => cleanup());
