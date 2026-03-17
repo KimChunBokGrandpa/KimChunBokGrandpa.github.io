@@ -16,11 +16,11 @@ export function getWindowTitle(id: WindowId): string {
 
 /** Desktop window definitions */
 export const WINDOW_CONFIGS: WindowConfig[] = [
-  { id: "preview", title: "Preview", icon: "🖼️" },
-  { id: "settings", title: "Settings", icon: "⚙️" },
-  { id: "gallery", title: "Palette Gallery", icon: "🎨" },
-  { id: "batch", title: "Batch", icon: "📦" },
-  { id: "history", title: "History", icon: "⏱️" },
+  { id: "preview", icon: "🖼️" },
+  { id: "settings", icon: "⚙️" },
+  { id: "gallery", icon: "🎨" },
+  { id: "batch", icon: "📦" },
+  { id: "history", icon: "⏱️" },
 ];
 
 const WINDOW_IDS = WINDOW_CONFIGS.map((c) => c.id) as WindowId[];
@@ -44,7 +44,7 @@ function saveLayout(wins: Record<WindowId, WindowState>) {
       data[id] = { x: wins[id].x, y: wins[id].y, w: wins[id].w, h: wins[id].h };
     }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-  } catch (err) { console.warn('Failed to save window layout:', err); }
+  } catch (err) { console.error('Failed to save window layout:', err); }
 }
 
 /**

@@ -31,6 +31,7 @@
         }
       }}
       aria-label="Open {getWindowTitle(cfg.id)}"
+      title={getWindowTitle(cfg.id)}
     >
       <span class="icon-img" aria-hidden="true">{cfg.icon}</span>
       <span class="icon-label">{getWindowTitle(cfg.id)}</span>

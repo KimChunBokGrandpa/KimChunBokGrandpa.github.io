@@ -23,19 +23,23 @@
 
   let visible = $state(true);
 
+  function dismiss() {
+    visible = false;
+    setTimeout(onDone, 300);
+  }
+
   onMount(() => {
-    const timer = setTimeout(() => {
-      visible = false;
-      setTimeout(onDone, 300); // wait for fade-out animation
-    }, duration);
+    const timer = setTimeout(dismiss, duration);
     return () => clearTimeout(timer);
   });
 </script>
 
 {#if visible}
-  <div class="toast toast-{variant}" role="status" aria-live="polite">
+  <!-- svelte-ignore a11y_no_static_element_interactions a11y_no_noninteractive_element_interactions -->
+  <div class="toast toast-{variant}" role="status" aria-live="polite" onclick={dismiss} onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') dismiss(); }}>
     <span class="toast-icon">{VARIANT_ICONS[variant]}</span>
     <span class="toast-msg">{message}</span>
+    <button class="toast-close" aria-label="Close" onclick={dismiss}>×</button>
   </div>
 {/if}
 
@@ -60,6 +64,10 @@
     white-space: normal;
     max-width: calc(100vw - 32px);
     word-break: break-word;
+    cursor: pointer;
+    font-family: inherit;
+    color: inherit;
+    text-align: left;
   }
 
   .toast-error {
@@ -76,6 +84,23 @@
   }
 
   .toast-msg {
+    color: #000;
+  }
+
+  .toast-close {
+    margin-left: 4px;
+    font-size: 14px;
+    color: #808080;
+    flex-shrink: 0;
+    background: none;
+    border: none;
+    padding: 0 2px;
+    cursor: pointer;
+    font-weight: bold;
+    line-height: 1;
+  }
+
+  .toast-close:hover {
     color: #000;
   }
 

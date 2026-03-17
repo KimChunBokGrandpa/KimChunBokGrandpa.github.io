@@ -4,6 +4,8 @@
  * Optimizes by merging horizontal runs of same-color pixels.
  */
 
+import { rgbComponentsToHex as rgbToHex } from './colorUtils';
+
 export interface SvgExportOptions {
   /** Size of each pixel cell in SVG units (default: 1) */
   cellSize?: number;
@@ -104,5 +106,3 @@ export function downloadSvg(svgString: string, filename = 'pixel-art.svg'): void
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
-
-import { rgbComponentsToHex as rgbToHex } from './colorUtils';

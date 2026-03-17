@@ -47,9 +47,14 @@ export function decodeGif(buffer: ArrayBuffer): GifInfo {
     const fw = info.width || width;
     const fh = info.height || height;
 
-    // Copy current composite state for this frame's output
+    // Save composite state before drawing for disposal method 3
+    let previousComposite: Uint8ClampedArray | null = null;
+    if (info.disposal === 3) {
+      previousComposite = new Uint8ClampedArray(compositeData);
+    }
+
+    // Handle disposal method 2: restore to background before drawing
     if (info.disposal === 2) {
-      // Restore to background before drawing
       for (let y = fy; y < fy + fh && y < height; y++) {
         for (let x = fx; x < fx + fw && x < width; x++) {
           const idx = (y * width + x) * 4;
@@ -82,6 +87,11 @@ export function decodeGif(buffer: ArrayBuffer): GifInfo {
       width,
       height,
     });
+
+    // Handle disposal method 3: restore to previous state after snapshot
+    if (info.disposal === 3 && previousComposite) {
+      compositeData.set(previousComposite);
+    }
   }
 
   const totalDuration = frames.reduce((sum, f) => sum + f.delay, 0);

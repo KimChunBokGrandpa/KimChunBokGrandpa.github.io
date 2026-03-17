@@ -218,7 +218,7 @@
                 {#if item.status === 'pending'}⏳ {i18n.t('pending')}
                 {:else if item.status === 'processing'}⚙️ {Math.round(item.progress * 100)}%
                 {:else if item.status === 'done'}✅ {i18n.t('done')}
-                {:else if item.status === 'error'}❌ {item.error}
+                {:else if item.status === 'error'}❌ {i18n.t('processing_failed')}
                 {/if}
               </span>
               {#if item.status === 'processing'}
@@ -474,5 +474,16 @@
   .batch-actions button:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+  }
+
+  @media (max-width: 550px) {
+    .batch-browse-btn {
+      padding: 10px 24px;
+      font-size: 13px;
+    }
+    .batch-actions button {
+      padding: 8px 6px;
+      font-size: 12px;
+    }
   }
 </style>

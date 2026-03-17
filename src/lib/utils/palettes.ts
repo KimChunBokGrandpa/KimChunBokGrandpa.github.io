@@ -1,6 +1,6 @@
 import { PALETTE_HEX_DATA } from "./paletteData";
 import type { TranslationKey } from '../i18n/en';
-import { hexToRgbUnsafe as hexToRgb } from './colorUtils';
+import { hexToRgb } from './colorUtils';
 
 export type RGB = { r: number; g: number; b: number };
 
@@ -175,7 +175,7 @@ export const PALETTE_GROUPS: PaletteGroup[] = [
 // ─── Convert hex data to RGB palettes at module load ───
 const hexPalettes: Record<string, RGB[]> = {};
 for (const [id, hexArr] of Object.entries(PALETTE_HEX_DATA)) {
-  hexPalettes[id] = hexArr.map(hexToRgb);
+  hexPalettes[id] = hexArr.map(h => hexToRgb(h)!).filter(Boolean);
 }
 
 // ─── Web-safe 256-color palette (generated) ───

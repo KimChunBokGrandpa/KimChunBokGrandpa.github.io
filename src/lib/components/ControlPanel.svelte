@@ -8,14 +8,6 @@
   import type { TranslationKey } from '$lib/i18n/en';
   import { getCustomPresets, addCustomPreset, removeCustomPreset } from '$lib/stores/customPresetStore.svelte';
 
-  // Glitch filter options
-  const GLITCH_OPTIONS = [
-    { id: 'rgb_split', icon: '🔴', labelKey: 'rgb_split' as const },
-    { id: 'wave',      icon: '📺', labelKey: 'wave' as const },
-    { id: 'noise',     icon: '🧩', labelKey: 'noise' as const },
-    { id: 'slice',     icon: '🔪', labelKey: 'slice' as const },
-  ] as const;
-
   // CSS render mode options (HQx moved to effect layers)
   const CSS_RENDER_OPTIONS = [
     { id: 'pixel_perfect', labelKey: 'pixel_perfect' as const, titleKey: 'pixel_perfect_desc' as const },
@@ -38,7 +30,7 @@
 
 
   let {
-    settings = $bindable({ pixelSize: 1, palette: 'original', crtEffect: false, glitchFilters: [] as GlitchFilter[], renderMode: 'pixel_perfect' as const, glitchSeed: null as (number | null), ditherType: 'none' as const }),
+    settings = $bindable({ pixelSize: 1, palette: 'original', crtEffect: 'none' as const, glitchFilters: [] as GlitchFilter[], renderMode: 'pixel_perfect' as const, glitchSeed: null as (number | null), ditherType: 'none' as const }),
     saveFormat = 'png' as SaveFormat,
     saveQuality = 0.92,
     onChange,
@@ -132,40 +124,6 @@
 
   // True when current settings don't match any preset
   let isCustom = $derived(!PRESETS.some(p => matchesPreset(p)));
-
-  // Toggle filter: add with intensity 1 if absent, remove if present
-  function toggleGlitch(filterId: GlitchType) {
-    const idx = settings.glitchFilters.findIndex(f => f.type === filterId);
-    if (idx >= 0) {
-      settings.glitchFilters = settings.glitchFilters.filter((_, i) => i !== idx);
-    } else {
-      settings.glitchFilters = [...settings.glitchFilters, { type: filterId, intensity: 1 }];
-    }
-    update();
-  }
-
-  // Change intensity of a specific filter
-  function setFilterIntensity(filterId: GlitchType, intensity: number) {
-    settings.glitchFilters = settings.glitchFilters.map(f =>
-      f.type === filterId ? { ...f, intensity } : { ...f }
-    );
-    update();
-  }
-
-  // Check if a filter is active
-  function isFilterActive(filterId: GlitchType): boolean {
-    return settings.glitchFilters.some(f => f.type === filterId);
-  }
-
-  // Get current intensity of a filter
-  function getFilterIntensity(filterId: GlitchType): number {
-    return settings.glitchFilters.find(f => f.type === filterId)?.intensity ?? 1;
-  }
-
-  function clearAllGlitch() {
-    settings.glitchFilters = [];
-    update();
-  }
 
   // ─── Effect Layer Management ───
   const EFFECT_OPTIONS: { type: EffectLayer['type']; glitchType?: GlitchType; icon: string; labelKey: TranslationKey }[] = [
@@ -268,7 +226,34 @@
     dragOverIdx = null;
   }
 
+  function moveLayer(idx: number, direction: -1 | 1) {
+    const layers = settings.effectLayers;
+    if (!layers) return;
+    const newIdx = idx + direction;
+    if (newIdx < 0 || newIdx >= layers.length) return;
+    const copy = [...layers];
+    [copy[idx], copy[newIdx]] = [copy[newIdx], copy[idx]];
+    settings.effectLayers = copy;
+    syncLegacyFromLayers();
+    update();
+  }
+
   let showAddMenu = $state(false);
+  let addMenuWrapperEl: HTMLDivElement | undefined = $state();
+
+  $effect(() => {
+    if (!showAddMenu) return;
+    function handleClickOutside(e: MouseEvent) {
+      if (addMenuWrapperEl && !addMenuWrapperEl.contains(e.target as Node)) {
+        showAddMenu = false;
+      }
+    }
+    // Delay listener to avoid catching the opening click
+    requestAnimationFrame(() => {
+      window.addEventListener('pointerdown', handleClickOutside);
+    });
+    return () => window.removeEventListener('pointerdown', handleClickOutside);
+  });
 
   // ─── Custom Presets ───
   let showSavePreset = $state(false);
@@ -331,10 +316,15 @@
     presetFileInput?.click();
   }
 
+  const MAX_PRESET_FILE_SIZE = 1024 * 1024; // 1MB
+
   async function handlePresetFile(e: Event) {
     const input = e.target as HTMLInputElement;
     if (!input.files?.length) return;
     try {
+      if (input.files[0].size > MAX_PRESET_FILE_SIZE) {
+        throw new Error('File too large');
+      }
       const text = await input.files[0].text();
       const data = JSON.parse(text);
       const s = data.settings;
@@ -344,19 +334,37 @@
       const imported: ProcessingSettings = {
         pixelSize: Math.max(1, Math.min(64, s.pixelSize)),
         palette: s.palette,
-        crtEffect: !!s.crtEffect,
+        crtEffect: ['none', 'horizontal', 'vertical'].includes(s.crtEffect) ? s.crtEffect : (s.crtEffect === true ? 'horizontal' : 'none'),
         glitchFilters: Array.isArray(s.glitchFilters) ? s.glitchFilters.map((f: { type: GlitchType; intensity: number }) => ({ type: f.type, intensity: f.intensity })) : [],
         renderMode: ['pixel_perfect', 'bilinear', 'hqx'].includes(s.renderMode) ? s.renderMode : 'pixel_perfect',
         glitchSeed: s.glitchSeed ?? null,
         ditherType: ['none', 'floyd_steinberg', 'ordered'].includes(s.ditherType) ? s.ditherType : 'none',
       };
       imported.effectLayers = Array.isArray(s.effectLayers)
-        ? s.effectLayers.map((l: EffectLayer) => ({ ...l, id: l.id || crypto.randomUUID() }))
+        ? s.effectLayers
+            .filter((l: unknown): l is Record<string, unknown> =>
+              typeof l === 'object' && l !== null &&
+              typeof (l as Record<string, unknown>).type === 'string' &&
+              ['glitch', 'hqx'].includes((l as Record<string, unknown>).type as string)
+            )
+            .map((l: EffectLayer) => ({
+              id: l.id || crypto.randomUUID(),
+              type: l.type,
+              enabled: typeof l.enabled === 'boolean' ? l.enabled : true,
+              ...(l.type === 'glitch' ? { glitchType: l.glitchType, intensity: typeof l.intensity === 'number' ? l.intensity : 1 } : {}),
+            }))
         : migrateToEffectLayers(imported);
       settings = imported;
       update();
-    } catch {
-      onError?.(i18n.t('preset_import_error'));
+    } catch (err) {
+      const reason = err instanceof SyntaxError
+        ? i18n.t('preset_error_invalid_json')
+        : err instanceof Error && err.message === 'File too large'
+          ? i18n.t('preset_error_too_large')
+          : err instanceof Error && err.message === 'Invalid preset format'
+            ? i18n.t('preset_error_invalid_format')
+            : i18n.t('preset_import_error');
+      onError?.(reason);
     }
     input.value = '';
   }
@@ -382,7 +390,7 @@
   ];
 
   // Badge indicators for tabs
-  let effectsBadge = $derived(activeEffectCount + (settings.crtEffect ? 1 : 0));
+  let effectsBadge = $derived(activeEffectCount + (settings.crtEffect !== 'none' ? 1 : 0));
   let adjustBadge = $derived(hasPostFilterChanges);
 </script>
 
@@ -488,10 +496,14 @@
     <!-- ─── Effects Tab ─── -->
     {:else if activeTab === 'effects'}
       <div class="tab-panel" role="tabpanel">
-        <!-- CRT + Render Mode -->
+        <!-- CRT Scanline Mode -->
+        <div class="section-label">{i18n.t('crt_scanlines')}:</div>
         <div class="field-row">
-          <input type="checkbox" id="crt-effect" bind:checked={settings.crtEffect} onchange={update} />
-          <label for="crt-effect">{i18n.t('crt_scanlines')}</label>
+          <select id="crt-effect" bind:value={settings.crtEffect} onchange={update}>
+            <option value="none">{i18n.t('crt_none')}</option>
+            <option value="horizontal">{i18n.t('crt_horizontal')}</option>
+            <option value="vertical">{i18n.t('crt_vertical')}</option>
+          </select>
         </div>
 
         <div class="section-label">{i18n.t('css_render_mode')}:</div>
@@ -556,6 +568,23 @@
                   title={i18n.t('remove_effect')}
                 >×</button>
 
+                <span class="layer-move-btns">
+                  <button
+                    class="layer-move-btn"
+                    onclick={() => moveLayer(idx, -1)}
+                    disabled={idx === 0}
+                    title={i18n.t('move_up')}
+                    aria-label={i18n.t('move_up')}
+                  >▲</button>
+                  <button
+                    class="layer-move-btn"
+                    onclick={() => moveLayer(idx, 1)}
+                    disabled={idx === (settings.effectLayers?.length ?? 0) - 1}
+                    title={i18n.t('move_down')}
+                    aria-label={i18n.t('move_down')}
+                  >▼</button>
+                </span>
+
                 <span class="drag-handle" aria-hidden="true">≡</span>
               </div>
             {/each}
@@ -592,7 +621,7 @@
 
         <!-- Add Effect Button -->
         <div class="add-effect-row">
-          <div class="add-effect-wrapper">
+          <div class="add-effect-wrapper" bind:this={addMenuWrapperEl}>
             <button class="add-effect-btn" onclick={() => { showAddMenu = !showAddMenu; }}>
               + {i18n.t('add_effect')}
             </button>
@@ -645,7 +674,7 @@
               class:preset-active={matchesPreset(preset)}
               class="preset-btn preset-card"
               onclick={() => applyPreset(preset)}
-              title="{i18n.t('pixel_size')}: {preset.pixelSize}px | {i18n.t('palette')}: {getPaletteName(preset.palette)} | {i18n.t('dithering')}: {preset.ditherType}{preset.crtEffect ? ' | CRT' : ''}{preset.glitchFilters.length > 0 ? ` | ${preset.glitchFilters.length} effects` : ''}"
+              title="{i18n.t('pixel_size')}: {preset.pixelSize}px | {i18n.t('palette')}: {getPaletteName(preset.palette)} | {i18n.t('dithering')}: {preset.ditherType}{preset.crtEffect !== 'none' ? ` | CRT (${preset.crtEffect})` : ''}{preset.glitchFilters.length > 0 ? ` | ${preset.glitchFilters.length} effects` : ''}"
             >
               <span class="preset-card-icon">{preset.icon}</span>
               <span class="preset-card-name">{i18n.t(preset.labelKey)}</span>
@@ -815,7 +844,7 @@
     justify-content: flex-end;
   }
   .summary-badge {
-    font-size: 9px;
+    font-size: 11px;
     padding: 1px 5px;
     background: #e8e4dc;
     border: 1px solid #c0c0c0;
@@ -1204,6 +1233,29 @@
   }
   .layer-remove:hover {
     color: #c00;
+  }
+  .layer-move-btns {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+  .layer-move-btn {
+    min-width: 16px;
+    width: 16px;
+    height: 12px;
+    padding: 0;
+    font-size: 8px;
+    line-height: 10px;
+    text-align: center;
+    color: #808080;
+    cursor: pointer;
+  }
+  .layer-move-btn:hover:not(:disabled) {
+    color: #000;
+  }
+  .layer-move-btn:disabled {
+    color: #c0c0c0;
+    cursor: default;
   }
   .drag-handle {
     font-size: 14px;

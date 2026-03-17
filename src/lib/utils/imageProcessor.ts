@@ -22,8 +22,6 @@ class ImageProcessorService {
     {
       resolve: (value: string | null) => void;
       reject: (reason: unknown) => void;
-      canvas: HTMLCanvasElement;
-      ctx: CanvasRenderingContext2D;
       onProgress?: (progress: number) => void;
     }
   >();
@@ -42,22 +40,19 @@ class ImageProcessorService {
   /** Last computed unique color count */
   private _lastColorCount = 0;
 
-  /** Reusable canvases to avoid repeated createElement calls */
+  /** Reusable canvas for early (no-worker) processing */
   private earlyCanvas: HTMLCanvasElement | null = null;
-  private workerCanvas: HTMLCanvasElement | null = null;
-  /** Get or create a reusable canvas, resizing only when needed */
-  private getOrCreateCanvas(kind: 'early' | 'worker', w: number, h: number): HTMLCanvasElement {
-    const existing = kind === 'early' ? this.earlyCanvas : this.workerCanvas;
-    if (existing) {
-      if (existing.width !== w) existing.width = w;
-      if (existing.height !== h) existing.height = h;
-      return existing;
+  /** Get or create a reusable canvas for early processing, resizing only when needed */
+  private getOrCreateEarlyCanvas(w: number, h: number): HTMLCanvasElement {
+    if (this.earlyCanvas) {
+      if (this.earlyCanvas.width !== w) this.earlyCanvas.width = w;
+      if (this.earlyCanvas.height !== h) this.earlyCanvas.height = h;
+      return this.earlyCanvas;
     }
     const c = document.createElement('canvas');
     c.width = w;
     c.height = h;
-    if (kind === 'early') this.earlyCanvas = c;
-    else this.workerCanvas = c;
+    this.earlyCanvas = c;
     return c;
   }
 
@@ -75,7 +70,6 @@ class ImageProcessorService {
       throw new Error('Image processing worker failed repeatedly. Please reload the page.');
     }
     if (!this.worker) {
-      this.workerErrorCount = 0; // Reset on successful creation
       this.worker = new Worker(
         new URL("../workers/imageWorker.ts", import.meta.url),
         { type: "module" },
@@ -105,15 +99,21 @@ class ImageProcessorService {
             processedData.height,
           );
 
-          // Resize canvas to match processed data (may differ due to HQx upscaling)
-          pending.canvas.width = processedData.width;
-          pending.canvas.height = processedData.height;
-
-          pending.ctx.putImageData(safeData, 0, 0);
-          this.lastCanvas = pending.canvas;
+          // Use a dedicated canvas per result to avoid race condition:
+          // toBlob is async, so a reused canvas could be overwritten by the next request
+          const resultCanvas = document.createElement('canvas');
+          resultCanvas.width = processedData.width;
+          resultCanvas.height = processedData.height;
+          const resultCtx = resultCanvas.getContext('2d');
+          if (!resultCtx) {
+            pending.reject(new Error("Failed to get 2d context for result"));
+            return;
+          }
+          resultCtx.putImageData(safeData, 0, 0);
+          this.lastCanvas = resultCanvas;
           if (colorCount !== undefined) this._lastColorCount = colorCount;
           // Use toBlob + createObjectURL instead of toDataURL for memory efficiency
-          pending.canvas.toBlob((blob) => {
+          resultCanvas.toBlob((blob) => {
             if (blob) {
               const url = this.replaceBlobUrl(URL.createObjectURL(blob));
               pending.resolve(url);
@@ -175,7 +175,7 @@ class ImageProcessorService {
   ): Promise<string | null> {
     const img = await this.loadImage(imageSrc);
     if (this.currentRequestId !== requestId) return null;
-    const c = this.getOrCreateCanvas('early', img.width, img.height);
+    const c = this.getOrCreateEarlyCanvas(img.width, img.height);
     const ctx = c.getContext("2d");
     if (!ctx) throw new Error("Failed to get 2d context");
     ctx.drawImage(img, 0, 0);
@@ -248,14 +248,7 @@ class ImageProcessorService {
     });
 
     return new Promise<string | null>((resolve, reject) => {
-      // Create canvas for the final export
-      const canvas = this.getOrCreateCanvas('worker', procWidth, procHeight);
-      const ctx = canvas.getContext("2d");
-      if (!ctx) {
-        reject(new Error("Failed to get 2d context"));
-        return;
-      }
-      this.pendingResolvers.set(requestId, { resolve, reject, canvas, ctx, onProgress });
+      this.pendingResolvers.set(requestId, { resolve, reject, onProgress });
 
       const message: ImageWorkerMessage = {
         id: requestId,

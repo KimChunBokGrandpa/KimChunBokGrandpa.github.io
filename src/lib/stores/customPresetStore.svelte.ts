@@ -25,7 +25,11 @@ function loadFromStorage(): CustomPreset[] {
 }
 
 function saveToStorage(presets: CustomPreset[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(presets));
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(presets));
+  } catch {
+    console.error('Failed to save presets to localStorage');
+  }
 }
 
 let presets = $state<CustomPreset[]>(loadFromStorage());

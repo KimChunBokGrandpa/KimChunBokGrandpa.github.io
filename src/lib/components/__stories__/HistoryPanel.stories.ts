@@ -6,7 +6,7 @@ function makeSettings(overrides: Partial<ProcessingSettings> = {}): ProcessingSe
   return {
     pixelSize: 4,
     palette: 'gameboy',
-    crtEffect: false,
+    crtEffect: 'none',
     glitchFilters: [],
     renderMode: 'pixel_perfect',
     glitchSeed: null,
@@ -39,7 +39,7 @@ export const WithHistory: Story = {
     redoHistory: [
       makeSettings({ pixelSize: 6 }),
     ],
-    currentSettings: makeSettings({ pixelSize: 4, crtEffect: true }),
+    currentSettings: makeSettings({ pixelSize: 4, crtEffect: 'horizontal' }),
     onJumpToHistory: () => {},
     onUndo: () => {},
     onRedo: () => {},

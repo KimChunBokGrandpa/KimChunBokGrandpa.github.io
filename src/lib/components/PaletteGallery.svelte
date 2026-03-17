@@ -51,6 +51,7 @@
 
   function handleDeletePalette(id: string, e: MouseEvent) {
     e.stopPropagation();
+    if (!confirm(i18n.t('confirm_delete_palette'))) return;
     customPaletteStore.deletePalette(id);
     if (selectedPaletteId === id) onSelect('original');
   }
@@ -110,7 +111,10 @@
   function loadFavorites(): Set<string> {
     try {
       const raw = localStorage.getItem(FAV_STORAGE_KEY);
-      return raw ? new Set(JSON.parse(raw)) : new Set();
+      if (!raw) return new Set();
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) return new Set();
+      return new Set(parsed.filter((v: unknown) => typeof v === 'string'));
     } catch {
       return new Set();
     }
@@ -173,8 +177,8 @@
     }
   }
 
-  // Dynamic lookup including custom palettes
-  function getAllPaletteLookup(): Map<string, VariantItem> {
+  // Dynamic lookup including custom palettes (memoized via $derived)
+  let allPaletteLookup = $derived.by<Map<string, VariantItem>>(() => {
     const map = new Map(builtinPaletteLookup);
     for (const p of customPaletteStore.palettes) {
       map.set(p.id, {
@@ -186,10 +190,10 @@
       });
     }
     return map;
-  }
+  });
 
   let activeVariants = $derived.by<VariantItem[]>(() => {
-    const lookup = getAllPaletteLookup();
+    const lookup = allPaletteLookup;
     if (activeThemeId === '_favorites') {
       return [...favorites].map((id) => lookup.get(id)).filter(Boolean) as VariantItem[];
     }
@@ -228,7 +232,7 @@
   // Detail panel for hovered or selected palette
   let detailItem = $derived.by<VariantItem | null>(() => {
     const id = hoveredPaletteId || selectedPaletteId;
-    return getAllPaletteLookup().get(id) || null;
+    return allPaletteLookup.get(id) || null;
   });
 </script>
 
@@ -346,6 +350,8 @@
           {/each}
           {#if activeThemeId === '_custom' && activeVariants.length === 0}
             <div class="pg-empty">{i18n.t('no_custom_palettes')}</div>
+          {:else if activeThemeId === '_favorites' && activeVariants.length === 0}
+            <div class="pg-empty">{i18n.t('no_favorites')}</div>
           {/if}
         </div>
       </div>
@@ -721,9 +727,10 @@
     }
     .pg-detail {
       flex: 0 0 auto;
-      max-height: 140px;
+      max-height: 100px;
       overflow-y: auto;
       padding: 3px 0 0 0;
+      border-top: 1px solid #808080;
     }
     .pg-toolbar {
       gap: 0;

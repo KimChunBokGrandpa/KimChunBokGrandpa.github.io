@@ -11,6 +11,7 @@ import { DEFAULT_POST_FILTERS } from '$lib/types';
 import { decodeGif, frameToBlobUrl, type GifInfo } from '$lib/utils/gifProcessor';
 import type { GifEncodeWorkerMessage, GifEncodeWorkerResponse } from '$lib/types';
 import { i18n } from '$lib/i18n/index.svelte';
+import { applyCrtEffect } from '$lib/utils/crtRenderer';
 
 const DEBOUNCE_MS = 150;
 const MAX_HISTORY = 20;
@@ -18,7 +19,7 @@ const MAX_HISTORY = 20;
 const DEFAULT_SETTINGS: ProcessingSettings = {
   pixelSize: 1,
   palette: 'original',
-  crtEffect: false,
+  crtEffect: 'none',
   glitchFilters: [],
   renderMode: 'pixel_perfect',
   glitchSeed: null,
@@ -143,8 +144,11 @@ export function createImageProcessingStore() {
       ctx.drawImage(img, srcX, srcY, srcW, srcH, -drawW / 2, -drawH / 2, drawW, drawH);
       ctx.restore();
 
-      const blob = await new Promise<Blob>((resolve) => {
-        canvas.toBlob((b) => resolve(b!), 'image/png');
+      const blob = await new Promise<Blob>((resolve, reject) => {
+        canvas.toBlob((b) => {
+          if (!b) return reject(new Error('Failed to create transform blob'));
+          resolve(b);
+        }, 'image/png');
       });
 
       if (transformedObjectUrl) URL.revokeObjectURL(transformedObjectUrl);
@@ -210,7 +214,8 @@ export function createImageProcessingStore() {
     const gen = ++processingGeneration;
     try {
       lastError = null;
-      const srcToProcess = transformedSrc || originalImageSrc!;
+      const srcToProcess = transformedSrc || originalImageSrc;
+      if (!srcToProcess) return;
       const result = await processorService.processImage(srcToProcess, settings, handleDimensionCapped);
       if (result !== null) {
         processedImageSrc = result;
@@ -525,7 +530,7 @@ export function createImageProcessingStore() {
     redoHistory.push(cloneSettings(settings));
     const prev = settingsHistory.pop()!;
     settings = prev;
-    applyProcessingDebounced();
+    if (autoProcess) applyProcessingDebounced();
   }
 
   function redo() {
@@ -533,7 +538,7 @@ export function createImageProcessingStore() {
     settingsHistory.push(cloneSettings(settings));
     const next = redoHistory.pop()!;
     settings = next;
-    applyProcessingDebounced();
+    if (autoProcess) applyProcessingDebounced();
   }
 
   function jumpToHistory(index: number, isRedoList: boolean = false) {
@@ -561,9 +566,13 @@ export function createImageProcessingStore() {
 
   async function save(): Promise<string | null> {
     if (!processedImageSrc) return null;
-    const cachedCanvas = processorService.getLastCanvas();
+    let canvas = processorService.getLastCanvas();
+    // Apply CRT effect to canvas for export
+    if (settings.crtEffect !== 'none' && canvas) {
+      canvas = applyCrtEffect(canvas, settings.crtEffect);
+    }
     const filterStr = postFilterCssString();
-    return saveImage(processedImageSrc, { format: saveFormat, quality: saveQuality }, cachedCanvas, filterStr || undefined);
+    return saveImage(processedImageSrc, { format: saveFormat, quality: saveQuality }, canvas, filterStr || undefined);
   }
 
   function setFormat(format: SaveFormat) { saveFormat = format; }

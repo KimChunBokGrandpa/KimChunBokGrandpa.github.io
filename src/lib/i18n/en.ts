@@ -113,6 +113,9 @@ export const en = {
   dither_ordered_desc: 'Bayer matrix pattern dithering',
   post_processing: 'Post Processing',
   crt_scanlines: 'CRT Scanlines',
+  crt_none: 'None',
+  crt_horizontal: 'Horizontal',
+  crt_vertical: 'Vertical',
   glitch_filters: 'Glitch Filters',
   multi_select: 'multi-select',
   none: 'None',
@@ -157,6 +160,7 @@ export const en = {
   pending: 'Pending',
   processing: 'Processing...',
   done: 'Done',
+  processing_failed: 'Processing failed',
   images: 'image(s)',
   errors: 'error(s)',
   process_all: 'Process All',
@@ -407,8 +411,16 @@ export const en = {
   // ─── UI Feedback ───
   loading: 'Loading...',
   preset_import_error: 'Failed to import preset file.',
+  preset_error_invalid_json: 'Invalid file: not a valid JSON file.',
+  preset_error_too_large: 'File is too large (max 1MB).',
+  preset_error_invalid_format: 'Invalid preset format: missing required fields.',
   not_an_image: 'Clipboard does not contain an image.',
   unsaved_changes_confirm: 'You have unsaved changes. Discard them?',
+  image_too_large: 'Image file is too large (max 50MB).',
+  confirm_delete_palette: 'Are you sure you want to delete this palette?',
+  no_favorites: 'No favorite palettes yet. Click the ★ icon to add one.',
+  move_up: 'Move Up',
+  move_down: 'Move Down',
 } as const;
 
 export type TranslationKey = keyof typeof en;

@@ -85,10 +85,36 @@
     const idx = mobileVisibleIds.indexOf(id as typeof WINDOW_ORDER[number]);
     if (idx === -1) return null;
     const count = mobileVisibleIds.length;
-    // Evenly divide desktop area (100dvh - taskbar) among visible windows
-    const slotHeight = `calc((100dvh - var(--taskbar-h)) / ${count})`;
-    const slotTop = idx === 0 ? '0px' : `calc((100dvh - var(--taskbar-h)) / ${count} * ${idx})`;
-    return { top: slotTop, height: slotHeight };
+
+    if (count <= 2) {
+      // 2 windows or fewer: evenly divide
+      const slotHeight = `calc((100dvh - var(--taskbar-h)) / ${count})`;
+      const slotTop = idx === 0 ? '0px' : `calc((100dvh - var(--taskbar-h)) / ${count} * ${idx})`;
+      return { top: slotTop, height: slotHeight };
+    }
+
+    // 3+ windows: focused window expands, others collapse to title bar
+    const COMPACT_H = 28;
+    const compactTotal = (count - 1) * COMPACT_H;
+    const isFocused = wm.focusedWindow === id;
+    const focusedIdx = Math.max(0, mobileVisibleIds.indexOf(wm.focusedWindow as typeof WINDOW_ORDER[number]));
+
+    if (isFocused) {
+      return {
+        top: `${idx * COMPACT_H}px`,
+        height: `calc(100dvh - var(--taskbar-h) - ${compactTotal}px)`,
+      };
+    }
+
+    // Compact: before focused stacks from top, after focused stacks from bottom
+    if (idx < focusedIdx) {
+      return { top: `${idx * COMPACT_H}px`, height: `${COMPACT_H}px` };
+    }
+    const bottomOffset = count - 1 - idx;
+    return {
+      top: `calc(100dvh - var(--taskbar-h) - ${(bottomOffset + 1) * COMPACT_H}px)`,
+      height: `${COMPACT_H}px`,
+    };
   }
 
   // ─── Taskbar window info ───
@@ -250,6 +276,8 @@
       e.preventDefault();
       handleSave();
     } else if (e.key === '?' && !e.ctrlKey && !e.metaKey) {
+      // Don't trigger when typing in input fields
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
       showShortcuts = !showShortcuts;
     }
   }
@@ -480,6 +508,7 @@
   windows={taskbarWindows}
   onWindowClick={wm.handleTaskbarClick}
   onWindowClose={wm.closeAndReset}
+  onShowShortcuts={() => { showShortcuts = !showShortcuts; }}
 />
 
 <!-- ═══ Dialog ═══ -->

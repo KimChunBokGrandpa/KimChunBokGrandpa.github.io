@@ -285,7 +285,7 @@
         </div>
       {/if}
     {:else}
-      <CrtDisplay active={processingSettings.crtEffect}>
+      <CrtDisplay active={processingSettings.crtEffect !== 'none'} mode={processingSettings.crtEffect}>
         {#snippet children()}
           <img
             bind:this={zp.previewImg}
@@ -377,7 +377,7 @@
           <div class="toolbar-group toolbar-info">
             <div class="zoom-info" title={i18n.t('image_resolution')}>{displayedWidth}×{displayedHeight}</div>
             {#if colorCount > 0}
-              <div class="zoom-info color-count" title={i18n.t('unique_colors')}>{colorCount}c</div>
+              <div class="zoom-info color-count" title={i18n.t('unique_colors')}>🎨 {colorCount}</div>
             {/if}
           </div>
         {/if}
@@ -611,12 +611,11 @@
   /* ===== Processing Overlay ===== */
   .processing-overlay {
     position: absolute;
-    bottom: 40px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(0, 0, 128, 0.9);
-    border: 2px outset #dfdfdf;
-    padding: 6px 12px;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.35);
     z-index: 5;
     pointer-events: none;
   }
@@ -625,6 +624,9 @@
     flex-direction: column;
     align-items: center;
     gap: 4px;
+    background: rgba(0, 0, 128, 0.9);
+    border: 2px outset #dfdfdf;
+    padding: 8px 16px;
     color: #fff;
     font-size: 11px;
     font-family: 'Courier New', Courier, monospace;
@@ -789,6 +791,25 @@
     border-color: #000080;
     font-size: 10px;
     margin-left: 2px;
+  }
+
+  @media (max-width: 550px) {
+    .toolbar-container {
+      bottom: 2px;
+      right: 2px;
+      gap: 1px;
+    }
+    .toolbar-group {
+      padding: 0;
+    }
+    .toolbar-group-label {
+      display: none;
+    }
+    .zoom-btn {
+      min-width: 20px;
+      height: 18px;
+      font-size: 10px;
+    }
   }
 
   /* ===== Tile Preview ===== */

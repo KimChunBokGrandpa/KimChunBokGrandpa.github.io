@@ -42,11 +42,19 @@
   --w98-font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji",
     "Pixelated MS Sans Serif", "Microsoft Sans Serif", "MS Sans Serif", Roboto,
     sans-serif;
+  --w98-font-size-micro: 8px;
+  --w98-font-size-caption: 9px;
   --w98-font-size-sm: 10px;
   --w98-font-size-base: 11px;
+  --w98-font-size-action: 12px;
   --w98-font-size-icon: 13px;
   --w98-emoji-font: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji",
     sans-serif;
+
+  /* ── Border Radius ── */
+  --w98-radius-none: 0;
+  --w98-radius-sm: 2px;
+  --w98-radius-crt: 12px;
 }
 
 /* ── Disabled button contrast fix ── */

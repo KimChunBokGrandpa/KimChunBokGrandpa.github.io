@@ -1,247 +1,345 @@
-# PLAN_TASK — Retro Pixel Converter 개선 계획
+# PLAN_TASK — Retro Pixel Converter 코드 리뷰 & 개선 계획
 
-> 최종 업데이트: 2026-03-12 (P6 기술 부채 완료 — 컴포넌트 테스트 + Storybook)
-> 전체 코드 리뷰 기반 (44개 소스 파일, ~9,230 LOC)
-
----
-
-## ✅ 완료 항목 요약 (P0~P4)
-
-<details>
-<summary>P0: 버그 수정 + 코드 정리 (완료)</summary>
-
-- [x] paletteIO.ts — hex export '#' prefix 추가
-- [x] gifProcessor.ts — findTransparentIndex 투명 검증 + 미사용 파라미터 정리
-- [x] zoomPanStore — handleTouchEnd pinch→1-finger 전환 시 panStart 재초기화
-- [x] customPaletteStore — ID 생성 Math.random() → crypto.randomUUID()
-- [x] imageProcessor.ts — Worker 에러 시 workerErrorCount + MAX_WORKER_RETRIES(3) 가드
-- [x] 한국어 주석 → 영어 통일 (6파일)
-- [x] colorQuantizer — buildLut()+buildLutRgb() → buildBothLuts() 통합
-
-</details>
-
-<details>
-<summary>P1: i18n 완성 + 접근성 (완료)</summary>
-
-- [x] CustomPaletteEditor, HistoryPanel, MessageDialog, ControlPanel, saveService i18n
-- [x] palettes.ts 107개 + presets.ts 11개 i18n (100% 커버리지)
-- [x] Win98Window 키보드 접근성 (Escape, role="dialog", tabindex)
-- [x] DesktopIcons 키보드 화살표 탐색, BeforeAfterSlider Home/End
-- [x] MessageDialog/KeyboardShortcuts aria-labelledby
-
-</details>
-
-<details>
-<summary>P2: 성능 + Phase 1 기능 (완료)</summary>
-
-- [x] glitchEngine 매직넘버 상수화, Win98Window TASKBAR_HEIGHT
-- [x] palettes.ts O(1) reverse lookup, imageProcessor LRU 캐시(10)
-- [x] gifProcessor canvas 재사용
-- [x] 실시간 미리보기 토글 (autoProcess + Apply Now)
-- [x] 커스텀 프리셋 저장/로드 (localStorage)
-- [x] 색상 피커 (eyedropper), 이미지 회전 (90° 단위)
-
-</details>
-
-<details>
-<summary>P3: UI/UX 개선 (완료)</summary>
-
-- [x] 반응형/모바일: 터치 핸들 확대, 브레이크포인트 550px 통일, 스와치 반응형
-- [x] 사용성: Toast variant, X 삭제 버튼, 자동 스크롤, 24h/12h 로케일 시간
-- [x] 시각적: CRT intensity prop, DesktopIcons 선택 하이라이트, CSS 변수 시스템
-- [x] Win98Window 리사이즈 점선 피드백
-
-</details>
-
-<details>
-<summary>P4: Phase 2 기능 + 기술 부채 (완료)</summary>
-
-- [x] SVG export (svgExporter.ts, horizontal run merge)
-- [x] 스프라이트 시트 export (spritesheetExporter.ts, auto-grid)
-- [x] 비교 모드 개선: slider/side-by-side/onion skin
-- [x] 팔레트 에디터: 그라데이션 생성, 정렬, 반전
-- [x] GIF encode → 전용 Worker (gifEncodeWorker.ts)
-- [x] CSS 변수 시스템 (theme.css), omggif 타입 선언
-- [x] 테스트 확장: svgExporter(7) + gifProcessor(5) = 총 32 unit + 8 E2E
-
-</details>
+> 최종 업데이트: 2026-03-16 (세션3: MEDIUM/성능 13건 + CRT 내보내기 = 44/58건 완료)
+> 분석 범위: 전체 소스 파일 (utils, stores, services, workers, components, routes)
 
 ---
 
-## 🔴 신규 발견 이슈 — 코드 리뷰 #2 (2026-03-12)
+## 1. 버그 및 코드 이슈
 
-### P5-A: 버그 수정 (HIGH) ✅
+### 1-A. HIGH — 반드시 수정
 
-- [x] **imageProcessor.ts — Worker 에러 카운트 성공 시 리셋**
-  - 성공적인 응답 수신 시 `workerErrorCount = 0` 추가
+- [x] **imageProcessingStore — `toBlob` 콜백 null assertion**
+  - 파일: `imageProcessingStore.svelte.ts:146-147`
+  - `canvas.toBlob((b) => resolve(b!))` — `b`가 `null`일 수 있으나 `!`로 무시
+  - canvas가 tainted 되거나 0 크기일 때 `URL.createObjectURL(null)` TypeError 발생
+  - 수정: `if (!b) return reject(new Error('Failed to create transform blob'));`
 
-- [x] **imageProcessingStore.svelte.ts — GIF export 중 gifInfo null 체크**
-  - 루프 매 반복에서 gifInfo null 체크 + totalFrames 사전 캡처
+- [x] **imageProcessor — 재사용 canvas와 toBlob 간 race condition**
+  - 파일: `imageProcessor.ts:46-62, 116-123`
+  - `workerCanvas`를 재사용하므로, 새 processImage 호출 시 이전 요청의 `toBlob` 콜백이 아직 대기 중이면 덮어쓴 canvas 내용을 캡처할 수 있음
+  - `getLastCanvas()`가 현재 표시 이미지와 다른 내용을 반환할 수 있음 (export 시 보이는 것과 다른 이미지 저장)
+  - 수정: `toBlob` 전에 canvas 데이터를 스냅샷하거나, 요청별 canvas 분리
 
-- [x] **imageProcessingStore.svelte.ts — applyTransform 에러 시 blob URL 정리**
-  - try-catch 래핑, catch에서 transformedObjectUrl revoke + 초기화
+- [x] **imageProcessingStore — `originalImageSrc` null 가능성**
+  - 파일: `imageProcessingStore.svelte.ts:213`
+  - `const srcToProcess = transformedSrc || originalImageSrc!;` — debounce 타이머와 `loadNewImage` 사이 race condition으로 둘 다 null 가능
+  - 수정: `if (!srcToProcess) return;` 조기 반환 추가
 
-- [x] **BatchProcessor.svelte — 컴포넌트 언마운트 시 blob URL 정리**
-  - `$effect` cleanup에서 모든 thumbnail/result blob URL revoke
+### 1-B. MEDIUM — 수정 권장
 
-### P5-B: 코드 품질 개선 (MEDIUM) ✅
+- [x] **gifProcessor — GIF disposal method 3 미처리**
+  - 파일: `gifProcessor.ts:51-62`
+  - disposal 2(배경 복원)는 처리하지만 disposal 3(이전 프레임 복원)은 무시
+  - 해당 disposal 방식의 GIF가 잘못 렌더링됨
+  - 수정: 프레임 합성 전 compositeData 복사본 보관, disposal 3이면 복원
 
-- [x] **paletteIO.ts — RGB 값 범위 검증 완전화** (`>= 0` 조건 추가)
-- [x] **spritesheetExporter.ts — 다운로드 실패 시 Promise reject** (silent failure 제거)
-- [x] **spritesheetExporter.ts — 프레임 크기 0 검증 추가**
-- [x] **PreviewContent.svelte — eyedropper canvas 캐시** (동일 이미지 재사용)
-- [~] **colorQuantizer.ts — `clearPaletteCachesExcept`**: Worker에서 실제 사용 중 (false positive)
+- [x] **undo/redo가 autoProcess 플래그 무시**
+  - 파일: `imageProcessingStore.svelte.ts:523-537`
+  - 확인 결과 이미 `if (autoProcess)` 체크 적용되어 있음 (수정 불필요)
 
-### P5-C: 접근성 보완 (MEDIUM) ✅
+- [x] **ControlPanel — preset import 시 effectLayers 미검증**
+  - 파일: `ControlPanel.svelte:344-355`
+  - glitchFilters는 검증하지만 effectLayers는 `Array.isArray`만 확인
+  - 악의적/잘못된 layer 객체가 처리 파이프라인에 그대로 전달
+  - 수정: 각 layer의 `type`, `enabled`, `glitchType`, `intensity` 필드 검증
 
-- [x] **PreviewContent.svelte — 토글 버튼 aria-label/aria-pressed 추가** (그리드, 타일, 아이드로퍼)
-- [x] **MessageDialog.svelte — 포커스 복원** (onMount에서 이전 요소 저장, unmount 시 복원)
+- [x] **Win98Window — unsnap 시 stale dragOffsetY 사용**
+  - 파일: `Win98Window.svelte:166`
+  - unsnap 시 `y = clientY - dragOffsetY`에서 dragOffsetY가 이전 드래그의 값 → 창 점프
+  - 수정: dragOffsetY 업데이트 후 사용하거나 unsnap y를 별도 계산
 
-### P5-D: 방어적 코드 (LOW) ✅
+- [x] **customPresetStore — localStorage.setItem 미래핑**
+  - 파일: `customPresetStore.svelte.ts:28`
+  - customPaletteStore는 try-catch 처리하지만 presetStore는 미처리
+  - localStorage 가득 차면 미처리 예외 발생
+  - 수정: try-catch 추가
 
-- [x] **imageWorker.ts — 메시지 필드 null 체크** (id/imageBitmap/width/height 검증 + 에러 응답)
-- [x] **windowStore.svelte.ts — localStorage 실패 시 console.warn** (silent catch 제거)
-- [x] **svgExporter.ts — 배경색 감지 개선** (가장자리 픽셀 최다 빈도 색상 + 배경색 run 스킵 최적화)
-- [x] **gifProcessor.ts — frameToBlobUrl JSDoc에 revoke 책임 명시**
+### 1-C. LOW — 개선 가능
 
-### P7: 코드 리뷰 #3 — 남은 작업 (13건) ✅
+- [x] **PaletteGallery — `loadFavorites` JSON 파싱 미검증**
+  - 파일: `PaletteGallery.svelte:110-117`
+  - 파싱 결과가 문자열 배열인지 확인하지 않음 (`Array.isArray` + 타입 체크 필요)
 
-#### 코드 정리 / 버그 — Medium (3건)
-- [x] **saveService.ts** — `imageSrcToBlob`에 30초 timeout 추가 + `getContext("2d")!` null 체크
-- [x] **imageProcessor.ts / imageProcessingStore / gifProcessor** — 모든 `getContext("2d")!` → null 체크 + 에러 throw (6곳)
-- [x] **imageProcessingStore.svelte.ts** — GIF export 루프 진입 전 `frames` 참조 사전 캡처
+- [x] **imageProcessor — workerErrorCount 리셋 위치 중복**
+  - 파일: `imageProcessor.ts:78`
+  - Worker 생성 시(line 78)와 성공 응답 시(line 96) 둘 다 리셋 — line 78은 불필요
 
-#### 코드 정리 / 버그 — Low (2건)
-- [x] **gifProcessor.ts** — 버퍼 할당량 축소 (`*2` → `*1 + header`)
-- [x] **imageWorker.ts** — effect 타입별 가중치 progress (noise:1, wave:2, slice:3, hqx:4)
+- [x] **preset import 파일 크기 제한 없음**
+  - 파일: `ControlPanel.svelte:334-361`
+  - 극단적으로 큰 JSON 파일 → 메모리 문제 가능
+  - 수정: 1MB 크기 제한 추가
 
-#### UI/UX 개선 — Medium (3건)
-- [x] **PaletteGallery.svelte** — import 버튼에 loading 상태 표시
-- [x] **ControlPanel.svelte** — 프리셋 import 실패 → `onError` 콜백 → 토스트 알림
-- [x] **MessageDialog.svelte** — 모달 배경 `aria-hidden="true"` 적용/해제
-
-#### UI/UX 개선 — Low (5건)
-- [x] **ImageDropZone.svelte** — 클립보드 비이미지 붙여넣기 알림
-- [x] **CustomPaletteEditor.svelte** — 편집 중 취소 시 미저장 변경사항 confirm
-- [x] **DesktopIcons.svelte** — `:focus-visible` 강화 (2px solid #fff + box-shadow)
-- [x] **theme.css** — 비활성 버튼 color `#6d6d6d` WCAG AA 대비 개선
-- [x] **PreviewContent.svelte** — 초기 처리 오버레이 CSS spin-pulse 애니메이션
-
-#### i18n 추가 (4키, en/ko/ja)
-- [x] `loading`, `preset_import_error`, `not_an_image`, `unsaved_changes_confirm`
-
----
-
-## 🟡 미구현 기능 (Feature Roadmap)
-
-### Phase 2 잔여 — 중기
-
-- [ ] **레이어 시스템** — 글리치, 디더링, CRT 효과를 개별 레이어로 분리, 순서 변경 가능
-- [x] **이미지 크롭** — CropOverlay 컴포넌트 (드래그 선택, clip-path 마스크, Enter/Esc, 터치 지원) ✅
-
-### Phase 3 — 장기
-
-- [ ] **드로잉 도구** — 처리된 이미지 위 픽셀 편집 (펜, 지우개, 페인트 버킷)
-- [ ] **애니메이션 에디터** — 프레임별 편집, 오니온 스킨, 프레임 추가/삭제
-- [ ] **AI 팔레트 추천** — 이미지 분석 후 최적 팔레트 자동 추천
-- [ ] **클라우드 갤러리** — 작품 공유/다운로드 커뮤니티
-- [ ] **Plugin 시스템** — 커스텀 필터/효과를 WASM/JS 플러그인으로 확장
-
-### 기술 부채
-
-- [x] **컴포넌트 테스트** — @testing-library/svelte, 9파일 80개 테스트 (총 112개) ✅
-- [x] **Storybook** — @storybook/sveltekit 10, 7개 컴포넌트 스토리, autodocs + a11y addon ✅
-- [x] **GIF export 최적화** — blob→Image→Canvas 왕복 제거, getLastCanvas() 직접 ImageData 추출 ✅
+- [x] **clipboard paste 이미지 크기 제한 없음**
+  - 파일: `ImageDropZone.svelte:61-75`
+  - 초대형 이미지 붙여넣기 시 디코딩 단계에서 OOM 가능
+  - (처리 파이프라인의 2048px 캡은 디코딩 이후 적용)
 
 ---
 
-## 📊 현재 코드 상태 요약
+## 2. 코드 정리 (Cleanup)
 
-| 항목 | 상태 | 비고 |
-|------|------|------|
-| TypeScript 타입 체크 | ✅ 0 에러 | 2 warnings (false positive) |
-| 테스트 | ✅ 112 tests (32 unit + 80 component) + 8 E2E | 14 test files, @testing-library/svelte |
-| 빌드 | ✅ 통과 | `npm run check` 정상 |
-| i18n 커버리지 | ✅ 100% | palettes 107개 + presets 11개 완료 |
-| 접근성 | ✅ 양호 | aria-label/pressed, 포커스 복원, 키보드 탐색 |
-| 성능 | ✅ 양호 | Worker 에러 리셋, blob URL 누수 수정, canvas 캐시 |
-| 모바일 대응 | ✅ 양호 | 터치 핸들 확대, 브레이크포인트 통일, 스와치 반응형 |
+### 2-A. Dead Code / 미사용
+
+- [x] **ControlPanel — legacy glitch 함수 5개 제거**
+  - 파일: `ControlPanel.svelte:137-168`
+  - `toggleGlitch`, `setFilterIntensity`, `isFilterActive`, `getFilterIntensity`, `clearAllGlitch` — 템플릿에서 미사용, effect layer 시스템으로 대체됨
+
+- [x] **ControlPanel — `GLITCH_OPTIONS` 상수 미사용**
+  - 파일: `ControlPanel.svelte:12-17`
+  - 템플릿은 `EFFECT_OPTIONS`만 사용
+
+- [x] **colorUtils — `hexToRgbUnsafe()` 미사용**
+  - 파일: `colorUtils.ts:21`
+  - 어디서도 import 되지 않음, `hexToRgb()`로 충분
+
+- [x] **presets.ts — `Preset.label` 필드 (deprecated)**
+  - 파일: `presets.ts:9`
+  - `@deprecated` 표시되어 있으나 여전히 모든 프리셋 객체에 존재
+  - i18n `labelKey` + `icon`으로 대체 완료 상태
+
+- [x] **windowStore — `WINDOW_CONFIGS.title` 필드 미사용**
+  - 파일: `windowStore.svelte.ts:18-24`
+  - 실제 표시는 `getWindowTitle(id)` (i18n) 사용 → title 필드는 dead data
+
+### 2-B. 일관성 / 패턴 통일
+
+- [x] **canvas getContext null 체크 패턴 통일**
+  - 현재 3가지 패턴 혼재:
+    - `const ctx = c.getContext("2d"); if (!ctx) throw ...` (imageProcessor ✓)
+    - `const ctx = canvas.getContext('2d')!;` (spritesheetExporter ✗)
+    - `as OffscreenCanvasRenderingContext2D` (imageWorker — worker 환경 OK)
+  - 수정: 모두 명시적 null 체크 패턴으로 통일
+
+- [x] **svgExporter — import 위치 이상**
+  - 파일: `svgExporter.ts:108`
+  - `rgbComponentsToHex` import가 함수 정의 뒤에 위치 (hoisting으로 동작은 하지만 비표준)
+  - 수정: 파일 상단으로 이동
+
+- [x] **에러 핸들링 패턴 통일**
+  - localStorage: 모두 try-catch + console.error 통일
+  - ImageDropZone localStorage 보호 추가
+  - console.warn → console.error 통일 (customPresetStore, windowStore)
+
+### 2-C. 타입 안전성
+
+- [ ] **`as any` 캐스트 정리** (4곳)
+  - `vitest.setup.ts:29,34` — globalThis polyfill (`declare global` 사용 가능)
+  - Storybook stories — Svelte 5 호환성 이슈 (현재 불가피)
 
 ---
 
-## 📋 우선순위 매트릭스
+## 3. UI/UX 개선
+
+### 3-A. 사용자 편의성 (Usability)
+
+#### HIGH
+
+- [x] **Add Effect 메뉴 — 외부 클릭 시 닫히지 않음**
+  - 파일: `ControlPanel.svelte:596-611`
+  - 버튼 클릭으로만 토글됨, 다른 곳 클릭해도 열려 있음
+  - 수정: click-outside 핸들러 또는 Svelte action 추가
+
+- [x] **CropOverlay — 선택 영역 크기 조절/이동 불가**
+  - 파일: `CropOverlay.svelte`
+  - corner handle이 `pointer-events: none` → 장식용
+  - 한번 그린 후 수정 불가, 처음부터 다시 그려야 함
+  - 수정: 코너 핸들 인터랙티브화 + 드래그 이동 지원
+
+- [x] **Desktop Icons — 더블클릭 필요 안내 없음**
+  - 파일: `+page.svelte:197-206`
+  - 데스크톱: 더블클릭 열기, 모바일: 싱글클릭 열기 — 차이점 안내 없음
+  - 수정: 데스크톱에서 "더블클릭으로 열기" 툴팁 추가
+
+- [x] **키보드 단축키 "?" — 안내 UI 없음**
+  - 파일: `+page.svelte:252-254`
+  - "?" 키로 단축키 패널이 열리지만 이를 알려주는 버튼/아이콘 없음
+  - 수정: 태스크바 트레이에 "?" 도움말 버튼 추가
+
+#### MEDIUM
+
+- [x] **"?" 키 — input 필드 내에서도 발동**
+  - 파일: `+page.svelte:252-254`
+  - 텍스트 입력 중 "?" 입력 시 단축키 패널 열림
+  - 수정: `e.target instanceof HTMLInputElement || HTMLTextAreaElement` 체크
+
+- [x] **Redo 툴팁 불일치**
+  - HistoryPanel: "(Ctrl+Y)" 표시 / 실제 바인딩: Ctrl+Shift+Z
+  - 수정: 둘 다 지원하거나 툴팁 수정
+
+- [x] **PaletteGallery — 커스텀 팔레트 삭제 확인 없음**
+  - 파일: `PaletteGallery.svelte:52-56`
+  - 클릭 즉시 삭제 → 실수로 사용자 작업물 소실
+  - 수정: 확인 다이얼로그 또는 undo 가능한 토스트
+
+- [x] **Effect Layer 드래그 재정렬 — 키보드 대안 없음**
+  - 파일: `ControlPanel.svelte:517-563`
+  - 마우스 드래그로만 가능, 키보드/보조기술 사용 불가
+  - 수정: 위/아래 화살표 버튼 추가
+
+- [x] **Toast — 사용자가 수동 닫기 불가**
+  - 파일: `ToastNotification.svelte`
+  - 3초 자동 닫힘만 지원, 클릭 닫기/복사 불가
+  - 수정: 클릭 닫기 + 내용 복사 지원
+
+#### LOW
+
+- [ ] **줌 입력 범위 불일치** — HTML `min="25"` vs JS `Math.max(10, ...)` → 통일
+- [ ] **이미지 크기 제한 알림 — 모달 대신 토스트 사용** (자동 리사이즈는 정보성 메시지)
+
+### 3-B. 가시성 (Visibility)
+
+#### MEDIUM
+
+- [x] **Settings summary badge 글꼴 9px → 11px**
+  - 파일: `ControlPanel.svelte` .summary-badge
+  - 수정: 11px로 증가
+
+- [x] **처리 중 표시 — 전체 영역 반투명 오버레이로 개선**
+  - 파일: `PreviewContent.svelte` .processing-overlay
+  - 수정: 전체 영역 반투명 오버레이 + 중앙 인디케이터
+
+- [x] **색상 수 표시 "42c" — 의미 불명확**
+  - 파일: `PreviewContent.svelte:380`
+  - 수정: "42 colors" 또는 아이콘+레이블 추가
+
+- [x] **언어 전환 — 다음 언어 안내 툴팁 추가**
+  - 파일: `Taskbar.svelte`
+  - 수정: 현재 언어 → 다음 언어 이름 표시 툴팁 추가
+
+#### LOW
+
+- [ ] **온보딩 step 글꼴 8-9px** — 가독성 한계, 최소 9-10px 권장
+- [ ] **eyedropper 클립보드 복사 성공 피드백 없음** — 아이콘 변경 또는 "Copied!" 표시
+
+### 3-C. 모바일/반응형
+
+#### HIGH
+
+- [x] **모바일 창 균등 분할 — 3개 이상 열면 사용 불가 수준**
+  - 파일: `+page.svelte:83-92`
+  - 3개 창 = 각 ~150px 높이, 설정 패널 조작 거의 불가
+  - 수정: 탭 기반 전환 또는 한번에 1개 창만 전체 표시
+
+- [x] **모바일에서 창 닫기 버튼 숨김**
+  - 파일: `Taskbar.svelte:286-288`
+  - `.tb-x`가 `display: none` → 스와이프 등 대체 수단도 없음
+  - 수정: 모바일에서도 닫기 버튼 유지 (크기 조절)
+
+#### MEDIUM
+
+- [x] **GIF 컨트롤 좁은 화면 오버플로우 수정**
+  - 수정: max-width + 모바일 미디어쿼리 + flex-wrap 추가
+
+- [x] **Preview 툴바 — 모바일 컴팩트 모드**
+  - 수정: 550px 이하에서 label 숨김, 버튼 축소, 간격 조정
+
+- [x] **PaletteGallery — 모바일 디테일 패널 축소**
+  - 수정: 모바일에서 max-height 100px + 구분선 추가
+
+- [x] **BatchProcessor — 모바일 browse 버튼 크기 확대**
+  - 수정: 모바일 미디어쿼리 추가 (padding/font-size 확대)
+
+### 3-D. 시각적 일관성
+
+#### MEDIUM
+
+- [x] **CSS 변수 토큰 체계 수립**
+  - theme.css에 font-size 토큰 추가: `--w98-font-size-micro/caption/sm/base/action/icon`
+  - border-radius 토큰 추가: `--w98-radius-none/sm/crt`
+  - CrtDisplay에서 토큰 적용
+  - 점진적 마이그레이션 시작 (전체 컴포넌트는 향후 작업)
+
+#### LOW
+
+- [ ] **"Apply Now" 버튼 스타일 — Win98 언어와 불일치**
+  - 유일한 filled 버튼 (`#000080` 배경 + 흰색 텍스트)
+  - Win98 스타일: raised 3D 버튼이 표준
+- [ ] **커스텀 버튼 box-shadow 3가지 방식 혼재** — theme.css `var(--w98-outset)` 통일 권장
+
+### 3-E. 에러 UX
+
+#### HIGH
+
+- [x] **BatchProcessor — raw 에러 메시지 노출**
+  - 파일: `BatchProcessor.svelte:221`
+  - `{item.error}` 그대로 표시 → "Processing returned null" 등 기술적 문구
+  - 수정: 사용자 친화적 메시지 매핑
+
+#### MEDIUM
+
+- [x] **PaletteGallery Favorites 탭 — empty state 없음**
+  - 즐겨찾기 없을 때 빈 화면만 표시, 안내 문구 없음
+  - 수정: "즐겨찾기한 팔레트가 없습니다. ★ 아이콘을 클릭하세요" 추가
+
+- [x] **CustomPaletteEditor — 저장 버튼 비활성 사유 표시**
+  - 수정: disabled 버튼에 title tooltip 추가 ("2색 이상 추가")
+
+- [x] **Preset import 실패 — 구체적 에러 메시지 표시**
+  - 수정: SyntaxError/Too large/Invalid format 별 다른 메시지 표시 (3개국어)
+
+#### LOW
+
+- [ ] **eyedropper 색상 복사 성공 시 피드백 없음** (3-B에서도 언급)
+
+---
+
+## 4. 성능
+
+- [x] **PaletteGallery — `allPaletteLookup` $derived 메모이제이션**
+  - 수정: 함수 → $derived.by 변경, 불필요한 Map 재생성 방지
+
+- [ ] **imageWorker — 고유 색상 카운팅 전체 픽셀 순회**
+  - 파일: `imageWorker.ts:121-126`
+  - 2048x2048 = 4M 픽셀에 대해 Set 생성 → 오버헤드
+  - 수정: 샘플링 또는 옵셔널화
+
+- [ ] **GIF export — 프레임 순차 처리 (설계 제약)**
+  - 프로세서가 동시 1건만 지원 → 100프레임 GIF 매우 느림
+  - 장기: Worker pool 또는 배치 처리 고려
+
+---
+
+## 5. 우선순위 매트릭스
 
 ```
-           긴급 ←────────────────→ 여유
-  ┌─────────────────────────────────────┐
-  │ P0~P4: 전체 완료              ✅   │ 높음
-  │ P5-A: 버그 수정 (4건)        ✅   │
-  │ P5-B: 코드 품질 (5건)        ✅   │ 중간
-  │ P5-C: 접근성 보완 (2건)      ✅   │
-  │ P5-D: 방어적 코드 (4건)      ✅   │ 낮음
-  ├─────────────────────────────────────┤
-  │ P6: 기술 부채               ✅   │ 완료
-  │ P7: 코드 리뷰 남은 13건     ✅   │ 완료
-  ├─────────────────────────────────────┤
-  │ Phase 2-3 기능               ◻️   │ 장기
-  │   레이어 시스템, 드로잉 도구,      │
-  │   애니메이션 에디터, AI 추천       │
-  └─────────────────────────────────────┘
+           긴급 ←────────────────────→ 여유
+  ┌──────────────────────────────────────────┐
+  │ 1-A: 버그 HIGH (3건)                     │ 높음
+  │ 3-A HIGH: UX 핵심 (4건)                  │
+  │ 3-C HIGH: 모바일 레이아웃 (2건)           │
+  │ 3-E HIGH: 에러 메시지 (1건)               │
+  ├──────────────────────────────────────────┤
+  │ 1-B: 버그 MEDIUM (5건)                   │ 중간
+  │ 2-A: Dead code 정리 (5건)                │
+  │ 3-A/B/C/D MEDIUM (17건)                  │
+  │ 3-E MEDIUM (3건)                         │
+  ├──────────────────────────────────────────┤
+  │ 1-C: 버그 LOW (4건)                      │ 낮음
+  │ 2-B/C: 패턴 통일 (5건)                    │
+  │ 3-A/B/D LOW (6건)                        │
+  │ 4: 성능 (3건)                             │
+  └──────────────────────────────────────────┘
 ```
+
+**총 58건** — 완료 44건, 미완료 14건 (LOW 8건, MEDIUM 4건, 성능 2건)
 
 ---
 
-## 🔧 작업 시작 가이드
-
-### 다음 작업 시 이 순서로 진행:
-
-```
-1. ✅ P5-A~D 완료 (버그 수정, 코드 품질, 접근성, 방어적 코드)
-2. ✅ P6 기술 부채 (컴포넌트 테스트 80개 + Storybook 7 stories)
-3. ✅ P7 코드 리뷰 남은 13건 (timeout, null 체크, race condition, UI 피드백, 접근성)
-4. Phase 2 잔여: 레이어 시스템 (feature/layoutsystem 브랜치 진행 중)
-5. Phase 3: 드로잉 도구, 애니메이션 에디터, AI 팔레트, 클라우드, 플러그인
-```
-
-### 빌드/테스트 명령어
+## 6. 빌드/테스트 명령어
 
 ```bash
 npm run dev          # 개발 서버 (port 1420)
 npm run check        # 타입 체크
 npx vitest run       # 테스트 실행 (112개)
-npm run storybook    # Storybook 개발 서버 (port 6006)
+npm run storybook    # Storybook (port 6006)
 ```
-
-### 주요 파일 위치
-
-```
-src/lib/types.ts                               # 중앙 타입 허브
-src/lib/utils/imageProcessor.ts                # Worker 관리 싱글톤
-src/lib/workers/imageWorker.ts                 # 이미지 처리 파이프라인
-src/lib/utils/colorQuantizer.ts                # 팔레트 양자화 엔진
-src/lib/stores/imageProcessingStore.svelte.ts  # 메인 앱 상태
-src/lib/i18n/en.ts                             # 번역 키 정의 (기준)
-src/routes/+page.svelte                        # 앱 루트
-```
-
-각 섹션의 체크박스를 완료 시 `[x]`로 표시하세요.
 
 ---
 
-## 📜 변경 이력
+## 7. 변경 이력
 
 | 날짜 | 작업 내용 |
 |------|-----------|
-| 2026-03-10 | 초기 문서 작성 (전체 코드 리뷰 기반) |
-| 2026-03-10 | P0 버그 수정 완료: paletteIO '#' prefix, gifProcessor 투명 검증, zoomPan 터치 점프, customPaletteStore UUID, imageProcessor worker retry |
-| 2026-03-10 | P1 코드 정리 + i18n 완성 + 접근성 개선 |
-| 2026-03-10 | P2 코드 정리 + 성능 최적화 + Phase 1 기능 완료 |
-| 2026-03-11 | P3 UI/UX 개선 (반응형/모바일, 사용성, 시각적) |
-| 2026-03-11 | P4 Phase 2 기능 + 기술 부채 해소 (SVG/스프라이트 export, 비교 모드, 팔레트 에디터, 테스트 확장, E2E) |
-| 2026-03-12 | 전체 코드 리뷰 #2: P5 신규 이슈 16건 식별 (버그 4, 코드품질 6, 접근성 2, 방어적 코드 4) |
-| 2026-03-12 | P5-A~D 전체 수정 완료 (15건): Worker 에러 리셋, GIF export race guard, transform blob 누수, BatchProcessor unmount 정리, paletteIO 범위 검증, spritesheet Promise/검증, eyedropper canvas 캐시, 토글 버튼 aria, MessageDialog 포커스 복원, Worker 메시지 검증, localStorage warn, SVG 배경 감지 개선, frameToBlobUrl 문서화 |
-| 2026-03-12 | 이미지 크롭 UI: CropOverlay.svelte (드래그 선택, clip-path 마스크, 코너 핸들, Enter/Esc 단축키, 터치 지원) + PreviewContent ✂ 버튼 + i18n 5키 (en/ko/ja) |
-| 2026-03-12 | GIF export 최적화: blob→Image→Canvas 왕복 제거, getLastCanvas()에서 직접 ImageData 추출 (프레임당 Image 로드 + Canvas 드로우 2단계 제거) |
-| 2026-03-12 | P6 기술 부채 완료: 컴포넌트 테스트 80개 추가 (8개 컴포넌트, @testing-library/svelte), Storybook 10 세팅 (7 stories, autodocs, a11y addon), vitest $lib alias + ResizeObserver polyfill |
-| 2026-03-16 | 코드 리뷰 #3 (P7): 전체 수정 11건 + 남은 13건 식별 |
-| 2026-03-16 | P7 남은 13건 전체 완료: timeout 30s, getContext null 체크(6곳), GIF frames 캡처, 버퍼 축소, progress 가중치, PaletteGallery loading, 프리셋 import 토스트, MessageDialog aria-hidden, 클립보드 알림, 미저장 변경 confirm, DesktopIcons focus, 비활성 버튼 대비, 처리 오버레이 애니메이션, i18n 4키 추가 |
+| 2026-03-16 | 전면 재검토: 3개 에이전트 병렬 분석 (코드 품질 24건, UI/UX 30건, 코드 구조 7건) → 중복 제거 후 58건 정리 |
+| 2026-03-16 | 세션3: MEDIUM 13건 완료 + CRT 내보내기/세로줄 + 성능 1건 = 총 44/58건 완료 |

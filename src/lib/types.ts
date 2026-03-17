@@ -14,7 +14,6 @@ export interface WindowState {
 
 export interface WindowConfig {
   id: WindowId;
-  title: string;
   icon: string;
 }
 
@@ -22,6 +21,7 @@ export interface WindowConfig {
 export type GlitchType = "none" | "rgb_split" | "noise" | "wave" | "slice";
 export type RenderMode = "pixel_perfect" | "bilinear" | "hqx";
 export type DitherType = "none" | "floyd_steinberg" | "ordered";
+export type CrtMode = "none" | "horizontal" | "vertical";
 
 export interface GlitchFilter {
   type: GlitchType;
@@ -42,7 +42,7 @@ export interface EffectLayer {
 export interface ProcessingSettings {
   pixelSize: number;
   palette: string;
-  crtEffect: boolean;
+  crtEffect: CrtMode;
   glitchFilters: GlitchFilter[];
   renderMode: RenderMode;
   glitchSeed: number | null; // null = random each time, number = fixed seed

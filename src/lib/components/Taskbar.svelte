@@ -11,6 +11,12 @@
     i18n.locale = LOCALES[(idx + 1) % LOCALES.length];
   }
 
+  function getNextLocaleLabel(): string {
+    const idx = LOCALES.indexOf(i18n.locale);
+    const next = LOCALES[(idx + 1) % LOCALES.length];
+    return LOCALE_LABELS[next];
+  }
+
   export interface TaskbarWindowInfo {
     id: WindowId;
     title: string;
@@ -23,10 +29,12 @@
     windows = [],
     onWindowClick,
     onWindowClose,
+    onShowShortcuts,
   }: {
     windows: TaskbarWindowInfo[];
     onWindowClick: (id: WindowId) => void;
     onWindowClose: (id: WindowId) => void;
+    onShowShortcuts?: () => void;
   } = $props();
 
   let timeString = $state('');
@@ -106,7 +114,10 @@
   <div class="taskbar-right">
     <div class="tray">
       <span class="tray-ico">🔊</span>
-      <button class="tray-lang" onclick={cycleLocale} title={i18n.t('language')}
+      {#if onShowShortcuts}
+        <button class="tray-help" onclick={onShowShortcuts} title={i18n.t('keyboard_shortcuts')}>?</button>
+      {/if}
+      <button class="tray-lang" onclick={cycleLocale} title="{i18n.t('language')}: {LOCALE_LABELS[i18n.locale]} → {getNextLocaleLabel()}"
         >{i18n.locale.toUpperCase()}</button
       >
       <span class="tray-clock">{timeString}</span>
@@ -271,6 +282,24 @@
   .tray-lang:active {
     box-shadow: var(--w98-inset-thin);
   }
+  .tray-help {
+    font-size: var(--w98-font-size-sm);
+    font-weight: bold;
+    font-family: inherit;
+    padding: 1px 4px;
+    background: var(--w98-surface);
+    border: none;
+    box-shadow: var(--w98-outset-thin);
+    cursor: pointer;
+    min-width: 18px;
+    text-align: center;
+    height: 18px;
+    line-height: 1;
+    color: #000080;
+  }
+  .tray-help:active {
+    box-shadow: var(--w98-inset-thin);
+  }
 
   /* ── Mobile ── */
   @media (max-width: 550px) {
@@ -284,7 +313,10 @@
       padding-right: 4px;
     }
     .tb-x {
-      display: none;
+      width: 14px;
+      height: 14px;
+      font-size: 8px;
+      padding: 0;
     }
     .tray {
       gap: 4px;

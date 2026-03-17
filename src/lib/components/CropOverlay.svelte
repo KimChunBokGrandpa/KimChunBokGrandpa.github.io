@@ -3,6 +3,7 @@
    * CropOverlay — Drag-to-select crop region over the preview image.
    * Renders a darkened mask with a transparent selection window.
    * Reports crop rect in original image pixel coordinates.
+   * Supports: draw new selection, move selection, resize via corner handles.
    */
   import { i18n } from '$lib/i18n/index.svelte';
 
@@ -19,19 +20,26 @@
   } = $props();
 
   // Selection in screen coordinates (relative to container)
-  let selecting = $state(false);
-  let startX = $state(0);
-  let startY = $state(0);
-  let endX = $state(0);
-  let endY = $state(0);
+  let sx = $state(0); // selection left
+  let sy = $state(0); // selection top
+  let sw = $state(0); // selection width
+  let sh = $state(0); // selection height
   let hasSelection = $state(false);
 
-  // Compute the selection rect (normalized: top-left origin)
+  // Interaction mode
+  type DragMode = 'none' | 'draw' | 'move' | 'resize-tl' | 'resize-tr' | 'resize-bl' | 'resize-br';
+  let dragMode: DragMode = $state('none');
+  let dragStartX = 0;
+  let dragStartY = 0;
+  // Snapshot of selection at drag start (for move/resize)
+  let snapSx = 0, snapSy = 0, snapSw = 0, snapSh = 0;
+
+  // Computed selection rect (clamped to positive size)
   let selRect = $derived.by(() => {
-    const x = Math.min(startX, endX);
-    const y = Math.min(startY, endY);
-    const w = Math.abs(endX - startX);
-    const h = Math.abs(endY - startY);
+    const x = sw >= 0 ? sx : sx + sw;
+    const y = sh >= 0 ? sy : sy + sh;
+    const w = Math.abs(sw);
+    const h = Math.abs(sh);
     return { x, y, w, h };
   });
 
@@ -58,36 +66,137 @@
     return { x: e.clientX - rect.left, y: e.clientY - rect.top };
   }
 
+  function isInsideSelection(px: number, py: number): boolean {
+    const r = selRect;
+    const margin = 6;
+    return px > r.x + margin && px < r.x + r.w - margin &&
+           py > r.y + margin && py < r.y + r.h - margin;
+  }
+
+  function getCornerHandle(px: number, py: number): DragMode {
+    const r = selRect;
+    const hs = 12; // handle hit area size
+    if (Math.abs(px - r.x) < hs && Math.abs(py - r.y) < hs) return 'resize-tl';
+    if (Math.abs(px - (r.x + r.w)) < hs && Math.abs(py - r.y) < hs) return 'resize-tr';
+    if (Math.abs(px - r.x) < hs && Math.abs(py - (r.y + r.h)) < hs) return 'resize-bl';
+    if (Math.abs(px - (r.x + r.w)) < hs && Math.abs(py - (r.y + r.h)) < hs) return 'resize-br';
+    return 'none';
+  }
+
+  function startDrag(px: number, py: number) {
+    dragStartX = px;
+    dragStartY = py;
+    snapSx = selRect.x;
+    snapSy = selRect.y;
+    snapSw = selRect.w;
+    snapSh = selRect.h;
+
+    if (hasSelection) {
+      const corner = getCornerHandle(px, py);
+      if (corner !== 'none') {
+        dragMode = corner;
+        return;
+      }
+      if (isInsideSelection(px, py)) {
+        dragMode = 'move';
+        return;
+      }
+    }
+
+    // New selection
+    dragMode = 'draw';
+    sx = px;
+    sy = py;
+    sw = 0;
+    sh = 0;
+    hasSelection = false;
+  }
+
+  function updateDrag(px: number, py: number) {
+    if (dragMode === 'none') return;
+    const dx = px - dragStartX;
+    const dy = py - dragStartY;
+
+    if (dragMode === 'draw') {
+      sw = px - sx;
+      sh = py - sy;
+      if (Math.abs(sw) > 4 || Math.abs(sh) > 4) hasSelection = true;
+    } else if (dragMode === 'move') {
+      sx = snapSx + dx;
+      sy = snapSy + dy;
+      sw = snapSw;
+      sh = snapSh;
+    } else if (dragMode === 'resize-tl') {
+      sx = snapSx + dx;
+      sy = snapSy + dy;
+      sw = snapSw - dx;
+      sh = snapSh - dy;
+    } else if (dragMode === 'resize-tr') {
+      sy = snapSy + dy;
+      sw = snapSw + dx;
+      sh = snapSh - dy;
+    } else if (dragMode === 'resize-bl') {
+      sx = snapSx + dx;
+      sw = snapSw - dx;
+      sh = snapSh + dy;
+    } else if (dragMode === 'resize-br') {
+      sw = snapSw + dx;
+      sh = snapSh + dy;
+    }
+  }
+
+  function endDrag() {
+    if (dragMode === 'none') return;
+    // Normalize negative dimensions
+    const r = selRect;
+    sx = r.x;
+    sy = r.y;
+    sw = r.w;
+    sh = r.h;
+    dragMode = 'none';
+    if (sw < 8 || sh < 8) hasSelection = false;
+  }
+
+  // Mouse handlers
   function handlePointerDown(e: MouseEvent) {
     if (e.button !== 0) return;
     e.preventDefault();
     e.stopPropagation();
     const pos = getPointerPos(e);
-    startX = pos.x;
-    startY = pos.y;
-    endX = pos.x;
-    endY = pos.y;
-    selecting = true;
-    hasSelection = false;
+    startDrag(pos.x, pos.y);
   }
 
   function handlePointerMove(e: MouseEvent) {
-    if (!selecting) return;
+    if (dragMode === 'none') {
+      // Update cursor based on hover position
+      updateCursor(e);
+      return;
+    }
     e.preventDefault();
     const pos = getPointerPos(e);
-    endX = pos.x;
-    endY = pos.y;
-    if (Math.abs(endX - startX) > 4 || Math.abs(endY - startY) > 4) {
-      hasSelection = true;
-    }
+    updateDrag(pos.x, pos.y);
   }
 
   function handlePointerUp(e: MouseEvent) {
-    if (!selecting) return;
+    if (dragMode === 'none') return;
     e.preventDefault();
-    selecting = false;
-    if (selRect.w < 8 || selRect.h < 8) {
-      hasSelection = false;
+    endDrag();
+  }
+
+  // Cursor management
+  let overlayEl: HTMLDivElement | undefined = $state();
+  function updateCursor(e: MouseEvent) {
+    if (!overlayEl || !hasSelection) return;
+    const pos = getPointerPos(e);
+    const corner = getCornerHandle(pos.x, pos.y);
+    if (corner === 'resize-tl' || corner === 'resize-br') {
+      overlayEl.style.cursor = 'nwse-resize';
+    } else if (corner === 'resize-tr' || corner === 'resize-bl') {
+      overlayEl.style.cursor = 'nesw-resize';
+    } else if (isInsideSelection(pos.x, pos.y)) {
+      overlayEl.style.cursor = 'move';
+    } else {
+      overlayEl.style.cursor = 'crosshair';
     }
   }
 
@@ -96,32 +205,20 @@
     if (e.touches.length !== 1) return;
     e.preventDefault();
     const pos = getPointerPos(e.touches[0]);
-    startX = pos.x;
-    startY = pos.y;
-    endX = pos.x;
-    endY = pos.y;
-    selecting = true;
-    hasSelection = false;
+    startDrag(pos.x, pos.y);
   }
 
   function handleTouchMove(e: TouchEvent) {
-    if (!selecting || e.touches.length !== 1) return;
+    if (dragMode === 'none' || e.touches.length !== 1) return;
     e.preventDefault();
     const pos = getPointerPos(e.touches[0]);
-    endX = pos.x;
-    endY = pos.y;
-    if (Math.abs(endX - startX) > 4 || Math.abs(endY - startY) > 4) {
-      hasSelection = true;
-    }
+    updateDrag(pos.x, pos.y);
   }
 
   function handleTouchEnd(e: TouchEvent) {
-    if (!selecting) return;
+    if (dragMode === 'none') return;
     e.preventDefault();
-    selecting = false;
-    if (selRect.w < 8 || selRect.h < 8) {
-      hasSelection = false;
-    }
+    endDrag();
   }
 
   function applyCrop() {
@@ -129,12 +226,13 @@
     if (!layout || !hasSelection) return;
 
     const { scale, offsetX, offsetY, imgW, imgH } = layout;
+    const r = selRect;
 
     // Convert screen coords to image pixel coords
-    const imgX = Math.max(0, Math.round((selRect.x - offsetX) / scale));
-    const imgY = Math.max(0, Math.round((selRect.y - offsetY) / scale));
-    const imgRight = Math.min(imgW, Math.round((selRect.x + selRect.w - offsetX) / scale));
-    const imgBottom = Math.min(imgH, Math.round((selRect.y + selRect.h - offsetY) / scale));
+    const imgX = Math.max(0, Math.round((r.x - offsetX) / scale));
+    const imgY = Math.max(0, Math.round((r.y - offsetY) / scale));
+    const imgRight = Math.min(imgW, Math.round((r.x + r.w - offsetX) / scale));
+    const imgBottom = Math.min(imgH, Math.round((r.y + r.h - offsetY) / scale));
     const cropW = imgRight - imgX;
     const cropH = imgBottom - imgY;
 
@@ -159,6 +257,7 @@
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <div
   class="crop-overlay"
+  bind:this={overlayEl}
   onmousedown={handlePointerDown}
   onmousemove={handlePointerMove}
   onmouseup={handlePointerUp}
@@ -169,7 +268,7 @@
   role="application"
   aria-label={i18n.t('crop_drag_hint')}
 >
-  {#if hasSelection || selecting}
+  {#if hasSelection || dragMode !== 'none'}
     <!-- Dark mask with transparent crop window using clip-path -->
     <div class="crop-mask"
       style="clip-path: polygon(
@@ -257,16 +356,16 @@
 
   .crop-handle {
     position: absolute;
-    width: 8px;
-    height: 8px;
+    width: 10px;
+    height: 10px;
     background: #fff;
     border: 1px solid #000;
     pointer-events: none;
   }
-  .crop-handle.top-left { top: -4px; left: -4px; }
-  .crop-handle.top-right { top: -4px; right: -4px; }
-  .crop-handle.bottom-left { bottom: -4px; left: -4px; }
-  .crop-handle.bottom-right { bottom: -4px; right: -4px; }
+  .crop-handle.top-left { top: -5px; left: -5px; cursor: nwse-resize; }
+  .crop-handle.top-right { top: -5px; right: -5px; cursor: nesw-resize; }
+  .crop-handle.bottom-left { bottom: -5px; left: -5px; cursor: nesw-resize; }
+  .crop-handle.bottom-right { bottom: -5px; right: -5px; cursor: nwse-resize; }
 
   .crop-actions {
     position: absolute;

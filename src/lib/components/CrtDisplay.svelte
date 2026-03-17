@@ -1,9 +1,11 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
+  import type { CrtMode } from '../types';
 
-  let { active = false, intensity = 1.0, children }: {
+  let { active = false, intensity = 1.0, mode = 'horizontal' as CrtMode, children }: {
     active?: boolean;
     intensity?: number; // 0.0 ~ 1.0
+    mode?: CrtMode;
     children: Snippet;
   } = $props();
 
@@ -13,7 +15,7 @@
 <div class="crt-wrapper" class:active style={crtStyle}>
   {@render children()}
   {#if active}
-    <div class="scanlines"></div>
+    <div class="scanlines" class:vertical={mode === 'vertical'}></div>
     <div class="glare"></div>
   {/if}
 </div>
@@ -33,7 +35,7 @@
   }
 
   .crt-wrapper.active {
-    border-radius: 12px;
+    border-radius: var(--w98-radius-crt, 12px);
     box-shadow: inset 0 0 calc(20px * var(--crt-intensity)) rgba(0,0,0,0.8);
     filter: drop-shadow(calc(1px * var(--crt-intensity)) 0 calc(2px * var(--crt-intensity)) rgba(255,0,0,0.3)) drop-shadow(calc(-1px * var(--crt-intensity)) 0 calc(2px * var(--crt-intensity)) rgba(0,0,255,0.3)) contrast(calc(1 + 0.1 * var(--crt-intensity))) brightness(calc(1 + 0.1 * var(--crt-intensity)));
   }
@@ -60,6 +62,15 @@
     will-change: opacity;
     animation: flicker 4s ease-in-out infinite;
     opacity: var(--crt-intensity);
+  }
+
+  .scanlines.vertical {
+    background: linear-gradient(
+      to right,
+      rgba(255,255,255,0), rgba(255,255,255,0) 50%,
+      rgba(0,0,0,0.2) 50%, rgba(0,0,0,0.2)
+    );
+    background-size: 4px 100%;
   }
 
   @media (prefers-reduced-motion: reduce) {

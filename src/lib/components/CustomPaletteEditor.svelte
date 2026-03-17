@@ -220,7 +220,7 @@
 
   <div class="cpe-actions">
     <button onclick={handleCancel}>{i18n.t('cancel')}</button>
-    <button onclick={handleSave} disabled={!canSave}>
+    <button onclick={handleSave} disabled={!canSave} title={!canSave ? i18n.t('add_at_least_2') : ''}>
       {i18n.t('save_palette')}
     </button>
   </div>

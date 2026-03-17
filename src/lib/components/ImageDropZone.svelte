@@ -10,16 +10,20 @@
 
   // Onboarding: show quick start guide for first-time users
   const ONBOARDING_KEY = 'retropixel_onboarding_dismissed';
-  let onboardingDismissed = $state(
-    typeof localStorage !== 'undefined' && localStorage.getItem(ONBOARDING_KEY) === '1'
-  );
+  let onboardingDismissed = $state((() => {
+    try {
+      return typeof localStorage !== 'undefined' && localStorage.getItem(ONBOARDING_KEY) === '1';
+    } catch { return false; }
+  })());
 
   function dismissOnboarding() {
     onboardingDismissed = true;
-    localStorage.setItem(ONBOARDING_KEY, '1');
+    try { localStorage.setItem(ONBOARDING_KEY, '1'); }
+    catch { /* localStorage unavailable or full */ }
   }
 
   const ACCEPTED_TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/bmp', 'image/webp'];
+  const MAX_IMAGE_SIZE = 50 * 1024 * 1024; // 50MB
 
   function handleDragEnter(e: DragEvent) {
     e.preventDefault();
@@ -41,10 +45,12 @@
 
     if (e.dataTransfer?.files && e.dataTransfer.files.length > 0) {
       const file = e.dataTransfer.files[0];
-      if (ACCEPTED_TYPES.includes(file.type)) {
-        onImageSelected(file);
-      } else {
+      if (!ACCEPTED_TYPES.includes(file.type)) {
         onError?.(i18n.t('drop_image_error'));
+      } else if (file.size > MAX_IMAGE_SIZE) {
+        onError?.(i18n.t('image_too_large'));
+      } else {
+        onImageSelected(file);
       }
     }
   }
@@ -65,7 +71,11 @@
       if (item.type.startsWith('image/')) {
         const file = item.getAsFile();
         if (file) {
-          onImageSelected(file);
+          if (file.size > MAX_IMAGE_SIZE) {
+            onError?.(i18n.t('image_too_large'));
+          } else {
+            onImageSelected(file);
+          }
           return;
         }
       }

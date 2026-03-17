@@ -36,7 +36,8 @@ export async function createSpritesheet(
   const canvas = document.createElement('canvas');
   canvas.width = sheetW;
   canvas.height = sheetH;
-  const ctx = canvas.getContext('2d')!;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('Failed to get 2d context for spritesheet');
 
   // Load all frames in parallel
   const images = await Promise.all(

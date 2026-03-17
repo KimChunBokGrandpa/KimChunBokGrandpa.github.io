@@ -113,6 +113,8 @@
     flex-direction: column;
     gap: 3px;
     min-width: 220px;
+    max-width: calc(100% - 16px);
+    box-sizing: border-box;
   }
 
   .gif-controls-row {
@@ -189,5 +191,15 @@
     height: 100%;
     background: #000080;
     transition: width 0.2s;
+  }
+
+  @media (max-width: 550px) {
+    .gif-controls {
+      min-width: 0;
+      width: calc(100% - 16px);
+    }
+    .gif-controls-row {
+      flex-wrap: wrap;
+    }
   }
 </style>

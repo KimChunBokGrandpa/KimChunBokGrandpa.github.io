@@ -17,15 +17,6 @@ export function hexToRgb(hex: string): RGB | null {
   };
 }
 
-/** Parse hex string to RGB object. Assumes valid 7-char hex (e.g. "#FF0000"). */
-export function hexToRgbUnsafe(hex: string): RGB {
-  return {
-    r: parseInt(hex.slice(1, 3), 16),
-    g: parseInt(hex.slice(3, 5), 16),
-    b: parseInt(hex.slice(5, 7), 16),
-  };
-}
-
 /** Parse hex string to [r, g, b] tuple. Assumes valid 7-char hex. */
 export function hexToRgbTuple(hex: string): [number, number, number] {
   return [parseInt(hex.slice(1, 3), 16), parseInt(hex.slice(3, 5), 16), parseInt(hex.slice(5, 7), 16)];

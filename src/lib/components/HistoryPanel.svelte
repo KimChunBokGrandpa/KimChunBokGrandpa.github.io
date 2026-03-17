@@ -42,7 +42,7 @@
   function describeSettings(s: ProcessingSettings) {
     let desc = i18n.t('history_pixel').replace('{0}', String(s.pixelSize)) + ', ';
     desc += getPaletteName(s.palette);
-    if (s.crtEffect) desc += ' ' + i18n.t('history_crt');
+    if (s.crtEffect !== 'none') desc += ' ' + i18n.t('history_crt');
     if (s.glitchFilters.length > 0) desc += ' ' + i18n.t('history_glitch').replace('{0}', String(s.glitchFilters.length));
     return desc;
   }
@@ -51,7 +51,7 @@
 <div class="history-panel">
   <div class="history-controls">
     <button onclick={onUndo} disabled={history.length === 0} title="{i18n.t('undo')} (Ctrl+Z)">↩ {i18n.t('undo')}</button>
-    <button onclick={onRedo} disabled={redoHistory.length === 0} title="{i18n.t('redo')} (Ctrl+Y)">↪ {i18n.t('redo')}</button>
+    <button onclick={onRedo} disabled={redoHistory.length === 0} title="{i18n.t('redo')} (Ctrl+Shift+Z)">↪ {i18n.t('redo')}</button>
   </div>
 
   <div class="history-list" bind:this={listEl}>

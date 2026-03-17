@@ -163,8 +163,8 @@
       const ratioX = clientX / width;
       width = preSnapPos.w;
       height = preSnapPos.h;
-      y = clientY - dragOffsetY;
       x = clientX - Math.floor(preSnapPos.w * ratioX);
+      y = clientY;
       preSnapPos = null;
     }
     isDragging = true;

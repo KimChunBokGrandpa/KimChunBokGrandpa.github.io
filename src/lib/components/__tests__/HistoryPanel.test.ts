@@ -11,7 +11,7 @@ function makeSettings(overrides: Partial<ProcessingSettings> = {}): ProcessingSe
   return {
     pixelSize: 4,
     palette: 'gameboy',
-    crtEffect: false,
+    crtEffect: 'none',
     glitchFilters: [],
     renderMode: 'pixel_perfect',
     glitchSeed: null,
