@@ -23,27 +23,18 @@ export const applyScaling = (
   const targetH = sh * 2;
   const targetData = new Uint8ClampedArray(targetW * targetH * 4);
 
-  // Returns the byte offset for pixel (x, y) in a buffer of width w.
-  // Clamps coordinates to the image edge.
+  // Use Uint32 views for fast single-op pixel copy
+  const src32 = new Uint32Array(data.buffer, data.byteOffset, data.length / 4);
+  const dst32 = new Uint32Array(targetData.buffer, targetData.byteOffset, targetData.length / 4);
+
+  // Returns the pixel index for (x, y), clamped to image edges.
   const getIdx = (x: number, y: number): number => {
     x = Math.max(0, Math.min(sw - 1, x));
     y = Math.max(0, Math.min(sh - 1, y));
-    return (y * sw + x) * 4;
+    return y * sw + x;
   };
 
-  const isSame = (i1: number, i2: number): boolean =>
-    data[i1] === data[i2] &&
-    data[i1 + 1] === data[i2 + 1] &&
-    data[i1 + 2] === data[i2 + 2] &&
-    data[i1 + 3] === data[i2 + 3];
-
-  const writeFrom = (tx: number, ty: number, srcIdx: number) => {
-    const di = (ty * targetW + tx) * 4;
-    targetData[di] = data[srcIdx];
-    targetData[di + 1] = data[srcIdx + 1];
-    targetData[di + 2] = data[srcIdx + 2];
-    targetData[di + 3] = data[srcIdx + 3];
-  };
+  const isSame = (i1: number, i2: number): boolean => src32[i1] === src32[i2];
 
   for (let y = 0; y < sh; y++) {
     for (let x = 0; x < sw; x++) {
@@ -58,7 +49,7 @@ export const applyScaling = (
         A
       C P B
         D
-      
+
       E0 E1
       E2 E3
       */
@@ -72,13 +63,13 @@ export const applyScaling = (
         if (isSame(D, B)) e3 = D;
       }
 
-      // Write doubled pixels
+      // Write doubled pixels (single Uint32 assignment per pixel)
       const tx = x * 2;
       const ty = y * 2;
-      writeFrom(tx, ty, e0);
-      writeFrom(tx + 1, ty, e1);
-      writeFrom(tx, ty + 1, e2);
-      writeFrom(tx + 1, ty + 1, e3);
+      dst32[ty * targetW + tx] = src32[e0];
+      dst32[ty * targetW + tx + 1] = src32[e1];
+      dst32[(ty + 1) * targetW + tx] = src32[e2];
+      dst32[(ty + 1) * targetW + tx + 1] = src32[e3];
     }
   }
 

@@ -37,12 +37,12 @@
 
   // Toast queue: max 3 items, drop oldest if exceeded
   const TOAST_QUEUE_MAX = 3;
-  type ToastItem = { message: string; variant: 'success' | 'error' | 'warning' };
+  type ToastItem = { message: string; variant: 'success' | 'error' | 'warning'; action?: { label: string; onclick: () => void } };
   let toastQueue: ToastItem[] = $state([]);
   let activeToast: ToastItem | null = $state(null);
 
-  function enqueueToast(message: string, variant: 'success' | 'error' | 'warning' = 'success') {
-    const item: ToastItem = { message, variant };
+  function enqueueToast(message: string, variant: 'success' | 'error' | 'warning' = 'success', action?: { label: string; onclick: () => void }) {
+    const item: ToastItem = { message, variant, action };
     if (!activeToast) {
       activeToast = item;
     } else {
@@ -101,7 +101,11 @@
 
   // ─── Dimension cap callback ───
   ip.setDimensionCapCallback((original, capped) => {
-    enqueueToast(i18n.t('image_resized', `${original.w}×${original.h}`, `${capped.w}×${capped.h}px`), 'warning');
+    enqueueToast(
+      i18n.t('image_resized', `${original.w}×${original.h}`, `${capped.w}×${capped.h}px`),
+      'warning',
+      { label: i18n.t('undo'), onclick: () => ip.undo() },
+    );
   });
 
   // ─── Mobile split layout ───
@@ -541,6 +545,7 @@
     <ToastNotification
       message={activeToast.message}
       variant={activeToast.variant}
+      action={activeToast.action}
       onDone={advanceToastQueue}
     />
   {/key}

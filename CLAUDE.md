@@ -8,14 +8,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 npm run dev          # Web dev server (port 1420)
 npm run build        # Production build (static adapter → build/)
 npm run check        # svelte-check (type checking)
-npx vitest run       # Run all tests (112 tests across 14 files)
+npm test             # Run all tests (290 tests across 34 files)
+npm run test:watch   # Vitest watch mode
 npx vitest run src/lib/utils/colorQuantizer.test.ts  # Single test file
 npm run td           # Tauri desktop dev (requires Rust toolchain)
 npm run storybook    # Storybook dev server (port 6006)
 npm run build-storybook  # Storybook static build
 ```
 
-No dedicated `test` script in package.json — use `npx vitest` directly.
+`npm test` runs `vitest run`. Use `npm run test:watch` for watch mode.
 
 ## Tech Stack
 
@@ -62,7 +63,7 @@ src/lib/
 │   └── gifEncodeWorker.ts            # GIF encoding
 ├── components/                       # UI components (grouped by role)
 │   ├── window/                       # Win98Window, Taskbar, DesktopIcons
-│   ├── editor/                       # ControlPanel, PreviewContent, CropOverlay, ImageDropZone
+│   ├── editor/                       # ControlPanel, PreviewContent, CropOverlay, ImageDropZone, PostProcessFilters
 │   ├── palette/                      # PaletteGallery, CustomPaletteEditor
 │   ├── media/                        # GifControls, BatchProcessor, BeforeAfterSlider, CrtDisplay
 │   ├── feedback/                     # ToastNotification, MessageDialog, KeyboardShortcuts, HistoryPanel
@@ -127,14 +128,25 @@ Animated GIFs are decoded into frames, each processed individually through the f
 
 ## Testing
 
-**Utility tests** (5 files, 32 tests):
+**Utility tests** (10 files, 85 tests):
 - `colorQuantizer.test.ts` — Quantization, dithering correctness
 - `scaleEngine.test.ts` — HQx upscaling
 - `glitchEngine.test.ts` — Glitch effect output
 - `svgExporter.test.ts` — SVG generation, cellSize options
 - `gifProcessor.test.ts` — GIF frame processing
+- `colorUtils.test.ts` — Hex/RGB/HSL conversions, roundtrips
+- `paletteIO.test.ts` — .hex/.gpl parse/export, auto-detect, roundtrip
+- `crtRenderer.test.ts` — Mode passthrough, context fallback
+- `spritesheetExporter.test.ts` — Error handling for invalid inputs
+- `tooltip.test.ts` — title→data-tooltip sync, dynamic updates
 
-**Component tests** (9 files, 80 tests) — `@testing-library/svelte` + jsdom:
+**Service tests** (4 files, 58 tests):
+- `imageProcessingStore.test.ts` — State management, undo/redo, history, postFilterCss, GIF delegation
+- `imageProcessor.test.ts` — Cache, request dedup, dimension capping, early return path
+- `saveService.test.ts` — Web download, file extensions, CSS filter, blob URL cleanup
+- `exportService.test.ts` — SVG pipeline, spritesheet export, error handling with cleanup
+
+**Component tests** (20 files, 147 tests) — `@testing-library/svelte` + jsdom:
 - `ToastNotification` — Variants, icons, auto-dismiss timer
 - `MessageDialog` — Modal rendering, ESC close, focus trap, aria attributes
 - `CrtDisplay` — Active/inactive states, scanlines, CSS variables
@@ -144,12 +156,24 @@ Animated GIFs are decoded into frames, each processed individually through the f
 - `GifControls` — Play/pause, frame seek, export, progress
 - `HistoryPanel` — Undo/redo, history items, jump navigation
 - `BeforeAfterSlider` — Slider rendering, keyboard (Arrow/Home/End), aria
+- `CompareView` — Side-by-side, onion skin, slider variants, rendering modes
+- `ControlPanel` — Tabs, range inputs, auto-process toggle, hasImage states
+- `EffectLayerStack` — Layer list, add button, render mode
+- `PresetManager` — Preset list, click handling, matched preset
+- `PreviewContent` — No-image/processed/processing states, GIF controls, post filter CSS
+- `CropOverlay` — Overlay rendering, cancel button, image element binding
+- `PaletteGallery` — Theme tabs, palette grid, selection highlighting
+- `CustomPaletteEditor` — Name input, initial values, color entries, cancel callback
+- `BatchProcessor` — Container, drop zone, save format options
+- `Win98Window` — Title/icon, control buttons, children slot, minimize/maximize, close/focus
+- `Taskbar` — Window buttons, focused state, clock, locale support
 
 **Storybook** (7 stories) — Visual component documentation:
 - Stories in `src/lib/components/__stories__/`
 - Configured with 98.css theme, a11y addon, autodocs
 
 Test setup (`vitest.setup.ts`) polyfills `ImageData` and `ResizeObserver` for jsdom.
+`$app/environment` is mocked via vitest alias → `src/__mocks__/$app_environment.ts`.
 Storybook vitest integration is in `vitest.workspace.ts` (separate from unit tests).
 
 ## Conventions

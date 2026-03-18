@@ -1,0 +1,338 @@
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import type { ProcessingSettings } from '$lib/types';
+
+// ─── Mocks ───
+
+const mockProcessorService = {
+  processImage: vi.fn().mockResolvedValue('blob:processed'),
+  getLastColorCount: vi.fn().mockReturnValue(16),
+  getLastCanvas: vi.fn().mockReturnValue(null),
+  clearImageCache: vi.fn(),
+  evictFromImageCache: vi.fn(),
+  destroy: vi.fn(),
+};
+
+vi.mock('$lib/services/imageProcessor', () => ({
+  processorService: mockProcessorService,
+}));
+
+vi.mock('$lib/services/saveService', () => ({
+  saveImage: vi.fn().mockResolvedValue('saved-file.png'),
+}));
+
+vi.mock('$lib/utils/crtRenderer', () => ({
+  applyCrtEffect: vi.fn((canvas: unknown) => canvas),
+}));
+
+const mockGifManager = {
+  isGif: false,
+  gifInfo: null,
+  gifCurrentFrame: 0,
+  gifPlaying: false,
+  gifProcessingProgress: 0,
+  gifIsExporting: false,
+  gifFrameCount: 0,
+  cleanup: vi.fn(),
+  loadGifFile: vi.fn(),
+  play: vi.fn(),
+  pause: vi.fn(),
+  seek: vi.fn(),
+  showFrame: vi.fn(),
+  stopPlayback: vi.fn(),
+  exportGif: vi.fn(),
+  cancelExport: vi.fn(),
+};
+
+vi.mock('$lib/stores/gifPlaybackManager.svelte', () => ({
+  createGifPlaybackManager: vi.fn(() => mockGifManager),
+}));
+
+// Mock URL.createObjectURL / revokeObjectURL
+const originalURL = globalThis.URL;
+let objectUrlCounter = 0;
+globalThis.URL.createObjectURL = vi.fn(() => `blob:mock-${++objectUrlCounter}`);
+globalThis.URL.revokeObjectURL = vi.fn();
+
+const { createImageProcessingStore } = await import('./imageProcessingStore.svelte');
+
+function makeSettings(overrides?: Partial<ProcessingSettings>): ProcessingSettings {
+  return {
+    pixelSize: 1,
+    palette: 'original',
+    crtEffect: 'none',
+    glitchFilters: [],
+    renderMode: 'pixel_perfect',
+    glitchSeed: null,
+    ditherType: 'none',
+    effectLayers: [],
+    ...overrides,
+  };
+}
+
+describe('createImageProcessingStore', () => {
+  let store: ReturnType<typeof createImageProcessingStore>;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    objectUrlCounter = 0;
+    store = createImageProcessingStore();
+  });
+
+  afterEach(() => {
+    store.destroy();
+  });
+
+  // ─── Initial State ───
+
+  describe('initial state', () => {
+    it('starts with null image sources', () => {
+      expect(store.originalImageSrc).toBeNull();
+      expect(store.processedImageSrc).toBeNull();
+    });
+
+    it('starts with default settings', () => {
+      expect(store.settings.pixelSize).toBe(1);
+      expect(store.settings.palette).toBe('original');
+      expect(store.settings.crtEffect).toBe('none');
+      expect(store.settings.renderMode).toBe('pixel_perfect');
+      expect(store.settings.ditherType).toBe('none');
+    });
+
+    it('starts with no errors', () => {
+      expect(store.lastError).toBeNull();
+      expect(store.isProcessing).toBe(false);
+    });
+
+    it('has empty history', () => {
+      expect(store.settingsHistory).toHaveLength(0);
+      expect(store.redoHistory).toHaveLength(0);
+    });
+
+    it('has default save format and quality', () => {
+      expect(store.saveFormat).toBe('png');
+      expect(store.saveQuality).toBe(0.92);
+    });
+
+    it('has default post filters', () => {
+      expect(store.postFilters.brightness).toBe(100);
+      expect(store.postFilters.contrast).toBe(100);
+      expect(store.postFilters.saturation).toBe(100);
+      expect(store.postFilters.hueRotate).toBe(0);
+    });
+
+    it('autoProcess is true by default', () => {
+      expect(store.autoProcess).toBe(true);
+    });
+
+    it('has no unapplied changes', () => {
+      expect(store.hasUnappliedChanges).toBe(false);
+    });
+
+    it('has no transform state', () => {
+      expect(store.rotation).toBe(0);
+      expect(store.cropRect).toBeNull();
+    });
+  });
+
+  // ─── Settings Update & History ───
+
+  describe('updateSettings', () => {
+    it('updates settings and pushes to history', () => {
+      const newSettings = makeSettings({ pixelSize: 4 });
+      store.updateSettings(newSettings);
+
+      expect(store.settings.pixelSize).toBe(4);
+      expect(store.settingsHistory).toHaveLength(1);
+    });
+
+    it('clears redo history on new update', () => {
+      // Create some history for undo
+      store.updateSettings(makeSettings({ pixelSize: 2 }));
+      store.updateSettings(makeSettings({ pixelSize: 4 }));
+      store.undo();
+      expect(store.redoHistory.length).toBeGreaterThan(0);
+
+      // New update should clear redo
+      store.updateSettings(makeSettings({ pixelSize: 8 }));
+      expect(store.redoHistory).toHaveLength(0);
+    });
+
+    it('marks hasUnappliedChanges when autoProcess is off', () => {
+      store.autoProcess = false;
+      store.updateSettings(makeSettings({ pixelSize: 4 }));
+      expect(store.hasUnappliedChanges).toBe(true);
+    });
+  });
+
+  describe('selectPalette', () => {
+    it('changes palette and pushes history', () => {
+      store.selectPalette('gameboy');
+      expect(store.settings.palette).toBe('gameboy');
+      expect(store.settingsHistory).toHaveLength(1);
+    });
+
+    it('marks hasUnappliedChanges when autoProcess is off', () => {
+      store.autoProcess = false;
+      store.selectPalette('gameboy');
+      expect(store.hasUnappliedChanges).toBe(true);
+    });
+  });
+
+  // ─── Undo / Redo ───
+
+  describe('undo/redo', () => {
+    it('undo restores previous settings', () => {
+      store.updateSettings(makeSettings({ pixelSize: 4 }));
+      store.updateSettings(makeSettings({ pixelSize: 8 }));
+
+      expect(store.settings.pixelSize).toBe(8);
+      store.undo();
+      expect(store.settings.pixelSize).toBe(4);
+    });
+
+    it('redo restores undone settings', () => {
+      store.updateSettings(makeSettings({ pixelSize: 4 }));
+      store.updateSettings(makeSettings({ pixelSize: 8 }));
+
+      store.undo();
+      expect(store.settings.pixelSize).toBe(4);
+      store.redo();
+      expect(store.settings.pixelSize).toBe(8);
+    });
+
+    it('undo does nothing when history is empty', () => {
+      const before = { ...store.settings };
+      store.undo();
+      expect(store.settings.pixelSize).toBe(before.pixelSize);
+    });
+
+    it('redo does nothing when redo history is empty', () => {
+      store.updateSettings(makeSettings({ pixelSize: 4 }));
+      const before = { ...store.settings };
+      store.redo();
+      expect(store.settings.pixelSize).toBe(before.pixelSize);
+    });
+
+    it('history is capped at MAX_HISTORY (20)', () => {
+      for (let i = 1; i <= 25; i++) {
+        store.updateSettings(makeSettings({ pixelSize: i }));
+      }
+      expect(store.settingsHistory.length).toBeLessThanOrEqual(20);
+    });
+  });
+
+  describe('jumpToHistory', () => {
+    it('jumps back multiple steps in undo history', () => {
+      store.updateSettings(makeSettings({ pixelSize: 2 }));
+      store.updateSettings(makeSettings({ pixelSize: 4 }));
+      store.updateSettings(makeSettings({ pixelSize: 8 }));
+
+      // Jump to index 0 (first saved state = original defaults)
+      store.jumpToHistory(0);
+      // After jumping to index 0, the current settings should be the original defaults
+      expect(store.settings.pixelSize).toBe(1);
+    });
+  });
+
+  // ─── Save Format / Quality ───
+
+  describe('setFormat / setQuality', () => {
+    it('updates save format', () => {
+      store.setFormat('jpeg');
+      expect(store.saveFormat).toBe('jpeg');
+    });
+
+    it('updates save quality', () => {
+      store.setQuality(0.8);
+      expect(store.saveQuality).toBe(0.8);
+    });
+  });
+
+  // ─── Post Filters CSS ───
+
+  describe('postFilterCss', () => {
+    it('returns empty string for default filters', () => {
+      expect(store.postFilterCss).toBe('');
+    });
+
+    it('generates brightness filter', () => {
+      store.postFilters = { brightness: 120, contrast: 100, saturation: 100, hueRotate: 0 };
+      expect(store.postFilterCss).toContain('brightness(120%)');
+    });
+
+    it('generates multiple filters', () => {
+      store.postFilters = { brightness: 120, contrast: 80, saturation: 150, hueRotate: 45 };
+      const css = store.postFilterCss;
+      expect(css).toContain('brightness(120%)');
+      expect(css).toContain('contrast(80%)');
+      expect(css).toContain('saturate(150%)');
+      expect(css).toContain('hue-rotate(45deg)');
+    });
+  });
+
+  // ─── Auto Process Toggle ───
+
+  describe('autoProcess', () => {
+    it('can be toggled off and on', () => {
+      store.autoProcess = false;
+      expect(store.autoProcess).toBe(false);
+      store.autoProcess = true;
+      expect(store.autoProcess).toBe(true);
+    });
+  });
+
+  // ─── Clear Error ───
+
+  describe('clearError', () => {
+    it('clears the last error', () => {
+      // We can't easily set lastError directly, but clearError should be safe to call
+      store.clearError();
+      expect(store.lastError).toBeNull();
+    });
+  });
+
+  // ─── loadNewImage ───
+
+  describe('loadNewImage', () => {
+    it('resets image state', () => {
+      // Simulate loaded state by loading an image
+      const file = new File(['test'], 'test.png', { type: 'image/png' });
+      store.loadImage(file);
+
+      store.loadNewImage();
+      expect(store.originalImageSrc).toBeNull();
+      expect(store.processedImageSrc).toBeNull();
+    });
+
+    it('calls gif cleanup', () => {
+      store.loadNewImage();
+      expect(mockGifManager.cleanup).toHaveBeenCalled();
+    });
+  });
+
+  // ─── GIF Delegation ───
+
+  describe('GIF state delegation', () => {
+    it('delegates isGif from gif manager', () => {
+      expect(store.isGif).toBe(false);
+    });
+
+    it('delegates gifFrameCount from gif manager', () => {
+      expect(store.gifFrameCount).toBe(0);
+    });
+  });
+
+  // ─── Destroy ───
+
+  describe('destroy', () => {
+    it('calls processorService.destroy', () => {
+      store.destroy();
+      expect(mockProcessorService.destroy).toHaveBeenCalled();
+    });
+
+    it('calls gif cleanup', () => {
+      store.destroy();
+      expect(mockGifManager.cleanup).toHaveBeenCalled();
+    });
+  });
+});

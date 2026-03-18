@@ -17,11 +17,13 @@
     message,
     variant = 'success' as ToastVariant,
     duration,
+    action,
     onDone,
   }: {
     message: string;
     variant?: ToastVariant;
     duration?: number;
+    action?: { label: string; onclick: () => void };
     onDone: () => void;
   } = $props();
 
@@ -47,6 +49,9 @@
   <div class="toast toast-{variant}" role="status" aria-live="polite" onclick={dismiss} onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') dismiss(); }}>
     <span class="toast-icon">{VARIANT_ICONS[variant]}</span>
     <span class="toast-msg">{message}</span>
+    {#if action}
+      <button class="toast-action" onclick={(e) => { e.stopPropagation(); action.onclick(); dismiss(); }}>{action.label}</button>
+    {/if}
     <button class="toast-close" aria-label="Close" onclick={dismiss}>×</button>
   </div>
 {/if}
@@ -94,6 +99,24 @@
 
   .toast-msg {
     color: #000;
+  }
+
+  .toast-action {
+    margin-left: 4px;
+    padding: 1px 8px;
+    font-size: var(--w98-font-size-sm);
+    font-weight: bold;
+    background: var(--w98-surface);
+    border: none;
+    box-shadow: var(--w98-outset-thin);
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .toast-action:hover {
+    background: var(--w98-surface-active);
+  }
+  .toast-action:active {
+    box-shadow: var(--w98-inset-thin);
   }
 
   .toast-close {

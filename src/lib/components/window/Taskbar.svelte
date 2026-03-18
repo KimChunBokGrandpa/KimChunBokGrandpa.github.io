@@ -3,6 +3,7 @@
   import type { WindowId, WindowMode } from '$lib/types';
   import { i18n, LOCALE_LABELS, type Locale } from '$lib/i18n/index.svelte';
   import { getWindowTitle } from '$lib/stores/windowStore.svelte';
+  import { tooltip } from '$lib/utils/tooltip';
 
   const LOCALES: Locale[] = ['ja', 'en', 'ko'];
 
@@ -115,9 +116,9 @@
     <div class="tray">
       <span class="tray-ico">🔊</span>
       {#if onShowShortcuts}
-        <button class="tray-help" onclick={onShowShortcuts} title="{i18n.t('keyboard_shortcuts')} (?)" aria-label={i18n.t('keyboard_shortcuts')}>?</button>
+        <button class="tray-help" onclick={onShowShortcuts} title="{i18n.t('keyboard_shortcuts')} (?)" aria-label={i18n.t('keyboard_shortcuts')} use:tooltip>?</button>
       {/if}
-      <button class="tray-lang" onclick={cycleLocale} title="{i18n.t('language')}: {LOCALE_LABELS[i18n.locale]} → {getNextLocaleLabel()}"
+      <button class="tray-lang" onclick={cycleLocale} title="{i18n.t('language')}: {LOCALE_LABELS[i18n.locale]} → {getNextLocaleLabel()}" use:tooltip
         >{i18n.locale.toUpperCase()}</button
       >
       <span class="tray-clock">{timeString}</span>

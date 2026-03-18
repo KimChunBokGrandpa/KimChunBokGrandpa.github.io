@@ -35,10 +35,13 @@ export class ImageWorkerPool {
   private dispatch(idx: number, task: PoolTask) {
     this.busy.add(idx);
     const worker = this.workers[idx];
+    const ac = new AbortController();
+    let settled = false;
 
     const cleanup = () => {
-      worker.onmessage = null;
-      worker.onerror = null;
+      if (settled) return;
+      settled = true;
+      ac.abort();
       this.busy.delete(idx);
       // Pick up next queued task
       if (this.queue.length > 0) {
@@ -46,7 +49,7 @@ export class ImageWorkerPool {
       }
     };
 
-    worker.onmessage = (e: MessageEvent<ImageWorkerResponse>) => {
+    worker.addEventListener('message', (e: MessageEvent<ImageWorkerResponse>) => {
       // Skip progress messages — only handle completion
       if (e.data.type === 'progress') return;
       cleanup();
@@ -59,12 +62,12 @@ export class ImageWorkerPool {
           e.data.processedData.height,
         ));
       }
-    };
+    }, { signal: ac.signal });
 
-    worker.onerror = (err) => {
+    worker.addEventListener('error', (err) => {
       cleanup();
-      task.reject(new Error(err.message || 'Worker error'));
-    };
+      task.reject(new Error(err.message || `Worker ${idx} error`));
+    }, { signal: ac.signal });
 
     worker.postMessage(task.message, task.transfer);
   }

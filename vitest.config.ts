@@ -14,6 +14,7 @@ export default defineConfig({
   resolve: {
     alias: {
       $lib: path.resolve(dirname, "src/lib"),
+      "$app/environment": path.resolve(dirname, "src/__mocks__/$app_environment.ts"),
     },
     conditions: ["browser"],
   },

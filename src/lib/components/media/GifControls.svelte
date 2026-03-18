@@ -1,5 +1,6 @@
 <script lang="ts">
   import { i18n } from '$lib/i18n/index.svelte';
+  import { tooltip } from '$lib/utils/tooltip';
 
   let {
     currentFrame,
@@ -35,6 +36,7 @@
       onclick={() => isPlaying ? onPause() : onPlay()}
       title={isPlaying ? i18n.t('pause') : i18n.t('play')}
       disabled={isExporting}
+      use:tooltip
     >
       {isPlaying ? '⏸' : '▶'}
     </button>
@@ -43,12 +45,14 @@
       onclick={() => onSeek(0)}
       title={i18n.t('first_frame')}
       disabled={isExporting}
+      use:tooltip
     >⏮</button>
     <button
       class="gif-btn"
       onclick={() => onSeek(Math.max(0, currentFrame - 1))}
       title={i18n.t('prev_frame')}
       disabled={isExporting}
+      use:tooltip
     >◀</button>
     <span class="gif-frame-info">{currentFrame + 1}/{frameCount}</span>
     <button
@@ -56,12 +60,14 @@
       onclick={() => onSeek(Math.min(frameCount - 1, currentFrame + 1))}
       title={i18n.t('next_frame')}
       disabled={isExporting}
+      use:tooltip
     >▶</button>
     <button
       class="gif-btn"
       onclick={() => onSeek(frameCount - 1)}
       title={i18n.t('last_frame')}
       disabled={isExporting}
+      use:tooltip
     >⏭</button>
     <div class="gif-sep"></div>
     {#if isExporting}
@@ -74,6 +80,7 @@
           onclick={onCancelExport}
           title={i18n.t('cancel')}
           aria-label={i18n.t('cancel')}
+          use:tooltip
         >✕</button>
       {/if}
     {:else}
@@ -81,6 +88,7 @@
         class="gif-btn gif-export-btn"
         onclick={onExport}
         title={i18n.t('export_gif')}
+        use:tooltip
       >
         💾 {i18n.t('gif_btn')}
       </button>
@@ -91,6 +99,7 @@
         onclick={onExportSpritesheet}
         disabled={isExporting}
         title={i18n.t('export_spritesheet')}
+        use:tooltip
       >
         🧩
       </button>

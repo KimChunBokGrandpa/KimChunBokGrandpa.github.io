@@ -102,8 +102,14 @@ export function createGifPlaybackManager(deps: GifManagerDeps) {
   let gifFrameCache = new Map<string, string>();
   let gifCacheSettingsHash = '';
 
+  /** Track the currently displayed URL so we don't revoke it while it's still in an <img> */
+  let activeFrameUrl: string | null = null;
+
   function invalidateCache() {
-    for (const url of gifFrameCache.values()) URL.revokeObjectURL(url);
+    for (const url of gifFrameCache.values()) {
+      // Don't revoke the URL currently being displayed
+      if (url !== activeFrameUrl) URL.revokeObjectURL(url);
+    }
     gifFrameCache.clear();
     gifCacheSettingsHash = '';
   }
@@ -124,6 +130,11 @@ export function createGifPlaybackManager(deps: GifManagerDeps) {
       if (url) URL.revokeObjectURL(url);
     }
     gifFrameBlobUrls = [];
+    // Revoke active frame URL before invalidating cache (cache won't revoke it)
+    if (activeFrameUrl) {
+      URL.revokeObjectURL(activeFrameUrl);
+      activeFrameUrl = null;
+    }
     invalidateCache();
   }
 
@@ -149,6 +160,7 @@ export function createGifPlaybackManager(deps: GifManagerDeps) {
     const cacheKey = `${index}`;
     const cached = gifFrameCache.get(cacheKey);
     if (cached) {
+      activeFrameUrl = cached;
       deps.setProcessedImageSrc(cached);
       deps.setIsProcessing(false);
       return;
@@ -157,6 +169,7 @@ export function createGifPlaybackManager(deps: GifManagerDeps) {
     try {
       const result = await processFrame(index);
       if (result !== null) {
+        activeFrameUrl = result;
         deps.setProcessedImageSrc(result);
         deps.setColorCount(processorService.getLastColorCount());
         gifFrameCache.set(cacheKey, result);

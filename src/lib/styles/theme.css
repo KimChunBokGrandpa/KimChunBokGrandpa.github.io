@@ -67,6 +67,38 @@ button:focus-visible {
   outline-offset: -1px;
 }
 
+/* ── Visual Tooltip ── */
+/* CSS-only tooltip via [data-tooltip] attribute. Replaces native title tooltip. */
+[data-tooltip] {
+  position: relative;
+}
+[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 3px 6px;
+  background: #ffffcc;
+  color: #000;
+  border: 1px solid #000;
+  font-size: var(--w98-font-size-base);
+  font-family: var(--w98-font-family);
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+  z-index: 9999;
+}
+[data-tooltip]:hover::after,
+[data-tooltip]:focus-visible::after {
+  opacity: 1;
+}
+/* Prevent tooltip when element is actively pressed */
+[data-tooltip]:active::after {
+  opacity: 0;
+}
+
 /* ── Disabled button contrast fix ── */
 /* Default 98.css uses #808080 on #d0d0c8 (3.2:1 ratio), increase to meet WCAG AA */
 button:disabled,

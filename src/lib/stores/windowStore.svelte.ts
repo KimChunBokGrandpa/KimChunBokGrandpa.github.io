@@ -161,7 +161,13 @@ export function createWindowStore() {
     closeAndReset,
     close,
     handleTaskbarClick,
-    /** Persist current layout to localStorage (call after drag/resize) */
-    persistLayout() { saveLayout(wins); },
+    /** Persist current layout to localStorage (debounced to reduce writes during drag/resize) */
+    persistLayout: (() => {
+      let timer: ReturnType<typeof setTimeout> | null = null;
+      return () => {
+        if (timer) clearTimeout(timer);
+        timer = setTimeout(() => { timer = null; saveLayout(wins); }, 300);
+      };
+    })(),
   };
 }

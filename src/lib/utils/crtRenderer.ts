@@ -73,40 +73,32 @@ function drawChromaticAberration(
   w: number,
   h: number,
 ): void {
-  // Red channel shifted right
-  ctx.globalCompositeOperation = 'source-over';
-  ctx.drawImage(source, 0, 0);
+  // Direct pixel manipulation: shift R channel right, B channel left by CHROMATIC_OFFSET
+  const srcCtx = source.getContext('2d');
+  if (!srcCtx) return;
+  const srcData = srcCtx.getImageData(0, 0, w, h).data;
+  const outImageData = ctx.createImageData(w, h);
+  const out = outImageData.data;
 
-  ctx.globalCompositeOperation = 'multiply';
-  ctx.fillStyle = 'rgb(255, 0, 0)';
-  ctx.fillRect(0, 0, w, h);
+  for (let y = 0; y < h; y++) {
+    const rowBase = y * w;
+    for (let x = 0; x < w; x++) {
+      const idx = (rowBase + x) * 4;
+      // Red from pixel shifted left (source x - offset)
+      const rSrcX = Math.max(0, Math.min(w - 1, x - CHROMATIC_OFFSET));
+      const rIdx = (rowBase + rSrcX) * 4;
+      // Blue from pixel shifted right (source x + offset)
+      const bSrcX = Math.max(0, Math.min(w - 1, x + CHROMATIC_OFFSET));
+      const bIdx = (rowBase + bSrcX) * 4;
 
-  // Temp canvas for green+blue
-  const tmp = document.createElement('canvas');
-  tmp.width = w;
-  tmp.height = h;
-  const tmpCtx = tmp.getContext('2d');
-  if (!tmpCtx) return;
+      out[idx] = srcData[rIdx];         // R from shifted source
+      out[idx + 1] = srcData[idx + 1];  // G from original position
+      out[idx + 2] = srcData[bIdx + 2]; // B from shifted source
+      out[idx + 3] = srcData[idx + 3];  // A from original
+    }
+  }
 
-  // Green channel (no shift)
-  tmpCtx.drawImage(source, 0, 0);
-  tmpCtx.globalCompositeOperation = 'multiply';
-  tmpCtx.fillStyle = 'rgb(0, 255, 0)';
-  tmpCtx.fillRect(0, 0, w, h);
-
-  ctx.globalCompositeOperation = 'lighter';
-  ctx.drawImage(tmp, -CHROMATIC_OFFSET, 0);
-
-  // Blue channel shifted left
-  tmpCtx.globalCompositeOperation = 'source-over';
-  tmpCtx.drawImage(source, 0, 0);
-  tmpCtx.globalCompositeOperation = 'multiply';
-  tmpCtx.fillStyle = 'rgb(0, 0, 255)';
-  tmpCtx.fillRect(0, 0, w, h);
-
-  ctx.drawImage(tmp, CHROMATIC_OFFSET, 0);
-
-  ctx.globalCompositeOperation = 'source-over';
+  ctx.putImageData(outImageData, 0, 0);
 }
 
 function drawVignette(ctx: CanvasRenderingContext2D, w: number, h: number): void {

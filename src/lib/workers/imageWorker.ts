@@ -67,52 +67,48 @@ onmessage = (e: MessageEvent<ImageWorkerMessage>) => {
       hqx: 4,
     };
 
-    // Use effectLayers if present, otherwise fall back to legacy fields
-    const hasEffectLayers = effectLayers && effectLayers.length > 0;
-
-    if (hasEffectLayers) {
-      const enabledLayers = effectLayers.filter((l: EffectLayer) => l.enabled);
-      const totalWeight = enabledLayers.reduce((sum, l) => {
-        const key = l.type === 'glitch' ? (l.glitchType || 'noise') : l.type;
-        return sum + (EFFECT_WEIGHTS[key] || 1);
-      }, 0);
-      let completedWeight = 0;
-
-      for (const layer of enabledLayers) {
-        if (layer.type === 'glitch' && layer.glitchType && layer.glitchType !== 'none') {
-          processedData = applyGlitch(
-            processedData,
-            layer.glitchType,
-            layer.intensity || 1,
-            glitchSeed ?? undefined,
-          );
-        } else if (layer.type === 'hqx') {
-          processedData = applyScaling(processedData, 'hqx');
-        }
-        const key = layer.type === 'glitch' ? (layer.glitchType || 'noise') : layer.type;
-        completedWeight += EFFECT_WEIGHTS[key] || 1;
-        postMessage({ id, type: 'progress', progress: 0.4 + 0.5 * (completedWeight / totalWeight) } as ImageWorkerResponse);
-      }
+    // Normalize: convert legacy glitchFilters + renderMode into unified effectLayers
+    let layers: EffectLayer[];
+    if (effectLayers && effectLayers.length > 0) {
+      layers = effectLayers.filter((l: EffectLayer) => l.enabled);
     } else {
-      // Legacy path: glitchFilters then hqx
+      // Build layers from legacy fields for backward compatibility
+      layers = [];
       if (glitchFilters && glitchFilters.length > 0) {
-        for (const filter of glitchFilters) {
-          if (filter.type && filter.type !== "none") {
-            processedData = applyGlitch(
-              processedData,
-              filter.type,
-              filter.intensity || 1,
-              glitchSeed ?? undefined,
-            );
+        for (let fi = 0; fi < glitchFilters.length; fi++) {
+          const filter = glitchFilters[fi];
+          if (filter.type && filter.type !== 'none') {
+            layers.push({ id: `legacy-${fi}`, type: 'glitch', glitchType: filter.type, intensity: filter.intensity || 1, enabled: true });
           }
         }
       }
-
-      postMessage({ id, type: 'progress', progress: 0.7 } as ImageWorkerResponse);
-
-      if (renderMode === "hqx") {
-        processedData = applyScaling(processedData, renderMode);
+      if (renderMode === 'hqx') {
+        layers.push({ id: 'legacy-hqx', type: 'hqx', enabled: true, intensity: 1 });
       }
+    }
+
+    // Apply effect layers with progress tracking
+    const totalWeight = layers.reduce((sum, l) => {
+      const key = l.type === 'glitch' ? (l.glitchType || 'noise') : l.type;
+      return sum + (EFFECT_WEIGHTS[key] || 1);
+    }, 0);
+    let completedWeight = 0;
+
+    for (const layer of layers) {
+      if (layer.type === 'glitch' && layer.glitchType && layer.glitchType !== 'none') {
+        processedData = applyGlitch(
+          processedData,
+          layer.glitchType,
+          layer.intensity || 1,
+          glitchSeed ?? undefined,
+        );
+      } else if (layer.type === 'hqx') {
+        processedData = applyScaling(processedData, 'hqx');
+      }
+      const key = layer.type === 'glitch' ? (layer.glitchType || 'noise') : layer.type;
+      completedWeight += EFFECT_WEIGHTS[key] || 1;
+      const layerProgress = totalWeight > 0 ? completedWeight / totalWeight : 1;
+      postMessage({ id, type: 'progress', progress: 0.4 + 0.5 * layerProgress } as ImageWorkerResponse);
     }
 
     postMessage({ id, type: 'progress', progress: 0.9 } as ImageWorkerResponse);

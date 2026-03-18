@@ -125,8 +125,8 @@ export const applyGlitch = (
             resultData[i + 2] = data[srcI + 2];
             resultData[i + 3] = data[srcI + 3];
           } else {
-            resultData[i] = resultData[i + 1] = resultData[i + 2] = 0; // Black out
-            resultData[i + 3] = 255;
+            resultData[i] = resultData[i + 1] = resultData[i + 2] = 0;
+            resultData[i + 3] = 0; // Transparent for out-of-bounds pixels
           }
         }
       }

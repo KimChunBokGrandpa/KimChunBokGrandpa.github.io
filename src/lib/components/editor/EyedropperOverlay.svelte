@@ -78,6 +78,16 @@
   function dismissColor() {
     pickedColor = null;
   }
+
+  // Cleanup cached canvas on unmount to prevent memory leak
+  $effect(() => {
+    return () => {
+      eyedropperCanvas = null;
+      eyedropperCtx = null;
+      eyedropperCachedSrc = null;
+      if (colorCopiedTimer) clearTimeout(colorCopiedTimer);
+    };
+  });
 </script>
 
 {#if pickedColor}

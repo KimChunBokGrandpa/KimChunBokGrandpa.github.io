@@ -2,6 +2,7 @@
  * Custom Preset Store — Manages user-created presets persisted in localStorage.
  * Uses the same factory pattern as customPaletteStore.
  */
+import { browser } from '$app/environment';
 import type { ProcessingSettings } from '$lib/types';
 
 const STORAGE_KEY = 'retro-pixel-custom-presets';
@@ -14,6 +15,7 @@ export interface CustomPreset {
 }
 
 function loadFromStorage(): CustomPreset[] {
+  if (!browser) return [];
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return [];
@@ -26,6 +28,7 @@ function loadFromStorage(): CustomPreset[] {
 }
 
 function saveToStorage(presets: CustomPreset[]) {
+  if (!browser) return;
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(presets));
   } catch {

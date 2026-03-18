@@ -10,6 +10,7 @@
   import type { createZoomPan } from '$lib/stores/zoomPanStore.svelte';
   import type { ProcessingSettings } from '$lib/types';
   import type { TranslationKey } from '$lib/i18n/en';
+  import { tooltip } from '$lib/utils/tooltip';
 
   let {
     zp,
@@ -271,26 +272,29 @@
             class="zoom-btn"
             onclick={(e) => { e.stopPropagation(); onOpenSettings(); }}
             title={i18n.t('open_settings')}
-            aria-label={i18n.t('btn_open_settings')}>⚙️</button>
+            aria-label={i18n.t('btn_open_settings')}
+            use:tooltip>⚙️</button>
         </div>
         <div class="toolbar-group" aria-label={i18n.t('toolbar_transform')}>
           <span class="toolbar-group-label">{i18n.t('toolbar_transform')}</span>
           <div class="toolbar-group-buttons">
-            <button class="zoom-btn" onclick={() => onRotate?.(-90)} title={i18n.t('rotate_left')} aria-label={i18n.t('btn_rotate_left')}>↺</button>
-            <button class="zoom-btn" onclick={() => onRotate?.(90)} title={i18n.t('rotate_right')} aria-label={i18n.t('btn_rotate_right')}>↻</button>
+            <button class="zoom-btn" onclick={() => onRotate?.(-90)} title={i18n.t('rotate_left')} aria-label={i18n.t('btn_rotate_left')} use:tooltip>↺</button>
+            <button class="zoom-btn" onclick={() => onRotate?.(90)} title={i18n.t('rotate_right')} aria-label={i18n.t('btn_rotate_right')} use:tooltip>↻</button>
             <button
               class="zoom-btn"
               class:grid-active={cropModeActive}
               onclick={() => { cropModeActive = !cropModeActive; if (cropModeActive) { eyedropperActive = false; eyedropperOverlay?.dismiss(); } }}
               title={cropModeActive ? i18n.t('crop_active') : i18n.t('crop')}
               aria-label={cropModeActive ? i18n.t('crop_active') : i18n.t('crop')}
-              aria-pressed={cropModeActive}>✂</button>
+              aria-pressed={cropModeActive}
+              use:tooltip>✂</button>
             {#if currentRotation !== 0 || hasCrop}
               <button
                 class="zoom-btn"
                 onclick={() => { onResetTransform?.(); cropModeActive = false; }}
                 title={i18n.t('reset_transform')}
-                aria-label={i18n.t('btn_reset_transform')}>⟲</button>
+                aria-label={i18n.t('btn_reset_transform')}
+                use:tooltip>⟲</button>
             {/if}
           </div>
         </div>
@@ -302,6 +306,7 @@
             title={compareMode ? i18n.t('exit_compare') : i18n.t('compare_before_after')}
             aria-label={i18n.t('btn_compare_toggle')}
             aria-pressed={compareMode}
+            use:tooltip
           >{compareMode ? '🔀' : '⚖️'}</button>
           {#if compareMode}
             <button
@@ -309,14 +314,15 @@
               onclick={cycleCompareVariant}
               title="{i18n.t('compare_mode_cycle')}: {i18n.t(COMPARE_VARIANT_LABELS[compareVariant])}"
               aria-label={i18n.t('btn_compare_variant')}
+              use:tooltip
             >{compareVariantIcon}</button>
           {/if}
         </div>
         {#if !compareMode && displayedWidth > 0 && displayedHeight > 0}
           <div class="toolbar-group toolbar-info">
-            <div class="zoom-info" title={i18n.t('image_resolution')}>{displayedWidth}×{displayedHeight}</div>
+            <div class="zoom-info" title={i18n.t('image_resolution')} use:tooltip>{displayedWidth}×{displayedHeight}</div>
             {#if colorCount > 0}
-              <div class="zoom-info color-count" title={i18n.t('unique_colors')}>🎨 {colorCount}</div>
+              <div class="zoom-info color-count" title={i18n.t('unique_colors')} use:tooltip>🎨 {colorCount}</div>
             {/if}
           </div>
         {/if}
@@ -327,7 +333,7 @@
           <div class="toolbar-group" aria-label={i18n.t('toolbar_zoom')}>
             <span class="toolbar-group-label">{i18n.t('toolbar_zoom')}</span>
             <div class="toolbar-group-buttons">
-              <button class="zoom-btn" onclick={zp.zoomIn} title={i18n.t('zoom_in')} aria-label={i18n.t('btn_zoom_in')}>+</button>
+              <button class="zoom-btn" onclick={zp.zoomIn} title={i18n.t('zoom_in')} aria-label={i18n.t('btn_zoom_in')} use:tooltip>+</button>
               <div class="zoom-input-container">
                 <input
                   type="number"
@@ -346,8 +352,8 @@
                 />
                 <span class="zoom-percent">%</span>
               </div>
-              <button class="zoom-btn" onclick={zp.zoomOut} title={i18n.t('zoom_out')} aria-label={i18n.t('btn_zoom_out')}>−</button>
-              <button class="zoom-btn" onclick={zp.zoomToFit} title={i18n.t('fit_to_window')} aria-label={i18n.t('btn_fit_to_window')}>⊡</button>
+              <button class="zoom-btn" onclick={zp.zoomOut} title={i18n.t('zoom_out')} aria-label={i18n.t('btn_zoom_out')} use:tooltip>−</button>
+              <button class="zoom-btn" onclick={zp.zoomToFit} title={i18n.t('fit_to_window')} aria-label={i18n.t('btn_fit_to_window')} use:tooltip>⊡</button>
             </div>
           </div>
           <div class="toolbar-group" aria-label={i18n.t('toolbar_view')}>
@@ -359,21 +365,24 @@
                 onclick={() => { zp.showGrid = !zp.showGrid; }}
                 title={zp.showGrid ? i18n.t('hide_pixel_grid') : i18n.t('show_pixel_grid')}
                 aria-label={zp.showGrid ? i18n.t('hide_pixel_grid') : i18n.t('show_pixel_grid')}
-                aria-pressed={zp.showGrid}>#</button>
+                aria-pressed={zp.showGrid}
+                use:tooltip>#</button>
               <button
                 class="zoom-btn"
                 class:grid-active={tileMode}
                 onclick={() => { tileMode = !tileMode; }}
                 title={tileMode ? i18n.t('exit_tile') : i18n.t('tile_preview')}
                 aria-label={tileMode ? i18n.t('exit_tile') : i18n.t('tile_preview')}
-                aria-pressed={tileMode}>⊞</button>
+                aria-pressed={tileMode}
+                use:tooltip>⊞</button>
               <button
                 class="zoom-btn"
                 class:grid-active={eyedropperActive}
                 onclick={() => { eyedropperActive = !eyedropperActive; eyedropperOverlay?.dismiss(); }}
                 title={eyedropperActive ? i18n.t('exit_eyedropper') : i18n.t('eyedropper')}
                 aria-label={eyedropperActive ? i18n.t('exit_eyedropper') : i18n.t('eyedropper')}
-                aria-pressed={eyedropperActive}>💧</button>
+                aria-pressed={eyedropperActive}
+                use:tooltip>💧</button>
             </div>
           </div>
         </div>

@@ -311,12 +311,21 @@ export function createImageProcessingStore() {
   }
 
   function jumpToHistory(index: number, isRedoList: boolean = false) {
-    if (isRedoList) {
-      for (let i = 0; i <= index; i++) redo();
-    } else {
-      const distance = settingsHistory.length - 1 - index;
-      for (let i = 0; i <= distance; i++) undo();
+    // Temporarily disable autoProcess to prevent debounce stacking per step
+    const wasAutoProcess = autoProcess;
+    autoProcess = false;
+    try {
+      if (isRedoList) {
+        for (let i = 0; i <= index; i++) redo();
+      } else {
+        const distance = settingsHistory.length - 1 - index;
+        for (let i = 0; i <= distance; i++) undo();
+      }
+    } finally {
+      autoProcess = wasAutoProcess;
     }
+    // Process once at the final state
+    if (wasAutoProcess) applyProcessingDebounced();
   }
 
   function postFilterCssString(): string {

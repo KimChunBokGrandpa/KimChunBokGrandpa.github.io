@@ -2,18 +2,93 @@
 
 ---
 
+## v1.3.0 (2026-03-18)
+
+> Code review, bug fixes, performance optimization, and code cleanup.
+
+### Bug Fixes (P1 — 6 items)
+- **customPresetStore.svelte.ts** — Added `browser` guard to `loadFromStorage`/`saveToStorage` to prevent SSR crash on `localStorage` access (matching `customPaletteStore` pattern)
+- **workerPool.ts** — Added `settled` guard flag to `dispatch()` cleanup to prevent double-execution when both message and error events fire
+- **gifPlaybackManager.svelte.ts** — Introduced `activeFrameUrl` tracking so `invalidateCache()` skips the URL currently displayed in `<img>`, preventing broken images during cache invalidation
+- **imageProcessingStore.svelte.ts** — `jumpToHistory()` now temporarily disables `autoProcess` during the undo/redo loop, then fires a single `applyProcessingDebounced()` at the final state (prevents N debounce timers stacking)
+- **EyedropperOverlay.svelte** — Added `$effect` cleanup to release cached `eyedropperCanvas`, `eyedropperCtx`, and `colorCopiedTimer` on component unmount
+- **BatchProcessor.svelte** — Progress callback now resolves items by `item.id` (via `findIndex`) instead of captured array index, preventing stale-index updates if the array mutates during async processing
+
+### Performance Optimization (P2 — 4 items)
+- **scaleEngine.ts** — Replaced per-byte pixel copy with `Uint32Array` view operations: `isSame()` uses single `src32[i] === src32[j]` comparison, pixel writes use single `dst32[idx] = src32[val]` assignment (~2x throughput for EPX/Scale2x)
+- **crtRenderer.ts** — Rewrote `drawChromaticAberration()` from multi-canvas composite operations to direct pixel manipulation (R/G/B channel shift via `getImageData`/`putImageData`), eliminating 2 temporary canvases and 6 composite operations
+- **imageWorker.ts** — Unified dual code paths (effectLayers vs legacy glitchFilters+renderMode) into single normalized pipeline: legacy fields are converted to `EffectLayer[]` before processing, reducing maintenance surface
+- **colorQuantizer.ts** — Refactored `clearPaletteCachesExcept()` to use generic `evictOldest<T>()` and `refreshEntry<T>()` helpers with proper LRU semantics (oldest-first eviction + active palette position refresh)
+
+### Code Cleanup (P3 — 4 items)
+- **package.json** — Removed unused `@tauri-apps/plugin-opener` dependency; added `"test": "vitest run"` and `"test:watch": "vitest"` scripts
+- **glitchEngine.ts** — Wave effect out-of-bounds pixels now set alpha to 0 (transparent) instead of 255 (opaque black), consistent with expected visual behavior
+- **windowStore.svelte.ts** — `persistLayout()` now debounced (300ms) to reduce localStorage write frequency during drag/resize operations
+- **CLAUDE.md** — Updated build commands to reflect new `npm test` / `npm run test:watch` scripts
+
+### Deferred
+- 97 unused i18n translation keys identified but retained (may be used by future features)
+
+### Build & Test Status (v1.3)
+- `svelte-check`: 0 new errors (5 pre-existing: CompareView.test.ts 3 + vitest.setup.ts 2), 1 warning (a11y)
+- `vitest`: **290 tests passing** (34 files) — unchanged
+- Production build: passes
+- Modified files: 13 (6 bug fixes, 4 optimizations, 3 cleanup)
+
+---
+
+## v1.2.0 (2026-03-18)
+
+> Performance optimization, comprehensive test coverage, and component extraction.
+
+### Performance Optimization
+- **workerPool.ts** — Replaced direct `onmessage`/`onerror` assignment with `AbortController` + `addEventListener` pattern for cleaner handler lifecycle management and leak prevention
+- **imageProcessor.ts** — Improved LRU cache eviction: extracted `evictLRU()` method, added blob URL `revokeObjectURL` on eviction to prevent memory leaks, changed single eviction to `while` loop for robustness
+
+### Component Extraction
+- **PostProcessFilters.svelte** — Extracted Adjust tab content (~25 lines markup + CSS) from ControlPanel into standalone `PostProcessFilters.svelte` component with its own scoped styles
+
+### Test Infrastructure
+- **`$app/environment` mock** — Added vitest alias in `vitest.config.ts` + `src/__mocks__/$app_environment.ts` to resolve SvelteKit virtual module imports in tests
+- **Win98WindowWrapper.svelte** — Test wrapper component to pass `children` Snippet to Win98Window
+
+### Service Tests (3 files, 58 tests)
+- **imageProcessingStore.test.ts** (33 tests) — Initial state, settings update/history, undo/redo, history cap (20), jumpToHistory, selectPalette, postFilterCss generation, autoProcess toggle, save format/quality, GIF delegation, destroy cleanup
+- **imageProcessor.test.ts** (11 tests) — Cache management, no-worker early return path, request deduplication (stale cancellation), dimension capping (2048px standard, 1024px HQx), destroy
+- **saveService.test.ts** (6 tests) + **exportService.test.ts** (8 tests) — Web download path, file extension mapping, CSS filter application, blob URL cleanup, SVG export pipeline, spritesheet export with frame count, error handling with cleanup
+
+### Component Tests (10 files, 66 tests)
+- **ControlPanel.test.ts** (7) — Tab rendering, range inputs, auto-process toggle, hasImage states
+- **EffectLayerStack.test.ts** (5) — Empty/populated layer list, add button, render mode
+- **PresetManager.test.ts** (4) — Preset list, click handling, matched preset
+- **PreviewContent.test.ts** (5) — No-image state, processed image, processing state, GIF controls, post filter CSS
+- **CropOverlay.test.ts** (4) — Overlay rendering, cancel button, image element binding
+- **PaletteGallery.test.ts** (5) — Theme tabs, palette grid, selection highlighting
+- **CustomPaletteEditor.test.ts** (6) — Name input, initial values, add color button, cancel callback, color entries
+- **BatchProcessor.test.ts** (4) — Container rendering, drop zone, save format options
+- **Win98Window.test.ts** (9) — Title/icon display, control buttons, children slot, minimize/maximize, close/focus callbacks
+- **Taskbar.test.ts** (7) — Window buttons, focused state, clock, locale support, empty state
+
+### Build & Test Status (v1.2)
+- `svelte-check`: 0 new errors (5 pre-existing: CompareView 3 + vitest.setup 2)
+- `vitest`: **290 tests passing** (34 files) — up from 176 (20 files), +114 tests
+- Production build: passes
+- New files: 16 (1 component, 1 mock module, 1 test wrapper, 13 test files)
+
+---
+
 ## v1.1.0 (2026-03-18)
 
 > Refactoring, UX improvements, and accessibility enhancements.
 
 ### Component Decomposition
 - **PreviewContent.svelte** split into 3 components:
-  - `EyedropperOverlay.svelte` — Color picker tooltip, canvas caching, pixel sampling logic
-  - `CompareView.svelte` — Slider / side-by-side / onion skin compare modes with styles
-  - PreviewContent reduced from 979 → 715 lines
+  - `EyedropperOverlay.svelte` (153 lines) — Color picker tooltip, canvas caching, pixel sampling logic
+  - `CompareView.svelte` (156 lines) — Slider / side-by-side / onion skin compare modes with styles
+  - PreviewContent reduced from 979 → 747 lines
 - **imageProcessingStore** split: GIF logic extracted to `gifPlaybackManager.svelte.ts`
-  - imageProcessingStore reduced from 729 → 435 lines
-  - gifPlaybackManager encapsulates playback, frame cache, export, and loading (~270 lines)
+  - imageProcessingStore reduced from 729 → 445 lines
+  - gifPlaybackManager (369 lines) encapsulates playback, frame cache, export, and loading
 
 ### GIF Export Improvements
 - **Cancel export**: AbortController-based cancellation with per-frame abort checks
@@ -48,12 +123,35 @@
 - **aria-label** added to: pixel size slider, quality slider, Taskbar help button
 - **Keyboard shortcut hint** in Taskbar help button tooltip: `(?)` suffix
 
-### Code Quality (v1.1)
+### Visual Tooltip System
+- **CSS-only tooltip** via `[data-tooltip]` attribute in theme.css (Win98 yellow tooltip style)
+- **`use:tooltip` Svelte action** (`utils/tooltip.ts`) — converts native `title` to styled tooltip via MutationObserver
+- Applied to: PreviewContent toolbar (16 buttons/elements), GifControls (8 buttons), Taskbar (2 buttons)
+
+### Toast Action Button
+- **Toast `action` prop** — optional `{ label, onclick }` for inline actions (e.g. Undo button)
+- **"Image Resized" toast** now includes Undo button to revert dimension cap
+
+### Test Coverage Expansion
+- **New utility tests** (4 files, 49 tests):
+  - `colorUtils.test.ts` — hexToRgb, rgbToHex, hslToRgb, rgbToHsl roundtrip (22 tests)
+  - `paletteIO.test.ts` — parseHexFile, parseGplFile, export, roundtrip (20 tests)
+  - `crtRenderer.test.ts` — mode "none" passthrough, context fallback (4 tests)
+  - `spritesheetExporter.test.ts` — error handling for empty/invalid inputs (3 tests)
+- **New component test** (1 file, 11 tests):
+  - `CompareView.test.ts` — side-by-side, onion skin, slider variants, rendering modes
+- **New action test** (1 file, 4 tests):
+  - `tooltip.test.ts` — title→data-tooltip sync, dynamic updates, destroy cleanup
+
+### Build & Test Status (v1.1)
 - `svelte-check`: 0 errors, 1 warning (pre-existing a11y)
-- `vitest`: 112 tests passing (14 files)
+- `vitest`: **176 tests passing** (20 files) — up from 112 (14 files)
 - Production build: passes
-- New files: 3 components + 1 store module
-- Modified files: 15 (components, stores, services, i18n, styles)
+- New files: 10 (3 components, 1 store, 1 action, 6 test files)
+
+### v1.1 Backlog Summary
+Completed: A(P0) 4건, B(P1) 8건, C(P1) 11건, D(P2) 5건, E(P2) 4건, F(P2) 6건, G(P3) 4건, H(P3) 1건 = **43항목**
+Remaining: 성능 최적화 2건, UI/UX 1건, 테스트 커버리지 ~12건 → `PLAN_TASK.md` 참조
 
 ---
 

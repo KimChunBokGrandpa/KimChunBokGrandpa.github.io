@@ -96,16 +96,27 @@ function lutLookupRgb(rgbLut: Uint8Array, r: number, g: number, b: number): [num
 /** Maximum number of cached LUTs to keep (each ~130KB packed + ~98KB RGB) */
 const MAX_LUT_CACHE_SIZE = 3;
 
-/** Clear cached LUTs for palettes not currently in use (called from Worker) */
+/** Clear oldest cached LUTs when exceeding max size (called from Worker).
+ *  Map iteration order is insertion order — oldest entries are evicted first. */
 export function clearPaletteCachesExcept(activePalette: string) {
-  for (const cache of [lutCache, lutRgbCache]) {
-    if (cache.size > MAX_LUT_CACHE_SIZE) {
-      const toDelete = [...cache.keys()].filter(k => k !== activePalette);
-      for (const key of toDelete) {
-        cache.delete(key);
-      }
+  evictOldest(lutCache, activePalette);
+  evictOldest(lutRgbCache, activePalette);
+  // Re-insert active palette to refresh its position (most recently used)
+  refreshEntry(lutCache, activePalette);
+  refreshEntry(lutRgbCache, activePalette);
+}
+
+function evictOldest<T>(cache: Map<string, T>, keep: string) {
+  while (cache.size > MAX_LUT_CACHE_SIZE) {
+    for (const key of cache.keys()) {
+      if (key !== keep) { cache.delete(key); break; }
     }
   }
+}
+
+function refreshEntry<T>(cache: Map<string, T>, key: string) {
+  const val = cache.get(key);
+  if (val) { cache.delete(key); cache.set(key, val); }
 }
 
 // ─── Bayer 8×8 Ordered Dithering Matrix ───

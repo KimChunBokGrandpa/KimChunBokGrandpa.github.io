@@ -1,0 +1,124 @@
+// @vitest-environment jsdom
+import { describe, it, expect, vi, afterEach } from 'vitest';
+import { render, cleanup } from '@testing-library/svelte';
+
+// Mock all transitive dependencies
+vi.mock('$lib/i18n/index.svelte', () => ({
+  i18n: { t: vi.fn((key: string) => key) },
+}));
+
+vi.mock('$lib/utils/palettes', () => ({
+  getPaletteName: vi.fn((id: string) => id),
+}));
+
+vi.mock('$lib/utils/tooltip', () => ({
+  tooltip: vi.fn(() => ({ destroy() {} })),
+}));
+
+import PreviewContent from '../editor/PreviewContent.svelte';
+import type { ProcessingSettings } from '$lib/types';
+
+afterEach(() => cleanup());
+
+function makeSettings(): ProcessingSettings {
+  return {
+    pixelSize: 4,
+    palette: 'gameboy',
+    crtEffect: 'none',
+    glitchFilters: [],
+    renderMode: 'pixel_perfect',
+    glitchSeed: null,
+    ditherType: 'none',
+    effectLayers: [],
+  };
+}
+
+// Minimal mock of zoom/pan store — cast to expected type
+function makeZoomPan(): ReturnType<typeof import('$lib/stores/zoomPanStore.svelte').createZoomPan> {
+  return {
+    zoomLevel: 1,
+    panX: 0,
+    panY: 0,
+    isPanning: false,
+    isTouchPanning: false,
+    showGrid: false,
+    previewContainer: undefined,
+    previewImg: undefined,
+    scale: 1,
+    offsetX: 0,
+    offsetY: 0,
+    reset: vi.fn(),
+    zoomIn: vi.fn(),
+    zoomOut: vi.fn(),
+    startPan: vi.fn(),
+    pan: vi.fn(),
+    endPan: vi.fn(),
+    handleWheel: vi.fn(),
+    handleTouchStart: vi.fn(),
+    handleTouchMove: vi.fn(),
+    handleTouchEnd: vi.fn(),
+    canZoomIn: true,
+    canZoomOut: true,
+    setZoom: vi.fn(),
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } as any;
+}
+
+describe('PreviewContent', () => {
+  const defaultProps = () => ({
+    zp: makeZoomPan(),
+    originalImageSrc: null as string | null,
+    processedImageSrc: null as string | null,
+    isProcessing: false,
+    processingSettings: makeSettings(),
+    compareMode: false,
+    onImageSelected: vi.fn(),
+    onError: vi.fn(),
+    onOpenSettings: vi.fn(),
+  });
+
+  it('renders without images (shows drop zone)', () => {
+    const { container } = render(PreviewContent, { props: defaultProps() });
+    expect(container.innerHTML).toBeTruthy();
+  });
+
+  it('renders with processed image', () => {
+    const props = { ...defaultProps(), processedImageSrc: 'blob:test', originalImageSrc: 'blob:orig' };
+    const { container } = render(PreviewContent, { props });
+    expect(container.innerHTML).toBeTruthy();
+  });
+
+  it('shows processing state', () => {
+    const props = { ...defaultProps(), isProcessing: true, originalImageSrc: 'blob:orig' };
+    const { container } = render(PreviewContent, { props });
+    expect(container.innerHTML).toBeTruthy();
+  });
+
+  it('renders GIF controls when isGif', () => {
+    const props = {
+      ...defaultProps(),
+      originalImageSrc: 'blob:gif',
+      processedImageSrc: 'blob:processed',
+      isGif: true,
+      gifCurrentFrame: 0,
+      gifFrameCount: 10,
+      gifPlaying: false,
+      gifIsExporting: false,
+      gifExportProgress: 0,
+      onGifPlay: vi.fn(),
+      onGifPause: vi.fn(),
+      onGifSeek: vi.fn(),
+      onGifExport: vi.fn(),
+      onGifCancelExport: vi.fn(),
+      onGifExportSpritesheet: vi.fn(),
+    };
+    const { container } = render(PreviewContent, { props });
+    expect(container.innerHTML).toBeTruthy();
+  });
+
+  it('renders with post filter CSS', () => {
+    const props = { ...defaultProps(), postFilterCss: 'brightness(120%)' };
+    const { container } = render(PreviewContent, { props });
+    expect(container.innerHTML).toBeTruthy();
+  });
+});

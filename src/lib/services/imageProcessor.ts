@@ -139,6 +139,18 @@ class ImageProcessorService {
     return this.worker;
   }
 
+  /** Evict the least-recently-used entry from the image cache */
+  private evictLRU() {
+    const oldest = this.imageCache.keys().next().value;
+    if (oldest !== undefined) {
+      this.imageCache.delete(oldest);
+      // Revoke blob URLs to free memory — non-blob URLs are harmlessly ignored
+      if (oldest.startsWith('blob:')) {
+        URL.revokeObjectURL(oldest);
+      }
+    }
+  }
+
   private loadImage(src: string): Promise<HTMLImageElement> {
     const cached = this.imageCache.get(src);
     if (cached) {
@@ -152,10 +164,9 @@ class ImageProcessorService {
       const img = new Image();
       img.crossOrigin = "Anonymous";
       img.onload = () => {
-        // Evict oldest entry if cache is full
-        if (this.imageCache.size >= ImageProcessorService.MAX_IMAGE_CACHE) {
-          const oldest = this.imageCache.keys().next().value!;
-          this.imageCache.delete(oldest);
+        // Evict oldest entries until under limit
+        while (this.imageCache.size >= ImageProcessorService.MAX_IMAGE_CACHE) {
+          this.evictLRU();
         }
         this.imageCache.set(src, img);
         resolve(img);

@@ -107,12 +107,15 @@
 
       try {
         const src = item.thumbnailUrl;
-        const idx = i; // capture for closure
+        const itemId = item.id; // capture stable id for closure
         const result = await processorService.processImage(
           src,
           settings,
           undefined, // onDimensionCapped
-          (progress) => { items[idx] = { ...items[idx], progress }; },
+          (progress) => {
+            const idx = items.findIndex(it => it.id === itemId);
+            if (idx !== -1) items[idx] = { ...items[idx], progress };
+          },
         );
         if (result) {
           items[i] = { ...items[i], status: 'done', resultUrl: result, progress: 1 };
