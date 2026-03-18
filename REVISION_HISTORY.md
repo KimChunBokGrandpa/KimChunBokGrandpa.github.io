@@ -2,6 +2,61 @@
 
 ---
 
+## v1.1.0 (2026-03-18)
+
+> Refactoring, UX improvements, and accessibility enhancements.
+
+### Component Decomposition
+- **PreviewContent.svelte** split into 3 components:
+  - `EyedropperOverlay.svelte` — Color picker tooltip, canvas caching, pixel sampling logic
+  - `CompareView.svelte` — Slider / side-by-side / onion skin compare modes with styles
+  - PreviewContent reduced from 979 → 715 lines
+- **imageProcessingStore** split: GIF logic extracted to `gifPlaybackManager.svelte.ts`
+  - imageProcessingStore reduced from 729 → 435 lines
+  - gifPlaybackManager encapsulates playback, frame cache, export, and loading (~270 lines)
+
+### GIF Export Improvements
+- **Cancel export**: AbortController-based cancellation with per-frame abort checks
+  - Cancel button (✕) shown during export, replaces export button
+  - Clean abort handling — no error on user cancellation
+- **Export progress**: Dedicated progress status with frame counter and progress bar
+- **Worker caching**: GIF encode worker reused across exports with 30s idle auto-termination
+
+### Crop Mode UX
+- Enhanced crop overlay with icon, instructions, and keyboard hint
+  - Displays "Drag to select crop area" with ✂ icon
+  - Shows "Enter to apply, Esc to cancel" keyboard shortcut hint
+  - Styled as Win98 dialog box with outset border
+- i18n: `crop_keyboard_hint` added for en/ko/ja
+
+### Error Message Improvements
+- User-friendly error mapping: raw internal errors → actionable messages
+  - Worker crash → "Please reload the page and try again"
+  - Image load failure → "File may be corrupted or unsupported"
+  - Canvas context failure → "Try closing other tabs"
+  - GIF export failure → "Try reducing frames or image size"
+- i18n: 5 new error keys (`error_worker_crashed`, `error_image_load`, `error_canvas_context`, `error_save_format`, `error_gif_export`) for en/ko/ja
+
+### Store Pattern Unification
+- `customPresetStore` refactored from module-level exports to factory pattern (`createCustomPresetStore()`)
+  - Matches `customPaletteStore` pattern with `$effect.root` for auto-persistence
+  - Backward-compatible named exports maintained for existing consumers
+
+### Accessibility
+- **Global focus ring**: `:focus-visible` outline using `--w98-highlight` color in theme.css
+- **Label associations**: Post-process filter sliders (brightness, contrast, saturation, hue) now use `<label for>` + `id` pairs
+- **aria-label** added to: pixel size slider, quality slider, Taskbar help button
+- **Keyboard shortcut hint** in Taskbar help button tooltip: `(?)` suffix
+
+### Code Quality (v1.1)
+- `svelte-check`: 0 errors, 1 warning (pre-existing a11y)
+- `vitest`: 112 tests passing (14 files)
+- Production build: passes
+- New files: 3 components + 1 store module
+- Modified files: 15 (components, stores, services, i18n, styles)
+
+---
+
 ## v1.0.0 (2026-03-17)
 
 > Initial stable release. Full-featured pixel art converter with Windows 98 themed UI.

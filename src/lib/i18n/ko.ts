@@ -54,7 +54,12 @@ export const ko: Record<TranslationKey, string> = {
   unsupported_format: '\uc774\ubbf8\uc9c0 \ud30c\uc77c\uc744 \ub4dc\ub86d\ud574\uc8fc\uc138\uc694 (PNG, JPEG, GIF, BMP, WebP).',
   image_resized: '\uc774\ubbf8\uc9c0 \ud06c\uae30 \uc870\uc815: {0} \u2192 {1} (\ucd5c\ub300 2048px)',
   image_resized_title: '\uc774\ubbf8\uc9c0 \ud06c\uae30 \uc870\uc815\ub428',
-  processing_error: '\ucc98\ub9ac \uc624\ub958',
+  processing_error: '처리 오류',
+  error_worker_crashed: '이미지 처리에 실패했습니다. 페이지를 새로고침 후 다시 시도해주세요.',
+  error_image_load: '이미지를 불러올 수 없습니다. 파일이 손상되었거나 지원하지 않는 형식일 수 있습니다.',
+  error_canvas_context: '브라우저가 그리기 표면을 생성하지 못했습니다. 다른 탭을 닫아보세요.',
+  error_save_format: '{0} 형식으로 저장할 수 없습니다. 다른 형식을 시도해주세요.',
+  error_gif_export: 'GIF 내보내기에 실패했습니다. 프레임 수나 이미지 크기를 줄여보세요.',
   load_new_image: '\uc0c8 \uc774\ubbf8\uc9c0 \uc5f4\uae30...',
 
   open_image: '\uc774\ubbf8\uc9c0 \uc5f4\uae30',
@@ -209,6 +214,7 @@ export const ko: Record<TranslationKey, string> = {
   crop_apply: '자르기 적용',
   crop_cancel: '자르기 취소',
   crop_drag_hint: '드래그하여 영역 선택',
+  crop_keyboard_hint: 'Enter로 적용, Esc로 취소',
 
   generate_gradient: '\uadf8\ub77c\ub370\uc774\uc158 \uc0dd\uc131',
   gradient_start: '\uc2dc\uc791',

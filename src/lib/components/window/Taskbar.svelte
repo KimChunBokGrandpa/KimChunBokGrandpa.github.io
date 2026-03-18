@@ -115,7 +115,7 @@
     <div class="tray">
       <span class="tray-ico">🔊</span>
       {#if onShowShortcuts}
-        <button class="tray-help" onclick={onShowShortcuts} title={i18n.t('keyboard_shortcuts')}>?</button>
+        <button class="tray-help" onclick={onShowShortcuts} title="{i18n.t('keyboard_shortcuts')} (?)" aria-label={i18n.t('keyboard_shortcuts')}>?</button>
       {/if}
       <button class="tray-lang" onclick={cycleLocale} title="{i18n.t('language')}: {LOCALE_LABELS[i18n.locale]} → {getNextLocaleLabel()}"
         >{i18n.locale.toUpperCase()}</button

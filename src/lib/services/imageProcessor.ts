@@ -67,7 +67,7 @@ class ImageProcessorService {
 
   private ensureWorker(): Worker {
     if (this.workerErrorCount >= ImageProcessorService.MAX_WORKER_RETRIES) {
-      throw new Error('Image processing worker failed repeatedly. Please reload the page.');
+      throw new Error('Worker crashed: max retries exceeded');
     }
     if (!this.worker) {
       this.worker = new Worker(

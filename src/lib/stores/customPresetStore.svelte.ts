@@ -1,5 +1,6 @@
 /**
  * Custom Preset Store — Manages user-created presets persisted in localStorage.
+ * Uses the same factory pattern as customPaletteStore.
  */
 import type { ProcessingSettings } from '$lib/types';
 
@@ -32,34 +33,57 @@ function saveToStorage(presets: CustomPreset[]) {
   }
 }
 
-let presets = $state<CustomPreset[]>(loadFromStorage());
+function createCustomPresetStore() {
+  let presets = $state<CustomPreset[]>(loadFromStorage());
 
-export function getCustomPresets(): CustomPreset[] {
-  return presets;
-}
+  $effect.root(() => {
+    $effect(() => {
+      saveToStorage(presets);
+    });
+  });
 
-export function addCustomPreset(name: string, settings: ProcessingSettings): CustomPreset {
-  const preset: CustomPreset = {
-    id: `preset_${crypto.randomUUID()}`,
-    name: name.trim() || 'My Preset',
-    settings: {
-      ...settings,
-      glitchFilters: settings.glitchFilters.map(f => ({ ...f })),
-      effectLayers: settings.effectLayers?.map(l => ({ ...l })) || [],
+  return {
+    get presets() {
+      return presets;
     },
-    createdAt: Date.now(),
+    addPreset(name: string, settings: ProcessingSettings): CustomPreset {
+      const preset: CustomPreset = {
+        id: `preset_${crypto.randomUUID()}`,
+        name: name.trim() || 'My Preset',
+        settings: {
+          ...settings,
+          glitchFilters: settings.glitchFilters.map(f => ({ ...f })),
+          effectLayers: settings.effectLayers?.map(l => ({ ...l })) || [],
+        },
+        createdAt: Date.now(),
+      };
+      presets = [...presets, preset];
+      return preset;
+    },
+    removePreset(id: string) {
+      presets = presets.filter(p => p.id !== id);
+    },
+    renamePreset(id: string, newName: string) {
+      presets = presets.map(p => p.id === id ? { ...p, name: newName.trim() } : p);
+    },
+    getPresetById(id: string): CustomPreset | undefined {
+      return presets.find(p => p.id === id);
+    },
   };
-  presets = [...presets, preset];
-  saveToStorage(presets);
-  return preset;
 }
 
+export const customPresetStore = createCustomPresetStore();
+
+// Backward-compatible named exports for existing consumers
+export function getCustomPresets(): CustomPreset[] {
+  return customPresetStore.presets;
+}
+export function addCustomPreset(name: string, settings: ProcessingSettings): CustomPreset {
+  return customPresetStore.addPreset(name, settings);
+}
 export function removeCustomPreset(id: string) {
-  presets = presets.filter(p => p.id !== id);
-  saveToStorage(presets);
+  customPresetStore.removePreset(id);
 }
-
 export function renameCustomPreset(id: string, newName: string) {
-  presets = presets.map(p => p.id === id ? { ...p, name: newName.trim() } : p);
-  saveToStorage(presets);
+  customPresetStore.renamePreset(id, newName);
 }

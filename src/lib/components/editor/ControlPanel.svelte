@@ -182,6 +182,7 @@
               bind:value={settings.pixelSize}
               oninput={update}
               class="slider-input"
+              aria-label={i18n.t('pixel_size')}
             />
             <button
               class="stepper-btn"
@@ -226,20 +227,20 @@
     {:else if activeTab === 'adjust'}
       <div class="tab-panel" role="tabpanel">
         <div class="pf-row">
-          <span class="pf-label">☀️ {i18n.t('brightness')}: {postFilters.brightness}%</span>
-          <input type="range" min="20" max="200" step="5" bind:value={postFilters.brightness} class="slider-input" />
+          <label class="pf-label" for="pf-brightness">☀️ {i18n.t('brightness')}: {postFilters.brightness}%</label>
+          <input id="pf-brightness" type="range" min="20" max="200" step="5" bind:value={postFilters.brightness} class="slider-input" aria-label={i18n.t('brightness')} />
         </div>
         <div class="pf-row">
-          <span class="pf-label">◐ {i18n.t('contrast')}: {postFilters.contrast}%</span>
-          <input type="range" min="20" max="200" step="5" bind:value={postFilters.contrast} class="slider-input" />
+          <label class="pf-label" for="pf-contrast">◐ {i18n.t('contrast')}: {postFilters.contrast}%</label>
+          <input id="pf-contrast" type="range" min="20" max="200" step="5" bind:value={postFilters.contrast} class="slider-input" aria-label={i18n.t('contrast')} />
         </div>
         <div class="pf-row">
-          <span class="pf-label">🎨 {i18n.t('saturation')}: {postFilters.saturation}%</span>
-          <input type="range" min="0" max="200" step="5" bind:value={postFilters.saturation} class="slider-input" />
+          <label class="pf-label" for="pf-saturation">🎨 {i18n.t('saturation')}: {postFilters.saturation}%</label>
+          <input id="pf-saturation" type="range" min="0" max="200" step="5" bind:value={postFilters.saturation} class="slider-input" aria-label={i18n.t('saturation')} />
         </div>
         <div class="pf-row">
-          <span class="pf-label">🌈 {i18n.t('hue_rotate')}: {postFilters.hueRotate}°</span>
-          <input type="range" min="0" max="360" step="5" bind:value={postFilters.hueRotate} class="slider-input" />
+          <label class="pf-label" for="pf-hue">🌈 {i18n.t('hue_rotate')}: {postFilters.hueRotate}°</label>
+          <input id="pf-hue" type="range" min="0" max="360" step="5" bind:value={postFilters.hueRotate} class="slider-input" aria-label={i18n.t('hue_rotate')} />
         </div>
         {#if hasPostFilterChanges}
           <button class="pf-reset" onclick={() => { postFilters = { ...DEFAULT_POST_FILTERS }; }}>{i18n.t('reset_filters')}</button>
@@ -272,6 +273,7 @@
           value={saveQuality}
           oninput={(e) => onQualityChange?.(parseFloat((e.target as HTMLInputElement).value))}
           class="slider-input quality-slider"
+          aria-label={i18n.t('quality')}
         />
       {/if}
     </div>

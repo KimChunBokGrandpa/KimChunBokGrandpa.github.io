@@ -87,7 +87,7 @@ describe('GifControls', () => {
   it('disables buttons when exporting', () => {
     const props = { ...defaultProps(), isExporting: true, exportProgress: 0.5 };
     const { container } = render(GifControls, { props });
-    const buttons = container.querySelectorAll('.gif-btn');
+    const buttons = container.querySelectorAll('.gif-btn:not(.gif-cancel-btn)');
     buttons.forEach((btn) => {
       expect((btn as HTMLButtonElement).disabled).toBe(true);
     });
@@ -96,8 +96,8 @@ describe('GifControls', () => {
   it('shows export progress when exporting', () => {
     const props = { ...defaultProps(), isExporting: true, exportProgress: 0.75 };
     const { container } = render(GifControls, { props });
-    const exportBtn = container.querySelector('.gif-export-btn');
-    expect(exportBtn?.textContent).toContain('75%');
+    const exportStatus = container.querySelector('.gif-export-status');
+    expect(exportStatus?.textContent).toContain('75%');
   });
 
   it('renders progress bar when exporting', () => {

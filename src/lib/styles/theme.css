@@ -57,6 +57,16 @@
   --w98-radius-crt: 12px;
 }
 
+/* ── Focus Ring ── */
+/* Consistent focus indicator for keyboard navigation */
+:focus-visible {
+  outline: 2px solid var(--w98-highlight);
+  outline-offset: 1px;
+}
+button:focus-visible {
+  outline-offset: -1px;
+}
+
 /* ── Disabled button contrast fix ── */
 /* Default 98.css uses #808080 on #d0d0c8 (3.2:1 ratio), increase to meet WCAG AA */
 button:disabled,

@@ -6,13 +6,10 @@
 import { processorService } from '$lib/services/imageProcessor';
 import { saveImage } from '$lib/services/saveService';
 import type { SaveFormat } from '$lib/services/saveService';
-import type { ProcessingSettings, PostProcessFilters, ImageWorkerMessage } from '$lib/types';
+import type { ProcessingSettings, PostProcessFilters } from '$lib/types';
 import { DEFAULT_POST_FILTERS } from '$lib/types';
-import { decodeGif, frameToBlobUrl, type GifInfo } from '$lib/utils/gifProcessor';
-import type { GifEncodeWorkerMessage, GifEncodeWorkerResponse } from '$lib/types';
-import { i18n } from '$lib/i18n/index.svelte';
 import { applyCrtEffect } from '$lib/utils/crtRenderer';
-import { customPaletteStore } from '$lib/stores/customPaletteStore.svelte';
+import { createGifPlaybackManager } from '$lib/stores/gifPlaybackManager.svelte';
 
 const DEBOUNCE_MS = 150;
 const MAX_HISTORY = 20;
@@ -27,51 +24,6 @@ const DEFAULT_SETTINGS: ProcessingSettings = {
   ditherType: 'none',
   effectLayers: [],
 };
-
-/**
- * Run GIF encoding in a dedicated Web Worker to avoid blocking the UI.
- * Spawns a short-lived worker per call since GIF export is infrequent.
- */
-function encodeGifInWorker(
-  frames: { data: Uint8ClampedArray; delay: number }[],
-  width: number,
-  height: number,
-): Promise<Uint8Array> {
-  return new Promise((resolve, reject) => {
-    const worker = new Worker(
-      new URL('../workers/gifEncodeWorker.ts', import.meta.url),
-      { type: 'module' },
-    );
-
-    worker.onmessage = (e: MessageEvent<GifEncodeWorkerResponse>) => {
-      worker.terminate();
-      if (e.data.error) {
-        reject(new Error(e.data.error));
-      } else {
-        resolve(new Uint8Array(e.data.gifData!));
-      }
-    };
-
-    worker.onerror = (err) => {
-      worker.terminate();
-      reject(err);
-    };
-
-    // Transfer frame ArrayBuffers for zero-copy
-    const transferable: ArrayBuffer[] = [];
-    const message: GifEncodeWorkerMessage = {
-      frames: frames.map((f) => {
-        const buf = f.data.buffer.slice(0);
-        transferable.push(buf);
-        return { data: buf, delay: f.delay };
-      }),
-      width,
-      height,
-    };
-
-    worker.postMessage(message, transferable);
-  });
-}
 
 export function createImageProcessingStore() {
   // ─── Reactive State ───
@@ -174,16 +126,6 @@ export function createImageProcessingStore() {
   let processingGeneration = 0;
   let dimensionCapShown = false;
 
-  // ─── GIF Animation State ───
-  let isGif = $state(false);
-  let gifInfo = $state<GifInfo | null>(null);
-  let gifCurrentFrame = $state(0);
-  let gifPlaying = $state(false);
-  let gifProcessingProgress = $state(0); // 0-1 for export progress
-  let gifIsExporting = $state(false);
-  let gifFrameBlobUrls: (string | null)[] = [];
-  let gifAnimTimer: ReturnType<typeof setTimeout> | null = null;
-
   // ─── Undo / Redo History ───
   let settingsHistory = $state<ProcessingSettings[]>([]);
   let redoHistory = $state<ProcessingSettings[]>([]);
@@ -210,6 +152,24 @@ export function createImageProcessingStore() {
     dimensionCapShown = true;
     onDimensionCapped?.(original, capped);
   }
+
+  // ─── Settings Hash (for GIF cache invalidation) ───
+  let currentSettingsHash = $derived(JSON.stringify({
+    p: settings.pixelSize, pal: settings.palette, crt: settings.crtEffect,
+    g: settings.glitchFilters, r: settings.renderMode, s: settings.glitchSeed,
+    d: settings.ditherType, el: settings.effectLayers,
+  }));
+
+  // ─── GIF Playback Manager ───
+  const gif = createGifPlaybackManager({
+    getSettings: () => settings,
+    getSettingsHash: () => currentSettingsHash,
+    setProcessedImageSrc: (src: string) => { processedImageSrc = src; },
+    setIsProcessing: (v: boolean) => { isProcessing = v; },
+    setColorCount: (v: number) => { colorCount = v; },
+    setLastError: (err: string | null) => { lastError = err; },
+    handleDimensionCapped,
+  });
 
   // ─── Processing Pipeline ───
   async function runProcessing() {
@@ -248,268 +208,30 @@ export function createImageProcessingStore() {
     }, DEBOUNCE_MS);
   }
 
-  // ─── GIF Frame Cache ───
-  let gifFrameCache = new Map<string, string>(); // "settingsHash:frameIdx" → blobUrl
-  let gifCacheSettingsHash = '';
-
-  let currentSettingsHash = $derived(JSON.stringify({
-    p: settings.pixelSize, pal: settings.palette, crt: settings.crtEffect,
-    g: settings.glitchFilters, r: settings.renderMode, s: settings.glitchSeed,
-    d: settings.ditherType, el: settings.effectLayers,
-  }));
-
-  function invalidateGifCache() {
-    for (const url of gifFrameCache.values()) URL.revokeObjectURL(url);
-    gifFrameCache.clear();
-    gifCacheSettingsHash = '';
-  }
-
-  // ─── GIF Helpers ───
-  function stopGifPlayback() {
-    gifPlaying = false;
-    if (gifAnimTimer) { clearTimeout(gifAnimTimer); gifAnimTimer = null; }
-  }
-
-  function cleanupGif() {
-    stopGifPlayback();
-    isGif = false;
-    gifInfo = null;
-    gifCurrentFrame = 0;
-    gifProcessingProgress = 0;
-    gifIsExporting = false;
-    for (const url of gifFrameBlobUrls) {
-      if (url) URL.revokeObjectURL(url);
-    }
-    gifFrameBlobUrls = [];
-    invalidateGifCache();
-  }
-
-  async function processGifFrame(frameIndex: number): Promise<string | null> {
-    if (!gifInfo || frameIndex >= gifInfo.frames.length) return null;
-    const frame = gifInfo.frames[frameIndex];
-    // Create a blob URL from the raw frame, then process it
-    const blobUrl = await frameToBlobUrl(frame);
-    try {
-      const result = await processorService.processImage(blobUrl, settings, handleDimensionCapped);
-      return result;
-    } finally {
-      // Safe to revoke: processImage awaits Image load before returning,
-      // and we clear image cache for GIF frames to avoid stale blob URL refs
-      processorService.evictFromImageCache(blobUrl);
-      URL.revokeObjectURL(blobUrl);
-    }
-  }
-
-  async function showGifFrame(index: number) {
-    gifCurrentFrame = index;
-    const hash = currentSettingsHash;
-    // Invalidate cache if settings changed
-    if (hash !== gifCacheSettingsHash) {
-      invalidateGifCache();
-      gifCacheSettingsHash = hash;
-    }
-    // Check cache
-    const cacheKey = `${index}`;
-    const cached = gifFrameCache.get(cacheKey);
-    if (cached) {
-      processedImageSrc = cached;
-      isProcessing = false;
-      return;
-    }
-    isProcessing = true;
-    try {
-      const result = await processGifFrame(index);
-      if (result !== null) {
-        processedImageSrc = result;
-        colorCount = processorService.getLastColorCount();
-        gifFrameCache.set(cacheKey, result);
-      }
-    } catch (err) {
-      console.error('GIF frame processing error:', err);
-    } finally {
-      isProcessing = false;
-    }
-  }
-
-  function playGif() {
-    if (!gifInfo || gifInfo.frames.length <= 1) return;
-    gifPlaying = true;
-
-    function nextFrame() {
-      if (!gifPlaying || !gifInfo) return;
-      const nextIdx = (gifCurrentFrame + 1) % gifInfo.frames.length;
-      showGifFrame(nextIdx).then(() => {
-        if (gifPlaying && gifInfo) {
-          gifAnimTimer = setTimeout(nextFrame, gifInfo.frames[nextIdx].delay);
-        }
-      }).catch((err) => {
-        console.error('GIF playback error:', err);
-        stopGifPlayback();
-      });
-    }
-    nextFrame();
-  }
-
-  function pauseGif() {
-    stopGifPlayback();
-  }
-
-  function seekGifFrame(index: number) {
-    stopGifPlayback();
-    showGifFrame(index);
-  }
-
-  async function exportGif(): Promise<string | null> {
-    if (!gifInfo) return null;
-    gifIsExporting = true;
-    gifProcessingProgress = 0;
-
-    try {
-      const { ImageWorkerPool } = await import('$lib/utils/workerPool');
-      const pool = new ImageWorkerPool();
-
-      try {
-        // Capture frames reference to prevent race condition
-        const frames = gifInfo.frames;
-        const totalFrames = frames.length;
-        let completedFrames = 0;
-
-        // Resolve custom palette colors once for all frames
-        const customPaletteColors = settings.palette.startsWith('custom_')
-          ? customPaletteStore.getPaletteById(settings.palette)?.colors
-              ?.map(c => ({ r: c.r, g: c.g, b: c.b }))
-          : undefined;
-
-        // Cap dimensions (same logic as imageProcessor)
-        const MAX_DIM = settings.renderMode === 'hqx' ? 1024 : 2048;
-        const frameW = frames[0].width;
-        const frameH = frames[0].height;
-        let procW = frameW;
-        let procH = frameH;
-        if (procW > MAX_DIM || procH > MAX_DIM) {
-          const scale = MAX_DIM / Math.max(procW, procH);
-          procW = Math.round(procW * scale);
-          procH = Math.round(procH * scale);
-        }
-
-        // Submit all frames to worker pool in parallel
-        const framePromises = frames.map(async (frame, i) => {
-          const imageData = new ImageData(
-            new Uint8ClampedArray(frame.data),
-            frame.width,
-            frame.height,
-          );
-          const bitmap = await createImageBitmap(imageData, {
-            resizeWidth: procW,
-            resizeHeight: procH,
-          });
-
-          const message: ImageWorkerMessage = {
-            id: `gif-frame-${i}`,
-            imageBitmap: bitmap,
-            width: procW,
-            height: procH,
-            pixelSize: settings.pixelSize,
-            palette: settings.palette,
-            glitchFilters: settings.glitchFilters.map(f => ({
-              type: f.type,
-              intensity: f.intensity,
-            })),
-            renderMode: settings.renderMode,
-            glitchSeed: settings.glitchSeed,
-            ditherType: settings.ditherType,
-            customPaletteColors,
-            effectLayers: settings.effectLayers?.map(l => ({ ...l })),
-          };
-
-          const result = await pool.submit(message, [bitmap]);
-          completedFrames++;
-          gifProcessingProgress = (completedFrames / totalFrames) * 0.9;
-          return { imageData: result, delay: frame.delay };
-        });
-
-        const results = await Promise.all(framePromises);
-
-        if (results.length === 0) return null;
-        const outW = results[0].imageData.width;
-        const outH = results[0].imageData.height;
-
-        const processedFrames = results.map(r => ({
-          data: r.imageData.data,
-          delay: r.delay,
-        }));
-
-        gifProcessingProgress = 0.92; // Encoding phase
-
-        // Encode GIF in a Web Worker to prevent UI blocking
-        const gifBytes = await encodeGifInWorker(processedFrames, outW, outH);
-        gifProcessingProgress = 1;
-
-        const blob = new Blob([gifBytes], { type: 'image/gif' });
-        const url = URL.createObjectURL(blob);
-
-        // Trigger download
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'pixel-art-animation.gif';
-        a.click();
-        URL.revokeObjectURL(url);
-
-        return i18n.t('gif_exported');
-      } finally {
-        pool.destroy();
-      }
-    } catch (err) {
-      console.error('GIF export error:', err);
-      lastError = err instanceof Error ? err.message : String(err);
-      return null;
-    } finally {
-      gifIsExporting = false;
-      gifProcessingProgress = 0;
-    }
-  }
-
-  // ─── GIF Loading ───
-  async function loadGifFile(file: File) {
-    try {
-      const buffer = await file.arrayBuffer();
-      try {
-        const info = decodeGif(buffer);
-        if (info.frames.length > 1) {
-          isGif = true;
-          gifInfo = info;
-          gifCurrentFrame = 0;
-          currentObjectUrl = URL.createObjectURL(file);
-          originalImageSrc = currentObjectUrl;
-          dimensionCapShown = false;
-          showGifFrame(0);
-          return;
-        }
-      } catch (err) {
-        console.warn('GIF decode failed, treating as static image:', err);
-      }
-    } catch (err) {
-      console.error('Failed to read GIF file:', err);
-    }
-    // Single-frame or failed GIF: treat as normal image
-    currentObjectUrl = URL.createObjectURL(file);
-    originalImageSrc = currentObjectUrl;
-    dimensionCapShown = false;
-    processImmediate();
-  }
-
   // ─── Public Actions ───
   function loadImage(file: File) {
     if (currentObjectUrl) {
       URL.revokeObjectURL(currentObjectUrl);
       processorService.clearImageCache();
     }
-    cleanupGif();
+    gif.cleanup();
 
     // Check if it's a GIF
     if (file.type === 'image/gif') {
       isProcessing = true;
-      loadGifFile(file);
+      gif.loadGifFile(file, (url: string) => {
+        currentObjectUrl = url;
+        originalImageSrc = url;
+        dimensionCapShown = false;
+      }).then((wasMultiFrame) => {
+        if (!wasMultiFrame) {
+          // Single-frame or failed GIF: treat as normal image
+          currentObjectUrl = URL.createObjectURL(file);
+          originalImageSrc = currentObjectUrl;
+          dimensionCapShown = false;
+          processImmediate();
+        }
+      });
       return;
     }
 
@@ -525,7 +247,7 @@ export function createImageProcessingStore() {
       currentObjectUrl = null;
       processorService.clearImageCache();
     }
-    cleanupGif();
+    gif.cleanup();
     originalImageSrc = null;
     processedImageSrc = null;
   }
@@ -537,9 +259,9 @@ export function createImageProcessingStore() {
       hasUnappliedChanges = true;
       return;
     }
-    if (isGif && gifInfo) {
-      stopGifPlayback();
-      showGifFrame(gifCurrentFrame);
+    if (gif.isGif && gif.gifInfo) {
+      gif.stopPlayback();
+      gif.showFrame(gif.gifCurrentFrame);
     } else {
       applyProcessingDebounced();
     }
@@ -552,9 +274,9 @@ export function createImageProcessingStore() {
       hasUnappliedChanges = true;
       return;
     }
-    if (isGif && gifInfo) {
-      stopGifPlayback();
-      showGifFrame(gifCurrentFrame);
+    if (gif.isGif && gif.gifInfo) {
+      gif.stopPlayback();
+      gif.showFrame(gif.gifCurrentFrame);
     } else {
       processImmediate();
     }
@@ -564,9 +286,9 @@ export function createImageProcessingStore() {
   function applyNow() {
     if (!originalImageSrc) return;
     hasUnappliedChanges = false;
-    if (isGif && gifInfo) {
-      stopGifPlayback();
-      showGifFrame(gifCurrentFrame);
+    if (gif.isGif && gif.gifInfo) {
+      gif.stopPlayback();
+      gif.showFrame(gif.gifCurrentFrame);
     } else {
       processImmediate();
     }
@@ -590,12 +312,8 @@ export function createImageProcessingStore() {
 
   function jumpToHistory(index: number, isRedoList: boolean = false) {
     if (isRedoList) {
-      // Jump forward into redo history
       for (let i = 0; i <= index; i++) redo();
     } else {
-      // Jump backward into settings history
-      // index is from 0 (oldest) to length-1 (newest)
-      // distance is length - 1 - index
       const distance = settingsHistory.length - 1 - index;
       for (let i = 0; i <= distance; i++) undo();
     }
@@ -614,7 +332,6 @@ export function createImageProcessingStore() {
   async function save(): Promise<string | null> {
     if (!processedImageSrc) return null;
     let canvas = processorService.getLastCanvas();
-    // Apply CRT effect to canvas for export
     if (settings.crtEffect !== 'none' && canvas) {
       canvas = applyCrtEffect(canvas, settings.crtEffect);
     }
@@ -628,7 +345,6 @@ export function createImageProcessingStore() {
   // ─── Rotation & Crop ───
   async function rotate(degrees: 90 | -90 | 180) {
     rotation = ((rotation + degrees) % 360 + 360) % 360;
-    // Reset crop when rotating
     cropRect = null;
     await applyTransform();
     processorService.clearImageCache();
@@ -661,7 +377,7 @@ export function createImageProcessingStore() {
   function destroy() {
     if (debounceTimer) clearTimeout(debounceTimer);
     if (currentObjectUrl) URL.revokeObjectURL(currentObjectUrl);
-    cleanupGif();
+    gif.cleanup();
     processorService.destroy();
   }
 
@@ -689,14 +405,14 @@ export function createImageProcessingStore() {
     get rotation() { return rotation; },
     get cropRect() { return cropRect; },
 
-    // GIF state
-    get isGif() { return isGif; },
-    get gifInfo() { return gifInfo; },
-    get gifCurrentFrame() { return gifCurrentFrame; },
-    get gifPlaying() { return gifPlaying; },
-    get gifProcessingProgress() { return gifProcessingProgress; },
-    get gifIsExporting() { return gifIsExporting; },
-    get gifFrameCount() { return gifInfo?.frames.length ?? 0; },
+    // GIF state (delegated to gifPlaybackManager)
+    get isGif() { return gif.isGif; },
+    get gifInfo() { return gif.gifInfo; },
+    get gifCurrentFrame() { return gif.gifCurrentFrame; },
+    get gifPlaying() { return gif.gifPlaying; },
+    get gifProcessingProgress() { return gif.gifProcessingProgress; },
+    get gifIsExporting() { return gif.gifIsExporting; },
+    get gifFrameCount() { return gif.gifFrameCount; },
 
     // Actions
     loadImage,
@@ -720,9 +436,10 @@ export function createImageProcessingStore() {
     resetTransform,
 
     // GIF actions
-    playGif,
-    pauseGif,
-    seekGifFrame,
-    exportGif,
+    playGif: gif.play,
+    pauseGif: gif.pause,
+    seekGifFrame: gif.seek,
+    exportGif: gif.exportGif,
+    cancelGifExport: gif.cancelExport,
   };
 }

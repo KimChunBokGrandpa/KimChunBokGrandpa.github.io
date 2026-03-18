@@ -68,9 +68,18 @@
   let showShortcuts = $state(false);
 
   // ─── Error Handling ───
+  function getUserFriendlyError(rawError: string): string {
+    const lower = rawError.toLowerCase();
+    if (lower.includes('worker') || lower.includes('retries exceeded')) return i18n.t('error_worker_crashed');
+    if (lower.includes('failed to load image') || lower.includes('failed to load frame')) return i18n.t('error_image_load');
+    if (lower.includes('2d context')) return i18n.t('error_canvas_context');
+    if (lower.includes('gif export') || lower.includes('gif encoding')) return i18n.t('error_gif_export');
+    return rawError;
+  }
+
   $effect(() => {
     if (ip.lastError) {
-      showDialog(ip.lastError, i18n.t('processing_error'));
+      showDialog(getUserFriendlyError(ip.lastError), i18n.t('processing_error'));
       ip.clearError();
     }
   });
@@ -415,6 +424,7 @@
           const msg = await ip.exportGif();
           if (msg) enqueueToast(msg);
         }}
+        onGifCancelExport={() => ip.cancelGifExport()}
         onGifExportSpritesheet={async () => {
           await handleExportSpritesheet();
         }}

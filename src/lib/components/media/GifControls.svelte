@@ -11,6 +11,7 @@
     onPause,
     onSeek,
     onExport,
+    onCancelExport,
     onExportSpritesheet,
   }: {
     currentFrame: number;
@@ -22,6 +23,7 @@
     onPause: () => void;
     onSeek: (frame: number) => void;
     onExport: () => void;
+    onCancelExport?: () => void;
     onExportSpritesheet?: () => void;
   } = $props();
 </script>
@@ -62,14 +64,27 @@
       disabled={isExporting}
     >⏭</button>
     <div class="gif-sep"></div>
-    <button
-      class="gif-btn gif-export-btn"
-      onclick={onExport}
-      disabled={isExporting}
-      title={i18n.t('export_gif')}
-    >
-      {isExporting ? `${Math.round(exportProgress * 100)}% (${Math.min(Math.ceil(exportProgress * frameCount), frameCount)}/${frameCount})` : `💾 ${i18n.t('gif_btn')}`}
-    </button>
+    {#if isExporting}
+      <span class="gif-export-status">
+        {Math.round(exportProgress * 100)}% ({Math.min(Math.ceil(exportProgress * frameCount), frameCount)}/{frameCount})
+      </span>
+      {#if onCancelExport}
+        <button
+          class="gif-btn gif-cancel-btn"
+          onclick={onCancelExport}
+          title={i18n.t('cancel')}
+          aria-label={i18n.t('cancel')}
+        >✕</button>
+      {/if}
+    {:else}
+      <button
+        class="gif-btn gif-export-btn"
+        onclick={onExport}
+        title={i18n.t('export_gif')}
+      >
+        💾 {i18n.t('gif_btn')}
+      </button>
+    {/if}
     {#if onExportSpritesheet}
       <button
         class="gif-btn gif-export-btn"
@@ -150,6 +165,26 @@
   .gif-export-btn {
     padding: 0 8px;
     font-size: var(--w98-font-size-sm);
+  }
+
+  .gif-export-status {
+    font-size: var(--w98-font-size-sm);
+    font-family: 'Courier New', Courier, monospace;
+    font-weight: bold;
+    color: #0f0;
+    padding: 0 4px;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .gif-cancel-btn {
+    background: #c00;
+    color: #fff;
+    font-size: var(--w98-font-size-sm);
+    padding: 0 6px;
+  }
+  .gif-cancel-btn:active {
+    background: #900;
   }
 
   .gif-frame-info {

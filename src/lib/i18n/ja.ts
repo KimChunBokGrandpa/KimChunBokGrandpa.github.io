@@ -54,7 +54,12 @@ export const ja: Record<TranslationKey, string> = {
   unsupported_format: '\u753b\u50cf\u30d5\u30a1\u30a4\u30eb\u3092\u30c9\u30ed\u30c3\u30d7\u3057\u3066\u304f\u3060\u3055\u3044 (PNG, JPEG, GIF, BMP, WebP)\u3002',
   image_resized: '\u753b\u50cf\u30ea\u30b5\u30a4\u30ba: {0} \u2192 {1} (\u6700\u5927 2048px)',
   image_resized_title: '\u753b\u50cf\u30ea\u30b5\u30a4\u30ba\u6e08\u307f',
-  processing_error: '\u51e6\u7406\u30a8\u30e9\u30fc',
+  processing_error: '処理エラー',
+  error_worker_crashed: '画像処理に失敗しました。ページをリロードしてもう一度お試しください。',
+  error_image_load: '画像を読み込めませんでした。ファイルが破損しているか、サポートされていない形式の可能性があります。',
+  error_canvas_context: 'ブラウザが描画サーフェスを作成できませんでした。他のタブを閉じてお試しください。',
+  error_save_format: '{0}形式で保存できませんでした。別の形式をお試しください。',
+  error_gif_export: 'GIFエクスポートに失敗しました。フレーム数や画像サイズを減らしてお試しください。',
   load_new_image: '\u65b0\u3057\u3044\u753b\u50cf\u3092\u958b\u304f...',
 
   open_image: '\u753b\u50cf\u3092\u958b\u304f',
@@ -209,6 +214,7 @@ export const ja: Record<TranslationKey, string> = {
   crop_apply: 'トリミング適用',
   crop_cancel: 'トリミングキャンセル',
   crop_drag_hint: 'ドラッグして範囲を選択',
+  crop_keyboard_hint: 'Enterで適用、Escでキャンセル',
 
   generate_gradient: '\u30b0\u30e9\u30c7\u30fc\u30b7\u30e7\u30f3\u751f\u6210',
   gradient_start: '\u958b\u59cb',

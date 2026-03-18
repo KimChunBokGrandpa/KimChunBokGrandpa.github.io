@@ -60,6 +60,11 @@ export const en = {
   image_resized: 'Image resized: {0} \u2192 {1} (max 2048px)',
   image_resized_title: 'Image Resized',
   processing_error: 'Processing Error',
+  error_worker_crashed: 'Image processing failed. Please reload the page and try again.',
+  error_image_load: 'Could not load the image. The file may be corrupted or unsupported.',
+  error_canvas_context: 'Browser failed to create a drawing surface. Try closing other tabs.',
+  error_save_format: 'Could not save as {0}. Try a different format.',
+  error_gif_export: 'GIF export failed. Try reducing the number of frames or image size.',
   load_new_image: 'Load New Image...',
 
   // ─── Image Drop Zone ───
@@ -226,6 +231,7 @@ export const en = {
   crop_apply: 'Apply Crop',
   crop_cancel: 'Cancel Crop',
   crop_drag_hint: 'Drag to select crop area',
+  crop_keyboard_hint: 'Enter to apply, Esc to cancel',
 
   // ─── Palette Editor Extras ───
   generate_gradient: 'Generate Gradient',

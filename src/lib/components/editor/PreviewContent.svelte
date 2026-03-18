@@ -1,9 +1,10 @@
 <script lang="ts">
   import ImageDropZone from './ImageDropZone.svelte';
-  import BeforeAfterSlider from '../media/BeforeAfterSlider.svelte';
   import CrtDisplay from '../media/CrtDisplay.svelte';
   import GifControls from '../media/GifControls.svelte';
   import CropOverlay from './CropOverlay.svelte';
+  import EyedropperOverlay from './EyedropperOverlay.svelte';
+  import CompareView, { type CompareVariant } from './CompareView.svelte';
   import { getPaletteName } from '$lib/utils/palettes';
   import { i18n } from '$lib/i18n/index.svelte';
   import type { createZoomPan } from '$lib/stores/zoomPanStore.svelte';
@@ -31,6 +32,7 @@
     onGifPause,
     onGifSeek,
     onGifExport,
+    onGifCancelExport,
     onGifExportSpritesheet,
     // Color count
     colorCount = 0,
@@ -65,6 +67,7 @@
     onGifPause?: () => void;
     onGifSeek?: (frame: number) => void;
     onGifExport?: () => void;
+    onGifCancelExport?: () => void;
     onGifExportSpritesheet?: () => void;
     // Color count
     colorCount?: number;
@@ -88,78 +91,40 @@
 
   // ─── Eyedropper ───
   let eyedropperActive = $state(false);
-  let pickedColor = $state<{ r: number; g: number; b: number; hex: string } | null>(null);
-  let pickedColorPos = $state<{ x: number; y: number }>({ x: 0, y: 0 });
-  let colorCopied = $state(false);
-  let colorCopiedTimer: ReturnType<typeof setTimeout> | null = null;
-  let eyedropperCanvas: HTMLCanvasElement | null = null;
-  let eyedropperCtx: CanvasRenderingContext2D | null = null;
-  let eyedropperCachedSrc: string | null = null;
+  let eyedropperOverlay = $state<EyedropperOverlay>();
 
   function handlePreviewClick(e: MouseEvent) {
-    if (!eyedropperActive || !zp.previewImg || !processedImageSrc) return;
-    // Don't pick color if panning
-    if (zp.isPanning) return;
-
-    const img = zp.previewImg;
-    const rect = img.getBoundingClientRect();
-    // Calculate the actual image area within object-fit:contain
-    const scale = Math.min(rect.width / img.naturalWidth, rect.height / img.naturalHeight);
-    const renderedW = img.naturalWidth * scale;
-    const renderedH = img.naturalHeight * scale;
-    const offsetX = (rect.width - renderedW) / 2;
-    const offsetY = (rect.height - renderedH) / 2;
-
-    const imgX = Math.floor((e.clientX - rect.left - offsetX) / scale);
-    const imgY = Math.floor((e.clientY - rect.top - offsetY) / scale);
-
-    if (imgX < 0 || imgY < 0 || imgX >= img.naturalWidth || imgY >= img.naturalHeight) return;
-
-    // Read pixel from a cached canvas (reuse across clicks for same image)
-    if (!eyedropperCanvas || eyedropperCachedSrc !== processedImageSrc) {
-      eyedropperCanvas = document.createElement('canvas');
-      eyedropperCanvas.width = img.naturalWidth;
-      eyedropperCanvas.height = img.naturalHeight;
-      eyedropperCtx = eyedropperCanvas.getContext('2d')!;
-      eyedropperCtx.drawImage(img, 0, 0);
-      eyedropperCachedSrc = processedImageSrc;
-    }
-    const pixel = eyedropperCtx!.getImageData(imgX, imgY, 1, 1).data;
-
-    const r = pixel[0],
-      g = pixel[1],
-      b = pixel[2];
-    const hex = `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
-    pickedColor = { r, g, b, hex };
-    pickedColorPos = { x: e.clientX, y: e.clientY };
+    eyedropperOverlay?.pick(e);
   }
 
-  function copyColor() {
-    if (pickedColor) {
-      navigator.clipboard.writeText(pickedColor.hex).then(() => {
-        colorCopied = true;
-        if (colorCopiedTimer) clearTimeout(colorCopiedTimer);
-        colorCopiedTimer = setTimeout(() => { colorCopied = false; }, 1500);
-      }).catch((err) => {
-        console.warn('Clipboard write failed:', err);
-      });
-    }
+  // ─── Compare Mode ───
+  const COMPARE_VARIANTS: CompareVariant[] = ['slider', 'side-by-side', 'onion'];
+  const COMPARE_VARIANT_LABELS: Record<CompareVariant, TranslationKey> = {
+    'slider': 'compare_slider',
+    'side-by-side': 'compare_side_by_side',
+    'onion': 'compare_onion',
+  };
+  let compareVariant = $state<CompareVariant>('slider');
+
+  function cycleCompareVariant() {
+    const idx = COMPARE_VARIANTS.indexOf(compareVariant);
+    compareVariant = COMPARE_VARIANTS[(idx + 1) % COMPARE_VARIANTS.length];
   }
 
-  function dismissColor() {
-    pickedColor = null;
-  }
+  let compareVariantIcon = $derived(
+    compareVariant === 'slider' ? '↔' : compareVariant === 'side-by-side' ? '⬜⬜' : '🧅'
+  );
 
   // Keyboard handler for preview area accessibility
   function handlePreviewKeydown(e: KeyboardEvent) {
     if (e.key === 'Escape') {
-      if (eyedropperActive) { eyedropperActive = false; pickedColor = null; }
+      if (eyedropperActive) { eyedropperActive = false; eyedropperOverlay?.dismiss(); }
       if (cropModeActive) { cropModeActive = false; }
       return;
     }
     if (e.key === 'e' || e.key === 'E') {
       eyedropperActive = !eyedropperActive;
-      pickedColor = null;
+      eyedropperOverlay?.dismiss();
     }
     if (e.key === 'g' || e.key === 'G') {
       zp.showGrid = !zp.showGrid;
@@ -168,23 +133,6 @@
     if (e.key === '-') { zp.zoomOut(); }
     if (e.key === '0') { zp.zoomToFit(); }
   }
-
-  // ─── Compare Mode Variants ───
-  type CompareVariant = 'slider' | 'side-by-side' | 'onion';
-  const COMPARE_VARIANTS: CompareVariant[] = ['slider', 'side-by-side', 'onion'];
-  let compareVariant = $state<CompareVariant>('slider');
-  let onionOpacity = $state(0.5);
-
-  function cycleCompareVariant() {
-    const idx = COMPARE_VARIANTS.indexOf(compareVariant);
-    compareVariant = COMPARE_VARIANTS[(idx + 1) % COMPARE_VARIANTS.length];
-  }
-
-  const COMPARE_VARIANT_LABELS: Record<CompareVariant, TranslationKey> = {
-    'slider': 'compare_slider',
-    'side-by-side': 'compare_side_by_side',
-    'onion': 'compare_onion',
-  };
 
   // Pixel grid: show when grid is on and zoom is high enough to see pixels
   let gridVisible = $derived(zp.showGrid && zp.zoomLevel >= 2 && processingSettings.pixelSize > 1);
@@ -262,36 +210,14 @@
         <span class="tile-label">{i18n.t('tile_label')}</span>
       </div>
     {:else if compareMode && originalImageSrc}
-      {#if compareVariant === 'slider'}
-        <BeforeAfterSlider
-          originalSrc={originalImageSrc}
-          processedSrc={processedImageSrc}
-          imageRendering={processingSettings.renderMode === 'bilinear' ? 'auto' : 'pixelated'}
-          altText="Before/After: {getPaletteName(processingSettings.palette)}"
-        />
-      {:else if compareVariant === 'side-by-side'}
-        <div class="side-by-side">
-          <div class="sbs-panel">
-            <img src={originalImageSrc} alt={i18n.t('before')} class="sbs-img" style:image-rendering="auto" draggable="false" />
-            <span class="sbs-label">{i18n.t('before')}</span>
-          </div>
-          <div class="sbs-divider"></div>
-          <div class="sbs-panel">
-            <img src={processedImageSrc} alt={i18n.t('after')} class="sbs-img" style:image-rendering={processingSettings.renderMode === 'bilinear' ? 'auto' : 'pixelated'} style:filter={postFilterCss || 'none'} draggable="false" />
-            <span class="sbs-label">{i18n.t('after')}</span>
-          </div>
-        </div>
-      {:else}
-        <div class="onion-skin">
-          <img src={originalImageSrc} alt={i18n.t('before')} class="onion-img onion-base" style:image-rendering="auto" draggable="false" />
-          <img src={processedImageSrc} alt={i18n.t('after')} class="onion-img onion-overlay" style:opacity={onionOpacity} style:image-rendering={processingSettings.renderMode === 'bilinear' ? 'auto' : 'pixelated'} style:filter={postFilterCss || 'none'} draggable="false" />
-          <div class="onion-controls">
-            <span class="onion-label">{i18n.t('onion_opacity')}</span>
-            <input type="range" min="0" max="1" step="0.05" bind:value={onionOpacity} class="onion-slider" />
-            <span class="onion-value">{Math.round(onionOpacity * 100)}%</span>
-          </div>
-        </div>
-      {/if}
+      <CompareView
+        originalSrc={originalImageSrc}
+        processedSrc={processedImageSrc}
+        renderMode={processingSettings.renderMode}
+        paletteName={getPaletteName(processingSettings.palette)}
+        {postFilterCss}
+        variant={compareVariant}
+      />
     {:else}
       <CrtDisplay active={processingSettings.crtEffect !== 'none'} mode={processingSettings.crtEffect}>
         {#snippet children()}
@@ -355,7 +281,7 @@
             <button
               class="zoom-btn"
               class:grid-active={cropModeActive}
-              onclick={() => { cropModeActive = !cropModeActive; if (cropModeActive) { eyedropperActive = false; pickedColor = null; } }}
+              onclick={() => { cropModeActive = !cropModeActive; if (cropModeActive) { eyedropperActive = false; eyedropperOverlay?.dismiss(); } }}
               title={cropModeActive ? i18n.t('crop_active') : i18n.t('crop')}
               aria-label={cropModeActive ? i18n.t('crop_active') : i18n.t('crop')}
               aria-pressed={cropModeActive}>✂</button>
@@ -383,7 +309,7 @@
               onclick={cycleCompareVariant}
               title="{i18n.t('compare_mode_cycle')}: {i18n.t(COMPARE_VARIANT_LABELS[compareVariant])}"
               aria-label={i18n.t('btn_compare_variant')}
-            >{compareVariant === 'slider' ? '↔' : compareVariant === 'side-by-side' ? '⬜⬜' : '🧅'}</button>
+            >{compareVariantIcon}</button>
           {/if}
         </div>
         {#if !compareMode && displayedWidth > 0 && displayedHeight > 0}
@@ -444,7 +370,7 @@
               <button
                 class="zoom-btn"
                 class:grid-active={eyedropperActive}
-                onclick={() => { eyedropperActive = !eyedropperActive; pickedColor = null; }}
+                onclick={() => { eyedropperActive = !eyedropperActive; eyedropperOverlay?.dismiss(); }}
                 title={eyedropperActive ? i18n.t('exit_eyedropper') : i18n.t('eyedropper')}
                 aria-label={eyedropperActive ? i18n.t('exit_eyedropper') : i18n.t('eyedropper')}
                 aria-pressed={eyedropperActive}>💧</button>
@@ -453,22 +379,14 @@
         </div>
       {/if}
     </div>
-    <!-- Picked Color Tooltip -->
-    {#if pickedColor}
-      <div class="color-tooltip" style="left:{pickedColorPos.x}px;top:{pickedColorPos.y}px;">
-        <div class="color-swatch" style="background:{pickedColor.hex};"></div>
-        <div class="color-info">
-          <span class="color-hex">{pickedColor.hex.toUpperCase()}</span>
-          <span class="color-rgb">RGB({pickedColor.r}, {pickedColor.g}, {pickedColor.b})</span>
-        </div>
-        <div class="color-actions">
-          <button class="color-action-btn" onclick={copyColor} title={i18n.t('copy_color')} aria-label={i18n.t('btn_copy_color')}
-            >{colorCopied ? '✅' : '📋'}</button
-          >
-          <button class="color-action-btn" onclick={dismissColor} aria-label={i18n.t('btn_dismiss_color')}>✕</button>
-        </div>
-      </div>
-    {/if}
+    <!-- Eyedropper Color Tooltip -->
+    <EyedropperOverlay
+      bind:this={eyedropperOverlay}
+      bind:active={eyedropperActive}
+      previewImg={zp.previewImg ?? null}
+      {processedImageSrc}
+      isPanning={zp.isPanning}
+    />
     <!-- GIF Frame Controls -->
     {#if isGif && gifFrameCount > 1 && onGifPlay && onGifPause && onGifSeek && onGifExport}
       <GifControls
@@ -481,6 +399,7 @@
         onPause={onGifPause}
         onSeek={onGifSeek}
         onExport={onGifExport}
+        onCancelExport={onGifCancelExport}
         onExportSpritesheet={onGifExportSpritesheet}
       />
     {/if}
@@ -522,61 +441,6 @@
   .preview-body:focus-visible {
     outline: 2px solid var(--w98-highlight);
     outline-offset: -2px;
-  }
-
-  /* ===== Eyedropper Color Tooltip ===== */
-  .color-tooltip {
-    position: fixed;
-    z-index: 100;
-    transform: translate(8px, -100%);
-    background: var(--w98-surface);
-    border: 2px solid;
-    border-color: var(--w98-shadow-light) var(--w98-shadow-808) var(--w98-shadow-808) var(--w98-shadow-light);
-    padding: 4px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
-    pointer-events: auto;
-  }
-  .color-swatch {
-    width: 24px;
-    height: 24px;
-    border: 1px solid #000;
-    flex-shrink: 0;
-  }
-  .color-info {
-    display: flex;
-    flex-direction: column;
-    font-size: var(--w98-font-size-sm);
-    font-family: 'Courier New', monospace;
-    font-weight: bold;
-  }
-  .color-hex {
-    color: var(--w98-highlight);
-  }
-  .color-rgb {
-    color: #444;
-  }
-  .color-actions {
-    display: flex;
-    gap: 2px;
-  }
-  .color-action-btn {
-    min-width: 20px;
-    height: 20px;
-    padding: 0 3px;
-    font-size: var(--w98-font-size-base);
-    background: var(--w98-surface);
-    border: none;
-    cursor: pointer;
-    box-shadow: var(--w98-outset-thin);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  .color-action-btn:active {
-    box-shadow: var(--w98-inset-thin);
   }
 
   /* ===== Preview Image ===== */
@@ -796,6 +660,11 @@
     margin-left: 2px;
   }
 
+  /* ===== Compare Variant Button ===== */
+  .compare-variant-btn {
+    font-size: var(--w98-font-size-caption) !important;
+  }
+
   @media (max-width: 550px) {
     .toolbar-container {
       bottom: 2px;
@@ -862,106 +731,6 @@
     letter-spacing: 1px;
     pointer-events: none;
     z-index: 4;
-  }
-
-  /* ===== Side-by-Side Compare ===== */
-  .side-by-side {
-    display: flex;
-    width: 100%;
-    height: 100%;
-    background: #000;
-  }
-  .sbs-panel {
-    flex: 1;
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 0;
-    overflow: hidden;
-  }
-  .sbs-img {
-    max-width: 100%;
-    max-height: 100%;
-    object-fit: contain;
-  }
-  .sbs-divider {
-    width: 2px;
-    background: #fff;
-    flex-shrink: 0;
-    box-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
-  }
-  .sbs-label {
-    position: absolute;
-    top: 8px;
-    left: 8px;
-    font-size: var(--w98-font-size-caption);
-    font-weight: bold;
-    padding: 2px 6px;
-    background: rgba(0, 0, 0, 0.6);
-    color: #fff;
-    letter-spacing: 1px;
-    pointer-events: none;
-    z-index: 4;
-  }
-
-  /* ===== Onion Skin Compare ===== */
-  .onion-skin {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    background: #000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  .onion-img {
-    position: absolute;
-    max-width: 100%;
-    max-height: 100%;
-    object-fit: contain;
-  }
-  .onion-base {
-    z-index: 1;
-  }
-  .onion-overlay {
-    z-index: 2;
-  }
-  .onion-controls {
-    position: absolute;
-    bottom: 40px;
-    left: 50%;
-    transform: translateX(-50%);
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    background: rgba(0, 0, 0, 0.7);
-    border: 1px solid var(--w98-shadow-808);
-    padding: 4px 10px;
-    z-index: 5;
-  }
-  .onion-label {
-    font-size: var(--w98-font-size-sm);
-    color: #fff;
-    font-weight: bold;
-    white-space: nowrap;
-  }
-  .onion-slider {
-    width: 100px;
-    accent-color: var(--w98-highlight);
-  }
-  .onion-value {
-    font-size: var(--w98-font-size-sm);
-    color: #0f0;
-    font-family: 'Courier New', monospace;
-    font-weight: bold;
-    min-width: 32px;
-    text-align: right;
-  }
-
-  /* ===== Compare Variant Button ===== */
-  .compare-variant-btn {
-    font-size: var(--w98-font-size-caption) !important;
   }
 
   /* ===== Pixel Grid Overlay ===== */

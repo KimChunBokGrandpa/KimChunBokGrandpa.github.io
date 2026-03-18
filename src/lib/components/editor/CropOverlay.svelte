@@ -293,7 +293,11 @@
   {:else}
     <!-- Full overlay with hint text -->
     <div class="crop-hint-overlay">
-      <span class="crop-hint-text">{i18n.t('crop_drag_hint')}</span>
+      <div class="crop-hint-box">
+        <span class="crop-hint-icon">✂</span>
+        <span class="crop-hint-text">{i18n.t('crop_drag_hint')}</span>
+        <span class="crop-hint-keys">{i18n.t('crop_keyboard_hint')}</span>
+      </div>
     </div>
   {/if}
 
@@ -337,14 +341,28 @@
     pointer-events: none;
   }
 
+  .crop-hint-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    background: rgba(0, 0, 128, 0.8);
+    padding: 10px 18px;
+    border: 2px outset var(--w98-shadow-light);
+  }
+  .crop-hint-icon {
+    font-size: 24px;
+  }
   .crop-hint-text {
     font-size: var(--w98-font-size-icon);
     font-weight: bold;
     color: #fff;
     text-shadow: 1px 1px 2px #000;
-    background: rgba(0, 0, 128, 0.7);
-    padding: 6px 14px;
-    border: 1px solid rgba(255, 255, 255, 0.3);
+  }
+  .crop-hint-keys {
+    font-size: var(--w98-font-size-sm);
+    color: rgba(255, 255, 255, 0.7);
+    font-family: 'Courier New', monospace;
   }
 
   .crop-selection {
