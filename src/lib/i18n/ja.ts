@@ -430,4 +430,14 @@ export const ja: Record<TranslationKey, string> = {
 
   // ─── Unsaved Changes ───
   unsaved_changes: '未適用',
+
+  // ─── Palette Tabs ───
+  palette_tab_favorites: 'お気に入り',
+  palette_tab_custom: 'カスタム',
+  palette_tab_core: 'コア',
+  palette_original_full_color: 'オリジナル（フルカラー）',
+
+  // ─── Batch Errors ───
+  batch_processing_null: '処理結果がありません',
+  batch_unknown_error: '不明なエラー',
 };

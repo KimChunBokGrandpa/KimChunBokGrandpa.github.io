@@ -164,6 +164,8 @@ class ImageProcessorService {
       const img = new Image();
       img.crossOrigin = "Anonymous";
       img.onload = () => {
+        img.onload = null;
+        img.onerror = null;
         // Evict oldest entries until under limit
         while (this.imageCache.size >= ImageProcessorService.MAX_IMAGE_CACHE) {
           this.evictLRU();
@@ -171,7 +173,7 @@ class ImageProcessorService {
         this.imageCache.set(src, img);
         resolve(img);
       };
-      img.onerror = () => reject(new Error("Failed to load image"));
+      img.onerror = () => { img.onload = null; img.onerror = null; reject(new Error("Failed to load image")); };
       img.src = src;
     });
   }

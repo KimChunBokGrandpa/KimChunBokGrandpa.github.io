@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 npm run dev          # Web dev server (port 1420)
 npm run build        # Production build (static adapter → build/)
 npm run check        # svelte-check (type checking)
-npm test             # Run all tests (290 tests across 34 files)
+npm test             # Run all tests (362 tests across 39 files)
 npm run test:watch   # Vitest watch mode
 npx vitest run src/lib/utils/colorQuantizer.test.ts  # Single test file
 npm run td           # Tauri desktop dev (requires Rust toolchain)
@@ -140,8 +140,15 @@ Animated GIFs are decoded into frames, each processed individually through the f
 - `spritesheetExporter.test.ts` — Error handling for invalid inputs
 - `tooltip.test.ts` — title→data-tooltip sync, dynamic updates
 
-**Service tests** (4 files, 58 tests):
+**Store tests** (6 files, 105 tests):
 - `imageProcessingStore.test.ts` — State management, undo/redo, history, postFilterCss, GIF delegation
+- `windowStore.test.ts` — Window state, focus/open/close, taskbar click, localStorage save/restore
+- `zoomPanStore.test.ts` — Zoom bounds, setZoom clamping, resetZoom, zoomToFit, grid toggle
+- `customPaletteStore.test.ts` — CRUD, deep-clone, corrupted localStorage
+- `customPresetStore.test.ts` — CRUD, deep-clone, backward-compat exports
+- `gifPlaybackManager.test.ts` — Initial state, cleanup, playback controls, export null-guard
+
+**Service tests** (3 files, 25 tests):
 - `imageProcessor.test.ts` — Cache, request dedup, dimension capping, early return path
 - `saveService.test.ts` — Web download, file extensions, CSS filter, blob URL cleanup
 - `exportService.test.ts` — SVG pipeline, spritesheet export, error handling with cleanup

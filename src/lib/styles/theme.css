@@ -11,6 +11,9 @@
   --w98-highlight: #000080;
   --w98-highlight-alpha: rgba(0, 0, 128, 0.18);
   --w98-highlight-border: rgba(0, 0, 128, 0.5);
+  --w98-tooltip-bg: #ffffcc;
+  --w98-tooltip-text: #000;
+  --w98-tooltip-border: #000;
 
   /* ── Border / Shadow Colors ── */
   --w98-shadow-dark: #0a0a0a;
@@ -79,9 +82,9 @@ button:focus-visible {
   left: 50%;
   transform: translateX(-50%);
   padding: 3px 6px;
-  background: #ffffcc;
-  color: #000;
-  border: 1px solid #000;
+  background: var(--w98-tooltip-bg);
+  color: var(--w98-tooltip-text);
+  border: 1px solid var(--w98-tooltip-border);
   font-size: var(--w98-font-size-base);
   font-family: var(--w98-font-family);
   white-space: nowrap;

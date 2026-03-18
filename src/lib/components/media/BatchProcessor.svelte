@@ -120,10 +120,10 @@
         if (result) {
           items[i] = { ...items[i], status: 'done', resultUrl: result, progress: 1 };
         } else {
-          items[i] = { ...items[i], status: 'error', error: 'Processing returned null' };
+          items[i] = { ...items[i], status: 'error', error: i18n.t('batch_processing_null') };
         }
       } catch (err) {
-        const msg = err instanceof Error ? err.message : 'Unknown error';
+        const msg = err instanceof Error ? err.message : i18n.t('batch_unknown_error');
         items[i] = { ...items[i], status: 'error', error: msg };
       }
     }

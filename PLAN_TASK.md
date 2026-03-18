@@ -1,6 +1,6 @@
 # PLAN_TASK — Retro Pixel Converter
 
-> v1.3.1 에러 핸들링 수정 완료 (2026-03-18). 전체 이력은 `REVISION_HISTORY.md` 참조.
+> v1.4.0 코드 품질 개선 완료 (2026-03-18). 전체 이력은 `REVISION_HISTORY.md` 참조.
 
 ---
 
@@ -27,7 +27,7 @@
 ```bash
 npm run dev          # 개발 서버 (port 1420)
 npm run check        # 타입 체크
-npm test             # 테스트 실행 (290개, 34 files)
+npm test             # 테스트 실행 (362개, 39 files)
 npm run test:watch   # 테스트 워치 모드
 npm run storybook    # Storybook (port 6006)
 ```

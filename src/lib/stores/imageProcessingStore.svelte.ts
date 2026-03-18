@@ -65,8 +65,8 @@ export function createImageProcessingStore() {
     try {
       const img = new Image();
       await new Promise<void>((resolve, reject) => {
-        img.onload = () => resolve();
-        img.onerror = () => reject(new Error('Failed to load image for transform'));
+        img.onload = () => { img.onload = null; img.onerror = null; resolve(); };
+        img.onerror = () => { img.onload = null; img.onerror = null; reject(new Error('Failed to load image for transform')); };
         img.src = originalImageSrc!;
       });
 

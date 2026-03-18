@@ -50,7 +50,7 @@
     <img src={processedSrc} alt={i18n.t('after')} class="onion-img onion-overlay" style:opacity={onionOpacity} style:image-rendering={imageRendering} style:filter={postFilterCss || 'none'} draggable="false" />
     <div class="onion-controls">
       <span class="onion-label">{i18n.t('onion_opacity')}</span>
-      <input type="range" min="0" max="1" step="0.05" bind:value={onionOpacity} class="onion-slider" />
+      <input type="range" min="0" max="1" step="0.05" bind:value={onionOpacity} class="onion-slider" aria-label={i18n.t('onion_opacity')} aria-valuetext="{Math.round(onionOpacity * 100)}%" />
       <span class="onion-value">{Math.round(onionOpacity * 100)}%</span>
     </div>
   </div>

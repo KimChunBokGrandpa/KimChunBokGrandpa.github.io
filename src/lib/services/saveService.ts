@@ -48,6 +48,8 @@ async function imageSrcToBlob(
 
     img.onload = () => {
       clearTimeout(timer);
+      img.onload = null;
+      img.onerror = null;
       const c = document.createElement("canvas");
       c.width = img.naturalWidth;
       c.height = img.naturalHeight;
@@ -61,6 +63,8 @@ async function imageSrcToBlob(
     };
     img.onerror = () => {
       clearTimeout(timer);
+      img.onload = null;
+      img.onerror = null;
       reject(new Error("Failed to load image for save"));
     };
     img.src = src;

@@ -455,6 +455,16 @@ export const en = {
 
   // ─── Unsaved Changes ───
   unsaved_changes: 'Unsaved',
+
+  // ─── Palette Tabs ───
+  palette_tab_favorites: 'Favorites',
+  palette_tab_custom: 'Custom',
+  palette_tab_core: 'Core',
+  palette_original_full_color: 'Original (Full Color)',
+
+  // ─── Batch Errors ───
+  batch_processing_null: 'Processing returned no result',
+  batch_unknown_error: 'Unknown error',
 } as const;
 
 export type TranslationKey = keyof typeof en;

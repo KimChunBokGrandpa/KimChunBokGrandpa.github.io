@@ -15,8 +15,8 @@ export async function exportSvg(processedImageSrc: string): Promise<string> {
   const img = new Image();
   img.crossOrigin = 'anonymous';
   await new Promise<void>((resolve, reject) => {
-    img.onload = () => resolve();
-    img.onerror = () => reject(new Error('Failed to load image'));
+    img.onload = () => { img.onload = null; img.onerror = null; resolve(); };
+    img.onerror = () => { img.onload = null; img.onerror = null; reject(new Error('Failed to load image')); };
     img.src = processedImageSrc;
   });
 

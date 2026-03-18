@@ -162,7 +162,7 @@
   const builtinPaletteLookup = new Map<string, VariantItem>();
   builtinPaletteLookup.set('original', {
     id: 'original',
-    name: 'Original (Full Color)',
+    name: i18n.t('palette_original_full_color'),
     colorCount: 0,
     colors: null,
   });
@@ -221,11 +221,11 @@
 
   let activeThemeName = $derived(
     activeThemeId === '_favorites'
-      ? 'Favorites'
+      ? i18n.t('palette_tab_favorites')
       : activeThemeId === '_custom'
-        ? 'Custom'
+        ? i18n.t('palette_tab_custom')
         : activeThemeId === '_core'
-          ? 'Core'
+          ? i18n.t('palette_tab_core')
           : (PALETTE_THEMES.find((t) => t.themeId === activeThemeId)?.themeName ?? ''),
   );
 

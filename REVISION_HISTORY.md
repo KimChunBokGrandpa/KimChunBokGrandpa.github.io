@@ -2,6 +2,38 @@
 
 ---
 
+## v1.4.0 (2026-03-18)
+
+> Code quality improvements: memory leak fixes, i18n completion, store tests, accessibility, and CSS tokenization.
+
+### Bug Fixes (P1 — Memory Leaks)
+- **Image event handler cleanup** — Added `onload = null; onerror = null` after promise settlement in 5 files: `imageProcessingStore.svelte.ts`, `saveService.ts`, `exportService.ts`, `imageProcessor.ts`, `spritesheetExporter.ts`
+
+### i18n (P2)
+- **Hardcoded strings → i18n** — Replaced 6 hardcoded strings in `PaletteGallery.svelte` (`Original (Full Color)`, `Favorites`, `Custom`, `Core`) and `BatchProcessor.svelte` (error messages) with i18n keys
+- **6 new translation keys** added to en/ko/ja: `palette_tab_favorites`, `palette_tab_custom`, `palette_tab_core`, `palette_original_full_color`, `batch_processing_null`, `batch_unknown_error`
+
+### Test Coverage (P2 — +72 tests)
+- **windowStore.test.ts** (19 tests) — Window state, focus/open/close, taskbar click, localStorage save/restore
+- **zoomPanStore.test.ts** (17 tests) — Zoom bounds, setZoom clamping, resetZoom, zoomToFit, grid toggle, refs
+- **customPaletteStore.test.ts** (12 tests) — CRUD operations, deep-clone, corrupted localStorage
+- **customPresetStore.test.ts** (13 tests) — CRUD, deep-clone, backward-compat exports, corrupted localStorage
+- **gifPlaybackManager.test.ts** (11 tests) — Initial state, cleanup, playback controls, export null-guard
+
+### Accessibility (P3)
+- **CompareView.svelte** — Added `aria-label` and `aria-valuetext` to onion opacity slider
+
+### CSS Tokenization (P3)
+- **theme.css** — Extracted tooltip colors to CSS variables: `--w98-tooltip-bg`, `--w98-tooltip-text`, `--w98-tooltip-border`
+
+### Build & Test Status (v1.4)
+- `svelte-check`: 0 new errors (5 pre-existing), 1 warning (a11y)
+- `vitest`: **362 tests passing** (39 files) — up from 290 (34 files), +72 tests
+- Production build: passes
+- Modified files: 14 (5 bug fixes, 5 i18n, 5 test files, 2 a11y/CSS, 2 docs)
+
+---
+
 ## v1.3.1 (2026-03-18)
 
 > Unhandled promise rejection fixes for GIF loading/playback.

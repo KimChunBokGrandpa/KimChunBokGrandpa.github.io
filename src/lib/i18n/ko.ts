@@ -430,4 +430,14 @@ export const ko: Record<TranslationKey, string> = {
 
   // ─── Unsaved Changes ───
   unsaved_changes: '미적용',
+
+  // ─── Palette Tabs ───
+  palette_tab_favorites: '즐겨찾기',
+  palette_tab_custom: '사용자 정의',
+  palette_tab_core: '기본',
+  palette_original_full_color: '원본 (풀 컬러)',
+
+  // ─── Batch Errors ───
+  batch_processing_null: '처리 결과가 없습니다',
+  batch_unknown_error: '알 수 없는 오류',
 };
