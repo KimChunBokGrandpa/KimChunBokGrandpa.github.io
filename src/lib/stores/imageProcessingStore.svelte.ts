@@ -231,6 +231,10 @@ export function createImageProcessingStore() {
           dimensionCapShown = false;
           processImmediate();
         }
+      }).catch((err) => {
+        console.error('GIF load failed:', err);
+        isProcessing = false;
+        lastError = err instanceof Error ? err.message : String(err);
       });
       return;
     }

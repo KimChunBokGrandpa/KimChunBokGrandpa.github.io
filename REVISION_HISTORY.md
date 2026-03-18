@@ -2,6 +2,23 @@
 
 ---
 
+## v1.3.1 (2026-03-18)
+
+> Unhandled promise rejection fixes for GIF loading/playback.
+
+### Bug Fixes (3 items)
+- **imageProcessingStore.svelte.ts** — Added `.catch()` to `gif.loadGifFile()` promise chain; sets `lastError` and resets `isProcessing` on failure
+- **gifPlaybackManager.svelte.ts** — Added `.catch()` to `showFrame()` call in `seek()` to prevent unhandled rejection during frame navigation
+- **gifPlaybackManager.svelte.ts** — Added `.catch()` to `showFrame(0)` call in `loadGifFile()` to handle initial frame render errors
+
+### Build & Test Status (v1.3.1)
+- `svelte-check`: 0 new errors (5 pre-existing), 1 warning (a11y)
+- `vitest`: **290 tests passing** (34 files) — unchanged
+- Production build: passes
+- Modified files: 2
+
+---
+
 ## v1.3.0 (2026-03-18)
 
 > Code review, bug fixes, performance optimization, and code cleanup.

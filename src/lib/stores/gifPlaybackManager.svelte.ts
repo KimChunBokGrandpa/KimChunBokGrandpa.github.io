@@ -206,7 +206,9 @@ export function createGifPlaybackManager(deps: GifManagerDeps) {
 
   function seek(index: number) {
     stopPlayback();
-    showFrame(index);
+    showFrame(index).catch((err) => {
+      console.error('GIF seek error:', err);
+    });
   }
 
   function cancelExport() {
@@ -345,7 +347,9 @@ export function createGifPlaybackManager(deps: GifManagerDeps) {
           gifCurrentFrame = 0;
           const objectUrl = URL.createObjectURL(file);
           setOriginalSrc(objectUrl);
-          showFrame(0);
+          showFrame(0).catch((err) => {
+            console.error('GIF initial frame error:', err);
+          });
           return true;
         }
       } catch (err) {
