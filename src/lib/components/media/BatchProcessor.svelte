@@ -118,7 +118,12 @@
           },
         );
         if (result) {
-          items[i] = { ...items[i], status: 'done', resultUrl: result, progress: 1 };
+          // Clone blob URL so the service's replaceBlobUrl() won't revoke it
+          // on the next processImage call
+          const resp = await fetch(result);
+          const blob = await resp.blob();
+          const ownedUrl = URL.createObjectURL(blob);
+          items[i] = { ...items[i], status: 'done', resultUrl: ownedUrl, progress: 1 };
         } else {
           items[i] = { ...items[i], status: 'error', error: i18n.t('batch_processing_null') };
         }

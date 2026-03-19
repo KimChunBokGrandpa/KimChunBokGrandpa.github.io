@@ -151,6 +151,22 @@ export async function saveImage(
     }
     return ""; // User cancelled
   } else {
+    // Try Web Share API first (works reliably on mobile browsers)
+    const mime = MIME_MAP[options.format];
+    const file = new File([blobData], filename, { type: mime });
+    if (typeof navigator.share === 'function' && navigator.canShare?.({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file] });
+        return i18n.t('image_downloaded');
+      } catch (err) {
+        // User cancelled share or share failed — fall through to download
+        if (err instanceof Error && err.name === 'AbortError') {
+          return ""; // User cancelled
+        }
+      }
+    }
+
+    // Fallback: programmatic <a> download (desktop browsers)
     const url = URL.createObjectURL(blobData);
     const a = document.createElement("a");
     a.href = url;

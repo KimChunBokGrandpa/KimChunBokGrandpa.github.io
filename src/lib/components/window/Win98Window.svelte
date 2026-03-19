@@ -456,10 +456,12 @@
 
   @media (max-width: 550px) {
     .win98-window {
-      width: 100% !important;
-      height: var(--mobile-h, 100%) !important;
       left: 0 !important;
+      right: 0 !important;
+      width: auto !important;
+      height: var(--mobile-h, 100%) !important;
       top: var(--mobile-t, 0) !important;
+      box-sizing: border-box !important;
     }
     .title-bar {
       min-height: 34px;

@@ -101,6 +101,12 @@
         dragMode = 'move';
         return;
       }
+      // Click outside existing selection: clear it first, don't start new draw
+      hasSelection = false;
+      sw = 0;
+      sh = 0;
+      dragMode = 'none';
+      return;
     }
 
     // New selection
@@ -307,7 +313,12 @@
   {/if}
 
   <!-- Action buttons -->
-  <div class="crop-actions">
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <div
+    class="crop-actions"
+    onmousedown={(e) => { e.stopPropagation(); e.preventDefault(); }}
+    ontouchstart={(e) => { e.stopPropagation(); e.preventDefault(); }}
+  >
     <button
       class="crop-action-btn crop-apply"
       disabled={!hasSelection}
