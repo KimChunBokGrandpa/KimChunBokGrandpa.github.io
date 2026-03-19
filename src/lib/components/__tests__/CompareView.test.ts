@@ -42,7 +42,7 @@ describe('CompareView', () => {
       const { container } = render(CompareView, {
         props: { ...defaultProps, variant: 'side-by-side' },
       });
-      const images = container.querySelectorAll('.sbs-img');
+      const images = container.querySelectorAll<HTMLElement>('.sbs-img');
       // First image (original) should be auto, second (processed) should be pixelated
       expect(images[0].style.imageRendering).toBe('auto');
       expect(images[1].style.imageRendering).toBe('pixelated');
@@ -52,7 +52,7 @@ describe('CompareView', () => {
       const { container } = render(CompareView, {
         props: { ...defaultProps, variant: 'side-by-side', renderMode: 'bilinear' },
       });
-      const images = container.querySelectorAll('.sbs-img');
+      const images = container.querySelectorAll<HTMLElement>('.sbs-img');
       expect(images[1].style.imageRendering).toBe('auto');
     });
   });

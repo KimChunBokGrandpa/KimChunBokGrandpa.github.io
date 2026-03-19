@@ -550,7 +550,7 @@
     flex-shrink: 0;
     font-size: var(--w98-font-size-action);
     font-weight: bold;
-    color: #0a0;
+    color: var(--w98-color-success);
   }
   .pg-item.sel .pg-check {
     color: #8f8;
@@ -571,10 +571,10 @@
     line-height: 1;
   }
   .pg-fav-btn:hover {
-    color: #e8a000;
+    color: var(--w98-color-warning);
   }
   .pg-fav-btn.fav-active {
-    color: #e8a000;
+    color: var(--w98-color-warning);
   }
   .pg-item.sel .pg-fav-btn {
     color: #aaa;
@@ -591,14 +591,14 @@
     cursor: pointer;
     font-size: var(--w98-font-size-sm);
     padding: 0 2px;
-    color: #888;
+    color: var(--w98-text-hint);
     min-width: 0;
     min-height: 0;
     box-shadow: none;
     line-height: 1;
   }
   .pg-export-btn:hover {
-    color: #008000;
+    color: var(--w98-color-success);
   }
   .pg-item.sel .pg-export-btn {
     color: #aaa;
@@ -615,7 +615,7 @@
     cursor: pointer;
     font-size: var(--w98-font-size-action);
     padding: 0 2px;
-    color: #888;
+    color: var(--w98-text-hint);
     min-width: 0;
     min-height: 0;
     box-shadow: none;
@@ -625,7 +625,7 @@
     color: var(--w98-highlight);
   }
   .pg-del-btn:hover {
-    color: #cc0000;
+    color: var(--w98-color-error);
   }
   .pg-item.sel .pg-edit-btn {
     color: #aaa;
@@ -637,13 +637,13 @@
     color: #fff;
   }
   .pg-item.sel .pg-del-btn:hover {
-    color: #ff4444;
+    color: var(--w98-color-error);
   }
 
   /* ── Empty state ── */
   .pg-empty {
     padding: 12px;
-    color: #888;
+    color: var(--w98-text-hint);
     text-align: center;
     font-style: italic;
   }
@@ -667,7 +667,7 @@
 
   .pg-desc {
     margin: 0 0 6px 0;
-    color: #444;
+    color: var(--w98-text-secondary);
     font-style: italic;
   }
 
@@ -700,7 +700,7 @@
   }
 
   .pg-hint {
-    color: #888;
+    color: var(--w98-text-hint);
     text-align: center;
     margin-top: 20px;
     font-style: italic;

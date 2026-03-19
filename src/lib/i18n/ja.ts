@@ -98,6 +98,8 @@ export const ja: Record<TranslationKey, string> = {
   export_btn: '\u30a8\u30af\u30b9\u30dd\u30fc\u30c8',
   import_btn: '\u30a4\u30f3\u30dd\u30fc\u30c8',
   pixel_size: '\u30d4\u30af\u30bb\u30eb\u5316\u30b5\u30a4\u30ba',
+  decrease_pixel_size: '\u30d4\u30af\u30bb\u30eb\u30b5\u30a4\u30ba\u3092\u7e2e\u5c0f',
+  increase_pixel_size: '\u30d4\u30af\u30bb\u30eb\u30b5\u30a4\u30ba\u3092\u62e1\u5927',
   color_quant: '\u8272\u91cf\u5b50\u5316',
   palette: '\u30d1\u30ec\u30c3\u30c8',
   select: '\u9078\u629e >',
@@ -196,6 +198,7 @@ export const ja: Record<TranslationKey, string> = {
 
   auto_process: '\u51e6\u7406\u30e2\u30fc\u30c9',
   auto_process_label: '\u8a2d\u5b9a\u5909\u66f4\u6642\u306b\u81ea\u52d5\u51e6\u7406',
+  auto_process_short: '\u81ea\u52d5',
   apply_now: '\u4eca\u3059\u3050\u9069\u7528',
 
   my_presets: '\u30de\u30a4\u30d7\u30ea\u30bb\u30c3\u30c8',

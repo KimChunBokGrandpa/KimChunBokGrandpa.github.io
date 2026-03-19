@@ -266,6 +266,12 @@ export function createGifPlaybackManager(deps: GifManagerDeps) {
             resizeHeight: procH,
           });
 
+          // Ensure bitmap is closed if abort happens after creation or submit fails
+          if (signal.aborted) {
+            bitmap.close();
+            throw new DOMException('Export cancelled', 'AbortError');
+          }
+
           const message: ImageWorkerMessage = {
             id: `gif-frame-${i}`,
             imageBitmap: bitmap,
@@ -284,10 +290,15 @@ export function createGifPlaybackManager(deps: GifManagerDeps) {
             effectLayers: settings.effectLayers?.map(l => ({ ...l })),
           };
 
-          const result = await pool.submit(message, [bitmap]);
-          completedFrames++;
-          gifProcessingProgress = (completedFrames / totalFrames) * 0.9;
-          return { imageData: result, delay: frame.delay };
+          try {
+            const result = await pool.submit(message, [bitmap]);
+            completedFrames++;
+            gifProcessingProgress = (completedFrames / totalFrames) * 0.9;
+            return { imageData: result, delay: frame.delay };
+          } catch (err) {
+            bitmap.close();
+            throw err;
+          }
         });
 
         const results = await Promise.all(framePromises);

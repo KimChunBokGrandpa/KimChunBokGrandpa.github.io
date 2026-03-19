@@ -56,6 +56,27 @@ class ImageProcessorService {
     return c;
   }
 
+  /** toBlob with a timeout to prevent indefinitely pending promises */
+  private static readonly BLOB_TIMEOUT_MS = 10_000;
+  private toBlobWithTimeout(
+    canvas: HTMLCanvasElement,
+    type: string = "image/png",
+  ): Promise<Blob> {
+    return new Promise<Blob>((resolve, reject) => {
+      const timer = setTimeout(() => {
+        reject(new Error("toBlob timed out"));
+      }, ImageProcessorService.BLOB_TIMEOUT_MS);
+      canvas.toBlob((blob) => {
+        clearTimeout(timer);
+        if (blob) {
+          resolve(blob);
+        } else {
+          reject(new Error("Failed to create image blob"));
+        }
+      }, type);
+    });
+  }
+
   /** Revoke old blob URL and register new one */
   private replaceBlobUrl(newUrl: string): string {
     if (this.lastBlobUrl) {
@@ -113,14 +134,12 @@ class ImageProcessorService {
           this.lastCanvas = resultCanvas;
           if (colorCount !== undefined) this._lastColorCount = colorCount;
           // Use toBlob + createObjectURL instead of toDataURL for memory efficiency
-          resultCanvas.toBlob((blob) => {
-            if (blob) {
-              const url = this.replaceBlobUrl(URL.createObjectURL(blob));
-              pending.resolve(url);
-            } else {
-              pending.reject(new Error("Failed to create image blob"));
-            }
-          }, "image/png");
+          this.toBlobWithTimeout(resultCanvas).then((blob) => {
+            const url = this.replaceBlobUrl(URL.createObjectURL(blob));
+            pending.resolve(url);
+          }).catch((err) => {
+            pending.reject(err);
+          });
         }
       };
       this.worker.onerror = (err) => {
@@ -193,16 +212,8 @@ class ImageProcessorService {
     if (!ctx) throw new Error("Failed to get 2d context");
     ctx.drawImage(img, 0, 0);
     this.lastCanvas = c;
-    return new Promise<string>((resolve, reject) => {
-      c.toBlob((blob) => {
-        if (blob) {
-          const url = this.replaceBlobUrl(URL.createObjectURL(blob));
-          resolve(url);
-        } else {
-          reject(new Error("Failed to create image blob"));
-        }
-      }, "image/png");
-    });
+    const blob = await this.toBlobWithTimeout(c);
+    return this.replaceBlobUrl(URL.createObjectURL(blob));
   }
 
   async processImage(
@@ -255,10 +266,15 @@ class ImageProcessorService {
     }
 
     // Use createImageBitmap to decode off-thread and transfer to worker
-    const bitmap = await createImageBitmap(img, {
-      resizeWidth: procWidth,
-      resizeHeight: procHeight,
-    });
+    let bitmap: ImageBitmap;
+    try {
+      bitmap = await createImageBitmap(img, {
+        resizeWidth: procWidth,
+        resizeHeight: procHeight,
+      });
+    } catch (err) {
+      throw new Error(`Failed to create ImageBitmap: ${err instanceof Error ? err.message : err}`);
+    }
 
     return new Promise<string | null>((resolve, reject) => {
       this.pendingResolvers.set(requestId, { resolve, reject, onProgress });
@@ -284,7 +300,13 @@ class ImageProcessorService {
         effectLayers: settings.effectLayers?.map(l => ({ ...l })),
       };
 
-      this.ensureWorker().postMessage(message, [bitmap]);
+      try {
+        this.ensureWorker().postMessage(message, [bitmap]);
+      } catch (err) {
+        this.pendingResolvers.delete(requestId);
+        bitmap.close();
+        reject(new Error(`Failed to post message to worker: ${err instanceof Error ? err.message : err}`));
+      }
     });
   }
 

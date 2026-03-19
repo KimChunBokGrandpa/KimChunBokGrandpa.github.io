@@ -15,6 +15,32 @@
   --w98-tooltip-text: #000;
   --w98-tooltip-border: #000;
 
+  /* ── Semantic Status Colors ── */
+  --w98-color-error: #c00;
+  --w98-color-error-light: #f8f0f0;
+  --w98-color-error-border: #a44;
+  --w98-color-success: #008000;
+  --w98-color-success-light: #f0f8f0;
+  --w98-color-success-border: #4a4;
+  --w98-color-warning: #e8a000;
+  --w98-color-warning-light: #fff8e0;
+  --w98-color-warning-border: #ffa500;
+
+  /* ── Text Hierarchy ── */
+  --w98-text-secondary: #444;
+  --w98-text-muted: #666;
+  --w98-text-hint: #888;
+  --w98-text-disabled: #999;
+  --w98-text-placeholder: #aaa;
+
+  /* ── Neutral Surface ── */
+  --w98-surface-white: #fff;
+  --w98-surface-subtle: #f8f8f8;
+  --w98-surface-dim: #f0f0f0;
+  --w98-surface-hover: #d0d8e0;
+  --w98-surface-input: #fff;
+  --w98-surface-dark: #000;
+
   /* ── Border / Shadow Colors ── */
   --w98-shadow-dark: #0a0a0a;
   --w98-shadow-mid: grey;

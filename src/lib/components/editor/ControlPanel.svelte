@@ -122,7 +122,7 @@
     <div class="topbar-left">
       <label class="auto-toggle" title={i18n.t('auto_process_label')}>
         <input type="checkbox" bind:checked={autoProcess} />
-        <span>Auto</span>
+        <span>{i18n.t('auto_process_short')}</span>
       </label>
       {#if !autoProcess}
         <button class="apply-now-btn-inline" class:has-changes={hasUnappliedChanges} onclick={() => onApplyNow?.()} disabled={!hasImage}>
@@ -174,6 +174,7 @@
             <button
               class="stepper-btn"
               onclick={() => { settings.pixelSize = Math.max(1, settings.pixelSize - 1); update(); }}
+              aria-label={i18n.t('decrease_pixel_size')}
             >-</button>
             <input
               type="range"
@@ -188,6 +189,7 @@
             <button
               class="stepper-btn"
               onclick={() => { settings.pixelSize = Math.min(10, settings.pixelSize + 1); update(); }}
+              aria-label={i18n.t('increase_pixel_size')}
             >+</button>
             <span class="slider-label">10</span>
           </div>
@@ -335,30 +337,31 @@
     box-shadow: var(--w98-outset-thin);
   }
   .apply-now-btn-inline:hover {
-    background: #d0d0d0;
+    background: var(--w98-surface-active);
   }
   .apply-now-btn-inline:active {
     box-shadow: var(--w98-inset-thin);
   }
   .apply-now-btn-inline:disabled {
     color: var(--w98-shadow-808);
-    cursor: default;
+    cursor: not-allowed;
+    opacity: 0.5;
   }
   .apply-now-btn-inline.has-changes {
-    background: #ffe0e0;
-    color: #c00;
+    background: var(--w98-color-error-light);
+    color: var(--w98-color-error);
     animation: pulse-border 1.5s ease-in-out infinite;
   }
   @keyframes pulse-border {
     0%, 100% { box-shadow: var(--w98-outset-thin); }
-    50% { box-shadow: 0 0 0 2px #c00, var(--w98-outset-thin); }
+    50% { box-shadow: 0 0 0 2px var(--w98-color-error), var(--w98-outset-thin); }
   }
   .unsaved-dot {
     display: inline-block;
     width: 6px;
     height: 6px;
     border-radius: 50%;
-    background: #c00;
+    background: var(--w98-color-error);
     animation: pulse-dot 1s ease-in-out infinite;
     vertical-align: middle;
     margin-right: 2px;
@@ -369,8 +372,8 @@
   }
   .unsaved-badge {
     font-size: var(--w98-font-size-micro);
-    background: #c00;
-    color: #fff;
+    background: var(--w98-color-error);
+    color: var(--w98-surface-white);
     padding: 0 3px;
     border-radius: 3px;
     margin-left: 3px;
@@ -420,15 +423,15 @@
     margin-bottom: -2px;
     cursor: pointer;
     position: relative;
-    color: #444;
+    color: var(--w98-text-secondary);
     transition: background 0.1s;
   }
   .cp-tab:hover {
-    background: #e0dcd4;
+    background: var(--w98-surface);
   }
   .cp-tab-active {
     background: var(--w98-surface);
-    color: #000;
+    color: var(--w98-text);
     border-color: var(--w98-shadow-808) var(--w98-shadow-808) var(--w98-surface);
     z-index: 1;
   }
@@ -438,7 +441,7 @@
   .tab-label {
     white-space: nowrap;
   }
-  @media (max-width: 370px) {
+  @media (max-width: 550px) {
     .tab-label {
       display: none;
     }

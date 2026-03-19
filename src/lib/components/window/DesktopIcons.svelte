@@ -85,7 +85,7 @@
   }
 
   .desktop-icon.icon-selected {
-    background: rgba(0, 0, 128, 0.6);
+    background: color-mix(in srgb, var(--w98-highlight) 60%, transparent);
     border: 1px solid rgba(255, 255, 255, 0.5);
     outline: 1px dashed #fff;
     outline-offset: 1px;

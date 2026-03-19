@@ -106,7 +106,7 @@
   <!-- After (processed) — full background -->
   <img
     src={processedSrc}
-    alt="After"
+    alt={i18n.t('after')}
     class="ba-img ba-after"
     style:image-rendering={imageRendering}
     draggable="false"
@@ -116,7 +116,7 @@
   <div class="ba-before" style:width="{sliderPosition}%">
     <img
       src={originalSrc}
-      alt="Before"
+      alt={i18n.t('before')}
       class="ba-img ba-before-img"
       style:image-rendering="auto"
       style:width="{containerWidth}px"

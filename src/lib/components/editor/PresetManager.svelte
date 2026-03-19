@@ -243,8 +243,8 @@
         placeholder={i18n.t('preset_name_placeholder')}
         onkeydown={(e) => { if (e.key === 'Enter') saveCurrentAsPreset(); if (e.key === 'Escape') showSavePreset = false; }}
       />
-      <button class="preset-share-btn" onclick={saveCurrentAsPreset}>✓</button>
-      <button class="preset-share-btn" onclick={() => { showSavePreset = false; }}>✕</button>
+      <button class="preset-share-btn" onclick={saveCurrentAsPreset} aria-label={i18n.t('save_preset')}>✓</button>
+      <button class="preset-share-btn" onclick={() => { showSavePreset = false; }} aria-label={i18n.t('cancel')}>✕</button>
     {:else}
       <button class="preset-share-btn" onclick={() => { showSavePreset = true; }}>💾 {i18n.t('save_preset')}</button>
     {/if}
@@ -275,7 +275,10 @@
     transition: background 0.1s;
   }
   .preset-btn:hover {
-    background: #e8e8e0;
+    background: var(--w98-surface-active);
+  }
+  .preset-btn:active {
+    box-shadow: var(--w98-inset-thin);
   }
 
   /* ===== Preset Card ===== */
@@ -318,7 +321,7 @@
     line-height: 1;
   }
   .preset-delete:hover {
-    color: #c00;
+    color: var(--w98-color-error);
   }
   .preset-delete:focus-visible {
     outline: 1px solid var(--w98-highlight);
@@ -341,5 +344,9 @@
   .preset-share-btn {
     font-size: var(--w98-font-size-sm);
     padding: 2px 8px;
+    cursor: pointer;
+  }
+  .preset-share-btn:active {
+    box-shadow: var(--w98-inset-thin);
   }
 </style>

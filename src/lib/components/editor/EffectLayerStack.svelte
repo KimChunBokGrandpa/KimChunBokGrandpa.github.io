@@ -199,6 +199,7 @@
           class:active={layer.enabled}
           onclick={() => toggleEffectLayer(layer.id)}
           title={layer.enabled ? i18n.t('effect_enabled') : i18n.t('effect_disabled')}
+          aria-label={layer.enabled ? i18n.t('effect_enabled') : i18n.t('effect_disabled')}
         >{layer.enabled ? '✓' : '○'}</button>
 
         <span class="layer-label">{getEffectLabel(layer)}</span>
@@ -220,6 +221,7 @@
           class="layer-remove"
           onclick={() => removeEffectLayer(layer.id)}
           title={i18n.t('remove_effect')}
+          aria-label={i18n.t('remove_effect')}
         >×</button>
 
         <span class="layer-move-btns">
@@ -324,7 +326,7 @@
     display: flex;
     flex-direction: column;
     gap: 3px;
-    background: #e8e8e0;
+    background: var(--w98-surface-active);
     border: 1px solid var(--w98-surface);
     padding: 4px;
   }
@@ -367,7 +369,7 @@
     align-items: center;
     gap: 4px;
     padding: 3px 4px;
-    background: #e8e8e0;
+    background: var(--w98-surface-active);
     border: 1px solid var(--w98-surface);
     cursor: grab;
     transition: background 0.1s, opacity 0.1s;
@@ -383,7 +385,7 @@
   }
   .effect-layer-item.disabled {
     opacity: 0.5;
-    background: #f0f0f0;
+    background: var(--w98-surface-dim);
   }
   .layer-toggle {
     min-width: 20px;
@@ -396,7 +398,7 @@
     cursor: pointer;
   }
   .layer-toggle.active {
-    color: #008000;
+    color: var(--w98-color-success);
     font-weight: bold;
   }
   .layer-label {
@@ -423,7 +425,7 @@
     text-align: center;
   }
   .layer-remove:hover {
-    color: #c00;
+    color: var(--w98-color-error);
   }
   .layer-move-btns {
     display: flex;
@@ -450,7 +452,7 @@
   }
   .drag-handle {
     font-size: 14px;
-    color: #999;
+    color: var(--w98-text-disabled);
     cursor: grab;
     user-select: none;
     line-height: 1;
@@ -478,7 +480,7 @@
     bottom: 100%;
     left: 0;
     right: 0;
-    background: #fff;
+    background: var(--w98-surface-white);
     border: 1px solid var(--w98-shadow-808);
     box-shadow: 2px 2px 4px rgba(0,0,0,0.2);
     z-index: 10;

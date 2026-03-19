@@ -130,5 +130,9 @@
   }
   .dialog-ok-btn {
     min-width: 75px;
+    cursor: pointer;
+  }
+  .dialog-ok-btn:active {
+    box-shadow: var(--w98-inset-thin);
   }
 </style>

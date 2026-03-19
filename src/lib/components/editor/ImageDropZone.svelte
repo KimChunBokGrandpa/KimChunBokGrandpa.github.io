@@ -168,14 +168,14 @@
     align-items: center;
     border: 2px dashed var(--w98-shadow-808);
     margin: 8px;
-    background-color: #fff;
+    background-color: var(--w98-surface-white);
     overflow: hidden;
     transition: all 0.2s ease;
     cursor: pointer;
   }
 
   .dropzone.dragging {
-    background-color: #d0d8e0;
+    background-color: var(--w98-surface-hover);
     border-color: var(--w98-highlight);
     border-width: 3px;
     box-shadow: inset 0 0 20px rgba(0, 0, 128, 0.08);
@@ -204,7 +204,7 @@
     font-size: 14px;
     font-weight: bold;
     margin: 4px 0;
-    color: #000;
+    color: var(--w98-text);
   }
 
   .drop-or {

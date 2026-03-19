@@ -5,6 +5,7 @@
    */
   import { getPaletteName } from '$lib/utils/palettes';
   import { i18n } from '$lib/i18n/index.svelte';
+  import { tooltip } from '$lib/utils/tooltip';
   import type { ProcessingSettings } from '$lib/types';
 
   let {
@@ -50,8 +51,8 @@
 
 <div class="history-panel">
   <div class="history-controls">
-    <button onclick={onUndo} disabled={history.length === 0} title="{i18n.t('undo')} (Ctrl+Z)">↩ {i18n.t('undo')}</button>
-    <button onclick={onRedo} disabled={redoHistory.length === 0} title="{i18n.t('redo')} (Ctrl+Shift+Z)">↪ {i18n.t('redo')}</button>
+    <button onclick={onUndo} disabled={history.length === 0} title="{i18n.t('undo')} (Ctrl+Z)" use:tooltip>↩ {i18n.t('undo')}</button>
+    <button onclick={onRedo} disabled={redoHistory.length === 0} title="{i18n.t('redo')} (Ctrl+Shift+Z)" use:tooltip>↪ {i18n.t('redo')}</button>
   </div>
 
   <div class="history-list" bind:this={listEl}>
@@ -94,7 +95,7 @@
     display: flex;
     flex-direction: column;
     height: 100%;
-    background: #fff;
+    background: var(--w98-surface-white);
     border: 2px inset var(--w98-shadow-light);
     font-size: var(--w98-font-size-base);
     overflow: hidden;
@@ -112,6 +113,14 @@
     flex: 1;
     padding: 3px 6px;
     font-weight: bold;
+    cursor: pointer;
+  }
+  .history-controls button:active {
+    box-shadow: var(--w98-inset-thin);
+  }
+  .history-controls button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 
   .history-list {
@@ -129,7 +138,7 @@
     padding: 4px 6px;
     margin-bottom: 2px;
     text-align: left;
-    background: #fff;
+    background: var(--w98-surface-white);
     border: 1px solid transparent;
     cursor: pointer;
     font-family: inherit;
@@ -143,7 +152,7 @@
   }
 
   .history-item.past {
-    color: #333;
+    color: var(--w98-text-secondary);
   }
 
   .history-item.current {
@@ -154,7 +163,7 @@
   }
 
   .history-item.future {
-    color: #888;
+    color: var(--w98-text-hint);
     font-style: italic;
   }
 
@@ -195,7 +204,7 @@
     justify-content: center;
     padding: 16px 8px;
     gap: 4px;
-    color: #888;
+    color: var(--w98-text-hint);
     text-align: center;
   }
   .history-empty-icon {
@@ -204,12 +213,12 @@
   }
   .history-empty-text {
     font-size: var(--w98-font-size-base);
-    color: #666;
+    color: var(--w98-text-muted);
     margin: 0;
   }
   .history-empty-hint {
     font-size: var(--w98-font-size-sm);
-    color: #999;
+    color: var(--w98-text-disabled);
     margin: 0;
   }
 </style>

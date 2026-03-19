@@ -132,6 +132,9 @@
   }
 
   // ─── Save All ───
+  /** Delay between downloads to prevent browser throttling of rapid a.click() */
+  const DOWNLOAD_DELAY_MS = 300;
+
   async function saveAll() {
     const doneItems = items.filter(i => i.status === 'done' && i.resultUrl);
     if (doneItems.length === 0) {
@@ -139,9 +142,20 @@
       return;
     }
 
-    for (const item of doneItems) {
+    for (let i = 0; i < doneItems.length; i++) {
+      const item = doneItems[i];
       try {
-        await saveImage(item.resultUrl!, { format: saveFormat, quality: saveQuality });
+        // Strip extension from original filename for custom naming
+        const baseName = item.name.replace(/\.[^.]+$/, '');
+        await saveImage(item.resultUrl!, {
+          format: saveFormat,
+          quality: saveQuality,
+          filename: `retro_${baseName}`,
+        });
+        // Delay between downloads so the browser processes each one
+        if (i < doneItems.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, DOWNLOAD_DELAY_MS));
+        }
       } catch (err) {
         console.error(`Failed to save ${item.name}:`, err);
       }
@@ -344,13 +358,13 @@
     gap: 6px;
     width: 100%;
     padding: 3px 4px;
-    background: #f8f8f8;
-    border: 1px solid #ccc;
+    background: var(--w98-surface-subtle);
+    border: 1px solid var(--w98-shadow-light);
     cursor: pointer;
   }
-  .batch-item:hover { background: #e0e8f0; border-color: var(--w98-highlight); }
-  .batch-item.item-done { border-color: #4a4; background: #f0f8f0; }
-  .batch-item.item-error { border-color: #a44; background: #f8f0f0; }
+  .batch-item:hover { background: var(--w98-surface-hover); border-color: var(--w98-highlight); }
+  .batch-item.item-done { border-color: var(--w98-color-success-border); background: var(--w98-color-success-light); }
+  .batch-item.item-error { border-color: var(--w98-color-error-border); background: var(--w98-color-error-light); }
   .batch-item.item-processing { border-color: #44a; background: #f0f0f8; }
 
   .batch-thumb {
@@ -464,7 +478,7 @@
     font-size: var(--w98-font-size-sm);
     color: #444;
   }
-  .error-text { color: #a00; }
+  .error-text { color: var(--w98-color-error); }
   .batch-actions {
     display: flex;
     gap: 4px;

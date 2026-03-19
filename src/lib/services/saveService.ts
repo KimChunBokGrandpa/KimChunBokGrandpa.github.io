@@ -12,6 +12,7 @@ export type SaveFormat = "png" | "jpeg" | "webp";
 export interface SaveOptions {
   format: SaveFormat;
   quality: number; // 0.0 ~ 1.0 (only for JPEG/WebP)
+  filename?: string; // Custom filename (without extension)
 }
 
 const MIME_MAP: Record<SaveFormat, string> = {
@@ -74,16 +75,22 @@ async function imageSrcToBlob(
 /**
  * Convert a canvas directly to Blob (avoids re-decoding from URL).
  */
+const BLOB_TIMEOUT_MS = 10_000;
+
 function canvasToBlob(
   canvas: HTMLCanvasElement,
   format: SaveFormat,
   quality: number,
 ): Promise<Blob> {
   return new Promise<Blob>((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error("toBlob timed out"));
+    }, BLOB_TIMEOUT_MS);
     const mime = MIME_MAP[format];
     const q = format === "png" ? undefined : quality;
     canvas.toBlob(
       (blob) => {
+        clearTimeout(timer);
         if (blob) resolve(blob);
         else reject(new Error("Failed to create blob from canvas"));
       },
@@ -121,7 +128,9 @@ export async function saveImage(
     blobData = await imageSrcToBlob(processedImageSrc, options.format, options.quality);
   }
   const ext = EXT_MAP[options.format];
-  const filename = `retro_pixel_${Date.now()}.${ext}`;
+  const filename = options.filename
+    ? `${options.filename}.${ext}`
+    : `retro_pixel_${Date.now()}.${ext}`;
 
   if (isTauri) {
     const { save } = await import("@tauri-apps/plugin-dialog");

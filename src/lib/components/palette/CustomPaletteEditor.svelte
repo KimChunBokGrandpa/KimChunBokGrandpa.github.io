@@ -247,7 +247,7 @@
     gap: 2px;
     min-height: 28px;
     padding: 4px;
-    background: #fff;
+    background: var(--w98-surface-white);
     border: 2px inset var(--w98-shadow-light);
   }
 
@@ -297,7 +297,7 @@
   }
 
   .cpe-hint {
-    color: #888;
+    color: var(--w98-text-hint);
     font-style: italic;
     padding: 4px;
   }
@@ -339,6 +339,10 @@
   .cpe-actions button {
     padding: 3px 12px;
     font-weight: bold;
+    cursor: pointer;
+  }
+  .cpe-actions button:active {
+    box-shadow: var(--w98-inset-thin);
   }
 
   .cpe-actions button:disabled {
@@ -383,7 +387,7 @@
     gap: 1px;
     margin-top: 4px;
     padding: 3px;
-    background: #fff;
+    background: var(--w98-surface-white);
     border: 2px inset var(--w98-shadow-light);
     min-height: 16px;
   }

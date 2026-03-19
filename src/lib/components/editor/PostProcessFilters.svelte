@@ -45,12 +45,16 @@
   }
   .pf-label {
     font-size: var(--w98-font-size-sm);
-    color: #333;
+    color: var(--w98-text-secondary);
   }
   .pf-reset {
     font-size: var(--w98-font-size-sm);
     padding: 2px 8px;
     margin-top: 2px;
     width: 100%;
+    cursor: pointer;
+  }
+  .pf-reset:active {
+    box-shadow: var(--w98-inset-thin);
   }
 </style>

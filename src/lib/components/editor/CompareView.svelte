@@ -145,7 +145,7 @@
   }
   .onion-value {
     font-size: var(--w98-font-size-sm);
-    color: #0f0;
+    color: var(--w98-color-success);
     font-family: 'Courier New', monospace;
     font-weight: bold;
     min-width: 32px;

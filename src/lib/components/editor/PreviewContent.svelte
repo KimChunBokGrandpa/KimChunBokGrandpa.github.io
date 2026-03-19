@@ -172,6 +172,8 @@
       `transform:translate(calc(-50% + ${tx}px), calc(-50% + ${ty}px));`
     );
   });
+
+  let hasImage = $derived(!!processedImageSrc);
 </script>
 
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
@@ -183,14 +185,14 @@
   bind:this={zp.previewContainer}
   onclick={handlePreviewClick}
   onkeydown={handlePreviewKeydown}
-  onwheel={zp.handleWheel}
-  onmousedown={zp.handleMouseDown}
-  onmousemove={zp.handleMouseMove}
-  onmouseup={zp.handleMouseUp}
-  onmouseleave={zp.handleMouseUp}
-  ontouchstart={zp.handleTouchStart}
-  ontouchmove={zp.handleTouchMove}
-  ontouchend={zp.handleTouchEnd}
+  onwheel={cropModeActive ? undefined : zp.handleWheel}
+  onmousedown={cropModeActive ? undefined : zp.handleMouseDown}
+  onmousemove={cropModeActive ? undefined : zp.handleMouseMove}
+  onmouseup={cropModeActive ? undefined : zp.handleMouseUp}
+  onmouseleave={cropModeActive ? undefined : zp.handleMouseUp}
+  ontouchstart={cropModeActive ? undefined : zp.handleTouchStart}
+  ontouchmove={cropModeActive ? undefined : zp.handleTouchMove}
+  ontouchend={cropModeActive ? undefined : zp.handleTouchEnd}
   role="application"
   tabindex="0"
   aria-label={i18n.t('image_preview')}
@@ -252,6 +254,7 @@
         onCancel={() => { cropModeActive = false; }}
       />
     {/if}
+    <!-- Processing Overlay (simplified) -->
     {#if isProcessing}
       <div class="processing-overlay">
         <div class="processing-indicator">
@@ -259,133 +262,120 @@
             <div class="progress-bar"></div>
           </div>
           <span class="processing-text">{i18n.t('applying_settings')}</span>
-          <span class="processing-palette">🎨 {getPaletteName(processingSettings.palette)}</span>
         </div>
       </div>
     {/if}
-    <!-- Toolbar: grouped and labeled for clarity -->
-    <div class="toolbar-container">
-      <!-- Row 1: Settings + Transform + Compare + Info -->
-      <div class="toolbar-row toolbar-top">
-        <div class="toolbar-group">
-          <button
-            class="zoom-btn"
-            onclick={(e) => { e.stopPropagation(); onOpenSettings(); }}
-            title={i18n.t('open_settings')}
-            aria-label={i18n.t('btn_open_settings')}
-            use:tooltip>⚙️</button>
-        </div>
-        <div class="toolbar-group" aria-label={i18n.t('toolbar_transform')}>
-          <span class="toolbar-group-label">{i18n.t('toolbar_transform')}</span>
-          <div class="toolbar-group-buttons">
-            <button class="zoom-btn" onclick={() => onRotate?.(-90)} title={i18n.t('rotate_left')} aria-label={i18n.t('btn_rotate_left')} use:tooltip>↺</button>
-            <button class="zoom-btn" onclick={() => onRotate?.(90)} title={i18n.t('rotate_right')} aria-label={i18n.t('btn_rotate_right')} use:tooltip>↻</button>
-            <button
-              class="zoom-btn"
-              class:grid-active={cropModeActive}
-              onclick={() => { cropModeActive = !cropModeActive; if (cropModeActive) { eyedropperActive = false; eyedropperOverlay?.dismiss(); } }}
-              title={cropModeActive ? i18n.t('crop_active') : i18n.t('crop')}
-              aria-label={cropModeActive ? i18n.t('crop_active') : i18n.t('crop')}
-              aria-pressed={cropModeActive}
-              use:tooltip>✂</button>
-            {#if currentRotation !== 0 || hasCrop}
-              <button
-                class="zoom-btn"
-                onclick={() => { onResetTransform?.(); cropModeActive = false; }}
-                title={i18n.t('reset_transform')}
-                aria-label={i18n.t('btn_reset_transform')}
-                use:tooltip>⟲</button>
-            {/if}
-          </div>
-        </div>
-        <div class="toolbar-group">
-          <button
-            class="zoom-btn"
-            class:compare-active={compareMode}
-            onclick={() => { compareMode = !compareMode; }}
-            title={compareMode ? i18n.t('exit_compare') : i18n.t('compare_before_after')}
-            aria-label={i18n.t('btn_compare_toggle')}
-            aria-pressed={compareMode}
-            use:tooltip
-          >{compareMode ? '🔀' : '⚖️'}</button>
-          {#if compareMode}
-            <button
-              class="zoom-btn compare-variant-btn"
-              onclick={cycleCompareVariant}
-              title="{i18n.t('compare_mode_cycle')}: {i18n.t(COMPARE_VARIANT_LABELS[compareVariant])}"
-              aria-label={i18n.t('btn_compare_variant')}
-              use:tooltip
-            >{compareVariantIcon}</button>
-          {/if}
-        </div>
-        {#if !compareMode && displayedWidth > 0 && displayedHeight > 0}
-          <div class="toolbar-group toolbar-info">
-            <div class="zoom-info" title={i18n.t('image_resolution')} use:tooltip>{displayedWidth}×{displayedHeight}</div>
-            {#if colorCount > 0}
-              <div class="zoom-info color-count" title={i18n.t('unique_colors')} use:tooltip>🎨 {colorCount}</div>
-            {/if}
-          </div>
+    <!-- Status bar: top-left info -->
+    {#if hasImage && !compareMode}
+      <div class="status-bar">
+        {#if displayedWidth > 0 && displayedHeight > 0}
+          <span class="status-item" title={i18n.t('image_resolution')} use:tooltip>{displayedWidth}x{displayedHeight}</span>
         {/if}
+        {#if colorCount > 0}
+          <span class="status-item status-colors" title={i18n.t('unique_colors')} use:tooltip>{colorCount} colors</span>
+        {/if}
+        <span class="status-item">{Math.round(zp.zoomLevel * 100)}%</span>
       </div>
-      <!-- Row 2: Zoom + View tools (only in normal mode) -->
+    {/if}
+    <!-- Toolbar: single row, grouped by dividers -->
+    <div class="toolbar">
+      <!-- Settings -->
+      <button
+        class="tb-btn"
+        onclick={(e) => { e.stopPropagation(); onOpenSettings(); }}
+        title={i18n.t('open_settings')}
+        aria-label={i18n.t('btn_open_settings')}
+        use:tooltip>⚙️</button>
+      <span class="tb-sep"></span>
+      <!-- Transform -->
+      <button class="tb-btn" onclick={() => onRotate?.(-90)} title={i18n.t('rotate_left')} aria-label={i18n.t('btn_rotate_left')} use:tooltip>↺</button>
+      <button class="tb-btn" onclick={() => onRotate?.(90)} title={i18n.t('rotate_right')} aria-label={i18n.t('btn_rotate_right')} use:tooltip>↻</button>
+      <button
+        class="tb-btn"
+        class:tb-active={cropModeActive}
+        onclick={() => { cropModeActive = !cropModeActive; if (cropModeActive) { eyedropperActive = false; eyedropperOverlay?.dismiss(); } }}
+        title={cropModeActive ? i18n.t('crop_active') : i18n.t('crop')}
+        aria-label={cropModeActive ? i18n.t('crop_active') : i18n.t('crop')}
+        aria-pressed={cropModeActive}
+        use:tooltip>✂</button>
+      {#if currentRotation !== 0 || hasCrop}
+        <button
+          class="tb-btn"
+          onclick={() => { onResetTransform?.(); cropModeActive = false; }}
+          title={i18n.t('reset_transform')}
+          aria-label={i18n.t('btn_reset_transform')}
+          use:tooltip>⟲</button>
+      {/if}
+      <span class="tb-sep"></span>
+      <!-- Compare -->
+      <button
+        class="tb-btn"
+        class:tb-active={compareMode}
+        onclick={() => { compareMode = !compareMode; }}
+        title={compareMode ? i18n.t('exit_compare') : i18n.t('compare_before_after')}
+        aria-label={i18n.t('btn_compare_toggle')}
+        aria-pressed={compareMode}
+        use:tooltip
+      >⚖️</button>
+      {#if compareMode}
+        <button
+          class="tb-btn"
+          onclick={cycleCompareVariant}
+          title="{i18n.t('compare_mode_cycle')}: {i18n.t(COMPARE_VARIANT_LABELS[compareVariant])}"
+          aria-label={i18n.t('btn_compare_variant')}
+          use:tooltip
+        >{compareVariantIcon}</button>
+      {/if}
       {#if !compareMode}
-        <div class="toolbar-row toolbar-bottom">
-          <div class="toolbar-group" aria-label={i18n.t('toolbar_zoom')}>
-            <span class="toolbar-group-label">{i18n.t('toolbar_zoom')}</span>
-            <div class="toolbar-group-buttons">
-              <button class="zoom-btn" onclick={zp.zoomIn} title={i18n.t('zoom_in')} aria-label={i18n.t('btn_zoom_in')} use:tooltip>+</button>
-              <div class="zoom-input-container">
-                <input
-                  type="number"
-                  class="zoom-input"
-                  min="25"
-                  max="800"
-                  value={Math.round(zp.zoomLevel * 100)}
-                  onchange={(e) => {
-                    const val = parseInt(e.currentTarget.value);
-                    if (!isNaN(val)) {
-                      const clamped = Math.max(25, Math.min(800, val));
-                      zp.setZoom(clamped / 100);
-                    }
-                  }}
-                  title={i18n.t('set_zoom')}
-                />
-                <span class="zoom-percent">%</span>
-              </div>
-              <button class="zoom-btn" onclick={zp.zoomOut} title={i18n.t('zoom_out')} aria-label={i18n.t('btn_zoom_out')} use:tooltip>−</button>
-              <button class="zoom-btn" onclick={zp.zoomToFit} title={i18n.t('fit_to_window')} aria-label={i18n.t('btn_fit_to_window')} use:tooltip>⊡</button>
-            </div>
-          </div>
-          <div class="toolbar-group" aria-label={i18n.t('toolbar_view')}>
-            <span class="toolbar-group-label">{i18n.t('toolbar_view')}</span>
-            <div class="toolbar-group-buttons">
-              <button
-                class="zoom-btn"
-                class:grid-active={zp.showGrid}
-                onclick={() => { zp.showGrid = !zp.showGrid; }}
-                title={zp.showGrid ? i18n.t('hide_pixel_grid') : i18n.t('show_pixel_grid')}
-                aria-label={zp.showGrid ? i18n.t('hide_pixel_grid') : i18n.t('show_pixel_grid')}
-                aria-pressed={zp.showGrid}
-                use:tooltip>#</button>
-              <button
-                class="zoom-btn"
-                class:grid-active={tileMode}
-                onclick={() => { tileMode = !tileMode; }}
-                title={tileMode ? i18n.t('exit_tile') : i18n.t('tile_preview')}
-                aria-label={tileMode ? i18n.t('exit_tile') : i18n.t('tile_preview')}
-                aria-pressed={tileMode}
-                use:tooltip>⊞</button>
-              <button
-                class="zoom-btn"
-                class:grid-active={eyedropperActive}
-                onclick={() => { eyedropperActive = !eyedropperActive; eyedropperOverlay?.dismiss(); }}
-                title={eyedropperActive ? i18n.t('exit_eyedropper') : i18n.t('eyedropper')}
-                aria-label={eyedropperActive ? i18n.t('exit_eyedropper') : i18n.t('eyedropper')}
-                aria-pressed={eyedropperActive}
-                use:tooltip>💧</button>
-            </div>
-          </div>
+        <span class="tb-sep"></span>
+        <!-- Zoom -->
+        <button class="tb-btn" onclick={zp.zoomOut} title={i18n.t('zoom_out')} aria-label={i18n.t('btn_zoom_out')} use:tooltip>−</button>
+        <div class="zoom-input-container">
+          <input
+            type="number"
+            class="zoom-input"
+            min="25"
+            max="800"
+            value={Math.round(zp.zoomLevel * 100)}
+            onchange={(e) => {
+              const val = parseInt(e.currentTarget.value);
+              if (!isNaN(val)) {
+                const clamped = Math.max(25, Math.min(800, val));
+                zp.setZoom(clamped / 100);
+              }
+            }}
+            title={i18n.t('set_zoom')}
+          />
+          <span class="zoom-percent">%</span>
         </div>
+        <button class="tb-btn" onclick={zp.zoomIn} title={i18n.t('zoom_in')} aria-label={i18n.t('btn_zoom_in')} use:tooltip>+</button>
+        <button class="tb-btn" onclick={zp.zoomToFit} title={i18n.t('fit_to_window')} aria-label={i18n.t('btn_fit_to_window')} use:tooltip>⊡</button>
+        <span class="tb-sep"></span>
+        <!-- View tools -->
+        <button
+          class="tb-btn"
+          class:tb-active={zp.showGrid}
+          onclick={() => { zp.showGrid = !zp.showGrid; }}
+          title={zp.showGrid ? i18n.t('hide_pixel_grid') : i18n.t('show_pixel_grid')}
+          aria-label={zp.showGrid ? i18n.t('hide_pixel_grid') : i18n.t('show_pixel_grid')}
+          aria-pressed={zp.showGrid}
+          use:tooltip>#</button>
+        <button
+          class="tb-btn"
+          class:tb-active={tileMode}
+          onclick={() => { tileMode = !tileMode; }}
+          title={tileMode ? i18n.t('exit_tile') : i18n.t('tile_preview')}
+          aria-label={tileMode ? i18n.t('exit_tile') : i18n.t('tile_preview')}
+          aria-pressed={tileMode}
+          use:tooltip>⊞</button>
+        <button
+          class="tb-btn"
+          class:tb-active={eyedropperActive}
+          onclick={() => { eyedropperActive = !eyedropperActive; eyedropperOverlay?.dismiss(); }}
+          title={eyedropperActive ? i18n.t('exit_eyedropper') : i18n.t('eyedropper')}
+          aria-label={eyedropperActive ? i18n.t('exit_eyedropper') : i18n.t('eyedropper')}
+          aria-pressed={eyedropperActive}
+          use:tooltip>💧</button>
       {/if}
     </div>
     <!-- Eyedropper Color Tooltip -->
@@ -415,7 +405,6 @@
   {:else if originalImageSrc}
     <div class="initial-processing">
       <div class="processing-indicator">
-        <span class="initial-spinner">⏳</span>
         <div class="progress-container progress-wide">
           <div class="progress-bar"></div>
         </div>
@@ -435,7 +424,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background-color: #000;
+    background-color: var(--w98-surface-dark);
     overflow: hidden;
     min-height: 0;
     cursor: default;
@@ -462,32 +451,29 @@
     transform-origin: center center;
   }
 
-  /* ===== Initial Processing ===== */
-  .initial-processing {
+  /* ===== Status Bar (top-left) ===== */
+  .status-bar {
     position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    color: #0f0;
-    font-family: 'Courier New', Courier, monospace;
-    font-size: 14px;
+    top: 6px;
+    left: 6px;
     display: flex;
-    flex-direction: column;
-    align-items: center;
+    gap: 1px;
+    z-index: 6;
+    pointer-events: none;
   }
-  .initial-spinner {
-    font-size: 24px;
-    margin-bottom: 8px;
-    display: inline-block;
-    animation: spin-pulse 1.2s ease-in-out infinite;
+  .status-item {
+    font-size: var(--w98-font-size-sm);
+    font-family: 'Courier New', Courier, monospace;
+    font-weight: bold;
+    color: #ccc;
+    padding: 2px 6px;
+    background: rgba(0, 0, 0, 0.55);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    white-space: nowrap;
+    line-height: 1.2;
   }
-  @keyframes spin-pulse {
-    0% { transform: rotate(0deg) scale(1); }
-    50% { transform: rotate(180deg) scale(1.15); }
-    100% { transform: rotate(360deg) scale(1); }
-  }
-  .progress-wide {
-    width: 200px;
+  .status-colors {
+    color: #8f8;
   }
 
   /* ===== Processing Overlay ===== */
@@ -505,99 +491,80 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 4px;
-    background: rgba(0, 0, 128, 0.9);
-    border: 2px outset var(--w98-shadow-light);
-    padding: 8px 16px;
+    gap: 6px;
+    background: rgba(0, 0, 0, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    padding: 10px 20px;
     color: #fff;
     font-size: var(--w98-font-size-base);
     font-family: 'Courier New', Courier, monospace;
     font-weight: bold;
-    text-shadow: 1px 1px 0 #000;
+  }
+  .processing-text {
+    font-size: var(--w98-font-size-sm);
+    opacity: 0.8;
   }
   .progress-container {
-    width: 120px;
-    height: 12px;
-    background: #000;
-    border: 2px inset var(--w98-shadow-light);
+    width: 140px;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
     position: relative;
     overflow: hidden;
   }
   .progress-bar {
     position: absolute;
-    top: 0;
-    left: 0;
-    bottom: 0;
-    background: repeating-linear-gradient(
-      90deg,
-      var(--w98-highlight) 0px,
-      var(--w98-highlight) 8px,
-      transparent 8px,
-      transparent 10px
-    );
-    animation: progressSlide 1.5s linear infinite;
-    width: 200%;
+    inset: 0;
+    background: linear-gradient(90deg, var(--w98-highlight), #4444ff);
+    animation: progressSlide 1.2s ease-in-out infinite;
+    transform-origin: left;
+  }
+  .progress-wide {
+    width: 200px;
   }
 
   @keyframes progressSlide {
-    from {
-      transform: translateX(-50%);
-    }
-    to {
-      transform: translateX(0);
-    }
+    0% { transform: scaleX(0); opacity: 0.6; }
+    50% { transform: scaleX(1); opacity: 1; }
+    100% { transform: scaleX(0); opacity: 0.6; }
   }
 
-  /* ===== Toolbar Container ===== */
-  .toolbar-container {
+  /* ===== Initial Processing ===== */
+  .initial-processing {
     position: absolute;
-    bottom: 6px;
-    right: 6px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #ccc;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 14px;
     display: flex;
     flex-direction: column;
+    align-items: center;
+  }
+
+  /* ===== Toolbar (single row, bottom-center) ===== */
+  .toolbar {
+    position: absolute;
+    bottom: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
     gap: 2px;
     z-index: 6;
-    align-items: flex-end;
+    background: rgba(192, 192, 192, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 3px;
+    padding: 2px 4px;
+    backdrop-filter: blur(4px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   }
-  .toolbar-row {
-    display: flex;
-    gap: 2px;
-    align-items: center;
-  }
-  .toolbar-group {
-    display: flex;
-    gap: 1px;
-    align-items: center;
-    background: rgba(192, 192, 192, 0.6);
-    border-radius: var(--w98-radius-sm);
-    padding: 1px;
-  }
-  .toolbar-group + .toolbar-group {
-    margin-left: 3px;
-  }
-  .toolbar-group-label {
-    font-size: var(--w98-font-size-micro);
-    color: #fff;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    padding: 0 3px;
-    opacity: 0.7;
-    font-weight: bold;
-    white-space: nowrap;
-  }
-  .toolbar-group-buttons {
-    display: flex;
-    gap: 1px;
-    align-items: center;
-  }
-  .toolbar-info {
-    background: transparent;
-  }
-  .zoom-btn {
-    min-width: 22px;
-    height: 20px;
+  .tb-btn {
+    min-width: 24px;
+    height: 24px;
     padding: 0 4px;
-    font-size: var(--w98-font-size-base);
+    font-size: var(--w98-font-size-action);
     font-weight: bold;
     font-family: inherit;
     background: var(--w98-surface);
@@ -607,36 +574,46 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    flex-shrink: 0;
   }
-  .zoom-btn:active {
+  .tb-btn:hover {
+    background: var(--w98-surface-active);
+  }
+  .tb-btn:active {
     box-shadow: var(--w98-inset-thin);
-    padding: 1px 3px -1px 5px;
   }
-  .zoom-info {
-    font-size: var(--w98-font-size-base);
-    font-family: 'Courier New', Courier, monospace;
-    font-weight: bold;
+  .tb-active {
+    background: var(--w98-highlight);
     color: #fff;
-    display: flex;
-    align-items: center;
-    padding: 0 4px;
-    background: #000;
-    border: 1px inset var(--w98-shadow-light);
+    box-shadow: var(--w98-inset-thin);
   }
+  .tb-active:hover {
+    background: color-mix(in srgb, var(--w98-highlight) 80%, #000);
+  }
+  .tb-sep {
+    width: 1px;
+    height: 18px;
+    background: rgba(0, 0, 0, 0.2);
+    margin: 0 2px;
+    flex-shrink: 0;
+  }
+
+  /* Zoom input */
   .zoom-input-container {
     display: flex;
     align-items: center;
     background: #fff;
-    border: 2px inset var(--w98-shadow-light);
-    height: 20px;
+    border: 1px inset var(--w98-shadow-light);
+    height: 22px;
     padding: 0 2px 0 4px;
+    flex-shrink: 0;
   }
   .zoom-input {
-    width: 32px;
-    height: 14px;
+    width: 30px;
+    height: 16px;
     border: none;
-    font-family: inherit;
-    font-size: var(--w98-font-size-base);
+    font-family: 'Courier New', monospace;
+    font-size: var(--w98-font-size-sm);
     text-align: right;
     outline: none;
     background: transparent;
@@ -648,68 +625,46 @@
     margin: 0;
   }
   .zoom-percent {
-    font-size: var(--w98-font-size-base);
-    font-family: inherit;
-    color: #000;
+    font-size: var(--w98-font-size-sm);
+    font-family: 'Courier New', monospace;
+    color: #666;
     margin-left: 1px;
   }
-  .compare-active,
-  .grid-active {
-    background: var(--w98-highlight);
-    color: #fff;
-    box-shadow: var(--w98-inset-thin);
-  }
 
-  /* ===== Color Count ===== */
-  .color-count {
-    background: var(--w98-highlight);
-    color: #0f0;
-    border-color: var(--w98-highlight);
-    font-size: var(--w98-font-size-sm);
-    margin-left: 2px;
-  }
-
-  /* ===== Compare Variant Button ===== */
-  .compare-variant-btn {
-    font-size: var(--w98-font-size-caption) !important;
-  }
-
+  /* ===== Mobile ===== */
   @media (max-width: 550px) {
-    .toolbar-container {
-      bottom: 2px;
-      left: 2px;
-      right: 2px;
-      gap: 1px;
-      align-items: stretch;
-    }
-    .toolbar-row {
+    .toolbar {
+      bottom: 4px;
+      left: 4px;
+      right: 4px;
+      transform: none;
       overflow-x: auto;
       flex-wrap: nowrap;
       -webkit-overflow-scrolling: touch;
       scrollbar-width: none;
+      padding: 3px 4px;
     }
-    .toolbar-row::-webkit-scrollbar {
+    .toolbar::-webkit-scrollbar {
       display: none;
     }
-    .toolbar-group {
-      padding: 0;
-      flex-shrink: 0;
+    .tb-btn {
+      min-width: 36px;
+      height: 36px;
+      font-size: var(--w98-font-size-icon);
     }
-    .toolbar-group-label {
-      display: none;
-    }
-    .zoom-btn {
-      min-width: 32px;
-      height: 32px;
-      padding: 0 4px;
-      font-size: var(--w98-font-size-base);
+    .tb-sep {
+      height: 24px;
     }
     .zoom-input-container {
       display: none;
     }
-    .zoom-info {
-      font-size: var(--w98-font-size-sm);
-      height: 32px;
+    .status-bar {
+      top: 4px;
+      left: 4px;
+    }
+    .status-item {
+      font-size: var(--w98-font-size-caption);
+      padding: 1px 4px;
     }
   }
 
@@ -735,7 +690,7 @@
     font-size: var(--w98-font-size-caption);
     font-weight: bold;
     padding: 2px 6px;
-    background: rgba(0, 0, 128, 0.8);
+    background: rgba(0, 0, 0, 0.6);
     color: #fff;
     letter-spacing: 1px;
     pointer-events: none;

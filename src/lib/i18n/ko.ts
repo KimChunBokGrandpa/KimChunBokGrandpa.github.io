@@ -98,6 +98,8 @@ export const ko: Record<TranslationKey, string> = {
   export_btn: '\ub0b4\ubcf4\ub0b4\uae30',
   import_btn: '\uac00\uc838\uc624\uae30',
   pixel_size: '\ud53d\uc140\ud654 \ud06c\uae30',
+  decrease_pixel_size: '\ud53d\uc140 \ud06c\uae30 \uac10\uc18c',
+  increase_pixel_size: '\ud53d\uc140 \ud06c\uae30 \uc99d\uac00',
   color_quant: '\uc0c9\uc0c1 \uc591\uc790\ud654',
   palette: '\ud314\ub808\ud2b8',
   select: '\uc120\ud0dd >',
@@ -196,6 +198,7 @@ export const ko: Record<TranslationKey, string> = {
 
   auto_process: '\ucc98\ub9ac \ubaa8\ub4dc',
   auto_process_label: '\uc124\uc815 \ubcc0\uacbd \uc2dc \uc790\ub3d9 \ucc98\ub9ac',
+  auto_process_short: '\uc790\ub3d9',
   apply_now: '\uc9c0\uae08 \uc801\uc6a9',
 
   my_presets: '\ub0b4 \ud504\ub9ac\uc14b',

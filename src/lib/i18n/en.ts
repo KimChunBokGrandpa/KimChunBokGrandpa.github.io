@@ -106,6 +106,8 @@ export const en = {
   export_btn: 'Export',
   import_btn: 'Import',
   pixel_size: 'Pixelation Size',
+  decrease_pixel_size: 'Decrease pixel size',
+  increase_pixel_size: 'Increase pixel size',
   color_quant: 'Color Quantization',
   palette: 'Palette',
   select: 'Select >',
@@ -210,6 +212,7 @@ export const en = {
   // ─── Auto-Process ───
   auto_process: 'Processing Mode',
   auto_process_label: 'Auto-process on settings change',
+  auto_process_short: 'Auto',
   apply_now: 'Apply Now',
 
   // ─── Custom Presets ───

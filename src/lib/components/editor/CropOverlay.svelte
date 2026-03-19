@@ -167,6 +167,7 @@
   }
 
   function handlePointerMove(e: MouseEvent) {
+    e.stopPropagation();
     if (dragMode === 'none') {
       // Update cursor based on hover position
       updateCursor(e);
@@ -178,6 +179,7 @@
   }
 
   function handlePointerUp(e: MouseEvent) {
+    e.stopPropagation();
     if (dragMode === 'none') return;
     e.preventDefault();
     endDrag();
@@ -202,6 +204,7 @@
 
   // Touch support
   function handleTouchStart(e: TouchEvent) {
+    e.stopPropagation();
     if (e.touches.length !== 1) return;
     e.preventDefault();
     const pos = getPointerPos(e.touches[0]);
@@ -209,6 +212,7 @@
   }
 
   function handleTouchMove(e: TouchEvent) {
+    e.stopPropagation();
     if (dragMode === 'none' || e.touches.length !== 1) return;
     e.preventDefault();
     const pos = getPointerPos(e.touches[0]);
@@ -216,6 +220,7 @@
   }
 
   function handleTouchEnd(e: TouchEvent) {
+    e.stopPropagation();
     if (dragMode === 'none') return;
     e.preventDefault();
     endDrag();
@@ -346,7 +351,7 @@
     flex-direction: column;
     align-items: center;
     gap: 4px;
-    background: rgba(0, 0, 128, 0.8);
+    background: color-mix(in srgb, var(--w98-highlight) 80%, transparent);
     padding: 10px 18px;
     border: 2px outset var(--w98-shadow-light);
   }

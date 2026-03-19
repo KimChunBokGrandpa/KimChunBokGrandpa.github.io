@@ -2,16 +2,13 @@
  * Vitest setup: Polyfill ImageData and ResizeObserver for Node.js/jsdom environment.
  */
 
-declare global {
-  var ImageData: typeof ImageDataPolyfill;
-  var ResizeObserver: typeof ResizeObserverPolyfill;
-}
+export {};
 
 class ImageDataPolyfill {
   data: Uint8ClampedArray;
   width: number;
   height: number;
-  colorSpace: string;
+  colorSpace: PredefinedColorSpace;
 
   constructor(
     dataOrWidth: Uint8ClampedArray | number,
@@ -38,9 +35,9 @@ class ResizeObserverPolyfill {
 }
 
 if (typeof globalThis.ImageData === "undefined") {
-  globalThis.ImageData = ImageDataPolyfill;
+  globalThis.ImageData = ImageDataPolyfill as unknown as typeof ImageData;
 }
 
 if (typeof globalThis.ResizeObserver === "undefined") {
-  globalThis.ResizeObserver = ResizeObserverPolyfill;
+  globalThis.ResizeObserver = ResizeObserverPolyfill as unknown as typeof ResizeObserver;
 }

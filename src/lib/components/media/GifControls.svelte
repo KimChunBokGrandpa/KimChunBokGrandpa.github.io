@@ -126,19 +126,22 @@
 <style>
   .gif-controls {
     position: absolute;
-    bottom: 28px;
+    bottom: 42px;
     left: 50%;
     transform: translateX(-50%);
     background: rgba(0, 0, 0, 0.85);
-    border: 2px outset var(--w98-shadow-light);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 3px;
     padding: 4px 8px;
-    z-index: 6;
+    z-index: 7;
     display: flex;
     flex-direction: column;
     gap: 3px;
     min-width: 220px;
     max-width: calc(100% - 16px);
     box-sizing: border-box;
+    backdrop-filter: blur(4px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   }
 
   .gif-controls-row {
@@ -180,20 +183,20 @@
     font-size: var(--w98-font-size-sm);
     font-family: 'Courier New', Courier, monospace;
     font-weight: bold;
-    color: #0f0;
+    color: var(--w98-color-success);
     padding: 0 4px;
     white-space: nowrap;
     font-variant-numeric: tabular-nums;
   }
 
   .gif-cancel-btn {
-    background: #c00;
-    color: #fff;
+    background: var(--w98-color-error);
+    color: var(--w98-surface-white);
     font-size: var(--w98-font-size-sm);
     padding: 0 6px;
   }
   .gif-cancel-btn:active {
-    background: #900;
+    background: color-mix(in srgb, var(--w98-color-error) 80%, #000);
   }
 
   .gif-frame-info {
