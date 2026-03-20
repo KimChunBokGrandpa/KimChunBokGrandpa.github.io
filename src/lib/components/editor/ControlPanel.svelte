@@ -345,37 +345,26 @@
   .apply-now-btn-inline:disabled {
     color: var(--w98-shadow-808);
     cursor: not-allowed;
-    opacity: 0.5;
+    color: var(--w98-text-disabled);
   }
   .apply-now-btn-inline.has-changes {
     background: var(--w98-color-error-light);
     color: var(--w98-color-error);
-    animation: pulse-border 1.5s ease-in-out infinite;
-  }
-  @keyframes pulse-border {
-    0%, 100% { box-shadow: var(--w98-outset-thin); }
-    50% { box-shadow: 0 0 0 2px var(--w98-color-error), var(--w98-outset-thin); }
+    border: 1px solid var(--w98-color-error);
   }
   .unsaved-dot {
     display: inline-block;
     width: 6px;
     height: 6px;
-    border-radius: 50%;
     background: var(--w98-color-error);
-    animation: pulse-dot 1s ease-in-out infinite;
     vertical-align: middle;
     margin-right: 2px;
-  }
-  @keyframes pulse-dot {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.3; }
   }
   .unsaved-badge {
     font-size: var(--w98-font-size-micro);
     background: var(--w98-color-error);
     color: var(--w98-surface-white);
     padding: 0 3px;
-    border-radius: 3px;
     margin-left: 3px;
     font-weight: bold;
     line-height: 12px;
@@ -424,7 +413,6 @@
     cursor: pointer;
     position: relative;
     color: var(--w98-text-secondary);
-    transition: background 0.1s;
   }
   .cp-tab:hover {
     background: var(--w98-surface);
@@ -451,7 +439,6 @@
     background: var(--w98-highlight);
     color: #fff;
     padding: 0 4px;
-    border-radius: 8px;
     line-height: 12px;
     min-width: 12px;
     text-align: center;

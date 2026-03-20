@@ -82,7 +82,7 @@
     width: 2px;
     background: #fff;
     flex-shrink: 0;
-    box-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
+    box-shadow: var(--w98-outset-thin);
   }
   .sbs-label {
     position: absolute;
@@ -91,8 +91,9 @@
     font-size: var(--w98-font-size-caption);
     font-weight: bold;
     padding: 2px 6px;
-    background: rgba(0, 0, 0, 0.6);
-    color: #fff;
+    background: var(--w98-surface);
+    color: var(--w98-text);
+    box-shadow: var(--w98-outset-thin);
     letter-spacing: 1px;
     pointer-events: none;
     z-index: 4;
@@ -128,14 +129,14 @@
     display: flex;
     align-items: center;
     gap: 6px;
-    background: rgba(0, 0, 0, 0.7);
-    border: 1px solid var(--w98-shadow-808);
+    background: var(--w98-surface);
+    box-shadow: var(--w98-outset);
     padding: 4px 10px;
     z-index: 5;
   }
   .onion-label {
     font-size: var(--w98-font-size-sm);
-    color: #fff;
+    color: var(--w98-text);
     font-weight: bold;
     white-space: nowrap;
   }

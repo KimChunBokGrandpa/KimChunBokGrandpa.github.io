@@ -119,7 +119,7 @@
     box-shadow: var(--w98-inset-thin);
   }
   .history-controls button:disabled {
-    opacity: 0.5;
+    color: var(--w98-text-disabled);
     cursor: not-allowed;
   }
 
@@ -209,7 +209,7 @@
   }
   .history-empty-icon {
     font-size: 24px;
-    opacity: 0.6;
+    color: var(--w98-text-hint);
   }
   .history-empty-text {
     font-size: var(--w98-font-size-base);

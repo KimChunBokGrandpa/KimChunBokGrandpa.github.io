@@ -346,13 +346,9 @@
     overflow: hidden;
     box-shadow: var(--w98-window-shadow);
     user-select: none;
-    animation: windowOpen 0.12s ease-out;
   }
   .win98-window.maximized {
     box-shadow: var(--w98-outset);
-  }
-  .win98-window.interacting {
-    opacity: 0.92;
   }
   .win98-window.resizing {
     outline: 2px dashed var(--w98-highlight);
@@ -475,7 +471,7 @@
       display: inline;
       font-size: 8px;
       margin-left: 4px;
-      opacity: 0.7;
+      color: var(--w98-text-muted);
       vertical-align: middle;
     }
   }
@@ -487,18 +483,5 @@
     border: 2px solid var(--w98-highlight-border);
     z-index: 8999;
     pointer-events: none;
-    transition: opacity 0.1s;
-  }
-
-  /* ===== Window Animations ===== */
-  @keyframes windowOpen {
-    from {
-      opacity: 0;
-      transform: scale(0.92);
-    }
-    to {
-      opacity: 1;
-      transform: scale(1);
-    }
   }
 </style>

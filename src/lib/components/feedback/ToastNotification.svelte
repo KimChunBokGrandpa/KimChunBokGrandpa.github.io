@@ -71,10 +71,9 @@
     background: var(--w98-surface);
     border: 2px solid;
     border-color: var(--w98-shadow-light) var(--w98-shadow-808) var(--w98-shadow-808) var(--w98-shadow-light);
-    box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.4);
+    box-shadow: var(--w98-outset);
     font-size: var(--w98-font-size-action);
     font-weight: bold;
-    animation: toastIn 0.3s ease-out;
     white-space: normal;
     max-width: calc(100vw - 32px);
     word-break: break-word;
@@ -136,14 +135,4 @@
     color: #000;
   }
 
-  @keyframes toastIn {
-    from {
-      opacity: 0;
-      transform: translateY(10px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
 </style>

@@ -372,19 +372,18 @@
     background: var(--w98-surface-active);
     border: 1px solid var(--w98-surface);
     cursor: grab;
-    transition: background 0.1s, opacity 0.1s;
   }
   .effect-layer-item:active {
     cursor: grabbing;
   }
   .effect-layer-item.dragging {
-    opacity: 0.4;
+    background: var(--w98-surface-dim);
   }
   .effect-layer-item.drag-over {
     border-top: 2px solid var(--w98-highlight);
   }
   .effect-layer-item.disabled {
-    opacity: 0.5;
+    color: var(--w98-text-disabled);
     background: var(--w98-surface-dim);
   }
   .layer-toggle {

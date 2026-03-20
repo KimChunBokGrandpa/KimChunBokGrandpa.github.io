@@ -118,7 +118,7 @@
     display: flex;
     align-items: center;
     gap: 6px;
-    box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+    box-shadow: var(--w98-outset);
     pointer-events: auto;
   }
   .color-swatch {

@@ -171,7 +171,6 @@
     font-family: inherit;
     overflow: hidden;
     box-shadow: var(--w98-outset);
-    transition: flex-basis 0.15s ease;
   }
 
   .tb-item.tb-active {
@@ -180,7 +179,7 @@
     font-weight: bold;
   }
   .tb-item.tb-dim {
-    opacity: 0.65;
+    color: var(--w98-text-disabled);
   }
 
   .tb-icon {
@@ -215,11 +214,10 @@
     border: none;
     cursor: pointer;
     box-shadow: var(--w98-outset-thin);
-    opacity: 0;
-    transition: opacity 0.1s;
+    display: none;
   }
   .tb-item:hover .tb-x {
-    opacity: 1;
+    display: flex;
   }
   .tb-x::after {
     content: '×';

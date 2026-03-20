@@ -326,7 +326,6 @@
     border: 2px dashed var(--w98-shadow-808);
     margin: 4px;
     background: #fff;
-    transition: all 0.2s;
     min-height: 0;
   }
   .batch-dropzone.dragging {

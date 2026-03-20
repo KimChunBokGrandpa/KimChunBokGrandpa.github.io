@@ -11,7 +11,7 @@
   --w98-highlight: #000080;
   --w98-highlight-alpha: rgba(0, 0, 128, 0.18);
   --w98-highlight-border: rgba(0, 0, 128, 0.5);
-  --w98-tooltip-bg: #ffffcc;
+  --w98-tooltip-bg: #ffffe1;
   --w98-tooltip-text: #000;
   --w98-tooltip-border: #000;
 
@@ -61,7 +61,7 @@
     inset -1px -1px var(--w98-shadow-dark);
   --w98-inset-thin: inset -1px -1px var(--w98-shadow-white),
     inset 1px 1px var(--w98-shadow-dark);
-  --w98-window-shadow: var(--w98-outset), 4px 4px 12px rgba(0, 0, 0, 0.4);
+  --w98-window-shadow: var(--w98-outset);
 
   /* ── Layout ── */
   --w98-taskbar-height: 30px;
@@ -82,7 +82,7 @@
 
   /* ── Border Radius ── */
   --w98-radius-none: 0;
-  --w98-radius-sm: 2px;
+  --w98-radius-sm: 0;
   --w98-radius-crt: 12px;
 }
 
@@ -115,17 +115,16 @@ button:focus-visible {
   font-family: var(--w98-font-family);
   white-space: nowrap;
   pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.15s;
+  display: none;
   z-index: 9999;
 }
 [data-tooltip]:hover::after,
 [data-tooltip]:focus-visible::after {
-  opacity: 1;
+  display: block;
 }
 /* Prevent tooltip when element is actively pressed */
 [data-tooltip]:active::after {
-  opacity: 0;
+  display: none;
 }
 
 /* ── Disabled button contrast fix ── */

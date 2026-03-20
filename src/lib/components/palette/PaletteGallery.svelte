@@ -536,7 +536,6 @@
     flex-shrink: 0;
     font-size: var(--w98-font-size-caption);
     padding: 0 4px;
-    border-radius: 3px;
     background: #e8e4e0;
     color: #555;
     font-weight: bold;

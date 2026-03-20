@@ -235,7 +235,6 @@
             style:filter={postFilterCss || 'none'}
             style:transform="scale({zp.zoomLevel}) translate({zp.panX / zp.zoomLevel}px, {zp.panY /
               zp.zoomLevel}px)"
-            style:transition={zp.isPanning || zp.isTouchPanning ? 'none' : 'transform 0.1s ease'}
             draggable="false"
           />
         {/snippet}
@@ -492,31 +491,30 @@
     flex-direction: column;
     align-items: center;
     gap: 6px;
-    background: rgba(0, 0, 0, 0.75);
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: var(--w98-surface);
+    border: 1px solid var(--w98-shadow-808);
     padding: 10px 20px;
-    color: #fff;
+    color: var(--w98-text);
     font-size: var(--w98-font-size-base);
     font-family: 'Courier New', Courier, monospace;
     font-weight: bold;
   }
   .processing-text {
     font-size: var(--w98-font-size-sm);
-    opacity: 0.8;
   }
   .progress-container {
     width: 140px;
     height: 6px;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 3px;
+    background: var(--w98-surface-dim);
+    box-shadow: var(--w98-inset-thin);
     position: relative;
     overflow: hidden;
   }
   .progress-bar {
     position: absolute;
     inset: 0;
-    background: linear-gradient(90deg, var(--w98-highlight), #4444ff);
-    animation: progressSlide 1.2s ease-in-out infinite;
+    background: var(--w98-highlight);
+    animation: progressSlide 1.2s linear infinite;
     transform-origin: left;
   }
   .progress-wide {
@@ -524,9 +522,9 @@
   }
 
   @keyframes progressSlide {
-    0% { transform: scaleX(0); opacity: 0.6; }
-    50% { transform: scaleX(1); opacity: 1; }
-    100% { transform: scaleX(0); opacity: 0.6; }
+    0% { transform: scaleX(0); }
+    50% { transform: scaleX(1); }
+    100% { transform: scaleX(0); }
   }
 
   /* ===== Initial Processing ===== */
@@ -553,12 +551,9 @@
     align-items: center;
     gap: 2px;
     z-index: 6;
-    background: rgba(192, 192, 192, 0.85);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    border-radius: 3px;
+    background: var(--w98-surface);
     padding: 2px 4px;
-    backdrop-filter: blur(4px);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    box-shadow: var(--w98-outset);
   }
   .tb-btn {
     min-width: 24px;
@@ -593,7 +588,7 @@
   .tb-sep {
     width: 1px;
     height: 18px;
-    background: rgba(0, 0, 0, 0.2);
+    background: var(--w98-shadow-808);
     margin: 0 2px;
     flex-shrink: 0;
   }
@@ -690,8 +685,9 @@
     font-size: var(--w98-font-size-caption);
     font-weight: bold;
     padding: 2px 6px;
-    background: rgba(0, 0, 0, 0.6);
-    color: #fff;
+    background: var(--w98-surface);
+    color: var(--w98-text);
+    box-shadow: var(--w98-outset-thin);
     letter-spacing: 1px;
     pointer-events: none;
     z-index: 4;

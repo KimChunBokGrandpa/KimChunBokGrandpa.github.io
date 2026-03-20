@@ -170,7 +170,6 @@
     margin: 8px;
     background-color: var(--w98-surface-white);
     overflow: hidden;
-    transition: all 0.2s ease;
     cursor: pointer;
   }
 
@@ -178,7 +177,7 @@
     background-color: var(--w98-surface-hover);
     border-color: var(--w98-highlight);
     border-width: 3px;
-    box-shadow: inset 0 0 20px rgba(0, 0, 128, 0.08);
+    box-shadow: var(--w98-inset-thin);
   }
 
   .drop-content {
@@ -192,12 +191,6 @@
     font-size: 40px;
     font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
     color: initial;
-    transition: transform 0.2s ease;
-  }
-
-  .dragging .drop-icon {
-    transform: scale(1.2);
-    animation: bounce 0.5s ease infinite alternate;
   }
 
   .drop-title {
@@ -230,11 +223,6 @@
     font-size: var(--w98-font-size-sm);
     color: #a0a0a0;
     margin: 2px 0 0 0;
-  }
-
-  @keyframes bounce {
-    from { transform: scale(1.2) translateY(0); }
-    to { transform: scale(1.2) translateY(-6px); }
   }
 
   /* ===== Onboarding Guide ===== */

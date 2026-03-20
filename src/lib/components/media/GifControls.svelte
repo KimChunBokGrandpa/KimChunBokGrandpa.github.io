@@ -129,9 +129,8 @@
     bottom: 42px;
     left: 50%;
     transform: translateX(-50%);
-    background: rgba(0, 0, 0, 0.85);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    border-radius: 3px;
+    background: var(--w98-surface);
+    border: none;
     padding: 4px 8px;
     z-index: 7;
     display: flex;
@@ -140,8 +139,7 @@
     min-width: 220px;
     max-width: calc(100% - 16px);
     box-sizing: border-box;
-    backdrop-filter: blur(4px);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    box-shadow: var(--w98-outset);
   }
 
   .gif-controls-row {
@@ -170,7 +168,7 @@
     box-shadow: var(--w98-inset-thin);
   }
   .gif-btn:disabled {
-    opacity: 0.5;
+    color: var(--w98-text-disabled);
     cursor: not-allowed;
   }
 
@@ -203,7 +201,7 @@
     font-size: var(--w98-font-size-base);
     font-family: 'Courier New', Courier, monospace;
     font-weight: bold;
-    color: #fff;
+    color: var(--w98-text);
     padding: 0 6px;
     min-width: fit-content;
     text-align: center;
@@ -237,7 +235,6 @@
   .gif-export-bar {
     height: 100%;
     background: var(--w98-highlight);
-    transition: width 0.2s;
   }
 
   @media (max-width: 550px) {

@@ -66,7 +66,7 @@
     background: var(--w98-surface);
     border: 2px solid;
     border-color: var(--w98-shadow-light) var(--w98-shadow-808) var(--w98-shadow-808) var(--w98-shadow-light);
-    box-shadow: 4px 4px 12px rgba(0, 0, 0, 0.5);
+    box-shadow: var(--w98-outset);
     min-width: 280px;
     max-width: 360px;
   }

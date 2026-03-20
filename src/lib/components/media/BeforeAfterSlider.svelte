@@ -187,7 +187,7 @@
     margin-left: -1.5px;
     background: #fff;
     z-index: 3;
-    box-shadow: 0 0 4px rgba(0, 0, 0, 0.6);
+    box-shadow: var(--w98-outset-thin);
   }
 
   .ba-handle {
@@ -197,7 +197,6 @@
     transform: translate(-50%, -50%);
     width: 28px;
     height: 28px;
-    border-radius: 50%;
     background: var(--w98-surface);
     border: 2px solid;
     border-color: var(--w98-shadow-light) var(--w98-shadow-808) var(--w98-shadow-808) var(--w98-shadow-light);
@@ -205,13 +204,12 @@
     align-items: center;
     justify-content: center;
     gap: 1px;
-    box-shadow: 1px 1px 4px rgba(0, 0, 0, 0.5);
-    transition: transform 0.1s;
+    box-shadow: var(--w98-outset-thin);
   }
 
   .ba-handle.dragging {
-    transform: translate(-50%, -50%) scale(1.15);
-    background: #d0d8e0;
+    transform: translate(-50%, -50%);
+    box-shadow: var(--w98-inset-thin);
   }
 
   .ba-arrow {
@@ -228,8 +226,9 @@
     font-size: var(--w98-font-size-caption);
     font-weight: bold;
     padding: 2px 6px;
-    background: rgba(0, 0, 0, 0.6);
-    color: #fff;
+    background: var(--w98-surface);
+    color: var(--w98-text);
+    box-shadow: var(--w98-outset-thin);
     letter-spacing: 1px;
     pointer-events: none;
   }
