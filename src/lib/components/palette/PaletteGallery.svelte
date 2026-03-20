@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { PALETTE_THEMES, PALETTES, getPaletteName } from '$lib/utils/palettes';
+  import { PALETTE_THEMES, PALETTE_GROUPS, PALETTES, getPaletteName } from '$lib/utils/palettes';
   import type { RGB, PaletteTheme } from '$lib/utils/palettes';
   import { customPaletteStore } from '$lib/stores/customPaletteStore.svelte';
   import CustomPaletteEditor from './CustomPaletteEditor.svelte';
@@ -14,7 +14,9 @@
     onSelect: (id: string) => void;
   } = $props();
 
+  let groupMode = $state<'theme' | 'colorCount'>('theme');
   let activeThemeId = $state<string>('_core');
+  let activeGroupId = $state<string>('16');
   let hoveredPaletteId = $state<string | null>(null);
 
   // ─── Custom Palette Editor State ───
@@ -136,18 +138,42 @@
     saveFavorites();
   }
 
-  // ─── Theme tabs ───
+  // ─── Theme tabs (dynamic based on groupMode) ───
   interface ThemeTab {
     id: string;
     label: string;
   }
 
-  const themeTabs: ThemeTab[] = [
-    { id: '_favorites', label: '⭐' },
-    { id: '_custom', label: `✏️ ${i18n.t('gallery_custom')}` },
-    { id: '_core', label: `📁 ${i18n.t('gallery_core')}` },
-    ...PALETTE_THEMES.map((t) => ({ id: t.themeId, label: t.themeName })),
-  ];
+  let activeTabs = $derived.by<ThemeTab[]>(() => {
+    const special: ThemeTab[] = [
+      { id: '_favorites', label: '⭐' },
+      { id: '_custom', label: `✏️ ${i18n.t('gallery_custom')}` },
+      { id: '_core', label: `📁 ${i18n.t('gallery_core')}` },
+    ];
+    if (groupMode === 'theme') {
+      return [...special, ...PALETTE_THEMES.map((t) => ({ id: t.themeId, label: t.themeName }))];
+    } else {
+      return [...special, ...PALETTE_GROUPS.map((g) => ({ id: `g_${g.groupId}`, label: g.groupName }))];
+    }
+  });
+
+  // Active tab ID (switches between theme/group namespaces)
+  let activeTabId = $derived(
+    activeThemeId.startsWith('_') ? activeThemeId
+    : groupMode === 'theme' ? activeThemeId
+    : `g_${activeGroupId}`
+  );
+
+  function setActiveTab(tabId: string) {
+    if (tabId.startsWith('_')) {
+      activeThemeId = tabId;
+    } else if (groupMode === 'theme') {
+      activeThemeId = tabId;
+    } else {
+      activeGroupId = tabId.replace('g_', '');
+      activeThemeId = tabId; // keep in sync for special tab detection
+    }
+  }
 
   // ─── Active theme data ───
   interface VariantItem {
@@ -156,6 +182,7 @@
     colorCount: number;
     colors: RGB[] | null;
     isCustom?: boolean;
+    themeName?: string;
   }
 
   // Palette lookup for detail view (built-in palettes)
@@ -194,10 +221,13 @@
 
   let activeVariants = $derived.by<VariantItem[]>(() => {
     const lookup = allPaletteLookup;
-    if (activeThemeId === '_favorites') {
+    const tabId = activeTabId;
+
+    // Special tabs (shared across both modes)
+    if (tabId === '_favorites') {
       return [...favorites].map((id) => lookup.get(id)).filter(Boolean) as VariantItem[];
     }
-    if (activeThemeId === '_custom') {
+    if (tabId === '_custom') {
       return customPaletteStore.palettes.map((p) => ({
         id: p.id,
         name: p.name,
@@ -206,28 +236,49 @@
         isCustom: true,
       }));
     }
-    if (activeThemeId === '_core') {
+    if (tabId === '_core') {
       return [{ id: 'original', name: i18n.t('palette_original'), colorCount: 0, colors: null }];
     }
-    const theme = PALETTE_THEMES.find((t) => t.themeId === activeThemeId);
-    if (!theme) return [];
-    return theme.variants.map((v) => ({
-      id: v.id,
-      name: i18n.t('gallery_n_colors').replace('{0}', String(v.colorCount)),
-      colorCount: v.colorCount,
-      colors: PALETTES[v.id] || null,
-    }));
+
+    if (groupMode === 'theme') {
+      // Theme mode: show variants of selected theme
+      const theme = PALETTE_THEMES.find((t) => t.themeId === tabId);
+      if (!theme) return [];
+      return theme.variants.map((v) => ({
+        id: v.id,
+        name: i18n.t('gallery_n_colors').replace('{0}', String(v.colorCount)),
+        colorCount: v.colorCount,
+        colors: PALETTES[v.id] || null,
+      }));
+    } else {
+      // Color count mode: show all palettes in the selected color-count group
+      const gid = activeGroupId;
+      const group = PALETTE_GROUPS.find((g) => g.groupId === gid);
+      if (!group) return [];
+      return group.palettes.map((p) => {
+        const colors = PALETTES[p.id] || null;
+        return {
+          id: p.id,
+          name: getPaletteName(p.id),
+          colorCount: colors ? colors.length : 0,
+          colors,
+          themeName: p.theme,
+        };
+      });
+    }
   });
 
-  let activeThemeName = $derived(
-    activeThemeId === '_favorites'
-      ? i18n.t('palette_tab_favorites')
-      : activeThemeId === '_custom'
-        ? i18n.t('palette_tab_custom')
-        : activeThemeId === '_core'
-          ? i18n.t('palette_tab_core')
-          : (PALETTE_THEMES.find((t) => t.themeId === activeThemeId)?.themeName ?? ''),
-  );
+  let activeThemeName = $derived.by(() => {
+    const tabId = activeTabId;
+    if (tabId === '_favorites') return i18n.t('palette_tab_favorites');
+    if (tabId === '_custom') return i18n.t('palette_tab_custom');
+    if (tabId === '_core') return i18n.t('palette_tab_core');
+    if (groupMode === 'theme') {
+      return PALETTE_THEMES.find((t) => t.themeId === tabId)?.themeName ?? '';
+    } else {
+      return PALETTE_GROUPS.find((g) => g.groupId === activeGroupId)?.groupName ?? '';
+    }
+  });
 
   // Detail panel for hovered or selected palette
   let detailItem = $derived.by<VariantItem | null>(() => {
@@ -247,13 +298,25 @@
       }}
     />
   {:else}
-    <!-- Theme tabs -->
+    <!-- Mode toggle + tabs -->
+    <div class="pg-mode-bar">
+      <button
+        class="pg-mode-btn"
+        class:mode-active={groupMode === 'theme'}
+        onclick={() => { groupMode = 'theme'; activeThemeId = '_core'; }}
+      >{i18n.t('palette_group_by_theme')}</button>
+      <button
+        class="pg-mode-btn"
+        class:mode-active={groupMode === 'colorCount'}
+        onclick={() => { groupMode = 'colorCount'; activeThemeId = `g_${activeGroupId}`; }}
+      >{i18n.t('palette_group_by_color_count')}</button>
+    </div>
     <div class="pg-toolbar">
-      {#each themeTabs as tab}
+      {#each activeTabs as tab}
         <button
           class="pg-toolbtn"
-          class:tb-sel={activeThemeId === tab.id}
-          onclick={() => (activeThemeId = tab.id)}>{tab.label}</button
+          class:tb-sel={activeTabId === tab.id}
+          onclick={() => setActiveTab(tab.id)}>{tab.label}</button
         >
       {/each}
     </div>
@@ -308,7 +371,12 @@
                   <span class="ms" style="background:linear-gradient(90deg,#000,#fff)"></span>
                 {/if}
               </div>
-              <span class="pg-item-name">{item.name}</span>
+              <span class="pg-item-name">
+                {item.name}
+                {#if item.themeName}
+                  <span class="pg-theme-label">{item.themeName}</span>
+                {/if}
+              </span>
               {#if item.colorCount > 0}
                 <span class="pg-color-badge">{item.colorCount}</span>
               {/if}
@@ -409,6 +477,34 @@
     min-height: 0;
     overflow: hidden;
     font-size: var(--w98-font-size-base);
+  }
+
+  /* ── Mode bar ── */
+  .pg-mode-bar {
+    display: flex;
+    gap: 0;
+    padding: 2px 3px 0 3px;
+    flex-shrink: 0;
+    background: var(--w98-surface);
+  }
+  .pg-mode-btn {
+    flex: 1;
+    padding: 3px 6px;
+    font-size: var(--w98-font-size-sm);
+    font-family: inherit;
+    background: var(--w98-surface-active);
+    border: 1px solid var(--w98-shadow-808);
+    cursor: pointer;
+    color: var(--w98-text-secondary);
+  }
+  .pg-mode-btn:hover {
+    background: #e0dcd4;
+  }
+  .pg-mode-btn.mode-active {
+    background: var(--w98-surface);
+    font-weight: bold;
+    color: inherit;
+    border-bottom-color: var(--w98-surface);
   }
 
   /* ── Toolbar ── */
@@ -530,6 +626,17 @@
     text-overflow: ellipsis;
     white-space: nowrap;
     font-weight: 500;
+  }
+
+  .pg-theme-label {
+    display: block;
+    font-size: var(--w98-font-size-caption);
+    font-weight: normal;
+    color: var(--w98-text-hint);
+    line-height: 1.1;
+  }
+  .pg-item.sel .pg-theme-label {
+    color: #ccc;
   }
 
   .pg-color-badge {
@@ -734,6 +841,13 @@
       overflow-y: auto;
       padding: 3px 0 0 0;
       border-top: 1px solid var(--w98-shadow-808);
+    }
+    .pg-mode-bar {
+      padding: 1px 2px 0 2px;
+    }
+    .pg-mode-btn {
+      padding: 2px 4px;
+      font-size: var(--w98-font-size-caption);
     }
     .pg-toolbar {
       gap: 0;

@@ -439,6 +439,8 @@ export const ja: Record<TranslationKey, string> = {
   palette_tab_custom: 'カスタム',
   palette_tab_core: 'コア',
   palette_original_full_color: 'オリジナル（フルカラー）',
+  palette_group_by_theme: 'テーマ別',
+  palette_group_by_color_count: '色数別',
 
   // ─── Batch Errors ───
   batch_processing_null: '処理結果がありません',

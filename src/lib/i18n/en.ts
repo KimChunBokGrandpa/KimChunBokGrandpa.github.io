@@ -464,6 +464,8 @@ export const en = {
   palette_tab_custom: 'Custom',
   palette_tab_core: 'Core',
   palette_original_full_color: 'Original (Full Color)',
+  palette_group_by_theme: 'By Theme',
+  palette_group_by_color_count: 'By Colors',
 
   // ─── Batch Errors ───
   batch_processing_null: 'Processing returned no result',

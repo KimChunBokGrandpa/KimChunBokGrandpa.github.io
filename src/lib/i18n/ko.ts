@@ -439,6 +439,8 @@ export const ko: Record<TranslationKey, string> = {
   palette_tab_custom: '사용자 정의',
   palette_tab_core: '기본',
   palette_original_full_color: '원본 (풀 컬러)',
+  palette_group_by_theme: '테마별',
+  palette_group_by_color_count: '색상수별',
 
   // ─── Batch Errors ───
   batch_processing_null: '처리 결과가 없습니다',
