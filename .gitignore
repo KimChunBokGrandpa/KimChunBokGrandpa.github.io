@@ -17,3 +17,5 @@ retro-palette-sample/
 .claude/
 storybook-static/
 .serena/
+.agents/
+.github/
