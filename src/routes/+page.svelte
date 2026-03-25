@@ -200,7 +200,7 @@
   async function handleExportSvg() {
     if (!ip.processedImageSrc) return;
     try {
-      await exportSvg(ip.processedImageSrc);
+      await exportSvg(ip.processedImageSrc, ip.getLastCanvas());
       enqueueToast(i18n.t('svg_exported'));
     } catch (err) {
       console.error('SVG export error:', err);
@@ -292,8 +292,9 @@
       e.preventDefault();
       handleSave();
     } else if (e.key === '?' && !e.ctrlKey && !e.metaKey) {
-      // Don't trigger when typing in input fields
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      // Don't trigger when typing in input fields or contenteditable elements
+      const target = e.target as HTMLElement;
+      if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement || target.isContentEditable) return;
       showShortcuts = !showShortcuts;
     }
   }
@@ -356,13 +357,13 @@
             class="load-new-btn"
             onclick={handleLoadNewImage}
           >
-            📂 {i18n.t('load_new_image')}
+            <span aria-hidden="true">📂</span> {i18n.t('load_new_image')}
           </button>
           <button
             class="load-new-btn"
             onclick={(e) => { e.stopPropagation(); wm.openWindow('preview'); }}
           >
-            🖼️ {i18n.t('win_preview')}
+            <span aria-hidden="true">🖼️</span> {i18n.t('win_preview')}
           </button>
         </div>
         <ControlPanel

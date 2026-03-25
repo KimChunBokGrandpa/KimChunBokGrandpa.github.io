@@ -40,22 +40,6 @@ class ImageProcessorService {
   /** Last computed unique color count */
   private _lastColorCount = 0;
 
-  /** Reusable canvas for early (no-worker) processing */
-  private earlyCanvas: HTMLCanvasElement | null = null;
-  /** Get or create a reusable canvas for early processing, resizing only when needed */
-  private getOrCreateEarlyCanvas(w: number, h: number): HTMLCanvasElement {
-    if (this.earlyCanvas) {
-      if (this.earlyCanvas.width !== w) this.earlyCanvas.width = w;
-      if (this.earlyCanvas.height !== h) this.earlyCanvas.height = h;
-      return this.earlyCanvas;
-    }
-    const c = document.createElement('canvas');
-    c.width = w;
-    c.height = h;
-    this.earlyCanvas = c;
-    return c;
-  }
-
   /** toBlob with a timeout to prevent indefinitely pending promises */
   private static readonly BLOB_TIMEOUT_MS = 10_000;
   private toBlobWithTimeout(
@@ -150,6 +134,7 @@ class ImageProcessorService {
         this.pendingResolvers.clear();
         this.worker?.terminate();
         this.worker = null;
+        this.lastCanvas = null;
         if (this.workerErrorCount >= ImageProcessorService.MAX_WORKER_RETRIES) {
           console.error(`Worker failed ${this.workerErrorCount} times, stopping retries`);
         }
@@ -163,8 +148,8 @@ class ImageProcessorService {
     const oldest = this.imageCache.keys().next().value;
     if (oldest !== undefined) {
       this.imageCache.delete(oldest);
-      // Revoke blob URLs to free memory — non-blob URLs are harmlessly ignored
-      if (oldest.startsWith('blob:')) {
+      // Revoke blob URLs to free memory, but skip if still in use as lastBlobUrl
+      if (oldest.startsWith('blob:') && oldest !== this.lastBlobUrl) {
         URL.revokeObjectURL(oldest);
       }
     }
@@ -207,12 +192,16 @@ class ImageProcessorService {
   ): Promise<string | null> {
     const img = await this.loadImage(imageSrc);
     if (this.currentRequestId !== requestId) return null;
-    const c = this.getOrCreateEarlyCanvas(img.width, img.height);
+    // Use a dedicated canvas to avoid race condition with async toBlobWithTimeout
+    const c = document.createElement('canvas');
+    c.width = img.width;
+    c.height = img.height;
     const ctx = c.getContext("2d");
     if (!ctx) throw new Error("Failed to get 2d context");
     ctx.drawImage(img, 0, 0);
     this.lastCanvas = c;
     const blob = await this.toBlobWithTimeout(c);
+    if (this.currentRequestId !== requestId) return null;
     return this.replaceBlobUrl(URL.createObjectURL(blob));
   }
 

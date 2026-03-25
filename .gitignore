@@ -12,10 +12,13 @@ vite.config.ts.timestamp-*
 /src-tauri/gen
 *.zip
 retro-palette-sample/
-.agent/
 .cursor/
-.claude/
 storybook-static/
 .serena/
-.agents/
 .github/skills
+.codex/
+.qwen/
+.agent/
+.claude/
+.gemini/
+.agents/

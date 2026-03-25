@@ -26,8 +26,8 @@ onmessage = (e: MessageEvent<ImageWorkerMessage>) => {
     effectLayers,
   } = e.data;
 
-  // Validate required fields
-  if (!id || !imageBitmap || !width || !height) {
+  // Validate required fields (explicit > 0 check prevents OffscreenCanvas(0, 0) error)
+  if (!id || !imageBitmap || !(width > 0) || !(height > 0)) {
     const errorId = id || 'unknown';
     postMessage({ id: errorId, type: 'complete', error: 'Invalid worker message: missing required fields' } as ImageWorkerResponse);
     return;

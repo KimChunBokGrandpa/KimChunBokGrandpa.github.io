@@ -107,24 +107,47 @@ export function encodeGif(
   width: number,
   height: number,
 ): Uint8Array {
-  // Estimate output buffer: indexed (1 byte/pixel) + palette + headers per frame
-  const bufSize = width * height * frames.length + 1024 * frames.length + 1024;
-  const buf = new Uint8Array(bufSize);
-  const writer = new GifWriter(buf, width, height, { loop: 0 });
-
-  for (const frame of frames) {
-    // Convert RGBA to indexed color (max 256 colors via median cut)
-    const { indexedPixels, palette } = quantizeFrame(frame.data, width, height);
-    const delayCs = Math.round(frame.delay / 10); // convert ms to centiseconds
-    writer.addFrame(0, 0, width, height, indexedPixels, {
+  // Pre-quantize all frames so we can retry encoding with a larger buffer
+  const quantized = frames.map((frame) => {
+    const { indexedPixels, palette, hasTransparent } = quantizeFrame(frame.data, width, height);
+    const delayCs = Math.round(frame.delay / 10);
+    return {
+      indexedPixels,
       palette,
       delay: Math.max(delayCs, 2),
-      transparent: findTransparentIndex(frame.data, palette),
-    });
+      // Use quantizeFrame's hasTransparent flag instead of re-scanning the entire frame
+      transparent: hasTransparent ? 0 : undefined,
+    };
+  });
+
+  // Generous initial estimate: indexed pixels + LZW overhead (~20%) + palette + headers per frame
+  const perFrame = Math.ceil(width * height * 1.2) + 1024;
+  let bufSize = perFrame * frames.length + 4096;
+
+  // Retry with exponentially larger buffer on overflow (max 3 attempts)
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const buf = new Uint8Array(bufSize);
+      const writer = new GifWriter(buf, width, height, { loop: 0 });
+
+      for (const q of quantized) {
+        writer.addFrame(0, 0, width, height, q.indexedPixels, {
+          palette: q.palette,
+          delay: q.delay,
+          transparent: q.transparent,
+        });
+      }
+
+      const bytesWritten = writer.end();
+      return buf.slice(0, bytesWritten);
+    } catch (err) {
+      if (attempt === 2) throw err;
+      bufSize *= 2; // double buffer size and retry
+    }
   }
 
-  const bytesWritten = writer.end();
-  return buf.slice(0, bytesWritten);
+  // Unreachable, but satisfies TypeScript
+  throw new Error('GIF encoding failed after retries');
 }
 
 /**
@@ -135,15 +158,16 @@ function quantizeFrame(
   rgba: Uint8ClampedArray,
   width: number,
   height: number,
-): { indexedPixels: Uint8Array; palette: number[] } {
+): { indexedPixels: Uint8Array; palette: number[]; hasTransparent: boolean } {
   const pixelCount = width * height;
 
   // Count unique colors (fast hash approach)
   const colorMap = new Map<number, number>(); // packed RGB -> count
+  let hasTransparent = false;
 
   for (let i = 0; i < pixelCount; i++) {
     const off = i * 4;
-    if (rgba[off + 3] < 128) continue; // skip transparent
+    if (rgba[off + 3] < 128) { hasTransparent = true; continue; } // skip transparent
     const key = (rgba[off] << 16) | (rgba[off + 1] << 8) | rgba[off + 2];
     colorMap.set(key, (colorMap.get(key) || 0) + 1);
   }
@@ -188,7 +212,7 @@ function quantizeFrame(
     indexedPixels[i] = paletteIdx;
   }
 
-  return { indexedPixels, palette };
+  return { indexedPixels, palette, hasTransparent };
 }
 
 function findNearestColor(r: number, g: number, b: number, colors: number[]): number {
@@ -208,20 +232,6 @@ function findNearestColor(r: number, g: number, b: number, colors: number[]): nu
   return bestIdx;
 }
 
-function findTransparentIndex(
-  rgba: Uint8ClampedArray,
-  palette: number[],
-): number | undefined {
-  // Check if any pixel is transparent
-  let hasTransparent = false;
-  for (let i = 0; i < rgba.length; i += 4) {
-    if (rgba[i + 3] < 128) { hasTransparent = true; break; }
-  }
-  if (!hasTransparent) return undefined;
-  // Verify palette[0] is the designated transparent slot (0x000000)
-  if (palette.length > 0 && palette[0] === 0x000000) return 0;
-  return undefined;
-}
 
 function nextPow2(n: number): number {
   let p = 2;
@@ -231,17 +241,15 @@ function nextPow2(n: number): number {
 
 /**
  * Create a blob URL from a single frame for preview.
- * Reuses a single canvas to avoid repeated element creation.
+ * Creates a new canvas per call to prevent race conditions from concurrent usage.
  *
  * **Important:** The caller is responsible for revoking the returned blob URL
  * via `URL.revokeObjectURL()` when no longer needed.
  */
-let _frameCanvas: HTMLCanvasElement | null = null;
 export function frameToBlobUrl(frame: GifFrame): Promise<string> {
-  if (!_frameCanvas) _frameCanvas = document.createElement('canvas');
-  const canvas = _frameCanvas;
-  if (canvas.width !== frame.width) canvas.width = frame.width;
-  if (canvas.height !== frame.height) canvas.height = frame.height;
+  const canvas = document.createElement('canvas');
+  canvas.width = frame.width;
+  canvas.height = frame.height;
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('Failed to get 2d context for frame');
   const imageData = new ImageData(

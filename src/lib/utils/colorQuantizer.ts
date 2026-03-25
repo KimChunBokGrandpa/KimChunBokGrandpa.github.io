@@ -94,7 +94,7 @@ function lutLookupRgb(rgbLut: Uint8Array, r: number, g: number, b: number): [num
 }
 
 /** Maximum number of cached LUTs to keep (each ~130KB packed + ~98KB RGB) */
-const MAX_LUT_CACHE_SIZE = 3;
+const MAX_LUT_CACHE_SIZE = 6;
 
 /** Clear oldest cached LUTs when exceeding max size (called from Worker).
  *  Map iteration order is insertion order — oldest entries are evicted first. */

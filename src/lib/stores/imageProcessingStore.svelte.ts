@@ -195,7 +195,7 @@ export function createImageProcessingStore() {
     if (!originalImageSrc) return;
     if (debounceTimer) { clearTimeout(debounceTimer); debounceTimer = null; }
     isProcessing = true;
-    runProcessing();
+    void runProcessing();
   }
 
   function applyProcessingDebounced() {
@@ -442,6 +442,9 @@ export function createImageProcessingStore() {
     setDimensionCapCallback,
     destroy,
     clearError: () => { lastError = null; },
+
+    // Canvas access
+    getLastCanvas: () => processorService.getLastCanvas(),
 
     // Transform actions
     rotate,

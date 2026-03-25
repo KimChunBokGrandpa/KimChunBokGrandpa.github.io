@@ -16,6 +16,7 @@ export class ImageWorkerPool {
   private workers: Worker[] = [];
   private busy = new Set<number>();
   private queue: PoolTask[] = [];
+  private static readonly MAX_QUEUE_SIZE = 256;
 
   constructor(size?: number) {
     const poolSize = Math.max(1, Math.min(
@@ -35,13 +36,14 @@ export class ImageWorkerPool {
   private dispatch(idx: number, task: PoolTask) {
     this.busy.add(idx);
     const worker = this.workers[idx];
-    const ac = new AbortController();
     let settled = false;
 
     const cleanup = () => {
       if (settled) return;
       settled = true;
-      ac.abort();
+      // Clear handlers to release references immediately
+      worker.onmessage = null;
+      worker.onerror = null;
       this.busy.delete(idx);
       // Pick up next queued task
       if (this.queue.length > 0) {
@@ -49,7 +51,8 @@ export class ImageWorkerPool {
       }
     };
 
-    worker.addEventListener('message', (e: MessageEvent<ImageWorkerResponse>) => {
+    // Use direct assignment instead of addEventListener to avoid listener accumulation
+    worker.onmessage = (e: MessageEvent<ImageWorkerResponse>) => {
       // Skip progress messages — only handle completion
       if (e.data.type === 'progress') return;
       cleanup();
@@ -62,12 +65,12 @@ export class ImageWorkerPool {
           e.data.processedData.height,
         ));
       }
-    }, { signal: ac.signal });
+    };
 
-    worker.addEventListener('error', (err) => {
+    worker.onerror = (err) => {
       cleanup();
       task.reject(new Error(err.message || `Worker ${idx} error`));
-    }, { signal: ac.signal });
+    };
 
     worker.postMessage(task.message, task.transfer);
   }
@@ -83,7 +86,11 @@ export class ImageWorkerPool {
           return;
         }
       }
-      // All busy — queue it
+      // All busy — queue it (reject if queue is full to prevent OOM)
+      if (this.queue.length >= ImageWorkerPool.MAX_QUEUE_SIZE) {
+        reject(new Error('Worker pool queue full'));
+        return;
+      }
       this.queue.push(task);
     });
   }

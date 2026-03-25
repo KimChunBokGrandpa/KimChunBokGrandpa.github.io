@@ -98,7 +98,8 @@ export function createGifPlaybackManager(deps: GifManagerDeps) {
   let gifAnimTimer: ReturnType<typeof setTimeout> | null = null;
   let exportAbortController: AbortController | null = null;
 
-  // ─── GIF Frame Cache ───
+  // ─── GIF Frame Cache (LRU, max 30 entries) ───
+  const MAX_FRAME_CACHE = 30;
   let gifFrameCache = new Map<string, string>();
   let gifCacheSettingsHash = '';
 
@@ -160,6 +161,9 @@ export function createGifPlaybackManager(deps: GifManagerDeps) {
     const cacheKey = `${index}`;
     const cached = gifFrameCache.get(cacheKey);
     if (cached) {
+      // LRU: re-insert to mark as recently used
+      gifFrameCache.delete(cacheKey);
+      gifFrameCache.set(cacheKey, cached);
       activeFrameUrl = cached;
       deps.setProcessedImageSrc(cached);
       deps.setIsProcessing(false);
@@ -173,6 +177,13 @@ export function createGifPlaybackManager(deps: GifManagerDeps) {
         deps.setProcessedImageSrc(result);
         deps.setColorCount(processorService.getLastColorCount());
         gifFrameCache.set(cacheKey, result);
+        // LRU eviction: remove oldest entries when cache exceeds limit
+        if (gifFrameCache.size > MAX_FRAME_CACHE) {
+          const oldest = gifFrameCache.keys().next().value!;
+          const oldUrl = gifFrameCache.get(oldest)!;
+          if (oldUrl !== activeFrameUrl) URL.revokeObjectURL(oldUrl);
+          gifFrameCache.delete(oldest);
+        }
       }
     } catch (err) {
       console.error('GIF frame processing error:', err);

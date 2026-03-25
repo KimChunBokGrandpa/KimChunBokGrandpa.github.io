@@ -8,16 +8,39 @@ import { frameToBlobUrl, type GifInfo } from '$lib/utils/gifProcessor';
 
 /**
  * Export the processed image as SVG (pixel art → <rect> elements).
- * @param processedImageSrc - Blob URL of the processed image
+ * Uses the cached canvas from processorService when available to avoid re-decoding the blob URL.
+ * @param processedImageSrc - Blob URL of the processed image (fallback if no canvas)
+ * @param lastCanvas - Cached canvas from processorService.getLastCanvas()
  * @returns filename of the exported SVG
  */
-export async function exportSvg(processedImageSrc: string): Promise<string> {
+export async function exportSvg(processedImageSrc: string, lastCanvas?: HTMLCanvasElement | null): Promise<string> {
+  let imageData: ImageData;
+
+  if (lastCanvas) {
+    const ctx = lastCanvas.getContext('2d');
+    if (ctx) {
+      imageData = ctx.getImageData(0, 0, lastCanvas.width, lastCanvas.height);
+    } else {
+      imageData = await decodeImageSrc(processedImageSrc);
+    }
+  } else {
+    imageData = await decodeImageSrc(processedImageSrc);
+  }
+
+  const filename = `pixel-art-${Date.now()}.svg`;
+  const svgString = imageDataToSvg(imageData);
+  downloadSvg(svgString, filename);
+  return filename;
+}
+
+/** Fallback: decode blob URL into ImageData */
+async function decodeImageSrc(src: string): Promise<ImageData> {
   const img = new Image();
   img.crossOrigin = 'anonymous';
   await new Promise<void>((resolve, reject) => {
     img.onload = () => { img.onload = null; img.onerror = null; resolve(); };
     img.onerror = () => { img.onload = null; img.onerror = null; reject(new Error('Failed to load image')); };
-    img.src = processedImageSrc;
+    img.src = src;
   });
 
   const canvas = document.createElement('canvas');
@@ -26,12 +49,7 @@ export async function exportSvg(processedImageSrc: string): Promise<string> {
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('Failed to get 2d context');
   ctx.drawImage(img, 0, 0);
-
-  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  const filename = `pixel-art-${Date.now()}.svg`;
-  const svgString = imageDataToSvg(imageData);
-  downloadSvg(svgString, filename);
-  return filename;
+  return ctx.getImageData(0, 0, canvas.width, canvas.height);
 }
 
 /**

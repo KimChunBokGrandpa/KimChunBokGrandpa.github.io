@@ -30,10 +30,24 @@ interface SavedLayout {
   x: number; y: number; w: number; h: number;
 }
 
+function isFiniteNumber(v: unknown): v is number {
+  return typeof v === 'number' && isFinite(v);
+}
+
 function loadSavedLayout(): Record<string, SavedLayout> | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : null;
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) return null;
+    // Validate each layout entry has finite numeric values
+    for (const key of Object.keys(parsed)) {
+      const v = parsed[key];
+      if (!v || !isFiniteNumber(v.x) || !isFiniteNumber(v.y) || !isFiniteNumber(v.w) || !isFiniteNumber(v.h)) {
+        delete parsed[key];
+      }
+    }
+    return parsed;
   } catch { return null; }
 }
 

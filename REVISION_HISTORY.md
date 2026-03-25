@@ -2,6 +2,68 @@
 
 ---
 
+## v1.5.0 (2026-03-25)
+
+> QA 전체 리뷰 기반 P0~P2 수정. 버퍼 오버플로우 방어, 메모리 관리, a11y, 성능 개선.
+
+### P0 — Critical Fixes (3 items)
+
+- **gifProcessor.ts — GIF 인코딩 버퍼 오버플로우 방어**
+  - 고정 크기 버퍼 → 넉넉한 초기 추정(pixel × 1.2 + 헤더) + 지수 성장 재시도 (최대 3회, 매회 2배)
+  - Pre-quantize 후 인코딩 분리로 재시도 시 quantize 재계산 방지
+- **gifProcessor.ts — `frameToBlobUrl` 전역 캔버스 race condition 제거**
+  - 모듈 전역 `_frameCanvas` 재사용 → 호출마다 새 `HTMLCanvasElement` 생성
+  - 동시 호출 시 캔버스 내용 덮어쓰기 방지
+- **workerPool.ts — 이벤트 리스너 누적 방지**
+  - `addEventListener` + `AbortController` → `worker.onmessage`/`worker.onerror` 직접 할당
+  - 각 dispatch 시 이전 핸들러 자동 교체, GC 전 참조 잔존 문제 해소
+
+### P1 — Medium Fixes (4 items, 2 deferred)
+
+- **gifPlaybackManager.svelte.ts — GIF 프레임 캐시 LRU 제한**
+  - 무제한 `Map` → LRU 캐시 (max 30 entries)
+  - 조회 시 re-insert로 사용 순서 갱신, 초과 시 oldest blob URL revoke
+- **imageWorker.ts — 입력 검증 `width === 0` 방어**
+  - `!width` (falsy) → `!(width > 0)` 명시적 양수 검증
+  - `OffscreenCanvas(0, 0)` 에러 방지
+- **windowStore.svelte.ts — localStorage 레이아웃 타입 검증**
+  - `loadSavedLayout()`에 `isFiniteNumber()` 검증 추가
+  - 외부 수정으로 `NaN`/`Infinity` 유입 시 해당 항목 필터링
+- **ToastNotification.svelte — a11y 경고 해소**
+  - 비대화형 `<div>`의 `onclick`/`onkeydown` 제거 (close 버튼으로 충분)
+  - `svelte-ignore` 주석 제거, `cursor: pointer` 제거
+  - svelte-check 경고 0건 달성
+- ⏭️ **imageProcessor.ts — stale request 워커 CPU** — 보류 (워커 동기식 처리, cancel 불가. 현재 방식 합리적)
+- ⏭️ **npm audit cookie 취약점** — 보류 (SvelteKit 의존성, 정적 SPA 실질 영향 없음)
+
+### P2 — Performance & Quality Improvements (5 items)
+
+- **exportService.ts — SVG 내보내기 이미지 재디코딩 제거**
+  - `exportSvg(src)` → `exportSvg(src, lastCanvas?)` 시그니처 확장
+  - `imageProcessingStore`에 `getLastCanvas()` 노출, `+page.svelte`에서 전달
+  - 캐시된 canvas 사용 시 blob URL 재로드 + Image 디코딩 생략
+- **colorQuantizer.ts — LUT 캐시 크기 확대**
+  - `MAX_LUT_CACHE_SIZE` 3 → 6 (각 ~228KB, 총 ~1.4MB 최대)
+  - 팔레트 빈번 전환 시 LUT 재구축 감소
+- **gifProcessor.ts — `findTransparentIndex` 중복 순회 제거**
+  - `quantizeFrame` 반환에 `hasTransparent` 플래그 추가
+  - 별도 `findTransparentIndex` 함수 (전체 픽셀 재스캔) 제거
+  - 프레임당 1회 순회로 통합
+- **+page.svelte — 키보드 단축키 `?` 필터링 보완**
+  - `HTMLSelectElement`, `isContentEditable` 체크 추가
+  - `<select>`, `contenteditable` 요소에서 `?` 입력 시 단축키 미동작
+- **glitchEngine.ts — PRNG 품질 개선**
+  - `Math.sin` 기반 해시 → xorshift32 PRNG 교체
+  - 패턴 편향 감소, 균일한 분포
+
+### Build & Test Status (v1.5)
+- `svelte-check`: **0 에러, 0 경고** (a11y 경고 해소)
+- `vitest`: **362 tests passing** (39 files) — 변동 없음
+- Production build: passes
+- Modified files: 10 (`gifProcessor.ts`, `workerPool.ts`, `gifPlaybackManager.svelte.ts`, `imageWorker.ts`, `windowStore.svelte.ts`, `ToastNotification.svelte`, `exportService.ts`, `colorQuantizer.ts`, `glitchEngine.ts`, `+page.svelte`) + `imageProcessingStore.svelte.ts` (getLastCanvas 노출)
+
+---
+
 ## v1.4.0 (2026-03-18)
 
 > Code quality improvements: memory leak fixes, i18n completion, store tests, accessibility, and CSS tokenization.

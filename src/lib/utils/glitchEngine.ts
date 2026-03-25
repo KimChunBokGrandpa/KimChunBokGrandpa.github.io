@@ -31,9 +31,19 @@ export const applyGlitch = (
   const { width, height, data } = imageData;
   const resultData = new Uint8ClampedArray(data);
   const getIndex = (x: number, y: number) => (y * width + x) * 4;
-  const pseudoRandom = (n: number) => Math.sin(seed * n * 12.9898) * 43758.5453;
-  const randomValue = (n: number) =>
-    pseudoRandom(n) - Math.floor(pseudoRandom(n));
+
+  // xorshift32 PRNG — better distribution than Math.sin-based hash
+  let xorState = ((seed * 2147483647) | 0) || 1; // ensure non-zero
+  const xorshift = () => {
+    xorState ^= xorState << 13;
+    xorState ^= xorState >> 17;
+    xorState ^= xorState << 5;
+    return xorState;
+  };
+  const randomValue = (_n: number) => {
+    const v = xorshift();
+    return (v >>> 0) / 4294967296; // [0, 1)
+  };
 
   // 1. RGB Split (Chromatic Aberration)
   const applyRgbSplit = () => {

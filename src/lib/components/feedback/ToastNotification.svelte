@@ -45,8 +45,7 @@
 </script>
 
 {#if visible}
-  <!-- svelte-ignore a11y_no_static_element_interactions a11y_no_noninteractive_element_interactions -->
-  <div class="toast toast-{variant}" role="status" aria-live="polite" onclick={dismiss} onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') dismiss(); }}>
+  <div class="toast toast-{variant}" role="status" aria-live="polite">
     <span class="toast-icon">{VARIANT_ICONS[variant]}</span>
     <span class="toast-msg">{message}</span>
     {#if action}
@@ -77,7 +76,6 @@
     white-space: normal;
     max-width: calc(100vw - 32px);
     word-break: break-word;
-    cursor: pointer;
     font-family: inherit;
     color: inherit;
     text-align: left;
