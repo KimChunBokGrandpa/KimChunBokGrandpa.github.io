@@ -80,6 +80,11 @@
 </script>
 
 <div class="taskbar">
+  <button class="start-btn" onclick={() => {}} aria-label={i18n.t('start')}>
+    <span class="start-logo">⊞</span>
+    <span class="start-text">{i18n.t('start')}</span>
+  </button>
+  <div class="taskbar-grip" aria-hidden="true"><span></span><span></span></div>
   <div class="taskbar-left">
     {#each visibleWindows as win}
       <div
@@ -112,6 +117,7 @@
     {/each}
   </div>
 
+  <div class="taskbar-grip tray-grip" aria-hidden="true"><span></span><span></span></div>
   <div class="taskbar-right">
     <div class="tray">
       <span class="tray-ico">🔊</span>
@@ -143,6 +149,64 @@
     z-index: 9000;
     gap: 2px;
     box-shadow: inset 0 1px 0 var(--w98-shadow-light);
+  }
+
+  /* ── Start Button ── */
+  .start-btn {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    padding: 2px 6px;
+    background: var(--w98-surface);
+    border: none;
+    box-shadow: var(--w98-outset);
+    cursor: pointer;
+    font-family: inherit;
+    font-size: var(--w98-font-size-base);
+    font-weight: bold;
+    flex-shrink: 0;
+    height: 100%;
+  }
+  .start-btn:active {
+    box-shadow: var(--w98-inset);
+  }
+  .start-logo {
+    font-size: 14px;
+    font-weight: bold;
+    color: var(--w98-highlight);
+    line-height: 1;
+  }
+  .start-text {
+    letter-spacing: 0.5px;
+  }
+
+  /* ── Gripper (drag handle divider) ── */
+  .taskbar-grip {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 1px;
+    padding: 0 3px;
+    flex-shrink: 0;
+    cursor: default;
+  }
+  .taskbar-grip span {
+    display: block;
+    width: 3px;
+    height: 100%;
+    min-height: 18px;
+    background: repeating-linear-gradient(
+      to bottom,
+      var(--w98-shadow-white) 0px,
+      var(--w98-shadow-white) 1px,
+      var(--w98-shadow-808) 1px,
+      var(--w98-shadow-808) 2px,
+      transparent 2px,
+      transparent 3px
+    );
+  }
+  .tray-grip {
+    margin-left: auto;
   }
 
   .taskbar-left {
@@ -320,6 +384,12 @@
     .tray {
       gap: 4px;
       padding: 0 4px;
+    }
+    .start-text {
+      display: none;
+    }
+    .taskbar-grip {
+      display: none;
     }
     .tray-ico {
       display: none;

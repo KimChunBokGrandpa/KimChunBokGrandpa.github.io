@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { i18n } from '$lib/i18n/index.svelte';
 
   export type ToastVariant = 'success' | 'error' | 'warning';
 
@@ -51,7 +52,7 @@
     {#if action}
       <button class="toast-action" onclick={(e) => { e.stopPropagation(); action.onclick(); dismiss(); }}>{action.label}</button>
     {/if}
-    <button class="toast-close" aria-label="Close" onclick={dismiss}>×</button>
+    <button class="toast-close" aria-label={i18n.t('close')} onclick={dismiss}>×</button>
   </div>
 {/if}
 

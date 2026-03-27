@@ -470,6 +470,15 @@ export const en = {
   // ─── Batch Errors ───
   batch_processing_null: 'Processing returned no result',
   batch_unknown_error: 'Unknown error',
+
+  // ─── Window UI ───
+  start: 'Start',
+  desktop_shortcuts: 'Desktop shortcuts',
+  menu_file: 'File',
+  menu_edit: 'Edit',
+  menu_view: 'View',
+  menu_help: 'Help',
+  menu_image: 'Image',
 } as const;
 
 export type TranslationKey = keyof typeof en;

@@ -14,6 +14,7 @@
     minWidth = 200,
     minHeight = 150,
     mobileSlot = null,
+    menuItems = [] as string[],
     onClose,
     onFocus,
     onLayoutChange,
@@ -30,6 +31,7 @@
     minWidth?: number;
     minHeight?: number;
     mobileSlot?: { top: string; height: string } | null;
+    menuItems?: string[];
     onClose?: () => void;
     onFocus?: () => void;
     onLayoutChange?: () => void;
@@ -272,6 +274,28 @@
         <button aria-label={i18n.t('close')} onclick={handleClose}></button>
       </div>
     </div>
+    {#if menuItems.length > 0}
+      <div class="win98-menubar" role="menubar">
+        {#each menuItems as item, idx}
+          <button
+            class="win98-menu-item"
+            role="menuitem"
+            tabindex={idx === 0 ? 0 : -1}
+            onkeydown={(e) => {
+              const items = (e.currentTarget as HTMLElement).parentElement?.querySelectorAll<HTMLElement>('[role="menuitem"]');
+              if (!items) return;
+              if (e.key === 'ArrowRight') {
+                e.preventDefault();
+                items[(idx + 1) % items.length].focus();
+              } else if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                items[(idx - 1 + items.length) % items.length].focus();
+              }
+            }}
+          >{item}</button>
+        {/each}
+      </div>
+    {/if}
     <div class="window-body win98-body">
       {@render children()}
     </div>
@@ -353,6 +377,36 @@
   .win98-window.resizing {
     outline: 2px dashed var(--w98-highlight);
     outline-offset: -2px;
+  }
+
+  /* ── Menu Bar ── */
+  .win98-menubar {
+    display: flex;
+    align-items: stretch;
+    background: var(--w98-surface);
+    padding: 0;
+    border-bottom: 1px solid var(--w98-shadow-808);
+    flex-shrink: 0;
+  }
+  .win98-menu-item {
+    display: flex;
+    align-items: center;
+    padding: 2px 8px;
+    font-size: var(--w98-font-size-base);
+    font-family: inherit;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    cursor: default;
+    color: var(--w98-text);
+    white-space: nowrap;
+  }
+  .win98-menu-item:hover {
+    background: var(--w98-highlight);
+    color: #fff;
+  }
+  .win98-menu-item:active {
+    box-shadow: var(--w98-inset-thin);
   }
 
   .win98-body {

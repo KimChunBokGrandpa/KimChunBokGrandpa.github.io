@@ -1,6 +1,7 @@
 <script lang="ts">
   import { WINDOW_CONFIGS, getWindowTitle } from '$lib/stores/windowStore.svelte';
   import type { WindowId } from '$lib/types';
+  import { i18n } from '$lib/i18n/index.svelte';
 
   let {
     selectedIcon,
@@ -13,7 +14,7 @@
   } = $props();
 </script>
 
-<div class="desktop-icons" role="toolbar" aria-label="Desktop shortcuts">
+<div class="desktop-icons" role="toolbar" aria-label={i18n.t('desktop_shortcuts')}>
   {#each WINDOW_CONFIGS as cfg}
     <button
       class="desktop-icon"

@@ -347,6 +347,7 @@
       bind:height={wm.wins.settings.h}
       zIndex={wm.wins.settings.z}
       mobileSlot={getMobileSlot('settings')}
+      menuItems={[i18n.t('menu_file'), i18n.t('menu_edit'), i18n.t('menu_view'), i18n.t('menu_help')]}
       onClose={() => wm.close('settings')}
       onFocus={() => wm.focusWindow('settings')}
       onLayoutChange={wm.persistLayout}
@@ -377,7 +378,7 @@
           onChange={handleSettingsChange}
           onSave={handleSave}
           onExportSvg={handleExportSvg}
-          onOpenGallery={() => { setTimeout(() => wm.openWindow('gallery'), 0); }}
+          onOpenGallery={() => { queueMicrotask(() => wm.openWindow('gallery')); }}
           onFormatChange={handleFormatChange}
           onQualityChange={handleQualityChange}
           onApplyNow={() => ip.applyNow()}
@@ -399,6 +400,7 @@
       bind:height={wm.wins.preview.h}
       zIndex={wm.wins.preview.z}
       mobileSlot={getMobileSlot('preview')}
+      menuItems={[i18n.t('menu_file'), i18n.t('menu_view'), i18n.t('menu_image'), i18n.t('menu_help')]}
       onClose={() => wm.close('preview')}
       onFocus={() => wm.focusWindow('preview')}
       onLayoutChange={wm.persistLayout}
@@ -454,6 +456,7 @@
       bind:height={wm.wins.gallery.h}
       zIndex={wm.wins.gallery.z}
       mobileSlot={getMobileSlot('gallery')}
+      menuItems={[i18n.t('menu_file'), i18n.t('menu_edit'), i18n.t('menu_view'), i18n.t('menu_help')]}
       onClose={() => wm.close('gallery')}
       onFocus={() => wm.focusWindow('gallery')}
       onLayoutChange={wm.persistLayout}
@@ -561,10 +564,6 @@
   .desktop {
     --taskbar-h: 30px;
     background-color: var(--w98-desktop-bg);
-    background-image:
-      radial-gradient(circle at 20px 20px, rgba(255,255,255,0.03) 1px, transparent 1px),
-      radial-gradient(circle at 10px 10px, rgba(0,0,0,0.04) 1px, transparent 1px);
-    background-size: 20px 20px;
     width: 100vw;
     height: calc(100vh - var(--taskbar-h));
     height: calc(100dvh - var(--taskbar-h));
@@ -602,5 +601,41 @@
   .desktop-drop-icon {
     font-size: 32px;
     font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+  }
+
+  /* ── Settings Window Toolbar ── */
+  .settings-body {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+  }
+  .settings-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 2px 4px;
+    background: var(--w98-surface);
+    border-bottom: 1px solid var(--w98-shadow-808);
+    flex-shrink: 0;
+  }
+  .settings-toolbar :global(.load-new-btn) {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    padding: 2px 6px;
+    font-size: var(--w98-font-size-base);
+    font-family: inherit;
+    background: var(--w98-surface);
+    border: none;
+    box-shadow: none;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .settings-toolbar :global(.load-new-btn:hover) {
+    box-shadow: var(--w98-outset-thin);
+  }
+  .settings-toolbar :global(.load-new-btn:active) {
+    box-shadow: var(--w98-inset-thin);
   }
 </style>

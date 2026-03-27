@@ -91,7 +91,10 @@
       </div>
     </div>
     <div class="window-body dialog-body">
-      <p class="dialog-message">{message}</p>
+      <div class="dialog-content">
+        <span class="dialog-icon" aria-hidden="true">{onConfirm ? '⚠️' : 'ℹ️'}</span>
+        <p class="dialog-message">{message}</p>
+      </div>
       <div class="field-row dialog-actions">
         {#if onConfirm}
           <button class="dialog-ok-btn" bind:this={okBtn} onclick={onConfirm}>{i18n.t('ok')}</button>
@@ -122,8 +125,21 @@
   .dialog-body {
     padding: 12px;
   }
+  .dialog-content {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .dialog-icon {
+    font-size: 32px;
+    flex-shrink: 0;
+    font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+    line-height: 1;
+  }
   .dialog-message {
-    margin: 0 0 16px 0;
+    margin: 0;
+    padding-top: 6px;
   }
   .dialog-actions {
     justify-content: flex-end;

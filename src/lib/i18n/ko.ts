@@ -445,4 +445,13 @@ export const ko: Record<TranslationKey, string> = {
   // ─── Batch Errors ───
   batch_processing_null: '처리 결과가 없습니다',
   batch_unknown_error: '알 수 없는 오류',
+
+  // ─── Window UI ───
+  start: '시작',
+  desktop_shortcuts: '바탕화면 바로가기',
+  menu_file: '파일',
+  menu_edit: '편집',
+  menu_view: '보기',
+  menu_help: '도움말',
+  menu_image: '이미지',
 };

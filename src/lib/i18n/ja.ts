@@ -445,4 +445,13 @@ export const ja: Record<TranslationKey, string> = {
   // ─── Batch Errors ───
   batch_processing_null: '処理結果がありません',
   batch_unknown_error: '不明なエラー',
+
+  // ─── Window UI ───
+  start: 'スタート',
+  desktop_shortcuts: 'デスクトップショートカット',
+  menu_file: 'ファイル',
+  menu_edit: '編集',
+  menu_view: '表示',
+  menu_help: 'ヘルプ',
+  menu_image: '画像',
 };
