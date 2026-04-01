@@ -1,6 +1,7 @@
 import { PALETTES } from "./palettes";
 import type { DitherType } from "../types";
 import type { RGB } from "./palettes";
+import { oklabDistanceSq } from "./colorUtils";
 
 // Color Quantization & Pixelation Engine
 
@@ -34,8 +35,10 @@ function colorDistance(cr: number, cg: number, cb: number, r: number, g: number,
 }
 
 /** Build both packed (Uint32) and RGB (Uint8) LUTs in a single pass */
-function buildBothLuts(paletteName: string, customColors?: RGB[]): void {
-  if (lutCache.has(paletteName) && lutRgbCache.has(paletteName)) return;
+function buildBothLuts(paletteName: string, customColors?: RGB[], useOklab?: boolean): void {
+  // Cache key includes oklab flag to store separate LUTs
+  const cacheKey = useOklab ? `${paletteName}__oklab` : paletteName;
+  if (lutCache.has(cacheKey) && lutRgbCache.has(cacheKey)) return;
 
   const palette = customColors || PALETTES[paletteName] || PALETTES["win256"];
   const packed = new Uint32Array(LUT_SIZE);
@@ -53,7 +56,9 @@ function buildBothLuts(paletteName: string, customColors?: RGB[]): void {
         let nearestIdx = 0;
         for (let pi = 0; pi < palette.length; pi++) {
           const c = palette[pi];
-          const d = colorDistance(c.r, c.g, c.b, r, g, b);
+          const d = useOklab
+            ? oklabDistanceSq(c.r, c.g, c.b, r, g, b)
+            : colorDistance(c.r, c.g, c.b, r, g, b);
           if (d === 0) { nearestIdx = pi; break; }
           if (d < minDist) { minDist = d; nearestIdx = pi; }
         }
@@ -70,20 +75,22 @@ function buildBothLuts(paletteName: string, customColors?: RGB[]): void {
     }
   }
 
-  lutCache.set(paletteName, packed);
-  lutRgbCache.set(paletteName, rgbLut);
+  lutCache.set(cacheKey, packed);
+  lutRgbCache.set(cacheKey, rgbLut);
 }
 
 /** Get packed RGBA LUT (lazy, cached) */
-function buildLut(paletteName: string, customColors?: RGB[]): Uint32Array {
-  if (!lutCache.has(paletteName)) buildBothLuts(paletteName, customColors);
-  return lutCache.get(paletteName)!;
+function buildLut(paletteName: string, customColors?: RGB[], useOklab?: boolean): Uint32Array {
+  const key = useOklab ? `${paletteName}__oklab` : paletteName;
+  if (!lutCache.has(key)) buildBothLuts(paletteName, customColors, useOklab);
+  return lutCache.get(key)!;
 }
 
 /** Get unpacked RGB LUT for dithering error calculation (lazy, cached) */
-function buildLutRgb(paletteName: string, customColors?: RGB[]): Uint8Array {
-  if (!lutRgbCache.has(paletteName)) buildBothLuts(paletteName, customColors);
-  return lutRgbCache.get(paletteName)!;
+function buildLutRgb(paletteName: string, customColors?: RGB[], useOklab?: boolean): Uint8Array {
+  const key = useOklab ? `${paletteName}__oklab` : paletteName;
+  if (!lutRgbCache.has(key)) buildBothLuts(paletteName, customColors, useOklab);
+  return lutRgbCache.get(key)!;
 }
 
 /** LUT lookup returning unpacked RGB */
@@ -137,6 +144,7 @@ export function applyPixelationAndPalette(
   paletteName: string,
   ditherType: DitherType = 'none',
   customPaletteColors?: RGB[],
+  useOklab?: boolean,
 ): ImageData {
   const width = imageData.width;
   const height = imageData.height;
@@ -152,19 +160,24 @@ export function applyPixelationAndPalette(
 
   // ─── Floyd-Steinberg dithering path ───
   if (ditherType === 'floyd_steinberg' && usePalette) {
-    return applyFloydSteinberg(pixels, width, height, effectivePixelSize, paletteName, customPaletteColors);
+    return applyFloydSteinberg(pixels, width, height, effectivePixelSize, paletteName, customPaletteColors, useOklab);
+  }
+
+  // ─── Atkinson dithering path ───
+  if (ditherType === 'atkinson' && usePalette) {
+    return applyAtkinson(pixels, width, height, effectivePixelSize, paletteName, customPaletteColors, useOklab);
   }
 
   // ─── Ordered dithering path ───
   if (ditherType === 'ordered' && usePalette) {
-    return applyOrderedDither(pixels, width, height, effectivePixelSize, paletteName, customPaletteColors);
+    return applyOrderedDither(pixels, width, height, effectivePixelSize, paletteName, customPaletteColors, useOklab);
   }
 
   // ─── Default path (no dithering) ───
   const outData = new ImageData(width, height);
   const outPixels = outData.data;
   const outPixels32 = new Uint32Array(outPixels.buffer);
-  const packed = usePalette ? buildLut(paletteName, customPaletteColors) : null;
+  const packed = usePalette ? buildLut(paletteName, customPaletteColors, useOklab) : null;
   const sampleStride = effectivePixelSize >= 5 ? 2 : 1;
 
   for (let y = 0; y < height; y += effectivePixelSize) {
@@ -220,6 +233,7 @@ function applyFloydSteinberg(
   pixelSize: number,
   paletteName: string,
   customColors?: RGB[],
+  useOklab?: boolean,
 ): ImageData {
   // 1. Create reduced-resolution image from block averages
   const rw = Math.ceil(width / pixelSize);
@@ -257,11 +271,11 @@ function applyFloydSteinberg(
   }
 
   // 2. Apply Floyd-Steinberg error diffusion on reduced image
-  const rgbLut = buildLutRgb(paletteName, customColors);
+  const rgbLut = buildLutRgb(paletteName, customColors, useOklab);
   const outData = new ImageData(width, height);
   const outPixels = outData.data;
   const outPixels32 = new Uint32Array(outPixels.buffer);
-  const packed = buildLut(paletteName, customColors);
+  const packed = buildLut(paletteName, customColors, useOklab);
 
   for (let ry = 0; ry < rh; ry++) {
     for (let rx = 0; rx < rw; rx++) {
@@ -327,6 +341,108 @@ function applyFloydSteinberg(
   return outData;
 }
 
+// ─── Atkinson Dithering ───
+// Classic Mac-style dithering: spreads 6/8 of the error to 6 neighbors.
+// Produces a lighter, more contrasty look than Floyd-Steinberg.
+function applyAtkinson(
+  pixels: Uint8ClampedArray,
+  width: number,
+  height: number,
+  pixelSize: number,
+  paletteName: string,
+  customColors?: RGB[],
+  useOklab?: boolean,
+): ImageData {
+  const rw = Math.ceil(width / pixelSize);
+  const rh = Math.ceil(height / pixelSize);
+  const buf = new Float32Array(rw * rh * 3);
+  const atStride = pixelSize >= 5 ? 2 : 1;
+
+  // Fill with block averages
+  for (let ry = 0; ry < rh; ry++) {
+    for (let rx = 0; rx < rw; rx++) {
+      const sx = rx * pixelSize;
+      const sy = ry * pixelSize;
+      const blockW = Math.min(pixelSize, width - sx);
+      const blockH = Math.min(pixelSize, height - sy);
+      let r = 0, g = 0, b = 0, count = 0;
+
+      for (let by = 0; by < blockH; by += atStride) {
+        const rowBase = ((sy + by) * width + sx) * 4;
+        for (let bx = 0; bx < blockW; bx += atStride) {
+          const idx = rowBase + bx * 4;
+          r += pixels[idx];
+          g += pixels[idx + 1];
+          b += pixels[idx + 2];
+          count++;
+        }
+      }
+
+      const off = (ry * rw + rx) * 3;
+      buf[off] = r / count;
+      buf[off + 1] = g / count;
+      buf[off + 2] = b / count;
+    }
+  }
+
+  const rgbLut = buildLutRgb(paletteName, customColors, useOklab);
+  const outData = new ImageData(width, height);
+  const outPixels32 = new Uint32Array(outData.data.buffer);
+  const packed = buildLut(paletteName, customColors, useOklab);
+
+  // Atkinson: distribute 1/8 of error to each of 6 neighbors
+  // (right, right+1, bottom-left, bottom, bottom-right, bottom+1 row center)
+  for (let ry = 0; ry < rh; ry++) {
+    for (let rx = 0; rx < rw; rx++) {
+      const off = (ry * rw + rx) * 3;
+      const r = Math.max(0, Math.min(255, Math.round(buf[off])));
+      const g = Math.max(0, Math.min(255, Math.round(buf[off + 1])));
+      const b = Math.max(0, Math.min(255, Math.round(buf[off + 2])));
+
+      const [nr, ng, nb] = lutLookupRgb(rgbLut, r, g, b);
+
+      // Atkinson spreads 6/8 of the error (not all of it — intentional)
+      const errR = (buf[off] - nr) / 8;
+      const errG = (buf[off + 1] - ng) / 8;
+      const errB = (buf[off + 2] - nb) / 8;
+
+      // 6 neighbors, each gets 1/8 of original error
+      const neighbors: [number, number][] = [
+        [rx + 1, ry],     // right
+        [rx + 2, ry],     // right+1
+        [rx - 1, ry + 1], // bottom-left
+        [rx, ry + 1],     // bottom
+        [rx + 1, ry + 1], // bottom-right
+        [rx, ry + 2],     // two rows down center
+      ];
+
+      for (const [nx, ny] of neighbors) {
+        if (nx >= 0 && nx < rw && ny >= 0 && ny < rh) {
+          const noff = (ny * rw + nx) * 3;
+          buf[noff] += errR;
+          buf[noff + 1] += errG;
+          buf[noff + 2] += errB;
+        }
+      }
+
+      // Fill block
+      const lutIdx = ((nr >> SHIFT) << (BITS * 2)) | ((ng >> SHIFT) << BITS) | (nb >> SHIFT);
+      const packedColor = packed[lutIdx];
+
+      const sx = rx * pixelSize;
+      const sy = ry * pixelSize;
+      const blockW = Math.min(pixelSize, width - sx);
+      const blockH = Math.min(pixelSize, height - sy);
+      for (let by = 0; by < blockH; by++) {
+        const rowOffset = (sy + by) * width;
+        outPixels32.fill(packedColor, rowOffset + sx, rowOffset + sx + blockW);
+      }
+    }
+  }
+
+  return outData;
+}
+
 // ─── Ordered (Bayer) Dithering ───
 function applyOrderedDither(
   pixels: Uint8ClampedArray,
@@ -335,10 +451,11 @@ function applyOrderedDither(
   pixelSize: number,
   paletteName: string,
   customColors?: RGB[],
+  useOklab?: boolean,
 ): ImageData {
   const outData = new ImageData(width, height);
   const outPixels32 = new Uint32Array(outData.data.buffer);
-  const packed = buildLut(paletteName, customColors);
+  const packed = buildLut(paletteName, customColors, useOklab);
 
   // Spread factor: controls dithering strength.
   // Scale by approximate palette step size for natural results.

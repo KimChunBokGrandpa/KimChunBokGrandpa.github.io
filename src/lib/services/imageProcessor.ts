@@ -4,6 +4,8 @@ import type {
   ImageWorkerResponse,
 } from "../types";
 import { customPaletteStore } from "../stores/customPaletteStore.svelte";
+import { PALETTES } from "../utils/palettes";
+import { invoke } from "@tauri-apps/api/core";
 
 /**
  * Singleton-based image processing service.
@@ -254,6 +256,55 @@ class ImageProcessorService {
       );
     }
 
+    const isTauri = typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
+
+    if (isTauri) {
+      return new Promise<string | null>(async (resolve, reject) => {
+        this.pendingResolvers.set(requestId, { resolve, reject, onProgress });
+        try {
+          const c = document.createElement('canvas');
+          c.width = procWidth;
+          c.height = procHeight;
+          const ctx = c.getContext('2d');
+          if (!ctx) throw new Error("Failed to get 2d context");
+          ctx.drawImage(img, 0, 0, procWidth, procHeight);
+          const imageData = ctx.getImageData(0, 0, procWidth, procHeight);
+
+          const paletteColors = settings.palette.startsWith('custom_')
+            ? customPaletteStore.getPaletteById(settings.palette)?.colors?.map(c => ({ r: c.r, g: c.g, b: c.b })) ?? []
+            : PALETTES[settings.palette] ?? [];
+
+          const processedBytes = await invoke<Uint8Array>('process_image_rs', {
+            data: Array.from(imageData.data),
+            req: {
+              width: procWidth,
+              height: procHeight,
+              pixel_size: settings.pixelSize,
+              palette: paletteColors,
+              dither_type: settings.ditherType || 'none'
+            }
+          });
+
+          // Reconstruct
+          const safeData = new ImageData(
+            new Uint8ClampedArray(processedBytes),
+            procWidth,
+            procHeight
+          );
+
+          ctx.putImageData(safeData, 0, 0);
+          this.lastCanvas = c;
+          
+          const blob = await this.toBlobWithTimeout(c);
+          if (this.currentRequestId !== requestId) return resolve(null);
+          resolve(this.replaceBlobUrl(URL.createObjectURL(blob)));
+        } catch (err) {
+          this.pendingResolvers.delete(requestId);
+          reject(new Error(`Tauri Rust processing failed: ${err}`));
+        }
+      });
+    }
+
     // Use createImageBitmap to decode off-thread and transfer to worker
     let bitmap: ImageBitmap;
     try {
@@ -282,6 +333,7 @@ class ImageProcessorService {
         renderMode: settings.renderMode,
         glitchSeed: settings.glitchSeed,
         ditherType: settings.ditherType,
+        useOklab: settings.useOklab,
         customPaletteColors: settings.palette.startsWith('custom_')
           ? customPaletteStore.getPaletteById(settings.palette)?.colors
               ?.map(c => ({ r: c.r, g: c.g, b: c.b }))

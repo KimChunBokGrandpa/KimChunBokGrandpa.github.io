@@ -14,6 +14,7 @@
     { id: 'none', labelKey: 'dither_none' as const, titleKey: 'dither_none_desc' as const },
     { id: 'floyd_steinberg', labelKey: 'dither_fs' as const, titleKey: 'dither_fs_desc' as const },
     { id: 'ordered', labelKey: 'dither_ordered' as const, titleKey: 'dither_ordered_desc' as const },
+    { id: 'atkinson', labelKey: 'dither_atkinson' as const, titleKey: 'dither_atkinson_desc' as const },
   ] as const;
 
   // Save format options
@@ -217,6 +218,19 @@
               </button>
             {/each}
           </div>
+        </fieldset>
+
+        <!-- Oklab color space toggle -->
+        <fieldset>
+          <legend>{i18n.t('color_space')}</legend>
+          <label class="oklab-toggle">
+            <input
+              type="checkbox"
+              checked={settings.useOklab ?? false}
+              onchange={(e) => { settings.useOklab = (e.target as HTMLInputElement).checked; update(); }}
+            />
+            {i18n.t('use_oklab')}
+          </label>
         </fieldset>
       </div>
 

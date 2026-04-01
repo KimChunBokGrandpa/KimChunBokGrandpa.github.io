@@ -22,6 +22,7 @@ onmessage = (e: MessageEvent<ImageWorkerMessage>) => {
     renderMode,
     glitchSeed,
     ditherType,
+    useOklab,
     customPaletteColors,
     effectLayers,
   } = e.data;
@@ -51,6 +52,7 @@ onmessage = (e: MessageEvent<ImageWorkerMessage>) => {
       palette,
       ditherType || 'none',
       customPaletteColors,
+      useOklab,
     );
 
     // Clear cached color lookups for unused palettes

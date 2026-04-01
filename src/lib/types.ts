@@ -20,7 +20,7 @@ export interface WindowConfig {
 // ─── Processing Types ───
 export type GlitchType = "none" | "rgb_split" | "noise" | "wave" | "slice";
 export type RenderMode = "pixel_perfect" | "bilinear" | "hqx";
-export type DitherType = "none" | "floyd_steinberg" | "ordered";
+export type DitherType = "none" | "floyd_steinberg" | "ordered" | "atkinson";
 export type CrtMode = "none" | "horizontal" | "vertical";
 
 export interface GlitchFilter {
@@ -47,6 +47,7 @@ export interface ProcessingSettings {
   renderMode: RenderMode;
   glitchSeed: number | null; // null = random each time, number = fixed seed
   ditherType: DitherType;
+  useOklab?: boolean; // use Oklab perceptual color space for quantization
   effectLayers?: EffectLayer[]; // ordered post-processing layers
 }
 
@@ -77,6 +78,7 @@ export interface ImageWorkerMessage {
   renderMode?: RenderMode;
   glitchSeed?: number | null;
   ditherType?: DitherType;
+  useOklab?: boolean;
   customPaletteColors?: { r: number; g: number; b: number }[];
   effectLayers?: EffectLayer[];
 }

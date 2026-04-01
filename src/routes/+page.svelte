@@ -7,7 +7,7 @@
   import MessageDialog from '$lib/components/feedback/MessageDialog.svelte';
   import BatchProcessor from '$lib/components/media/BatchProcessor.svelte';
   import HistoryPanel from '$lib/components/feedback/HistoryPanel.svelte';
-  import DesktopIcons from '$lib/components/window/DesktopIcons.svelte';
+  import DesktopWorkspace from '$lib/components/window/DesktopWorkspace.svelte';
   import PreviewContent from '$lib/components/editor/PreviewContent.svelte';
   import ToastNotification from '$lib/components/feedback/ToastNotification.svelte';
   import KeyboardShortcuts from '$lib/components/feedback/KeyboardShortcuts.svelte';
@@ -249,35 +249,11 @@
 
   // ─── Desktop-wide Drop Zone ───
   const ACCEPTED_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/bmp', 'image/webp'];
-  let dragCounter = 0;
-  let isDraggingOverDesktop = $state(false);
-
-  function handleDesktopDragEnter(e: DragEvent) {
-    e.preventDefault();
-    dragCounter++;
-    if (dragCounter === 1) isDraggingOverDesktop = true;
-  }
-
-  function handleDesktopDragLeave(e: DragEvent) {
-    e.preventDefault();
-    dragCounter--;
-    if (dragCounter <= 0) {
-      dragCounter = 0;
-      isDraggingOverDesktop = false;
-    }
-  }
-
-  function handleDesktopDrop(e: DragEvent) {
-    e.preventDefault();
-    dragCounter = 0;
-    isDraggingOverDesktop = false;
-    if (e.dataTransfer?.files && e.dataTransfer.files.length > 0) {
-      const file = e.dataTransfer.files[0];
-      if (ACCEPTED_IMAGE_TYPES.includes(file.type)) {
-        handleImageSelected(file);
-      } else {
-        showDialog(i18n.t('unsupported_format'), i18n.t('error'));
-      }
+  function handleDesktopDrop(file: File) {
+    if (ACCEPTED_IMAGE_TYPES.includes(file.type)) {
+      handleImageSelected(file);
+    } else {
+      showDialog(i18n.t('unsupported_format'), i18n.t('error'));
     }
   }
 
@@ -305,35 +281,13 @@
 <svelte:window onkeydown={handleKeydown} />
 
 <!-- ═══ Desktop ═══ -->
-<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-<div
-  class="desktop"
-  onclick={handleDesktopClick}
-  onkeydown={(e) => { if (e.key === 'Escape') handleDesktopClick(); }}
-  ondragenter={handleDesktopDragEnter}
-  ondragover={(e) => e.preventDefault()}
-  ondragleave={handleDesktopDragLeave}
-  ondrop={handleDesktopDrop}
-  role="application"
-  tabindex="-1"
+<DesktopWorkspace
+  {selectedIcon}
+  onIconClick={handleIconClick}
+  onIconDblClick={handleIconDblClick}
+  onDesktopClick={handleDesktopClick}
+  onImageDropped={handleDesktopDrop}
 >
-
-  <!-- Desktop Drop Overlay -->
-  {#if isDraggingOverDesktop}
-    <div class="desktop-drop-overlay">
-      <div class="desktop-drop-message">
-        <span class="desktop-drop-icon">📥</span>
-        <span>{i18n.t('drop_image_here')}</span>
-      </div>
-    </div>
-  {/if}
-
-  <!-- Desktop Icons -->
-  <DesktopIcons
-    {selectedIcon}
-    onIconClick={handleIconClick}
-    onIconDblClick={handleIconDblClick}
-  />
 
   <!-- ═══ Settings Window ═══ -->
   {#if wm.wins.settings.mode !== 'closed'}
@@ -464,6 +418,7 @@
       <PaletteGallery
         selectedPaletteId={processingSettings.palette}
         onSelect={handleGallerySelect}
+        imageSrc={ip.originalImageSrc}
       />
     </Win98Window>
   {/if}
@@ -523,7 +478,7 @@
       />
     </Win98Window>
   {/if}
-</div>
+</DesktopWorkspace>
 
 <!-- ═══ Taskbar ═══ -->
 <Taskbar
@@ -560,48 +515,55 @@
   <KeyboardShortcuts onClose={() => { showShortcuts = false; }} />
 {/if}
 
-<style>
-  .desktop {
-    --taskbar-h: 30px;
-    background-color: var(--w98-desktop-bg);
-    width: 100vw;
-    height: calc(100vh - var(--taskbar-h));
-    height: calc(100dvh - var(--taskbar-h));
-    position: relative;
-    overflow: hidden;
-  }
+<!-- ═══ Mobile Undo/Redo Floating Buttons ═══ -->
+{#if isMobile && ip.originalImageSrc}
+  <div class="mobile-undo-redo">
+    <button
+      class="mobile-undo-btn"
+      onclick={() => ip.undo()}
+      disabled={ip.settingsHistory.length === 0}
+      aria-label={i18n.t('undo')}
+    >↩</button>
+    <button
+      class="mobile-redo-btn"
+      onclick={() => ip.redo()}
+      disabled={ip.redoHistory.length === 0}
+      aria-label={i18n.t('redo')}
+    >↪</button>
+  </div>
+{/if}
 
-  .desktop-drop-overlay {
-    position: absolute;
-    inset: 0;
-    z-index: 9998;
-    background: rgba(0, 0, 128, 0.2);
-    border: 3px dashed var(--w98-highlight);
+<style>
+  /* ── Mobile Undo/Redo Floating ── */
+  .mobile-undo-redo {
+    position: fixed;
+    bottom: 40px;
+    left: 8px;
+    display: flex;
+    gap: 4px;
+    z-index: 9990;
+  }
+  .mobile-undo-redo button {
+    width: 36px;
+    height: 36px;
+    font-size: 18px;
+    padding: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    pointer-events: none;
-  }
-
-  .desktop-drop-message {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 6px;
-    padding: 16px 32px;
     background: var(--w98-surface);
-    border: 2px solid;
-    border-color: var(--w98-shadow-light) var(--w98-shadow-808) var(--w98-shadow-808) var(--w98-shadow-light);
-    box-shadow: 4px 4px 12px rgba(0, 0, 0, 0.4);
-    font-size: 14px;
-    font-weight: bold;
-    color: var(--w98-highlight);
+    box-shadow: var(--w98-outset-thin);
+    border: none;
+    cursor: pointer;
+  }
+  .mobile-undo-redo button:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+  .mobile-undo-redo button:active:not(:disabled) {
+    box-shadow: var(--w98-inset-thin);
   }
 
-  .desktop-drop-icon {
-    font-size: 32px;
-    font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
-  }
 
   /* ── Settings Window Toolbar ── */
   .settings-body {

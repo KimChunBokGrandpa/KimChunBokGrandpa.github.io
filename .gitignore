@@ -20,5 +20,8 @@ storybook-static/
 .qwen/
 .agent/
 .claude/
+!.claude/agents/
+!.claude/skills/
+_workspace/
 .gemini/
 .agents/

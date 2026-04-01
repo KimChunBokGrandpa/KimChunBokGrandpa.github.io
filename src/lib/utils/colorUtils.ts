@@ -64,3 +64,48 @@ export function rgbToHsl(r: number, g: number, b: number): [number, number, numb
   }
   return [h, s, l];
 }
+
+// ─── Oklab Color Space ───
+// Perceptually uniform color space by Björn Ottosson.
+// Much better for color distance than weighted Euclidean in sRGB.
+
+/** Linearize sRGB component (0-1 range) */
+function srgbToLinear(c: number): number {
+  return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+}
+
+/**
+ * Convert sRGB (0-255) to Oklab (L, a, b).
+ * L: 0-1 (lightness), a/b: roughly -0.4 to 0.4 (chroma axes).
+ */
+export function rgbToOklab(r: number, g: number, b: number): [number, number, number] {
+  const lr = srgbToLinear(r / 255);
+  const lg = srgbToLinear(g / 255);
+  const lb = srgbToLinear(b / 255);
+
+  const l_ = Math.cbrt(0.4122214708 * lr + 0.5363325363 * lg + 0.0514459929 * lb);
+  const m_ = Math.cbrt(0.2119034982 * lr + 0.6806995451 * lg + 0.1073969566 * lb);
+  const s_ = Math.cbrt(0.0883024619 * lr + 0.2817188376 * lg + 0.6299787005 * lb);
+
+  return [
+    0.2104542553 * l_ + 0.7936177850 * m_ - 0.0040720468 * s_,
+    1.9779984951 * l_ - 2.4285922050 * m_ + 0.4505937099 * s_,
+    0.0259040371 * l_ + 0.7827717662 * m_ - 0.8086757660 * s_,
+  ];
+}
+
+/**
+ * Squared Oklab distance between two sRGB colors (0-255).
+ * Perceptually uniform — equal distances = equal perceived differences.
+ */
+export function oklabDistanceSq(
+  r1: number, g1: number, b1: number,
+  r2: number, g2: number, b2: number,
+): number {
+  const [L1, a1, b1_] = rgbToOklab(r1, g1, b1);
+  const [L2, a2, b2_] = rgbToOklab(r2, g2, b2);
+  const dL = L1 - L2;
+  const da = a1 - a2;
+  const db = b1_ - b2_;
+  return dL * dL + da * da + db * db;
+}

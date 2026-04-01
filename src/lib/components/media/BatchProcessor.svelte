@@ -39,6 +39,7 @@
   let items = $state<BatchItem[]>([]);
   let isDragging = $state(false);
   let isProcessingAll = $state(false);
+  let isPaused = $state(false);
 
   const ACCEPTED_TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/bmp', 'image/webp'];
 
@@ -94,12 +95,32 @@
     input.value = '';
   }
 
+  function togglePause() {
+    isPaused = !isPaused;
+  }
+
+  /** Wait until unpaused */
+  function waitForResume(): Promise<void> {
+    return new Promise(resolve => {
+      const check = () => {
+        if (!isPaused) { resolve(); return; }
+        setTimeout(check, 200);
+      };
+      check();
+    });
+  }
+
   // ─── Process All ───
   async function processAll() {
     if (items.length === 0) return;
     isProcessingAll = true;
+    isPaused = false;
 
     for (let i = 0; i < items.length; i++) {
+      // Wait if paused before starting next item
+      if (isPaused) await waitForResume();
+      if (!isProcessingAll) break; // stopped
+
       const item = items[i];
       if (item.status === 'done') continue;
 
@@ -282,13 +303,22 @@
       {#if processingCount > 0} · ⚙️ {processingCount} {i18n.t('processing')}{/if}
     </div>
     <div class="batch-actions">
-      <button onclick={processAll} disabled={items.length === 0 || isProcessingAll}>
-        {isProcessingAll ? `⚙️ ${overallProgress}%` : '▶️ ' + i18n.t('process_all')}
-      </button>
+      {#if isProcessingAll}
+        <button onclick={togglePause}>
+          {isPaused ? '▶️ ' + i18n.t('resume') : '⏸️ ' + i18n.t('pause')}
+        </button>
+        <button onclick={() => { isProcessingAll = false; isPaused = false; }}>
+          ⏹️ {i18n.t('stop')}
+        </button>
+      {:else}
+        <button onclick={processAll} disabled={items.length === 0}>
+          ▶️ {i18n.t('process_all')}
+        </button>
+      {/if}
       <button onclick={saveAll} disabled={doneCount === 0}>
         💾 {i18n.t('save_all')}
       </button>
-      <button onclick={clearAll} disabled={items.length === 0}>
+      <button onclick={clearAll} disabled={items.length === 0 || isProcessingAll}>
         🗑️ {i18n.t('clear')}
       </button>
     </div>

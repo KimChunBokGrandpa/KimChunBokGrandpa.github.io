@@ -79,7 +79,7 @@
   let visibleWindows = $derived(windows.filter((w) => w.mode !== 'closed'));
 </script>
 
-<div class="taskbar">
+<nav class="taskbar" aria-label="Taskbar">
   <button class="start-btn" onclick={() => {}} aria-label={i18n.t('start')}>
     <span class="start-logo">⊞</span>
     <span class="start-text">{i18n.t('start')}</span>
@@ -130,7 +130,7 @@
       <span class="tray-clock">{timeString}</span>
     </div>
   </div>
-</div>
+</nav>
 
 <style>
   /* ── Taskbar Container ── */
