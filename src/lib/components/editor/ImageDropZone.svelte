@@ -64,6 +64,47 @@
     input.value = '';
   }
 
+  /** Generate a simple gradient sample image for first-time users */
+  async function loadSampleImage() {
+    const w = 320, h = 240;
+    const canvas = new OffscreenCanvas(w, h);
+    const ctx = canvas.getContext('2d')!;
+
+    // Sky gradient
+    const sky = ctx.createLinearGradient(0, 0, 0, h * 0.6);
+    sky.addColorStop(0, '#1a1a4e');
+    sky.addColorStop(0.5, '#e06040');
+    sky.addColorStop(1, '#f0c060');
+    ctx.fillStyle = sky;
+    ctx.fillRect(0, 0, w, h * 0.6);
+
+    // Ground
+    ctx.fillStyle = '#2a5e2a';
+    ctx.fillRect(0, h * 0.6, w, h * 0.4);
+
+    // Sun
+    ctx.fillStyle = '#ffe080';
+    ctx.beginPath();
+    ctx.arc(w * 0.7, h * 0.35, 30, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Mountains
+    ctx.fillStyle = '#3a3a6e';
+    ctx.beginPath();
+    ctx.moveTo(0, h * 0.6);
+    ctx.lineTo(80, h * 0.3);
+    ctx.lineTo(160, h * 0.55);
+    ctx.lineTo(220, h * 0.25);
+    ctx.lineTo(320, h * 0.5);
+    ctx.lineTo(320, h * 0.6);
+    ctx.closePath();
+    ctx.fill();
+
+    const blob = await canvas.convertToBlob({ type: 'image/png' });
+    const file = new File([blob], 'sample-landscape.png', { type: 'image/png' });
+    onImageSelected(file);
+  }
+
   function handlePaste(e: ClipboardEvent) {
     const items = e.clipboardData?.items;
     if (!items || items.length === 0) return;
@@ -107,9 +148,10 @@
       <span class="drop-icon">{isDragging ? '📥' : '🖼️'}</span>
       <p class="drop-title">{isDragging ? i18n.t('drop_here') : i18n.t('drag_drop_image')}</p>
       <p class="drop-or">{i18n.t('or')}</p>
-      <div class="field-row">
+      <div class="field-row" style="gap: 6px;">
         <input type="file" accept={ACCEPTED_TYPES.join(',')} id="file-upload" onchange={handleFileInput} style="display: none;" />
         <button class="browse-btn" onclick={() => document.getElementById('file-upload')?.click()}>📂 {i18n.t('browse')}</button>
+        <button class="browse-btn sample-btn" onclick={loadSampleImage}>🌄 {i18n.t('try_sample')}</button>
       </div>
       <p class="drop-hint">{i18n.t('paste_hint')}</p>
       <p class="drop-formats">{i18n.t('supported_formats')}</p>
@@ -210,6 +252,10 @@
     font-weight: bold;
     padding: 4px 16px;
     font-size: var(--w98-font-size-action);
+  }
+  .sample-btn {
+    background: var(--w98-color-surface-subtle, #f0f0f0);
+    color: var(--w98-highlight);
   }
 
   .drop-hint {

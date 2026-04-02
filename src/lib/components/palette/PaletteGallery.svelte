@@ -5,6 +5,7 @@
   import CustomPaletteEditor from './CustomPaletteEditor.svelte';
   import { parsePaletteFile, exportAsHex, exportAsGpl, downloadFile } from '$lib/utils/paletteIO';
   import { extractPaletteFromImage } from '$lib/utils/paletteExtractor';
+  import { recommendPalettesFromImage, type PaletteRecommendation } from '$lib/utils/paletteRecommender';
   import { i18n } from '$lib/i18n/index.svelte';
   import type { ThemeTab, VariantItem } from './types';
   import PaletteToolbar from './PaletteToolbar.svelte';
@@ -38,6 +39,20 @@
     editorInitialColors = [];
     showEditor = true;
   }
+
+  // ─── Palette Recommendation ───
+  let recommendations = $state<PaletteRecommendation[]>([]);
+  let isRecommending = $state(false);
+
+  // Auto-recommend when image changes
+  $effect(() => {
+    if (!imageSrc) { recommendations = []; return; }
+    isRecommending = true;
+    recommendPalettesFromImage(imageSrc, 5)
+      .then(r => { recommendations = r; })
+      .catch(() => { recommendations = []; })
+      .finally(() => { isRecommending = false; });
+  });
 
   // ─── Palette Extraction from Image ───
   let isExtracting = $state(false);
@@ -341,6 +356,8 @@
         {handleExtractFromImage}
         {isExtracting}
         hasImage={!!imageSrc}
+        {recommendations}
+        {isRecommending}
       />
 
       <input

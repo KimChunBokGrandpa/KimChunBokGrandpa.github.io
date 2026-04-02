@@ -1,6 +1,8 @@
 <script lang="ts">
   import { i18n } from '$lib/i18n/index.svelte';
+  import { getPaletteName } from '$lib/utils/palettes';
   import type { VariantItem } from './types';
+  import type { PaletteRecommendation } from '$lib/utils/paletteRecommender';
 
   let {
     activeThemeId,
@@ -19,6 +21,8 @@
     handleExtractFromImage,
     isExtracting = false,
     hasImage = false,
+    recommendations = [] as PaletteRecommendation[],
+    isRecommending = false,
   }: {
     activeThemeId: string;
     activeVariants: VariantItem[];
@@ -36,6 +40,8 @@
     handleExtractFromImage?: () => void;
     isExtracting?: boolean;
     hasImage?: boolean;
+    recommendations?: PaletteRecommendation[];
+    isRecommending?: boolean;
   } = $props();
 </script>
 
@@ -54,6 +60,22 @@
     </div>
   {/if}
   
+  {#if recommendations.length > 0 && activeThemeId !== '_custom'}
+    <div class="pg-recommend-bar">
+      <span class="pg-recommend-label">{isRecommending ? '⏳' : '✨'} {i18n.t('recommended_palettes')}</span>
+      <div class="pg-recommend-list">
+        {#each recommendations as rec}
+          <button
+            class="pg-recommend-chip"
+            class:sel={selectedPaletteId === rec.id}
+            onclick={() => onSelect(rec.id)}
+            title={getPaletteName(rec.id)}
+          >{getPaletteName(rec.id)}</button>
+        {/each}
+      </div>
+    </div>
+  {/if}
+
   <div class="pg-list" role="listbox">
     {#each activeVariants as item}
       <!-- svelte-ignore a11y_click_events_have_key_events -->
@@ -133,6 +155,43 @@
 </div>
 
 <style>
+  .pg-recommend-bar {
+    padding: 3px 4px;
+    border-bottom: 1px solid var(--w98-shadow-808);
+    background: var(--w98-color-surface-subtle, #f0f0f0);
+    flex-shrink: 0;
+  }
+  .pg-recommend-label {
+    font-size: var(--w98-font-size-caption);
+    font-weight: bold;
+    color: var(--w98-highlight);
+    display: block;
+    margin-bottom: 2px;
+  }
+  .pg-recommend-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px;
+  }
+  .pg-recommend-chip {
+    padding: 1px 6px;
+    font-size: var(--w98-font-size-sm);
+    font-family: inherit;
+    background: var(--w98-surface);
+    border: 1px solid var(--w98-shadow-808);
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .pg-recommend-chip:hover {
+    background: var(--w98-surface-hover);
+  }
+  .pg-recommend-chip.sel {
+    background: var(--w98-highlight);
+    color: #fff;
+    border-color: var(--w98-highlight);
+    font-weight: bold;
+  }
+
   .pg-list-panel {
     flex: 1;
     min-width: 0;

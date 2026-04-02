@@ -34,6 +34,8 @@
     onGifExport,
     onGifCancelExport,
     onGifExportSpritesheet,
+    onGifDeleteFrame,
+    onGifDuplicateFrame,
     // Color count
     colorCount = 0,
     // Tile mode
@@ -69,6 +71,8 @@
     onGifExport?: () => void;
     onGifCancelExport?: () => void;
     onGifExportSpritesheet?: () => void;
+    onGifDeleteFrame?: (frame: number) => void;
+    onGifDuplicateFrame?: (frame: number) => void;
     // Color count
     colorCount?: number;
     // Tile mode
@@ -166,6 +170,8 @@
         onExport={onGifExport}
         onCancelExport={onGifCancelExport}
         onExportSpritesheet={onGifExportSpritesheet}
+        onDeleteFrame={onGifDeleteFrame}
+        onDuplicateFrame={onGifDuplicateFrame}
       />
     {/if}
   {/snippet}

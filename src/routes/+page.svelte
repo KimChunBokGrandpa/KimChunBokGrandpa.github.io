@@ -11,6 +11,7 @@
   import PreviewContent from '$lib/components/editor/PreviewContent.svelte';
   import ToastNotification from '$lib/components/feedback/ToastNotification.svelte';
   import KeyboardShortcuts from '$lib/components/feedback/KeyboardShortcuts.svelte';
+  import ContextMenu, { type ContextMenuEntry } from '$lib/components/feedback/ContextMenu.svelte';
   import { createWindowStore, WINDOW_CONFIGS } from '$lib/stores/windowStore.svelte';
   import { createZoomPan } from '$lib/stores/zoomPanStore.svelte';
   import { createImageProcessingStore } from '$lib/stores/imageProcessingStore.svelte';
@@ -66,6 +67,32 @@
   let compareMode = $state(false);
   let tileMode = $state(false);
   let showShortcuts = $state(false);
+
+  // ─── Context Menu ───
+  let ctxMenu = $state<{ x: number; y: number; items: ContextMenuEntry[] } | null>(null);
+
+  function handlePreviewContextMenu(e: MouseEvent) {
+    if (!ip.processedImageSrc) return;
+    e.preventDefault();
+    const menuItems: ContextMenuEntry[] = [
+      { label: `💾 ${i18n.t('save')}`, icon: '', action: () => { document.dispatchEvent(new KeyboardEvent('keydown', { key: 's', ctrlKey: true })); } },
+      { label: `📋 ${i18n.t('copy')}`, icon: '', action: async () => {
+        try {
+          const resp = await fetch(ip.processedImageSrc!);
+          const blob = await resp.blob();
+          await navigator.clipboard.write([new ClipboardItem({ [blob.type]: blob })]);
+          enqueueToast(i18n.t('copied_to_clipboard'), 'success');
+        } catch { enqueueToast(i18n.t('copy_failed'), 'error'); }
+      }},
+      { separator: true },
+      { label: `↔ ${i18n.t('compare')}`, icon: '', action: () => { compareMode = !compareMode; } },
+      { label: `🔲 ${i18n.t('tile_mode')}`, icon: '', action: () => { tileMode = !tileMode; } },
+      { separator: true },
+      { label: `↩ ${i18n.t('undo')}`, icon: '', action: () => ip.undo(), disabled: ip.settingsHistory.length === 0 },
+      { label: `↪ ${i18n.t('redo')}`, icon: '', action: () => ip.redo(), disabled: ip.redoHistory.length === 0 },
+    ];
+    ctxMenu = { x: e.clientX, y: e.clientY, items: menuItems };
+  }
 
   // ─── Error Handling ───
   function getUserFriendlyError(rawError: string): string {
@@ -359,6 +386,8 @@
       onFocus={() => wm.focusWindow('preview')}
       onLayoutChange={wm.persistLayout}
     >
+      <!-- svelte-ignore a11y_no_static_element_interactions -->
+      <div oncontextmenu={handlePreviewContextMenu} style="display:contents;">
       <PreviewContent
         {zp}
         originalImageSrc={originalImageSrc}
@@ -389,12 +418,15 @@
         onGifExportSpritesheet={async () => {
           await handleExportSpritesheet();
         }}
+        onGifDeleteFrame={(frame) => ip.deleteGifFrame(frame)}
+        onGifDuplicateFrame={(frame) => ip.duplicateGifFrame(frame)}
         onRotate={(deg) => ip.rotate(deg)}
         onResetTransform={() => ip.resetTransform()}
         onCrop={(rect) => ip.setCrop(rect)}
         currentRotation={ip.rotation}
         hasCrop={ip.cropRect !== null}
       />
+      </div>
     </Win98Window>
   {/if}
 
@@ -495,6 +527,16 @@
     title={dialogTitle}
     onConfirm={dialogConfirmCallback}
     onClose={() => { dialogMessage = null; dialogConfirmCallback = undefined; }}
+  />
+{/if}
+
+<!-- ═══ Context Menu ═══ -->
+{#if ctxMenu}
+  <ContextMenu
+    items={ctxMenu.items}
+    x={ctxMenu.x}
+    y={ctxMenu.y}
+    onClose={() => { ctxMenu = null; }}
   />
 {/if}
 

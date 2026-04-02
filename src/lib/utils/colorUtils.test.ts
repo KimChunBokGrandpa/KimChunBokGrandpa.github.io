@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { hexToRgb, hexToRgbTuple, rgbToHex, rgbComponentsToHex, hslToRgb, rgbToHsl } from './colorUtils';
+import { hexToRgb, hexToRgbTuple, rgbToHex, rgbComponentsToHex, hslToRgb, rgbToHsl, rgbToOklab, oklabToRgb, blendColorsOklab, blendPalettes } from './colorUtils';
 
 describe('hexToRgb', () => {
   it('parses 6-digit hex with #', () => {
@@ -123,5 +123,78 @@ describe('rgbToHsl', () => {
       expect(g2).toBe(g);
       expect(b2).toBe(b);
     }
+  });
+});
+
+// ─── Oklab Tests ───
+
+describe('rgbToOklab / oklabToRgb roundtrip', () => {
+  it('roundtrips black', () => {
+    const [L, a, b] = rgbToOklab(0, 0, 0);
+    const rgb = oklabToRgb(L, a, b);
+    expect(rgb.r).toBe(0);
+    expect(rgb.g).toBe(0);
+    expect(rgb.b).toBe(0);
+  });
+
+  it('roundtrips white', () => {
+    const [L, a, b] = rgbToOklab(255, 255, 255);
+    const rgb = oklabToRgb(L, a, b);
+    expect(rgb.r).toBe(255);
+    expect(rgb.g).toBe(255);
+    expect(rgb.b).toBe(255);
+  });
+
+  it('roundtrips primary colors within ±1', () => {
+    for (const [r, g, b] of [[255, 0, 0], [0, 255, 0], [0, 0, 255]]) {
+      const lab = rgbToOklab(r, g, b);
+      const rgb = oklabToRgb(...lab);
+      expect(Math.abs(rgb.r - r)).toBeLessThanOrEqual(1);
+      expect(Math.abs(rgb.g - g)).toBeLessThanOrEqual(1);
+      expect(Math.abs(rgb.b - b)).toBeLessThanOrEqual(1);
+    }
+  });
+});
+
+describe('blendColorsOklab', () => {
+  it('t=0 returns first color', () => {
+    const c = blendColorsOklab({ r: 255, g: 0, b: 0 }, { r: 0, g: 0, b: 255 }, 0);
+    expect(Math.abs(c.r - 255)).toBeLessThanOrEqual(1);
+    expect(c.g).toBeLessThanOrEqual(2);
+    expect(c.b).toBeLessThanOrEqual(2);
+  });
+
+  it('t=1 returns second color', () => {
+    const c = blendColorsOklab({ r: 255, g: 0, b: 0 }, { r: 0, g: 0, b: 255 }, 1);
+    expect(c.r).toBeLessThanOrEqual(2);
+    expect(c.g).toBeLessThanOrEqual(2);
+    expect(Math.abs(c.b - 255)).toBeLessThanOrEqual(1);
+  });
+
+  it('t=0.5 blends midpoint', () => {
+    const c = blendColorsOklab({ r: 0, g: 0, b: 0 }, { r: 255, g: 255, b: 255 }, 0.5);
+    // Midpoint in Oklab is ~perceptual mid-gray, not 128
+    expect(c.r).toBeGreaterThan(50);
+    expect(c.r).toBeLessThan(200);
+  });
+});
+
+describe('blendPalettes', () => {
+  it('blends two same-length palettes', () => {
+    const p1 = [{ r: 0, g: 0, b: 0 }, { r: 255, g: 255, b: 255 }];
+    const p2 = [{ r: 255, g: 0, b: 0 }, { r: 0, g: 0, b: 255 }];
+    const result = blendPalettes(p1, p2, 0.5);
+    expect(result.length).toBe(2);
+  });
+
+  it('handles different-length palettes by stretching', () => {
+    const p1 = [{ r: 0, g: 0, b: 0 }];
+    const p2 = [{ r: 255, g: 0, b: 0 }, { r: 0, g: 255, b: 0 }, { r: 0, g: 0, b: 255 }];
+    const result = blendPalettes(p1, p2, 0.5);
+    expect(result.length).toBe(3);
+  });
+
+  it('returns empty for empty inputs', () => {
+    expect(blendPalettes([], [], 0.5)).toEqual([]);
   });
 });

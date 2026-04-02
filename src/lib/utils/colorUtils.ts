@@ -109,3 +109,67 @@ export function oklabDistanceSq(
   const db = b1_ - b2_;
   return dL * dL + da * da + db * db;
 }
+
+/** Delinearize linear RGB component (0-1 range) back to sRGB */
+function linearToSrgb(c: number): number {
+  return c <= 0.0031308 ? 12.92 * c : 1.055 * Math.pow(c, 1 / 2.4) - 0.055;
+}
+
+/** Convert Oklab (L, a, b) back to sRGB (0-255). Clamps to valid range. */
+export function oklabToRgb(L: number, a: number, b: number): RGB {
+  const l_ = L + 0.3963377774 * a + 0.2158037573 * b;
+  const m_ = L - 0.1055613458 * a - 0.0638541728 * b;
+  const s_ = L - 0.0894841775 * a - 1.2914855480 * b;
+
+  const l = l_ * l_ * l_;
+  const m = m_ * m_ * m_;
+  const s = s_ * s_ * s_;
+
+  const lr = +4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s;
+  const lg = -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s;
+  const lb = -0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s;
+
+  return {
+    r: Math.max(0, Math.min(255, Math.round(linearToSrgb(lr) * 255))),
+    g: Math.max(0, Math.min(255, Math.round(linearToSrgb(lg) * 255))),
+    b: Math.max(0, Math.min(255, Math.round(linearToSrgb(lb) * 255))),
+  };
+}
+
+/**
+ * Blend two RGB colors in Oklab space.
+ * @param c1 - First color
+ * @param c2 - Second color
+ * @param t - Blend factor (0 = c1, 1 = c2)
+ */
+export function blendColorsOklab(c1: RGB, c2: RGB, t: number): RGB {
+  const [L1, a1, b1] = rgbToOklab(c1.r, c1.g, c1.b);
+  const [L2, a2, b2] = rgbToOklab(c2.r, c2.g, c2.b);
+  return oklabToRgb(
+    L1 + (L2 - L1) * t,
+    a1 + (a2 - a1) * t,
+    b1 + (b2 - b1) * t,
+  );
+}
+
+/**
+ * Blend two palettes in Oklab space.
+ * If palettes have different lengths, the shorter one is stretched to match.
+ * @param palette1 - First palette
+ * @param palette2 - Second palette
+ * @param t - Blend factor (0 = palette1, 1 = palette2)
+ * @returns Blended palette with max(len1, len2) colors
+ */
+export function blendPalettes(palette1: RGB[], palette2: RGB[], t: number): RGB[] {
+  const len = Math.max(palette1.length, palette2.length);
+  if (len === 0) return [];
+
+  const result: RGB[] = [];
+  for (let i = 0; i < len; i++) {
+    // Map index to each palette (stretch shorter palette)
+    const idx1 = Math.min(Math.round(i * (palette1.length - 1) / (len - 1 || 1)), palette1.length - 1);
+    const idx2 = Math.min(Math.round(i * (palette2.length - 1) / (len - 1 || 1)), palette2.length - 1);
+    result.push(blendColorsOklab(palette1[idx1], palette2[idx2], t));
+  }
+  return result;
+}

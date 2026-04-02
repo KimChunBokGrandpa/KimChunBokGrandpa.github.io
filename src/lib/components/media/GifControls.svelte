@@ -14,6 +14,8 @@
     onExport,
     onCancelExport,
     onExportSpritesheet,
+    onDeleteFrame,
+    onDuplicateFrame,
   }: {
     currentFrame: number;
     frameCount: number;
@@ -26,6 +28,8 @@
     onExport: () => void;
     onCancelExport?: () => void;
     onExportSpritesheet?: () => void;
+    onDeleteFrame?: (frame: number) => void;
+    onDuplicateFrame?: (frame: number) => void;
   } = $props();
 </script>
 
@@ -55,6 +59,24 @@
       use:tooltip
     >◀</button>
     <span class="gif-frame-info">{currentFrame + 1}/{frameCount}</span>
+    {#if onDeleteFrame}
+      <button
+        class="gif-btn"
+        onclick={() => onDeleteFrame(currentFrame)}
+        title={i18n.t('delete_frame')}
+        disabled={isExporting || frameCount <= 1}
+        use:tooltip
+      >🗑</button>
+    {/if}
+    {#if onDuplicateFrame}
+      <button
+        class="gif-btn"
+        onclick={() => onDuplicateFrame(currentFrame)}
+        title={i18n.t('duplicate_frame')}
+        disabled={isExporting}
+        use:tooltip
+      >📋</button>
+    {/if}
     <button
       class="gif-btn"
       onclick={() => onSeek(Math.min(frameCount - 1, currentFrame + 1))}

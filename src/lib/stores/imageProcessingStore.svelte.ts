@@ -457,5 +457,7 @@ export function createImageProcessingStore() {
     seekGifFrame: gif.seek,
     exportGif: gif.exportGif,
     cancelGifExport: gif.cancelExport,
+    deleteGifFrame: gif.deleteFrame,
+    duplicateGifFrame: gif.duplicateFrame,
   };
 }

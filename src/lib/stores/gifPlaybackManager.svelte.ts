@@ -383,6 +383,46 @@ export function createGifPlaybackManager(deps: GifManagerDeps) {
     return false;
   }
 
+  // ─── Frame Manipulation ───
+
+  /** Delete the frame at the given index. Requires at least 2 frames. */
+  function deleteFrame(frameIndex: number) {
+    if (!gifInfo || gifInfo.frames.length <= 1) return;
+    if (frameIndex < 0 || frameIndex >= gifInfo.frames.length) return;
+
+    pause();
+    invalidateCache();
+
+    const newFrames = [...gifInfo.frames];
+    newFrames.splice(frameIndex, 1);
+    gifInfo = { ...gifInfo, frames: newFrames };
+
+    // Adjust current frame if needed
+    if (gifCurrentFrame >= newFrames.length) {
+      gifCurrentFrame = newFrames.length - 1;
+    }
+    showFrame(gifCurrentFrame);
+  }
+
+  /** Duplicate the frame at the given index (insert copy after it). */
+  function duplicateFrame(frameIndex: number) {
+    if (!gifInfo) return;
+    if (frameIndex < 0 || frameIndex >= gifInfo.frames.length) return;
+
+    pause();
+    invalidateCache();
+
+    const frame = gifInfo.frames[frameIndex];
+    const copy = {
+      ...frame,
+      data: new Uint8ClampedArray(frame.data),
+    };
+
+    const newFrames = [...gifInfo.frames];
+    newFrames.splice(frameIndex + 1, 0, copy);
+    gifInfo = { ...gifInfo, frames: newFrames };
+  }
+
   return {
     // Reactive getters
     get isGif() { return isGif; },
@@ -404,5 +444,7 @@ export function createGifPlaybackManager(deps: GifManagerDeps) {
     cancelExport,
     loadGifFile,
     invalidateCache,
+    deleteFrame,
+    duplicateFrame,
   };
 }
