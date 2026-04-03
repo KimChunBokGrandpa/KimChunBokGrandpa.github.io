@@ -500,6 +500,26 @@ export const en = {
   menu_view: 'View',
   menu_help: 'Help',
   menu_image: 'Image',
+
+  // ─── Quick Palette ───
+  quick_palette: 'Quick Palette',
+
+  // ─── Palette Formats ───
+  import_palette_formats: 'Supported: .hex, .gpl, .pal, .ase, .act',
+
+  // ─── Image Sequence Export ───
+  export_sequence: 'Export Frames',
+  export_sequence_desc: 'Export GIF frames as individual PNG files',
+  sequence_exported: 'Frames exported as ZIP!',
+
+  // ─── Shortcut Hints ───
+  shortcut_hint_save: 'Save (Ctrl+S)',
+  shortcut_hint_undo: 'Undo (Ctrl+Z)',
+  shortcut_hint_redo: 'Redo (Ctrl+Shift+Z)',
+  shortcut_hint_compare: 'Compare (C)',
+  shortcut_hint_zoom_in: 'Zoom In (+)',
+  shortcut_hint_zoom_out: 'Zoom Out (-)',
+  shortcut_hint_fit: 'Fit (0)',
 } as const;
 
 export type TranslationKey = keyof typeof en;

@@ -59,6 +59,15 @@
     onError?: (message: string) => void;
   } = $props();
 
+  // Popular palettes for quick selection
+  const QUICK_PALETTES = [
+    { id: 'original', shortName: 'Full', preview: ['#ff0000', '#00ff00', '#0000ff', '#ffff00'] },
+    { id: 'dmg', shortName: 'DMG', preview: ['#0f380f', '#306230', '#8bac0f', '#9bbc0f'] },
+    { id: 'nes', shortName: 'NES', preview: ['#d82800', '#0058f8', '#00a800', '#f8d878'] },
+    { id: 'pico8', shortName: 'PICO', preview: ['#000000', '#ff004d', '#29adff', '#00e436'] },
+    { id: 'monochrome', shortName: 'B&W', preview: ['#000000', '#ffffff'] },
+  ];
+
   function update() {
     onChange(settings);
   }
@@ -204,6 +213,23 @@
               <span class="palette-arrow">{i18n.t('select')}</span>
             </button>
           </div>
+          <div class="quick-palette-row">
+            {#each QUICK_PALETTES as qp}
+              <button
+                class="quick-palette-chip"
+                class:preset-active={settings.palette === qp.id}
+                onclick={() => { settings.palette = qp.id; update(); }}
+                title={getPaletteName(qp.id)}
+              >
+                <span class="qp-swatches">
+                  {#each qp.preview as color}
+                    <span class="qp-dot" style="background:{color}"></span>
+                  {/each}
+                </span>
+                <span class="qp-label">{qp.shortName}</span>
+              </button>
+            {/each}
+          </div>
 
           <div class="section-label">{i18n.t('dithering')}:</div>
           <div class="field-row render-row">
@@ -279,7 +305,7 @@
         class="save-btn"
         onclick={onSave}
         disabled={!hasImage}
-        title={!hasImage ? i18n.t('save_no_image') : i18n.t('save_processed')}
+        title={!hasImage ? i18n.t('save_no_image') : i18n.t('shortcut_hint_save')}
       >
         💾 {i18n.t('save_as')}
       </button>
@@ -562,9 +588,56 @@
     font-weight: bold;
     padding: 4px 12px;
     font-size: var(--w98-font-size-action);
-    background: var(--w98-surface);
+    background: var(--w98-highlight);
+    color: #fff;
   }
   .save-btn:hover {
+    background: color-mix(in srgb, var(--w98-highlight) 80%, #000);
+  }
+  .save-btn:disabled {
+    background: var(--w98-surface);
+    color: var(--w98-shadow-808);
+  }
+  .svg-btn {
+    background: var(--w98-surface);
+    color: inherit;
+  }
+  .svg-btn:hover {
     background: #d0d0d0;
+  }
+
+  /* Quick Palette */
+  .quick-palette-row {
+    display: flex;
+    gap: 3px;
+    flex-wrap: wrap;
+    margin-top: 4px;
+  }
+  .quick-palette-chip {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    padding: 2px 5px;
+    font-size: var(--w98-font-size-sm);
+    background: var(--w98-surface);
+    border: none;
+    box-shadow: var(--w98-outset-thin);
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .quick-palette-chip:hover {
+    background: var(--w98-surface-active);
+  }
+  .qp-swatches {
+    display: flex;
+    gap: 1px;
+  }
+  .qp-dot {
+    width: 8px;
+    height: 8px;
+    border: 1px solid #000;
+  }
+  .qp-label {
+    font-size: var(--w98-font-size-sm);
   }
 </style>

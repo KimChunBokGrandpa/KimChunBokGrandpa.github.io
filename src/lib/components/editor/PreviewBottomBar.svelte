@@ -72,7 +72,7 @@
     class="tb-btn"
     class:tb-active={compareMode}
     onclick={() => { compareMode = !compareMode; }}
-    title={compareMode ? i18n.t('exit_compare') : i18n.t('compare_before_after')}
+    title={compareMode ? i18n.t('exit_compare') : i18n.t('shortcut_hint_compare')}
     aria-label={i18n.t('btn_compare_toggle')}
     aria-pressed={compareMode}
     use:tooltip
@@ -89,7 +89,7 @@
   {#if !compareMode}
     <span class="tb-sep"></span>
     <!-- Zoom -->
-    <button class="tb-btn" onclick={zp.zoomOut} title={i18n.t('zoom_out')} aria-label={i18n.t('btn_zoom_out')} use:tooltip>−</button>
+    <button class="tb-btn" onclick={zp.zoomOut} title={i18n.t('shortcut_hint_zoom_out')} aria-label={i18n.t('btn_zoom_out')} use:tooltip>−</button>
     <div class="zoom-input-container">
       <input
         type="number"
@@ -108,8 +108,8 @@
       />
       <span class="zoom-percent">%</span>
     </div>
-    <button class="tb-btn" onclick={zp.zoomIn} title={i18n.t('zoom_in')} aria-label={i18n.t('btn_zoom_in')} use:tooltip>+</button>
-    <button class="tb-btn" onclick={zp.zoomToFit} title={i18n.t('fit_to_window')} aria-label={i18n.t('btn_fit_to_window')} use:tooltip>⊡</button>
+    <button class="tb-btn" onclick={zp.zoomIn} title={i18n.t('shortcut_hint_zoom_in')} aria-label={i18n.t('btn_zoom_in')} use:tooltip>+</button>
+    <button class="tb-btn" onclick={zp.zoomToFit} title={i18n.t('shortcut_hint_fit')} aria-label={i18n.t('btn_fit_to_window')} use:tooltip>⊡</button>
     <span class="tb-sep"></span>
     <!-- View tools -->
     <button

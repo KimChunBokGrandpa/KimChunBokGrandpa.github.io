@@ -14,6 +14,7 @@
     onExport,
     onCancelExport,
     onExportSpritesheet,
+    onExportSequence,
     onDeleteFrame,
     onDuplicateFrame,
   }: {
@@ -28,6 +29,7 @@
     onExport: () => void;
     onCancelExport?: () => void;
     onExportSpritesheet?: () => void;
+    onExportSequence?: () => void;
     onDeleteFrame?: (frame: number) => void;
     onDuplicateFrame?: (frame: number) => void;
   } = $props();
@@ -124,6 +126,17 @@
         use:tooltip
       >
         🧩
+      </button>
+    {/if}
+    {#if onExportSequence}
+      <button
+        class="gif-btn gif-export-btn"
+        onclick={onExportSequence}
+        disabled={isExporting}
+        title={i18n.t('export_sequence_desc')}
+        use:tooltip
+      >
+        📁
       </button>
     {/if}
   </div>

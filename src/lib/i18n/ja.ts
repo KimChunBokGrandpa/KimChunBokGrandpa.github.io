@@ -475,4 +475,24 @@ export const ja: Record<TranslationKey, string> = {
   menu_view: '表示',
   menu_help: 'ヘルプ',
   menu_image: '画像',
+
+  // ─── Quick Palette ───
+  quick_palette: 'クイックパレット',
+
+  // ─── Palette Formats ───
+  import_palette_formats: '対応: .hex, .gpl, .pal, .ase, .act',
+
+  // ─── Image Sequence Export ───
+  export_sequence: 'フレーム書出',
+  export_sequence_desc: 'GIFフレームを個別PNGで書き出す',
+  sequence_exported: 'フレームをZIPで書き出しました！',
+
+  // ─── Shortcut Hints ───
+  shortcut_hint_save: '保存 (Ctrl+S)',
+  shortcut_hint_undo: '元に戻す (Ctrl+Z)',
+  shortcut_hint_redo: 'やり直し (Ctrl+Shift+Z)',
+  shortcut_hint_compare: '比較 (C)',
+  shortcut_hint_zoom_in: 'ズームイン (+)',
+  shortcut_hint_zoom_out: 'ズームアウト (-)',
+  shortcut_hint_fit: 'フィット (0)',
 };

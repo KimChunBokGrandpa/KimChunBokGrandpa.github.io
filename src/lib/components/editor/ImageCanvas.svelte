@@ -189,7 +189,7 @@
     
     <!-- Processing Overlay (simplified) -->
     {#if isProcessing}
-      <div class="processing-overlay">
+      <div class="processing-overlay" role="status" aria-live="polite">
         <div class="processing-indicator">
           <div class="progress-container">
             <div class="progress-bar"></div>

@@ -475,4 +475,24 @@ export const ko: Record<TranslationKey, string> = {
   menu_view: '보기',
   menu_help: '도움말',
   menu_image: '이미지',
+
+  // ─── Quick Palette ───
+  quick_palette: '빠른 팔레트',
+
+  // ─── Palette Formats ───
+  import_palette_formats: '지원: .hex, .gpl, .pal, .ase, .act',
+
+  // ─── Image Sequence Export ───
+  export_sequence: '프레임 내보내기',
+  export_sequence_desc: 'GIF 프레임을 개별 PNG로 내보내기',
+  sequence_exported: '프레임이 ZIP으로 내보내졌습니다!',
+
+  // ─── Shortcut Hints ───
+  shortcut_hint_save: '저장 (Ctrl+S)',
+  shortcut_hint_undo: '실행취소 (Ctrl+Z)',
+  shortcut_hint_redo: '다시실행 (Ctrl+Shift+Z)',
+  shortcut_hint_compare: '비교 (C)',
+  shortcut_hint_zoom_in: '확대 (+)',
+  shortcut_hint_zoom_out: '축소 (-)',
+  shortcut_hint_fit: '맞춤 (0)',
 };

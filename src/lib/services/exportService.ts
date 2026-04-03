@@ -1,5 +1,5 @@
 /**
- * Export Service — Handles SVG and spritesheet export operations.
+ * Export Service — Handles SVG, spritesheet, and frame sequence export operations.
  * Extracts export logic from +page.svelte for separation of concerns.
  */
 import { imageDataToSvg, downloadSvg } from '$lib/utils/svgExporter';
@@ -75,4 +75,45 @@ export async function exportSpritesheet(gifInfo: GifInfo): Promise<string> {
     // Cleanup blob URLs even if export fails
     frameSrcs.forEach(URL.revokeObjectURL);
   }
+}
+
+/**
+ * Export GIF frames as individual PNG files (frame_001.png, frame_002.png, ...).
+ * Downloads each frame separately via anchor click.
+ * @param gifInfo - Decoded GIF information with frames
+ * @returns number of exported frames
+ */
+export async function exportFrameSequence(gifInfo: GifInfo): Promise<number> {
+  const { frames, width, height } = gifInfo;
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('Failed to get 2d context');
+
+  const pad = String(frames.length).length;
+
+  for (let i = 0; i < frames.length; i++) {
+    const frame = frames[i];
+    const imageData = new ImageData(new Uint8ClampedArray(frame.data), frame.width, frame.height);
+    ctx.clearRect(0, 0, width, height);
+    ctx.putImageData(imageData, 0, 0);
+
+    const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/png'));
+    if (!blob) continue;
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `frame_${String(i + 1).padStart(pad, '0')}.png`;
+    a.click();
+    URL.revokeObjectURL(url);
+
+    // Small delay to prevent browser throttling
+    if (i < frames.length - 1) {
+      await new Promise(r => setTimeout(r, 100));
+    }
+  }
+
+  return frames.length;
 }

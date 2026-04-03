@@ -118,22 +118,55 @@
     isImporting = true;
     let pending = files.length;
 
+    const BINARY_EXTS = ['act', 'ase', 'pal'];
+
     for (const file of files) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        const text = reader.result as string;
-        const parsed = parsePaletteFile(text, file.name);
-        if (parsed) {
-          const newPalette = customPaletteStore.addPalette(parsed.name, parsed.colors);
-          onSelect(newPalette.id);
-          activeThemeId = '_custom';
-        }
-        if (--pending === 0) isImporting = false;
-      };
-      reader.onerror = () => {
-        if (--pending === 0) isImporting = false;
-      };
-      reader.readAsText(file);
+      const ext = file.name.split('.').pop()?.toLowerCase() ?? '';
+      const isBinary = BINARY_EXTS.includes(ext);
+
+      if (isBinary) {
+        // Read both text and binary for formats that may be either
+        const textReader = new FileReader();
+        const binReader = new FileReader();
+        let textResult: string | null = null;
+        let binResult: ArrayBuffer | null = null;
+        let doneCount = 0;
+
+        const tryParse = () => {
+          if (++doneCount < 2) return;
+          const parsed = parsePaletteFile(textResult ?? '', file.name, binResult ?? undefined);
+          if (parsed) {
+            const newPalette = customPaletteStore.addPalette(parsed.name, parsed.colors);
+            onSelect(newPalette.id);
+            activeThemeId = '_custom';
+          }
+          if (--pending === 0) isImporting = false;
+        };
+
+        textReader.onload = () => { textResult = textReader.result as string; tryParse(); };
+        textReader.onerror = () => tryParse();
+        binReader.onload = () => { binResult = binReader.result as ArrayBuffer; tryParse(); };
+        binReader.onerror = () => tryParse();
+
+        textReader.readAsText(file);
+        binReader.readAsArrayBuffer(file);
+      } else {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const text = reader.result as string;
+          const parsed = parsePaletteFile(text, file.name);
+          if (parsed) {
+            const newPalette = customPaletteStore.addPalette(parsed.name, parsed.colors);
+            onSelect(newPalette.id);
+            activeThemeId = '_custom';
+          }
+          if (--pending === 0) isImporting = false;
+        };
+        reader.onerror = () => {
+          if (--pending === 0) isImporting = false;
+        };
+        reader.readAsText(file);
+      }
     }
     input.value = ''; // reset so same file can be re-imported
   }
@@ -363,7 +396,7 @@
       <input
         bind:this={importFileInput}
         type="file"
-        accept=".hex,.gpl,.txt"
+        accept=".hex,.gpl,.pal,.ase,.act,.txt"
         multiple
         onchange={handleImportFile}
         style="display:none"
