@@ -53,7 +53,7 @@
 </script>
 
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-<div
+<main
   class="desktop"
   onclick={onDesktopClick}
   onkeydown={handleKeydown}
@@ -61,7 +61,6 @@
   ondragover={(e) => e.preventDefault()}
   ondragleave={handleDesktopDragLeave}
   ondrop={handleDesktopDrop}
-  role="main"
   tabindex="-1"
 >
   {#if isDraggingOverDesktop}
@@ -80,7 +79,7 @@
   />
 
   {@render children()}
-</div>
+</main>
 
 <style>
   .desktop {
