@@ -36,6 +36,7 @@
     onFormatChange,
     onQualityChange,
     hasImage = true,
+    hasProcessedImage = false,
     postFilters = $bindable({ ...DEFAULT_POST_FILTERS }),
     autoProcess = $bindable(true),
     hasUnappliedChanges = false,
@@ -52,6 +53,7 @@
     onFormatChange?: (format: SaveFormat) => void;
     onQualityChange?: (quality: number) => void;
     hasImage?: boolean;
+    hasProcessedImage?: boolean;
     postFilters?: PostProcessFilters;
     autoProcess?: boolean;
     hasUnappliedChanges?: boolean;
@@ -303,6 +305,7 @@
     <div class="field-row save-row">
       <button
         class="save-btn"
+        class:save-ready={hasProcessedImage}
         onclick={onSave}
         disabled={!hasImage}
         title={!hasImage ? i18n.t('save_no_image') : i18n.t('shortcut_hint_save')}
@@ -597,6 +600,13 @@
   .save-btn:disabled {
     background: var(--w98-surface);
     color: var(--w98-shadow-808);
+  }
+  .save-btn.save-ready {
+    animation: save-pulse 2s ease-in-out 1;
+  }
+  @keyframes save-pulse {
+    0%, 100% { box-shadow: var(--w98-outset-thin); }
+    50% { box-shadow: 0 0 0 3px color-mix(in srgb, var(--w98-highlight) 40%, transparent); }
   }
   .svg-btn {
     background: var(--w98-surface);

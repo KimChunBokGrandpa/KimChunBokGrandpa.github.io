@@ -35,6 +35,7 @@
     onGifCancelExport,
     onGifExportSpritesheet,
     onGifExportSequence,
+    onGifExportApng,
     onGifDeleteFrame,
     onGifDuplicateFrame,
     // Color count
@@ -73,6 +74,7 @@
     onGifCancelExport?: () => void;
     onGifExportSpritesheet?: () => void;
     onGifExportSequence?: () => void;
+    onGifExportApng?: () => void;
     onGifDeleteFrame?: (frame: number) => void;
     onGifDuplicateFrame?: (frame: number) => void;
     // Color count
@@ -173,6 +175,7 @@
         onCancelExport={onGifCancelExport}
         onExportSpritesheet={onGifExportSpritesheet}
         onExportSequence={onGifExportSequence}
+        onExportApng={onGifExportApng}
         onDeleteFrame={onGifDeleteFrame}
         onDuplicateFrame={onGifDuplicateFrame}
       />

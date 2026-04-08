@@ -257,6 +257,7 @@
     class:resizing={isResizing}
     style={windowStyle}
     role="dialog"
+    aria-label={title}
     tabindex="-1"
     onclick={handleWindowClick}
     onkeydown={handleKeydown}

@@ -512,6 +512,11 @@ export const en = {
   export_sequence_desc: 'Export GIF frames as individual PNG files',
   sequence_exported: 'Frames exported as ZIP!',
 
+  // ─── APNG Export ───
+  export_apng: 'Export as APNG',
+  export_apng_desc: 'Animated PNG — better quality than GIF',
+  apng_exported: 'APNG exported successfully!',
+
   // ─── Shortcut Hints ───
   shortcut_hint_save: 'Save (Ctrl+S)',
   shortcut_hint_undo: 'Undo (Ctrl+Z)',

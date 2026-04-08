@@ -5,6 +5,7 @@
 import { imageDataToSvg, downloadSvg } from '$lib/utils/svgExporter';
 import { createSpritesheet, downloadSpritesheet } from '$lib/utils/spritesheetExporter';
 import { frameToBlobUrl, type GifInfo } from '$lib/utils/gifProcessor';
+import { encodeApng, type ApngFrame } from '$lib/utils/apngEncoder';
 
 /**
  * Export the processed image as SVG (pixel art → <rect> elements).
@@ -116,4 +117,35 @@ export async function exportFrameSequence(gifInfo: GifInfo): Promise<number> {
   }
 
   return frames.length;
+}
+
+/**
+ * Export GIF frames as an Animated PNG (APNG) file.
+ * APNG supports full alpha channel and more than 256 colors per frame.
+ * @param gifInfo - Decoded GIF information with frames
+ * @returns filename of the exported APNG
+ */
+export async function exportApng(gifInfo: GifInfo): Promise<string> {
+  const { frames, width, height } = gifInfo;
+  if (frames.length === 0) throw new Error('No frames to export');
+
+  const apngFrames: ApngFrame[] = frames.map(f => ({
+    data: f.data,
+    delay: f.delay,
+    width,
+    height,
+  }));
+
+  const apngData = encodeApng(apngFrames);
+  const blob = new Blob([apngData], { type: 'image/png' });
+  const url = URL.createObjectURL(blob);
+
+  const filename = `animated-${Date.now()}.apng`;
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+
+  return filename;
 }

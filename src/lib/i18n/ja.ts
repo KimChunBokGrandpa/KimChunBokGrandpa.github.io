@@ -487,6 +487,11 @@ export const ja: Record<TranslationKey, string> = {
   export_sequence_desc: 'GIFフレームを個別PNGで書き出す',
   sequence_exported: 'フレームをZIPで書き出しました！',
 
+  // ─── APNG Export ───
+  export_apng: 'APNGで書き出す',
+  export_apng_desc: 'アニメーションPNG — GIFより高品質',
+  apng_exported: 'APNG書き出し完了！',
+
   // ─── Shortcut Hints ───
   shortcut_hint_save: '保存 (Ctrl+S)',
   shortcut_hint_undo: '元に戻す (Ctrl+Z)',

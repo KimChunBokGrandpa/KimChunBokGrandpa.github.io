@@ -487,6 +487,11 @@ export const ko: Record<TranslationKey, string> = {
   export_sequence_desc: 'GIF 프레임을 개별 PNG로 내보내기',
   sequence_exported: '프레임이 ZIP으로 내보내졌습니다!',
 
+  // ─── APNG Export ───
+  export_apng: 'APNG로 내보내기',
+  export_apng_desc: '애니메이션 PNG — GIF보다 고품질',
+  apng_exported: 'APNG 내보내기 완료!',
+
   // ─── Shortcut Hints ───
   shortcut_hint_save: '저장 (Ctrl+S)',
   shortcut_hint_undo: '실행취소 (Ctrl+Z)',

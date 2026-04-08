@@ -16,7 +16,7 @@
   import { createZoomPan } from '$lib/stores/zoomPanStore.svelte';
   import { createImageProcessingStore } from '$lib/stores/imageProcessingStore.svelte';
   import { getPaletteName, registerPaletteTranslator } from '$lib/utils/palettes';
-  import { exportSvg, exportSpritesheet, exportFrameSequence } from '$lib/services/exportService';
+  import { exportSvg, exportSpritesheet, exportFrameSequence, exportApng } from '$lib/services/exportService';
   import type { SaveFormat } from '$lib/services/saveService';
   import type { TaskbarWindowInfo } from '$lib/components/window/Taskbar.svelte';
   import type { ProcessingSettings, WindowId } from '$lib/types';
@@ -356,6 +356,7 @@
           {saveFormat}
           {saveQuality}
           hasImage={!!originalImageSrc}
+          hasProcessedImage={!!processedImageSrc && !isProcessing}
           onChange={handleSettingsChange}
           onSave={handleSave}
           onExportSvg={handleExportSvg}
@@ -423,6 +424,15 @@
           try {
             await exportFrameSequence(ip.gifInfo);
             enqueueToast(i18n.t('sequence_exported'));
+          } catch (e) {
+            enqueueToast(String(e), 'error');
+          }
+        }}
+        onGifExportApng={async () => {
+          if (!ip.gifInfo) return;
+          try {
+            await exportApng(ip.gifInfo);
+            enqueueToast(i18n.t('apng_exported'));
           } catch (e) {
             enqueueToast(String(e), 'error');
           }

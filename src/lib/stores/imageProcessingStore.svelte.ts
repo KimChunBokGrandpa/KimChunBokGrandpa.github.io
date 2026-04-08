@@ -10,9 +10,9 @@ import type { ProcessingSettings, PostProcessFilters } from '$lib/types';
 import { DEFAULT_POST_FILTERS } from '$lib/types';
 import { applyCrtEffect } from '$lib/utils/crtRenderer';
 import { createGifPlaybackManager } from '$lib/stores/gifPlaybackManager.svelte';
+import { createHistoryStore } from '$lib/stores/historyStore.svelte';
 
 const DEBOUNCE_MS = 150;
-const MAX_HISTORY = 20;
 
 const DEFAULT_SETTINGS: ProcessingSettings = {
   pixelSize: 1,
@@ -127,22 +127,7 @@ export function createImageProcessingStore() {
   let dimensionCapShown = false;
 
   // ─── Undo / Redo History ───
-  let settingsHistory = $state<ProcessingSettings[]>([]);
-  let redoHistory = $state<ProcessingSettings[]>([]);
-
-  function cloneSettings(s: ProcessingSettings): ProcessingSettings {
-    return {
-      ...s,
-      glitchFilters: s.glitchFilters.map(f => ({ ...f })),
-      effectLayers: s.effectLayers?.map(l => ({ ...l })),
-    };
-  }
-
-  function pushHistory(s: ProcessingSettings) {
-    settingsHistory.push(cloneSettings(s));
-    if (settingsHistory.length > MAX_HISTORY) settingsHistory.shift();
-    redoHistory.length = 0; // new action clears redo
-  }
+  const history = createHistoryStore();
 
   // ─── Dimension Cap Notification ───
   let onDimensionCapped: ((original: { w: number; h: number }, capped: { w: number; h: number }) => void) | null = null;
@@ -257,7 +242,7 @@ export function createImageProcessingStore() {
   }
 
   function updateSettings(newSettings: ProcessingSettings) {
-    pushHistory(settings);
+    history.push(settings);
     settings = { ...newSettings };
     if (!autoProcess) {
       hasUnappliedChanges = true;
@@ -272,7 +257,7 @@ export function createImageProcessingStore() {
   }
 
   function selectPalette(paletteId: string) {
-    pushHistory(settings);
+    history.push(settings);
     settings.palette = paletteId;
     if (!autoProcess) {
       hasUnappliedChanges = true;
@@ -299,17 +284,15 @@ export function createImageProcessingStore() {
   }
 
   function undo() {
-    if (settingsHistory.length === 0) return;
-    redoHistory.push(cloneSettings(settings));
-    const prev = settingsHistory.pop()!;
+    const prev = history.undo(settings);
+    if (!prev) return;
     settings = prev;
     if (autoProcess) applyProcessingDebounced();
   }
 
   function redo() {
-    if (redoHistory.length === 0) return;
-    settingsHistory.push(cloneSettings(settings));
-    const next = redoHistory.pop()!;
+    const next = history.redo(settings);
+    if (!next) return;
     settings = next;
     if (autoProcess) applyProcessingDebounced();
   }
@@ -322,7 +305,7 @@ export function createImageProcessingStore() {
       if (isRedoList) {
         for (let i = 0; i <= index; i++) redo();
       } else {
-        const distance = settingsHistory.length - 1 - index;
+        const distance = history.undoStack.length - 1 - index;
         for (let i = 0; i <= distance; i++) undo();
       }
     } finally {
@@ -402,8 +385,8 @@ export function createImageProcessingStore() {
     get lastError() { return lastError; },
     get settings() { return settings; },
     set settings(v: ProcessingSettings) { settings = v; },
-    get settingsHistory() { return settingsHistory; },
-    get redoHistory() { return redoHistory; },
+    get settingsHistory() { return history.undoStack; },
+    get redoHistory() { return history.redoStack; },
     get saveFormat() { return saveFormat; },
     get saveQuality() { return saveQuality; },
     get colorCount() { return colorCount; },
