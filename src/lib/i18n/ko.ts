@@ -207,6 +207,8 @@ export const ko: Record<TranslationKey, string> = {
   duplicate_frame: '\ud504\ub808\uc784 \ubcf5\uc81c',
   move_frame_left: '\ud504\ub808\uc784 \uc67c\ucabd \uc774\ub3d9',
   move_frame_right: '\ud504\ub808\uc784 \uc624\ub978\ucabd \uc774\ub3d9',
+  drag_frames_reorder: '\ud504\ub808\uc784\uc744 \ub4dc\ub798\uadf8\ud574 \uc21c\uc11c \ubcc0\uacbd',
+  frame: '\ud504\ub808\uc784 {0}',
   export_svg: 'SVG\ub85c \ub0b4\ubcf4\ub0b4\uae30 (\ubca1\ud130 \ud53d\uc140 \uc544\ud2b8)',
   svg_exported: 'SVG \ub0b4\ubcf4\ub0b4\uae30 \uc644\ub8cc!',
   export_spritesheet: '\uc2a4\ud504\ub77c\uc774\ud2b8 \uc2dc\ud2b8\ub85c \ub0b4\ubcf4\ub0b4\uae30',
@@ -501,6 +503,11 @@ export const ko: Record<TranslationKey, string> = {
   export_apng: 'APNG로 내보내기',
   export_apng_desc: '애니메이션 PNG — GIF보다 고품질',
   apng_exported: 'APNG 내보내기 완료!',
+
+  // ─── Animated WebP Export ───
+  export_animated_webp: 'Animated WebP로 내보내기',
+  export_animated_webp_desc: 'Animated WebP — 현대적인 고효율 애니메이션 포맷',
+  animated_webp_exported: 'Animated WebP 내보내기 완료!',
 
   // ─── Shortcut Hints ───
   shortcut_hint_save: '저장 (Ctrl+S)',

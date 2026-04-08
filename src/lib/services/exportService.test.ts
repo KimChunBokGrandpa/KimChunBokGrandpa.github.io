@@ -16,10 +16,15 @@ vi.mock('$lib/utils/gifProcessor', () => ({
   frameToBlobUrl: vi.fn().mockResolvedValue('blob:frame'),
 }));
 
-const { exportSvg, exportSpritesheet } = await import('./exportService');
+vi.mock('$lib/utils/webpEncoder', () => ({
+  encodeAnimatedWebp: vi.fn(() => new Uint8Array([82, 73, 70, 70])),
+}));
+
+const { exportSvg, exportSpritesheet, exportAnimatedWebp } = await import('./exportService');
 const { imageDataToSvg, downloadSvg } = await import('$lib/utils/svgExporter');
 const { createSpritesheet, downloadSpritesheet } = await import('$lib/utils/spritesheetExporter');
 const { frameToBlobUrl } = await import('$lib/utils/gifProcessor');
+const { encodeAnimatedWebp } = await import('$lib/utils/webpEncoder');
 
 describe('exportSvg', () => {
   beforeEach(() => {
@@ -135,5 +140,69 @@ describe('exportSpritesheet', () => {
 
     await expect(exportSpritesheet(makeGifInfo(2))).rejects.toThrow('fail');
     expect(revokeObjUrl).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('exportAnimatedWebp', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:animated-webp');
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
+
+    const origCreate = document.createElement.bind(document);
+    vi.spyOn(document, 'createElement').mockImplementation((tag: string) => {
+      if (tag === 'a') {
+        const a = origCreate('a');
+        a.click = vi.fn();
+        return a;
+      }
+      if (tag === 'canvas') {
+        const canvas = origCreate('canvas');
+        const mockCtx = {
+          clearRect: vi.fn(),
+          putImageData: vi.fn(),
+        };
+        vi.spyOn(canvas, 'getContext').mockReturnValue(mockCtx as unknown as CanvasRenderingContext2D);
+        vi.spyOn(canvas, 'toBlob').mockImplementation((cb: BlobCallback) => {
+          cb(new Blob(['webp'], { type: 'image/webp' }));
+        });
+        return canvas;
+      }
+      return origCreate(tag);
+    });
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  const makeGifInfo = (frameCount = 2) => ({
+    width: 16,
+    height: 16,
+    totalDuration: frameCount * 100,
+    frames: Array.from({ length: frameCount }, (_, idx) => ({
+      data: new Uint8ClampedArray(Array.from({ length: 16 * 16 * 4 }, (_v, i) => (i % 4 === 3 ? (idx === 0 ? 255 : 120) : idx + 1))),
+      delay: 100,
+      width: 16,
+      height: 16,
+    })),
+  });
+
+  it('returns a filename with .webp extension', async () => {
+    const filename = await exportAnimatedWebp(makeGifInfo());
+    expect(filename).toMatch(/^animated-\d+\.webp$/);
+  });
+
+  it('calls encodeAnimatedWebp with all frames', async () => {
+    const gifInfo = makeGifInfo(3);
+    await exportAnimatedWebp(gifInfo);
+    expect(encodeAnimatedWebp).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(encodeAnimatedWebp).mock.calls[0][0]).toHaveLength(3);
+  });
+
+  it('revokes download URL after export', async () => {
+    const revokeSpy = vi.spyOn(URL, 'revokeObjectURL');
+    await exportAnimatedWebp(makeGifInfo());
+    expect(revokeSpy).toHaveBeenCalledWith('blob:animated-webp');
   });
 });

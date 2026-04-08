@@ -90,4 +90,47 @@ describe('Win98Window', () => {
     const windowEl = container.querySelector('.win98-window');
     expect(windowEl).toBeTruthy();
   });
+
+  it('applies mobile slot layout variables when provided', () => {
+    const { container } = render(Win98WindowWrapper, {
+      props: {
+        ...defaultProps(),
+        mobileSlot: { top: '0px', height: '50dvh', left: '38vw', width: '62vw' },
+      },
+    });
+    const windowEl = container.querySelector('.win98-window') as HTMLElement;
+    expect(windowEl.getAttribute('style')).toContain('--mobile-l: 38vw');
+    expect(windowEl.getAttribute('style')).toContain('--mobile-w: 62vw');
+  });
+
+  it('fires swipe callbacks from the mobile title bar', async () => {
+    const onSwipeLeft = vi.fn();
+    const onSwipeRight = vi.fn();
+    const { container } = render(Win98WindowWrapper, {
+      props: {
+        ...defaultProps(),
+        swipeEnabled: true,
+        mobileSlot: { top: '0px', height: '50dvh' },
+        onSwipeLeft,
+        onSwipeRight,
+      },
+    });
+    const titleBar = container.querySelector('.title-bar') as HTMLElement;
+
+    await fireEvent.touchStart(titleBar, {
+      touches: [{ clientX: 220, clientY: 20 }],
+    });
+    await fireEvent.touchEnd(titleBar, {
+      changedTouches: [{ clientX: 120, clientY: 24 }],
+    });
+    await fireEvent.touchStart(titleBar, {
+      touches: [{ clientX: 120, clientY: 20 }],
+    });
+    await fireEvent.touchEnd(titleBar, {
+      changedTouches: [{ clientX: 220, clientY: 24 }],
+    });
+
+    expect(onSwipeLeft).toHaveBeenCalledTimes(1);
+    expect(onSwipeRight).toHaveBeenCalledTimes(1);
+  });
 });

@@ -38,6 +38,7 @@
     onGifExportSpritesheet,
     onGifExportSequence,
     onGifExportApng,
+    onGifExportAnimatedWebp,
     onGifDeleteFrame,
     onGifDuplicateFrame,
     onGifReorderFrame,
@@ -80,6 +81,7 @@
     onGifExportSpritesheet?: () => void;
     onGifExportSequence?: () => void;
     onGifExportApng?: () => void;
+    onGifExportAnimatedWebp?: () => void;
     onGifDeleteFrame?: (frame: number) => void;
     onGifDuplicateFrame?: (frame: number) => void;
     onGifReorderFrame?: (from: number, to: number) => void;
@@ -184,6 +186,7 @@
         onExportSpritesheet={onGifExportSpritesheet}
         onExportSequence={onGifExportSequence}
         onExportApng={onGifExportApng}
+        onExportAnimatedWebp={onGifExportAnimatedWebp}
         onDeleteFrame={onGifDeleteFrame}
         onDuplicateFrame={onGifDuplicateFrame}
         onReorderFrame={onGifReorderFrame}
@@ -191,5 +194,4 @@
     {/if}
   {/snippet}
 </ImageCanvas>
-
 

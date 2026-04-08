@@ -10,8 +10,12 @@
     width = 400,
     height = 300,
     zIndex = 1,
+    mobileSlot = null,
+    swipeEnabled = false,
     onClose,
     onFocus,
+    onSwipeLeft,
+    onSwipeRight,
   }: {
     title?: string;
     icon?: string;
@@ -21,8 +25,12 @@
     width?: number;
     height?: number;
     zIndex?: number;
+    mobileSlot?: { top: string; height: string; left?: string; width?: string } | null;
+    swipeEnabled?: boolean;
     onClose?: () => void;
     onFocus?: () => void;
+    onSwipeLeft?: () => void;
+    onSwipeRight?: () => void;
   } = $props();
 </script>
 
@@ -35,8 +43,12 @@
   {width}
   {height}
   {zIndex}
+  {mobileSlot}
+  {swipeEnabled}
   {onClose}
   {onFocus}
+  {onSwipeLeft}
+  {onSwipeRight}
 >
   <div class="test-content">Window Content</div>
 </Win98Window>

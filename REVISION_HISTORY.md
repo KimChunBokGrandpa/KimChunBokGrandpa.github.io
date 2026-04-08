@@ -2,6 +2,67 @@
 
 ---
 
+## v1.6.0 (2026-04-08)
+
+> Product roadmap refresh + GIF editing/export feature expansion.
+
+### P2 — User-Facing Features
+
+- **GifControls.svelte — GIF 프레임 reorder UI 완성**
+  - 좌/우 이동 버튼 유지
+  - draggable frame strip 추가로 직접 순서 변경 가능
+  - drop no-op / drag state cleanup 처리
+- **exportService.ts + webpEncoder.ts — Animated WebP 내보내기 추가**
+  - 프레임별 still WebP 인코딩 후 animated WebP container muxing
+  - GIF controls에 `Animated WebP` export 버튼 추가
+  - en/ko/ja 번역 키 추가
+- **PresetManager.svelte + presetPreview.ts — 프리셋 프리뷰 썸네일 추가**
+  - built-in / custom preset 카드에 thumbnail preview 렌더링
+  - main processor와 충돌하지 않도록 local preview pipeline + cache 사용
+  - preset preview cache 유틸 추가
+- **PaletteGallery.svelte + paletteRecommender.ts — 팔레트 자동 추천 검증/안정화**
+  - 추천 결과 stale overwrite 방지 request guard 추가
+  - 추천 util / gallery recommendation UI 테스트 추가
+- **PaletteGallery.svelte + colorUtils.ts — 팔레트 블렌딩 완료 처리**
+  - blended preview/save flow UI 테스트 추가
+  - 현재 blend 퍼센트 표시 추가
+  - custom palette blend 시 표시 이름/저장 이름 개선
+- **+page.svelte + Win98Window.svelte — 모바일 탐색 UX 강화**
+  - 모바일 제목줄 좌우 스와이프로 visible window 전환
+  - mobile landscape에서 settings + preview split layout 적용
+  - mobile window layout/focus 계산 유틸 분리
+- **tauri-release.yml + src-tauri version sync — 데스크톱 릴리즈 자동화 착수**
+  - tag push 기반 GitHub Releases workflow 추가
+  - `package.json` / `tauri.conf.json` / `Cargo.toml` 버전 정합성 확보
+  - local `cargo check` 통과로 Tauri 설정 충돌 없음 확인
+
+### Tests
+
+- **GifControls.test.ts** — drag reorder chip, animated WebP export button 테스트 추가
+- **gifPlaybackManager.test.ts** — delete / duplicate / reorder frame 조작 테스트 추가
+- **webpEncoder.test.ts** — animated WebP container/alpha flag/unit validation 테스트 추가
+- **exportService.test.ts** — animated WebP export path 테스트 추가
+- **PresetManager.test.ts** — thumbnail preview 렌더링 테스트 추가
+- **presetPreview.test.ts** — cache key / cache reuse / cache clear 테스트 추가
+- **PaletteGallery.test.ts** — recommendation chip render / stale result guard 테스트 추가
+- **PaletteGallery.test.ts** — palette blend preview / save flow 테스트 추가
+- **paletteRecommender.test.ts** — recommendation sort / filtering / transparent image 테스트 추가
+- **Win98Window.test.ts** — mobile swipe callback / slot layout 변수 테스트 추가
+- **mobileWindowLayout.test.ts** — mobile focus cycle / portrait stack / landscape split 테스트 추가
+
+### Docs
+
+- **plan_04_roadmap.md** — code-as-source-of-truth 기준으로 현재 backlog/status 반영
+- **PLAN_TASK.md** — 검증 수치 및 현재 우선순위 상태 갱신
+- **README.md** — GIF 편집 및 animated export 기능 요약 갱신
+
+### Build & Test Status (v1.6)
+- `svelte-check`: **0 errors, 0 warnings**
+- `vitest`: **411 tests passing** (44 files)
+- Production build: not run this turn
+
+---
+
 ## v1.5.0 (2026-03-25)
 
 > QA 전체 리뷰 기반 P0~P2 수정. 버퍼 오버플로우 방어, 메모리 관리, a11y, 성능 개선.

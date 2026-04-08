@@ -20,6 +20,16 @@ function defaultProps() {
   };
 }
 
+function reorderProps() {
+  return {
+    ...defaultProps(),
+    onExportAnimatedWebp: vi.fn(),
+    onDeleteFrame: vi.fn(),
+    onDuplicateFrame: vi.fn(),
+    onReorderFrame: vi.fn(),
+  };
+}
+
 describe('GifControls', () => {
   it('displays current frame info', () => {
     const { container } = render(GifControls, { props: defaultProps() });
@@ -113,5 +123,46 @@ describe('GifControls', () => {
     expect(slider).toBeTruthy();
     expect(slider.min).toBe('0');
     expect(slider.max).toBe('9');
+  });
+
+  it('renders draggable frame strip when reorder callback exists', () => {
+    const { container } = render(GifControls, { props: reorderProps() });
+    const chips = container.querySelectorAll('.gif-frame-chip');
+    expect(chips).toHaveLength(10);
+    expect(container.querySelector('.gif-frame-strip-label')?.textContent).toBeTruthy();
+  });
+
+  it('calls onReorderFrame when frame chip is dropped on another chip', async () => {
+    const props = reorderProps();
+    const { container } = render(GifControls, { props });
+    const chips = container.querySelectorAll('.gif-frame-chip');
+    const dataTransfer = {
+      setData: vi.fn(),
+      effectAllowed: 'move',
+      dropEffect: 'move',
+    } as unknown as DataTransfer;
+
+    await fireEvent.dragStart(chips[2], { dataTransfer });
+    await fireEvent.dragOver(chips[5], { dataTransfer });
+    await fireEvent.drop(chips[5], { dataTransfer });
+
+    expect(props.onReorderFrame).toHaveBeenCalledWith(2, 5);
+  });
+
+  it('seeks when frame chip is clicked', async () => {
+    const props = reorderProps();
+    const { container } = render(GifControls, { props });
+    const chips = container.querySelectorAll('.gif-frame-chip');
+    await fireEvent.click(chips[4]);
+    expect(props.onSeek).toHaveBeenCalledWith(4);
+  });
+
+  it('calls animated WebP export callback when button is clicked', async () => {
+    const props = reorderProps();
+    const { container } = render(GifControls, { props });
+    const buttons = Array.from(container.querySelectorAll('.gif-export-btn'));
+    const animatedWebpBtn = buttons.at(-1) as HTMLButtonElement;
+    await fireEvent.click(animatedWebpBtn);
+    expect(props.onExportAnimatedWebp).toHaveBeenCalledOnce();
   });
 });

@@ -16,12 +16,13 @@
   import { createZoomPan } from '$lib/stores/zoomPanStore.svelte';
   import { createImageProcessingStore } from '$lib/stores/imageProcessingStore.svelte';
   import { getPaletteName, registerPaletteTranslator } from '$lib/utils/palettes';
-  import { exportSvg, exportSpritesheet, exportFrameSequence, exportApng } from '$lib/services/exportService';
+  import { exportSvg, exportSpritesheet, exportFrameSequence, exportApng, exportAnimatedWebp } from '$lib/services/exportService';
   import type { SaveFormat } from '$lib/services/saveService';
   import type { TaskbarWindowInfo } from '$lib/components/window/Taskbar.svelte';
   import type { ProcessingSettings, WindowId } from '$lib/types';
   import { i18n } from '$lib/i18n/index.svelte';
   import { getWindowTitle } from '$lib/stores/windowStore.svelte';
+  import { getMobileWindowSlot, getNextMobileFocusId } from '$lib/utils/mobileWindowLayout';
 
   // Register i18n translator for palette names
   registerPaletteTranslator((key) => i18n.t(key));
@@ -119,11 +120,21 @@
   const MOBILE_BREAKPOINT = 550;
   const mql = typeof window !== 'undefined' ? window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT}px)`) : null;
   let isMobile = $state(mql?.matches ?? false);
+  const mqlLandscape = typeof window !== 'undefined'
+    ? window.matchMedia(`(max-width: 900px) and (orientation: landscape)`)
+    : null;
+  let isLandscapeMobile = $state(mqlLandscape?.matches ?? false);
   $effect(() => {
     if (!mql) return;
     const handler = (e: MediaQueryListEvent) => { isMobile = e.matches; };
     mql.addEventListener('change', handler);
     return () => mql.removeEventListener('change', handler);
+  });
+  $effect(() => {
+    if (!mqlLandscape) return;
+    const handler = (e: MediaQueryListEvent) => { isLandscapeMobile = e.matches; };
+    mqlLandscape.addEventListener('change', handler);
+    return () => mqlLandscape.removeEventListener('change', handler);
   });
 
   // ─── Dimension cap callback ───
@@ -142,40 +153,22 @@
   );
 
   function getMobileSlot(id: string): { top: string; height: string } | null {
-    if (!isMobile) return null;
-    const idx = mobileVisibleIds.indexOf(id as typeof WINDOW_ORDER[number]);
-    if (idx === -1) return null;
-    const count = mobileVisibleIds.length;
+    return getMobileWindowSlot({
+      id: id as WindowId,
+      isMobile,
+      isLandscapeMobile,
+      visibleIds: mobileVisibleIds as WindowId[],
+      focusedId: wm.focusedWindow,
+    });
+  }
 
-    if (count <= 2) {
-      // 2 windows or fewer: evenly divide
-      const slotHeight = `calc((100dvh - var(--taskbar-h)) / ${count})`;
-      const slotTop = idx === 0 ? '0px' : `calc((100dvh - var(--taskbar-h)) / ${count} * ${idx})`;
-      return { top: slotTop, height: slotHeight };
-    }
-
-    // 3+ windows: focused window expands, others collapse to title bar
-    const COMPACT_H = 34;
-    const compactTotal = (count - 1) * COMPACT_H;
-    const isFocused = wm.focusedWindow === id;
-    const focusedIdx = Math.max(0, mobileVisibleIds.indexOf(wm.focusedWindow as typeof WINDOW_ORDER[number]));
-
-    if (isFocused) {
-      return {
-        top: `${idx * COMPACT_H}px`,
-        height: `calc(100dvh - var(--taskbar-h) - ${compactTotal}px)`,
-      };
-    }
-
-    // Compact: before focused stacks from top, after focused stacks from bottom
-    if (idx < focusedIdx) {
-      return { top: `${idx * COMPACT_H}px`, height: `${COMPACT_H}px` };
-    }
-    const bottomOffset = count - 1 - idx;
-    return {
-      top: `calc(100dvh - var(--taskbar-h) - ${(bottomOffset + 1) * COMPACT_H}px)`,
-      height: `${COMPACT_H}px`,
-    };
+  function focusAdjacentMobileWindow(direction: 'prev' | 'next') {
+    const nextId = getNextMobileFocusId(
+      mobileVisibleIds as WindowId[],
+      wm.focusedWindow,
+      direction,
+    );
+    if (nextId) wm.focusWindow(nextId);
   }
 
   // ─── Taskbar window info ───
@@ -334,6 +327,9 @@
       onClose={() => wm.close('settings')}
       onFocus={() => wm.focusWindow('settings')}
       onLayoutChange={wm.persistLayout}
+      swipeEnabled={isMobile && mobileVisibleIds.length > 1}
+      onSwipeLeft={() => focusAdjacentMobileWindow('next')}
+      onSwipeRight={() => focusAdjacentMobileWindow('prev')}
     >
       <div class="settings-body">
         <div class="settings-toolbar">
@@ -388,6 +384,9 @@
       onClose={() => wm.close('preview')}
       onFocus={() => wm.focusWindow('preview')}
       onLayoutChange={wm.persistLayout}
+      swipeEnabled={isMobile && mobileVisibleIds.length > 1}
+      onSwipeLeft={() => focusAdjacentMobileWindow('next')}
+      onSwipeRight={() => focusAdjacentMobileWindow('prev')}
     >
       <!-- svelte-ignore a11y_no_static_element_interactions -->
       <div oncontextmenu={handlePreviewContextMenu} style="display:contents;">
@@ -441,6 +440,15 @@
             enqueueToast(String(e), 'error');
           }
         }}
+        onGifExportAnimatedWebp={async () => {
+          if (!ip.gifInfo) return;
+          try {
+            await exportAnimatedWebp(ip.gifInfo);
+            enqueueToast(i18n.t('animated_webp_exported'));
+          } catch (e) {
+            enqueueToast(String(e), 'error');
+          }
+        }}
         onGifDeleteFrame={(frame) => ip.deleteGifFrame(frame)}
         onGifDuplicateFrame={(frame) => ip.duplicateGifFrame(frame)}
         onGifReorderFrame={(from, to) => ip.reorderGifFrame(from, to)}
@@ -470,6 +478,9 @@
       onClose={() => wm.close('gallery')}
       onFocus={() => wm.focusWindow('gallery')}
       onLayoutChange={wm.persistLayout}
+      swipeEnabled={isMobile && mobileVisibleIds.length > 1}
+      onSwipeLeft={() => focusAdjacentMobileWindow('next')}
+      onSwipeRight={() => focusAdjacentMobileWindow('prev')}
     >
       <PaletteGallery
         selectedPaletteId={processingSettings.palette}
@@ -494,6 +505,9 @@
       onClose={() => wm.close('batch')}
       onFocus={() => wm.focusWindow('batch')}
       onLayoutChange={wm.persistLayout}
+      swipeEnabled={isMobile && mobileVisibleIds.length > 1}
+      onSwipeLeft={() => focusAdjacentMobileWindow('next')}
+      onSwipeRight={() => focusAdjacentMobileWindow('prev')}
     >
       <BatchProcessor
         settings={processingSettings}
@@ -523,6 +537,9 @@
       onClose={() => wm.close('history')}
       onFocus={() => wm.focusWindow('history')}
       onLayoutChange={wm.persistLayout}
+      swipeEnabled={isMobile && mobileVisibleIds.length > 1}
+      onSwipeLeft={() => focusAdjacentMobileWindow('next')}
+      onSwipeRight={() => focusAdjacentMobileWindow('prev')}
     >
       <HistoryPanel
         history={ip.settingsHistory}

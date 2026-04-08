@@ -3,7 +3,8 @@
   import { PRESETS, type Preset } from '$lib/utils/presets';
   import type { EffectLayer, GlitchType, ProcessingSettings } from '$lib/types';
   import { i18n } from '$lib/i18n/index.svelte';
-  import { getCustomPresets, addCustomPreset, removeCustomPreset } from '$lib/stores/customPresetStore.svelte';
+  import { getCustomPresets, addCustomPreset, removeCustomPreset, type CustomPreset } from '$lib/stores/customPresetStore.svelte';
+  import { getPresetPreview } from '$lib/utils/presetPreview';
 
   let {
     settings = $bindable(),
@@ -77,6 +78,39 @@
   let showSavePreset = $state(false);
   let newPresetName = $state('');
   let customPresets = $derived(getCustomPresets());
+  let presetPreviews = $state<Record<string, string>>({});
+
+  async function loadPreview(id: string, previewSource: ProcessingSettings, name?: string) {
+    if (presetPreviews[id]) return;
+    try {
+      const preview = await getPresetPreview({ id, name, settings: previewSource });
+      presetPreviews = { ...presetPreviews, [id]: preview };
+    } catch {
+      // Keep preset usable even if thumbnail generation fails.
+    }
+  }
+
+  $effect(() => {
+    PRESETS.forEach((preset) => {
+      void loadPreview(
+        preset.id,
+        {
+          pixelSize: preset.pixelSize,
+          palette: preset.palette,
+          crtEffect: preset.crtEffect,
+          glitchFilters: preset.glitchFilters.map((filter) => ({ ...filter })),
+          renderMode: preset.renderMode,
+          glitchSeed: null,
+          ditherType: preset.ditherType,
+          effectLayers: [],
+        },
+      );
+    });
+
+    customPresets.forEach((preset) => {
+      void loadPreview(preset.id, preset.settings, preset.name);
+    });
+  });
 
   function saveCurrentAsPreset() {
     if (!newPresetName.trim()) return;
@@ -92,6 +126,18 @@
       effectLayers: preset.settings.effectLayers?.map(l => ({ ...l })) || migrateToEffectLayers(preset.settings),
     };
     onChange();
+  }
+
+  function customPresetMatches(preset: CustomPreset): boolean {
+    return JSON.stringify({
+      ...settings,
+      glitchFilters: settings.glitchFilters,
+      effectLayers: settings.effectLayers || [],
+    }) === JSON.stringify({
+      ...preset.settings,
+      glitchFilters: preset.settings.glitchFilters,
+      effectLayers: preset.settings.effectLayers || [],
+    });
   }
 
   // Migrate legacy settings to effectLayers
@@ -197,6 +243,14 @@
         onclick={() => applyPreset(preset)}
         title="{i18n.t('pixel_size')}: {preset.pixelSize}px | {i18n.t('palette')}: {getPaletteName(preset.palette)} | {i18n.t('dithering')}: {preset.ditherType}{preset.crtEffect !== 'none' ? ` | CRT (${preset.crtEffect})` : ''}{preset.glitchFilters.length > 0 ? ` | ${preset.glitchFilters.length} effects` : ''}"
       >
+        {#if presetPreviews[preset.id]}
+          <img
+            class="preset-card-thumb"
+            src={presetPreviews[preset.id]}
+            alt={i18n.t(preset.labelKey)}
+            draggable="false"
+          />
+        {/if}
         <span class="preset-card-icon">{preset.icon}</span>
         <span class="preset-card-name">{i18n.t(preset.labelKey)}</span>
         <span class="preset-card-info">{preset.pixelSize}px</span>
@@ -215,10 +269,19 @@
     <div class="field-row preset-grid">
       {#each customPresets as cp}
         <button
+          class:preset-active={customPresetMatches(cp)}
           class="preset-btn custom-preset-btn"
           onclick={() => applyCustomPreset(cp)}
           title={cp.name}
         >
+          {#if presetPreviews[cp.id]}
+            <img
+              class="preset-card-thumb custom-preset-thumb"
+              src={presetPreviews[cp.id]}
+              alt={cp.name}
+              draggable="false"
+            />
+          {/if}
           ⭐ {cp.name}
           <!-- svelte-ignore a11y_no_static_element_interactions -->
           <span
@@ -289,6 +352,18 @@
     gap: 1px;
     padding: 4px 6px;
     min-width: 56px;
+    position: relative;
+    overflow: hidden;
+  }
+  .preset-card-thumb {
+    width: 72px;
+    height: 52px;
+    object-fit: cover;
+    border: 1px solid var(--w98-shadow-808);
+    margin-bottom: 4px;
+    background: #000;
+    image-rendering: pixelated;
+    pointer-events: none;
   }
   .preset-card-icon {
     font-size: 14px;
@@ -309,6 +384,15 @@
   .custom-preset-btn {
     position: relative;
     padding-right: 16px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .custom-preset-thumb {
+    width: 40px;
+    height: 28px;
+    margin-bottom: 0;
+    flex: 0 0 auto;
   }
   .preset-delete {
     position: absolute;

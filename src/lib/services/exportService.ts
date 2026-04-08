@@ -6,6 +6,7 @@ import { imageDataToSvg, downloadSvg } from '$lib/utils/svgExporter';
 import { createSpritesheet, downloadSpritesheet } from '$lib/utils/spritesheetExporter';
 import { frameToBlobUrl, type GifInfo } from '$lib/utils/gifProcessor';
 import { encodeApng, type ApngFrame } from '$lib/utils/apngEncoder';
+import { encodeAnimatedWebp, type AnimatedWebpFrame } from '$lib/utils/webpEncoder';
 
 /**
  * Export the processed image as SVG (pixel art → <rect> elements).
@@ -141,6 +142,66 @@ export async function exportApng(gifInfo: GifInfo): Promise<string> {
   const url = URL.createObjectURL(blob);
 
   const filename = `animated-${Date.now()}.apng`;
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+
+  return filename;
+}
+
+async function canvasToWebpBytes(canvas: HTMLCanvasElement, quality: number): Promise<Uint8Array> {
+  const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/webp', quality));
+  if (!blob || blob.type !== 'image/webp') {
+    throw new Error('Animated WebP export is not supported in this browser');
+  }
+  return new Uint8Array(await blob.arrayBuffer());
+}
+
+function frameHasAlpha(data: Uint8ClampedArray): boolean {
+  for (let i = 3; i < data.length; i += 4) {
+    if (data[i] < 255) return true;
+  }
+  return false;
+}
+
+/**
+ * Export GIF frames as an Animated WebP file.
+ * Uses canvas WebP encoding per frame, then muxes them into an animated container.
+ * @param gifInfo - Decoded GIF information with frames
+ * @param quality - WebP quality (0.0 ~ 1.0)
+ * @returns filename of the exported Animated WebP
+ */
+export async function exportAnimatedWebp(gifInfo: GifInfo, quality: number = 0.92): Promise<string> {
+  const { frames, width, height } = gifInfo;
+  if (frames.length === 0) throw new Error('No frames to export');
+
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('Failed to get 2d context');
+
+  const webpFrames: AnimatedWebpFrame[] = [];
+  for (const frame of frames) {
+    const imageData = new ImageData(new Uint8ClampedArray(frame.data), frame.width, frame.height);
+    ctx.clearRect(0, 0, width, height);
+    ctx.putImageData(imageData, 0, 0);
+    webpFrames.push({
+      webp: await canvasToWebpBytes(canvas, quality),
+      delay: frame.delay,
+      width,
+      height,
+      hasAlpha: frameHasAlpha(frame.data),
+    });
+  }
+
+  const webpData = encodeAnimatedWebp(webpFrames);
+  const blob = new Blob([webpData], { type: 'image/webp' });
+  const url = URL.createObjectURL(blob);
+
+  const filename = `animated-${Date.now()}.webp`;
   const a = document.createElement('a');
   a.href = url;
   a.download = filename;

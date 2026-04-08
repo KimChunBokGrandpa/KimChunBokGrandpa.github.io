@@ -16,6 +16,7 @@
     onExportSpritesheet,
     onExportSequence,
     onExportApng,
+    onExportAnimatedWebp,
     onDeleteFrame,
     onDuplicateFrame,
     onReorderFrame,
@@ -33,10 +34,53 @@
     onExportSpritesheet?: () => void;
     onExportSequence?: () => void;
     onExportApng?: () => void;
+    onExportAnimatedWebp?: () => void;
     onDeleteFrame?: (frame: number) => void;
     onDuplicateFrame?: (frame: number) => void;
     onReorderFrame?: (from: number, to: number) => void;
   } = $props();
+
+  let dragFrameIndex = $state<number | null>(null);
+  let dropFrameIndex = $state<number | null>(null);
+
+  function clearDragState() {
+    dragFrameIndex = null;
+    dropFrameIndex = null;
+  }
+
+  function handleFrameDragStart(frameIndex: number, e: DragEvent) {
+    if (isExporting || !onReorderFrame || frameCount <= 1) return;
+    dragFrameIndex = frameIndex;
+    e.dataTransfer?.setData('text/plain', String(frameIndex));
+    if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move';
+  }
+
+  function handleFrameDragOver(frameIndex: number, e: DragEvent) {
+    if (isExporting || !onReorderFrame || dragFrameIndex === null) return;
+    e.preventDefault();
+    if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+    dropFrameIndex = frameIndex;
+  }
+
+  function handleFrameDragLeave(frameIndex: number, e: DragEvent) {
+    const related = e.relatedTarget as Node | null;
+    const current = e.currentTarget as HTMLElement | null;
+    if (current && related && current.contains(related)) return;
+    if (dropFrameIndex === frameIndex) dropFrameIndex = null;
+  }
+
+  function handleFrameDrop(frameIndex: number, e: DragEvent) {
+    if (isExporting || !onReorderFrame || dragFrameIndex === null) return;
+    e.preventDefault();
+    if (dragFrameIndex !== frameIndex) {
+      onReorderFrame(dragFrameIndex, frameIndex);
+    }
+    clearDragState();
+  }
+
+  function handleFrameDragEnd() {
+    clearDragState();
+  }
 </script>
 
 <div class="gif-controls" aria-busy={isExporting}>
@@ -170,6 +214,17 @@
         🖼 APNG
       </button>
     {/if}
+    {#if onExportAnimatedWebp}
+      <button
+        class="gif-btn gif-export-btn"
+        onclick={onExportAnimatedWebp}
+        disabled={isExporting}
+        title={i18n.t('export_animated_webp_desc')}
+        use:tooltip
+      >
+        🎞 WebP
+      </button>
+    {/if}
   </div>
   <div class="gif-slider-row">
     <input
@@ -182,6 +237,34 @@
       disabled={isExporting}
     />
   </div>
+  {#if onReorderFrame && frameCount > 1}
+    <div class="gif-frame-strip-section">
+      <div class="gif-frame-strip-label">{i18n.t('drag_frames_reorder')}</div>
+      <div class="gif-frame-strip" role="list" aria-label={i18n.t('drag_frames_reorder')}>
+        {#each Array.from({ length: frameCount }, (_, idx) => idx) as frameIndex}
+          <button
+            class="gif-frame-chip"
+            class:active={frameIndex === currentFrame}
+            class:drag-source={frameIndex === dragFrameIndex}
+            class:drag-target={frameIndex === dropFrameIndex && dragFrameIndex !== frameIndex}
+            draggable={!isExporting}
+            disabled={isExporting}
+            aria-label={i18n.t('frame', frameIndex + 1)}
+            title={i18n.t('frame', frameIndex + 1)}
+            onclick={() => onSeek(frameIndex)}
+            ondragstart={(e) => handleFrameDragStart(frameIndex, e)}
+            ondragover={(e) => handleFrameDragOver(frameIndex, e)}
+            ondragleave={(e) => handleFrameDragLeave(frameIndex, e)}
+            ondrop={(e) => handleFrameDrop(frameIndex, e)}
+            ondragend={handleFrameDragEnd}
+            use:tooltip
+          >
+            {frameIndex + 1}
+          </button>
+        {/each}
+      </div>
+    </div>
+  {/if}
   {#if isExporting}
     <div class="gif-export-progress">
       <div class="gif-export-bar" style="width:{exportProgress * 100}%"></div>
@@ -301,6 +384,58 @@
   .gif-export-bar {
     height: 100%;
     background: var(--w98-highlight);
+  }
+
+  .gif-frame-strip-section {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .gif-frame-strip-label {
+    font-size: var(--w98-font-size-caption);
+    color: var(--w98-shadow-808);
+    text-align: center;
+  }
+
+  .gif-frame-strip {
+    display: flex;
+    gap: 3px;
+    overflow-x: auto;
+    padding: 1px;
+  }
+
+  .gif-frame-chip {
+    min-width: 24px;
+    height: 22px;
+    padding: 0 6px;
+    font-size: var(--w98-font-size-sm);
+    font-family: 'Courier New', Courier, monospace;
+    font-variant-numeric: tabular-nums;
+    background: var(--w98-surface);
+    border: none;
+    cursor: grab;
+    box-shadow: var(--w98-outset-thin);
+    flex: 0 0 auto;
+  }
+
+  .gif-frame-chip.active {
+    background: var(--w98-highlight);
+    color: var(--w98-surface-white);
+  }
+
+  .gif-frame-chip.drag-source {
+    opacity: 0.6;
+    cursor: grabbing;
+  }
+
+  .gif-frame-chip.drag-target {
+    box-shadow: 0 0 0 2px var(--w98-color-success);
+  }
+
+  .gif-frame-chip:disabled {
+    color: var(--w98-text-disabled);
+    cursor: not-allowed;
   }
 
   @media (max-width: 550px) {

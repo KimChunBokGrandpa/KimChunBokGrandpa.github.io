@@ -36,6 +36,7 @@ vi.stubGlobal('URL', {
 });
 
 import { createGifPlaybackManager } from './gifPlaybackManager.svelte';
+import { decodeGif } from '$lib/utils/gifProcessor';
 
 function makeDeps(overrides?: Partial<GifManagerDeps>): GifManagerDeps {
   return {
@@ -57,6 +58,29 @@ function makeDeps(overrides?: Partial<GifManagerDeps>): GifManagerDeps {
     handleDimensionCapped: vi.fn(),
     ...overrides,
   };
+}
+
+function makeGifInfo(frameCount: number = 3) {
+  return {
+    width: 2,
+    height: 2,
+    totalDuration: frameCount * 100,
+    frames: Array.from({ length: frameCount }, (_, idx) => ({
+      data: new Uint8ClampedArray([idx + 1, 0, 0, 255, idx + 1, 0, 0, 255, idx + 1, 0, 0, 255, idx + 1, 0, 0, 255]),
+      delay: 100,
+      width: 2,
+      height: 2,
+    })),
+  };
+}
+
+async function loadMultiFrameGif(manager: ReturnType<typeof createGifPlaybackManager>, frameCount: number = 3) {
+  vi.mocked(decodeGif).mockReturnValue(makeGifInfo(frameCount));
+  const file = new File([new Uint8Array([71, 73, 70])], 'test.gif', { type: 'image/gif' });
+  const setOriginalSrc = vi.fn();
+  const result = await manager.loadGifFile(file, setOriginalSrc);
+  expect(result).toBe(true);
+  expect(setOriginalSrc).toHaveBeenCalled();
 }
 
 describe('gifPlaybackManager', () => {
@@ -149,6 +173,45 @@ describe('gifPlaybackManager', () => {
       const manager = createGifPlaybackManager(makeDeps());
       const result = await manager.exportGif();
       expect(result).toBeNull();
+    });
+  });
+
+  describe('frame manipulation', () => {
+    it('deletes selected frame and updates frame count', async () => {
+      const manager = createGifPlaybackManager(makeDeps());
+      await loadMultiFrameGif(manager, 3);
+
+      manager.seek(1);
+      manager.deleteFrame(1);
+
+      expect(manager.gifFrameCount).toBe(2);
+      expect(manager.gifInfo?.frames[0].data[0]).toBe(1);
+      expect(manager.gifInfo?.frames[1].data[0]).toBe(3);
+      expect(manager.gifCurrentFrame).toBe(1);
+    });
+
+    it('duplicates selected frame after source index', async () => {
+      const manager = createGifPlaybackManager(makeDeps());
+      await loadMultiFrameGif(manager, 2);
+
+      manager.duplicateFrame(0);
+
+      expect(manager.gifFrameCount).toBe(3);
+      expect(manager.gifInfo?.frames[0].data[0]).toBe(1);
+      expect(manager.gifInfo?.frames[1].data[0]).toBe(1);
+      expect(manager.gifInfo?.frames[2].data[0]).toBe(2);
+      expect(manager.gifInfo?.frames[1].data).not.toBe(manager.gifInfo?.frames[0].data);
+    });
+
+    it('reorders frame and keeps moved frame selected', async () => {
+      const manager = createGifPlaybackManager(makeDeps());
+      await loadMultiFrameGif(manager, 3);
+
+      manager.reorderFrame(0, 2);
+
+      expect(manager.gifFrameCount).toBe(3);
+      expect(manager.gifInfo?.frames.map((frame) => frame.data[0])).toEqual([2, 3, 1]);
+      expect(manager.gifCurrentFrame).toBe(2);
     });
   });
 });

@@ -207,6 +207,8 @@ export const ja: Record<TranslationKey, string> = {
   duplicate_frame: '\u30d5\u30ec\u30fc\u30e0\u8907\u88fd',
   move_frame_left: '\u30d5\u30ec\u30fc\u30e0\u3092\u5de6\u3078',
   move_frame_right: '\u30d5\u30ec\u30fc\u30e0\u3092\u53f3\u3078',
+  drag_frames_reorder: '\u30d5\u30ec\u30fc\u30e0\u3092\u30c9\u30e9\u30c3\u30b0\u3057\u3066\u4e26\u3079\u66ff\u3048',
+  frame: '\u30d5\u30ec\u30fc\u30e0 {0}',
   export_svg: 'SVG\u3067\u30a8\u30af\u30b9\u30dd\u30fc\u30c8\uff08\u30d9\u30af\u30bf\u30fc\u30d4\u30af\u30bb\u30eb\u30a2\u30fc\u30c8\uff09',
   svg_exported: 'SVG\u30a8\u30af\u30b9\u30dd\u30fc\u30c8\u5b8c\u4e86\uff01',
   export_spritesheet: '\u30b9\u30d7\u30e9\u30a4\u30c8\u30b7\u30fc\u30c8\u3067\u30a8\u30af\u30b9\u30dd\u30fc\u30c8',
@@ -501,6 +503,11 @@ export const ja: Record<TranslationKey, string> = {
   export_apng: 'APNGで書き出す',
   export_apng_desc: 'アニメーションPNG — GIFより高品質',
   apng_exported: 'APNG書き出し完了！',
+
+  // ─── Animated WebP Export ───
+  export_animated_webp: 'Animated WebPで書き出す',
+  export_animated_webp_desc: 'Animated WebP — 高効率なモダンアニメーション形式',
+  animated_webp_exported: 'Animated WebP書き出し完了！',
 
   // ─── Shortcut Hints ───
   shortcut_hint_save: '保存 (Ctrl+S)',

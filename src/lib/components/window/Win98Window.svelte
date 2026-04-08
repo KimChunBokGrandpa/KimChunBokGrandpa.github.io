@@ -14,10 +14,13 @@
     minWidth = 200,
     minHeight = 150,
     mobileSlot = null,
+    swipeEnabled = false,
     menuItems = [] as string[],
     onClose,
     onFocus,
     onLayoutChange,
+    onSwipeLeft,
+    onSwipeRight,
     children,
   }: {
     title?: string;
@@ -30,11 +33,14 @@
     zIndex?: number;
     minWidth?: number;
     minHeight?: number;
-    mobileSlot?: { top: string; height: string } | null;
+    mobileSlot?: { top: string; height: string; left?: string; width?: string } | null;
+    swipeEnabled?: boolean;
     menuItems?: string[];
     onClose?: () => void;
     onFocus?: () => void;
     onLayoutChange?: () => void;
+    onSwipeLeft?: () => void;
+    onSwipeRight?: () => void;
     children: Snippet;
   } = $props();
 
@@ -56,6 +62,8 @@
   const SNAP_THRESHOLD = 20;
   let snapPreview = $state<'left' | 'right' | null>(null);
   let preSnapPos: { x: number; y: number; w: number; h: number } | null = null;
+  let swipeStartX = 0;
+  let swipeStartY = 0;
 
   // Drag listeners
   $effect(() => {
@@ -153,6 +161,10 @@
   });
 
   function startDrag(e: MouseEvent | TouchEvent) {
+    if (mobileSlot) {
+      onFocus?.();
+      return;
+    }
     if (mode !== 'windowed') return;
     if ('button' in e && e.button !== 0) return;
     if ((e.target as HTMLElement).closest('.title-bar-controls')) return;
@@ -227,6 +239,7 @@
   }
 
   function handleTitleDblClick() {
+    if (mobileSlot) return;
     if (mode === 'maximized') {
       mode = 'windowed';
       x = savedPos.x;
@@ -241,12 +254,27 @@
 
   let windowStyle = $derived.by(() => {
     const mobileVars = mobileSlot
-      ? `--mobile-t:${mobileSlot.top}; --mobile-h:${mobileSlot.height};`
+      ? `--mobile-t:${mobileSlot.top}; --mobile-h:${mobileSlot.height}; --mobile-l:${mobileSlot.left ?? '0px'}; --mobile-w:${mobileSlot.width ?? 'auto'};`
       : '';
     return mode === 'maximized'
       ? `z-index:${zIndex}; position:absolute; inset:0; ${mobileVars}`
       : `z-index:${zIndex}; position:absolute; left:${x}px; top:${y}px; width:${width}px; height:${height}px; ${mobileVars}`;
   });
+
+  function handleSwipeStart(e: TouchEvent) {
+    if (!swipeEnabled || e.touches.length !== 1) return;
+    swipeStartX = e.touches[0].clientX;
+    swipeStartY = e.touches[0].clientY;
+  }
+
+  function handleSwipeEnd(e: TouchEvent) {
+    if (!swipeEnabled || e.changedTouches.length !== 1 || isDragging || isResizing) return;
+    const dx = e.changedTouches[0].clientX - swipeStartX;
+    const dy = e.changedTouches[0].clientY - swipeStartY;
+    if (Math.abs(dx) < 48 || Math.abs(dx) < Math.abs(dy) * 1.25) return;
+    if (dx < 0) onSwipeLeft?.();
+    else onSwipeRight?.();
+  }
 </script>
 
 {#if mode !== 'minimized'}
@@ -263,7 +291,13 @@
     onkeydown={handleKeydown}
   >
     <!-- svelte-ignore a11y_no_static_element_interactions -->
-    <div class="title-bar" onmousedown={startDrag} ontouchstart={startDrag} ondblclick={handleTitleDblClick}>
+    <div
+      class="title-bar"
+      onmousedown={startDrag}
+      ontouchstart={(e) => { handleSwipeStart(e); startDrag(e); }}
+      ontouchend={handleSwipeEnd}
+      ondblclick={handleTitleDblClick}
+    >
       <div class="title-bar-text">
         <span class="window-icon">{icon}</span>
         {title}
@@ -507,9 +541,9 @@
 
   @media (max-width: 550px) {
     .win98-window {
-      left: 0 !important;
-      right: 0 !important;
-      width: auto !important;
+      left: var(--mobile-l, 0) !important;
+      right: auto !important;
+      width: var(--mobile-w, auto) !important;
       height: var(--mobile-h, 100%) !important;
       top: var(--mobile-t, 0) !important;
       box-sizing: border-box !important;

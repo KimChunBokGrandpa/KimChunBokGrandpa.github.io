@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { render, cleanup } from '@testing-library/svelte';
+import { render, cleanup, waitFor } from '@testing-library/svelte';
 import { fireEvent } from '@testing-library/svelte';
 
 vi.mock('$app/environment', () => ({ browser: true }));
@@ -16,6 +16,10 @@ vi.mock('$lib/stores/customPresetStore.svelte', () => ({
     removePreset: vi.fn(),
   },
   getCustomPresets: vi.fn(() => []),
+}));
+
+vi.mock('$lib/utils/presetPreview', () => ({
+  getPresetPreview: vi.fn(async (input: { id?: string }) => `data:image/png;base64,${input.id || 'preview'}`),
 }));
 
 import PresetManager from '../editor/PresetManager.svelte';
@@ -70,5 +74,12 @@ describe('PresetManager', () => {
       // Either onChange is called or settings are updated
       expect(container.innerHTML).toBeTruthy();
     }
+  });
+
+  it('renders preset thumbnail previews', async () => {
+    const { container } = render(PresetManager, { props: defaultProps() });
+    await waitFor(() => {
+      expect(container.querySelector('.preset-card-thumb')).toBeTruthy();
+    });
   });
 });

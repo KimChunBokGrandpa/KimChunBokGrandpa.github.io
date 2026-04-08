@@ -219,6 +219,8 @@ export const en = {
   duplicate_frame: 'Duplicate Frame',
   move_frame_left: 'Move Frame Left',
   move_frame_right: 'Move Frame Right',
+  drag_frames_reorder: 'Drag frames to reorder',
+  frame: 'Frame {0}',
   export_svg: 'Export as SVG (vector pixel art)',
   svg_exported: 'SVG exported successfully!',
   export_spritesheet: 'Export as sprite sheet',
@@ -526,6 +528,11 @@ export const en = {
   export_apng: 'Export as APNG',
   export_apng_desc: 'Animated PNG — better quality than GIF',
   apng_exported: 'APNG exported successfully!',
+
+  // ─── Animated WebP Export ───
+  export_animated_webp: 'Export as Animated WebP',
+  export_animated_webp_desc: 'Animated WebP — compact modern animation format',
+  animated_webp_exported: 'Animated WebP exported successfully!',
 
   // ─── Shortcut Hints ───
   shortcut_hint_save: 'Save (Ctrl+S)',

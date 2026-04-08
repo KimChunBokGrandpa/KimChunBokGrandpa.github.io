@@ -1,7 +1,38 @@
 # PLAN_TASK — Retro Pixel Converter
 
-> v1.4.0 코드 품질 개선 완료 (2026-03-18). 전체 이력은 `REVISION_HISTORY.md` 참조.
+> v1.6.0 기능/로드맵 갱신 완료 (2026-04-08). 전체 이력은 `REVISION_HISTORY.md` 참조.
 > QA 전체 리뷰 수행 (2026-03-25). P0~P2 수정 완료.
+> 제품 backlog 및 기능 우선순위는 `_workspace/plan_04_roadmap.md` 기준으로 운영.
+
+---
+
+## Current Product Progress
+
+- `P2-001` GIF 프레임 조작 UI 마무리 — ✅ 완료
+  - drag reorder UI 추가
+  - delete / duplicate / reorder 테스트 보강
+- `P2-002` Animated WebP 내보내기 — ✅ 완료
+  - GIF controls 버튼 추가
+  - animated WebP muxing 유틸 추가
+- `P2-005` 프리셋 프리뷰 썸네일 — ✅ 완료
+  - built-in / custom preset thumbnail preview 추가
+  - local cache 유틸 및 테스트 추가
+- `P2-009` 이미지 기반 팔레트 자동 추천 — ✅ 완료
+  - recommendation util/UI 검증
+  - stale recommendation guard 추가
+- `P2-004` 팔레트 블렌딩/보간 — ✅ 완료
+  - Oklab 기반 blended preview/save flow 검증
+  - 현재 blend 비율 표시, custom palette naming 보강
+- `P2-007` 스와이프 제스처 + 가로모드 — ✅ 완료
+  - 모바일 제목줄 좌우 스와이프로 창 전환
+  - mobile landscape에서 settings + preview split layout 적용
+- `P2-003` Tauri 데스크톱 빌드 + GitHub Releases — ◐ 진행 중
+  - tag 기반 GitHub Actions release workflow 추가
+  - Tauri/Cargo 버전 `1.1.0` 정합성 맞춤, `cargo check` 통과
+- 다음 우선순위
+  - `P2-008` E2E 테스트
+  - `P1-008` effect architecture 마무리
+  - `P2-003` GitHub tag release 실검증
 
 ---
 
@@ -50,8 +81,8 @@
 ## Known Issues
 
 - Pre-existing type errors 5건: CompareView.test.ts (3) + vitest.setup.ts (2) — svelte-check 전용, 런타임 무관
-- svelte-check 결과: **0 에러, 0 경고** (2026-03-25 수정 후)
-- npm test: **362 tests, 39 files** 전체 통과
+- svelte-check 결과: **0 에러, 0 경고** (2026-04-08 확인)
+- npm test: **411 tests, 44 files** 전체 통과
 
 ---
 
@@ -60,7 +91,7 @@
 ```bash
 npm run dev          # 개발 서버 (port 1420)
 npm run check        # 타입 체크
-npm test             # 테스트 실행 (362개, 39 files)
+npm test             # 테스트 실행 (411개, 44 files)
 npm run test:watch   # 테스트 워치 모드
 npm run storybook    # Storybook (port 6006)
 ```

@@ -44,15 +44,26 @@
   // ─── Palette Recommendation ───
   let recommendations = $state<PaletteRecommendation[]>([]);
   let isRecommending = $state(false);
+  let recommendationRequestId = 0;
 
   // Auto-recommend when image changes
   $effect(() => {
+    const requestId = ++recommendationRequestId;
     if (!imageSrc) { recommendations = []; return; }
     isRecommending = true;
     recommendPalettesFromImage(imageSrc, 5)
-      .then(r => { recommendations = r; })
-      .catch(() => { recommendations = []; })
-      .finally(() => { isRecommending = false; });
+      .then(r => {
+        if (requestId !== recommendationRequestId) return;
+        recommendations = r;
+      })
+      .catch(() => {
+        if (requestId !== recommendationRequestId) return;
+        recommendations = [];
+      })
+      .finally(() => {
+        if (requestId !== recommendationRequestId) return;
+        isRecommending = false;
+      });
   });
 
   // ─── Palette Extraction from Image ───
@@ -223,12 +234,22 @@
 
   function startBlend() {
     blendSourceId = selectedPaletteId;
+    blendFactor = 0.5;
     blendMode = true;
   }
 
   function cancelBlend() {
     blendMode = false;
     blendSourceId = null;
+    blendFactor = 0.5;
+  }
+
+  function getDisplayPaletteName(id: string): string {
+    if (id === 'original') return i18n.t('palette_original_full_color');
+    if (id.startsWith('custom_')) {
+      return customPaletteStore.getPaletteById(id)?.name ?? id;
+    }
+    return getPaletteName(id);
   }
 
   function getColorsForId(id: string): RGB[] {
@@ -249,8 +270,8 @@
 
   function saveBlendedPalette() {
     if (!blendedColors || blendedColors.length === 0) return;
-    const srcName = getPaletteName(blendSourceId!);
-    const tgtName = getPaletteName(selectedPaletteId);
+    const srcName = getDisplayPaletteName(blendSourceId!);
+    const tgtName = getDisplayPaletteName(selectedPaletteId);
     const name = `${srcName} × ${tgtName} (${Math.round(blendFactor * 100)}%)`;
     const newPalette = customPaletteStore.addPalette(name, blendedColors);
     onSelect(newPalette.id);
@@ -459,11 +480,12 @@
           <button class="blend-close" onclick={cancelBlend}>✕</button>
         </div>
         <div class="blend-info">
-          {getPaletteName(blendSourceId!)} ↔ {getPaletteName(selectedPaletteId)}
+          {getDisplayPaletteName(blendSourceId!)} ↔ {getDisplayPaletteName(selectedPaletteId)}
         </div>
         <div class="blend-slider-row">
           <span class="blend-label">0%</span>
           <input type="range" class="blend-slider" min="0" max="100" value={Math.round(blendFactor * 100)} oninput={(e) => { blendFactor = parseInt((e.target as HTMLInputElement).value) / 100; }} />
+          <span class="blend-current">{Math.round(blendFactor * 100)}%</span>
           <span class="blend-label">100%</span>
         </div>
         {#if blendedColors && blendedColors.length > 0}
@@ -571,6 +593,13 @@
     color: var(--w98-shadow-808);
     min-width: 24px;
     text-align: center;
+  }
+  .blend-current {
+    min-width: 42px;
+    text-align: center;
+    font-size: var(--w98-font-size-caption);
+    font-weight: bold;
+    color: var(--w98-highlight);
   }
   .blend-preview {
     display: flex;

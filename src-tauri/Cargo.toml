@@ -1,6 +1,6 @@
 [package]
 name = "retro-pixel-converter"
-version = "0.1.0"
+version = "1.1.0"
 description = "Transform images into retro pixel art with classic palettes"
 authors = ["jhpark"]
 edition = "2024"
@@ -25,4 +25,3 @@ serde_json = "1"
 tauri-plugin-fs = "2"
 tauri-plugin-dialog = "2"
 image = "0.25.10"
-

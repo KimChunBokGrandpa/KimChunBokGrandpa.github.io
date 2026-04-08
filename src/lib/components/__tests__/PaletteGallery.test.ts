@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi, afterEach } from 'vitest';
-import { render, cleanup } from '@testing-library/svelte';
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
+import { render, cleanup, waitFor } from '@testing-library/svelte';
 import { fireEvent } from '@testing-library/svelte';
 
 vi.mock('$app/environment', () => ({ browser: true }));
@@ -9,14 +9,18 @@ vi.mock('$lib/i18n/index.svelte', () => ({
   i18n: { t: vi.fn((key: string) => key) },
 }));
 
-vi.mock('$lib/stores/customPaletteStore.svelte', () => ({
+const { customPaletteStore } = vi.hoisted(() => ({
   customPaletteStore: {
     palettes: [],
-    addPalette: vi.fn(),
+    addPalette: vi.fn(() => ({ id: 'custom_blend' })),
     updatePalette: vi.fn(),
-    removePalette: vi.fn(),
+    deletePalette: vi.fn(),
     getPaletteById: vi.fn(() => null),
   },
+}));
+
+vi.mock('$lib/stores/customPaletteStore.svelte', () => ({
+  customPaletteStore,
 }));
 
 vi.mock('$lib/utils/paletteIO', () => ({
@@ -26,9 +30,28 @@ vi.mock('$lib/utils/paletteIO', () => ({
   downloadFile: vi.fn(),
 }));
 
+vi.mock('$lib/utils/paletteExtractor', () => ({
+  extractPaletteFromImage: vi.fn(),
+}));
+
+const { recommendPalettesFromImage } = vi.hoisted(() => ({
+  recommendPalettesFromImage: vi.fn(),
+}));
+
+vi.mock('$lib/utils/paletteRecommender', () => ({
+  recommendPalettesFromImage,
+}));
+
 import PaletteGallery from '../palette/PaletteGallery.svelte';
 
 afterEach(() => cleanup());
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  customPaletteStore.palettes = [];
+  customPaletteStore.addPalette.mockReturnValue({ id: 'custom_blend' });
+  customPaletteStore.getPaletteById.mockReturnValue(null);
+});
 
 describe('PaletteGallery', () => {
   const defaultProps = () => ({
@@ -70,5 +93,91 @@ describe('PaletteGallery', () => {
     }
     // Note: onSelect may or may not be called depending on what was clicked
     expect(container.innerHTML).toBeTruthy();
+  });
+
+  it('renders recommended palette chips when image recommendations load', async () => {
+    recommendPalettesFromImage.mockResolvedValueOnce([
+      { id: 'dmg', score: 10 },
+      { id: 'nes', score: 20 },
+    ]);
+
+    const { container } = render(PaletteGallery, {
+      props: { ...defaultProps(), imageSrc: 'blob:image' },
+    });
+
+    await waitFor(() => {
+      expect(container.querySelectorAll('.pg-recommend-chip').length).toBe(2);
+    });
+  });
+
+  it('ignores stale recommendation result after image changes', async () => {
+    let resolveFirst!: (value: { id: string; score: number }[]) => void;
+    let resolveSecond!: (value: { id: string; score: number }[]) => void;
+    recommendPalettesFromImage
+      .mockImplementationOnce(() => new Promise((resolve) => { resolveFirst = resolve; }))
+      .mockImplementationOnce(() => new Promise((resolve) => { resolveSecond = resolve; }));
+
+    const { rerender, container } = render(PaletteGallery, {
+      props: { ...defaultProps(), imageSrc: 'blob:first' },
+    });
+
+    await rerender({ ...defaultProps(), imageSrc: 'blob:second' });
+    resolveSecond([{ id: 'dmg', score: 5 }]);
+    resolveFirst([{ id: 'ega', score: 1 }]);
+
+    await waitFor(() => {
+      const chips = Array.from(container.querySelectorAll('.pg-recommend-chip'));
+      expect(chips).toHaveLength(1);
+      expect(chips[0].textContent).toBeTruthy();
+    });
+  });
+
+  it('shows blended preview after choosing a second palette', async () => {
+    const props = { ...defaultProps(), selectedPaletteId: 'dmg' };
+    const { container, rerender } = render(PaletteGallery, { props });
+
+    const startButton = container.querySelector('.blend-start-btn');
+    expect(startButton).toBeTruthy();
+
+    await fireEvent.click(startButton!);
+
+    expect(container.querySelector('.blend-hint')).toBeTruthy();
+    expect(container.querySelector('.blend-current')?.textContent).toBe('50%');
+
+    await rerender({ ...props, selectedPaletteId: 'nes' });
+
+    await waitFor(() => {
+      expect(container.querySelector('.blend-preview')).toBeTruthy();
+      expect(container.querySelectorAll('.blend-swatch').length).toBeGreaterThan(0);
+    });
+  });
+
+  it('saves blended palette as a custom palette and selects it', async () => {
+    const onSelect = vi.fn();
+    const props = { ...defaultProps(), selectedPaletteId: 'dmg', onSelect };
+    const { container, rerender } = render(PaletteGallery, { props });
+
+    await fireEvent.click(container.querySelector('.blend-start-btn')!);
+    await rerender({ ...props, selectedPaletteId: 'nes', onSelect });
+
+    const slider = container.querySelector('.blend-slider') as HTMLInputElement | null;
+    expect(slider).toBeTruthy();
+    await fireEvent.input(slider!, { target: { value: '25' } });
+
+    await waitFor(() => {
+      expect(container.querySelector('.blend-current')?.textContent).toBe('25%');
+    });
+
+    await fireEvent.click(container.querySelector('.blend-save-btn')!);
+
+    expect(customPaletteStore.addPalette).toHaveBeenCalledTimes(1);
+    const addPaletteCall = customPaletteStore.addPalette.mock.calls[0];
+    expect(addPaletteCall).toBeTruthy();
+    const [name, colors] = addPaletteCall as unknown as [string, Array<{ r: number; g: number; b: number }>];
+    expect(name).toContain('25%');
+    expect(Array.isArray(colors)).toBe(true);
+    expect(colors.length).toBeGreaterThan(0);
+    expect(onSelect).toHaveBeenCalledWith('custom_blend');
+    expect(container.querySelector('.blend-panel')).toBeNull();
   });
 });
