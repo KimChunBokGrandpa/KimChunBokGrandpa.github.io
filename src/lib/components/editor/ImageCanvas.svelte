@@ -15,6 +15,8 @@
     originalImageSrc,
     processedImageSrc,
     isProcessing,
+    processingProgress = 0,
+    processingStartTime = 0,
     processingSettings,
     compareMode,
     compareVariant,
@@ -33,6 +35,8 @@
     originalImageSrc: string | null;
     processedImageSrc: string | null;
     isProcessing: boolean;
+    processingProgress?: number;
+    processingStartTime?: number;
     processingSettings: ProcessingSettings;
     compareMode: boolean;
     compareVariant: CompareVariant;
@@ -187,14 +191,22 @@
       />
     {/if}
     
-    <!-- Processing Overlay (simplified) -->
+    <!-- Processing Overlay -->
     {#if isProcessing}
+      {@const pct = Math.round((processingProgress ?? 0) * 100)}
+      {@const elapsed = processingStartTime ? (Date.now() - processingStartTime) / 1000 : 0}
+      {@const eta = processingProgress > 0.05 ? Math.round(elapsed / processingProgress * (1 - processingProgress)) : 0}
       <div class="processing-overlay" role="status" aria-live="polite">
         <div class="processing-indicator">
           <div class="progress-container">
-            <div class="progress-bar"></div>
+            <div class="progress-bar-real" style="width:{pct}%"></div>
           </div>
-          <span class="processing-text">{i18n.t('applying_settings')}</span>
+          <span class="processing-text">
+            {i18n.t('applying_settings')} {pct}%
+            {#if eta > 0}
+              <span class="processing-eta">~{eta}s</span>
+            {/if}
+          </span>
         </div>
       </div>
     {/if}
@@ -327,8 +339,20 @@
     animation: progressSlide 1.2s linear infinite;
     transform-origin: left;
   }
+  .progress-bar-real {
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    background: var(--w98-highlight);
+    transition: width 0.15s ease-out;
+  }
   .progress-wide {
     width: 200px;
+  }
+  .processing-eta {
+    opacity: 0.7;
+    margin-left: 4px;
   }
 
   @keyframes progressSlide {

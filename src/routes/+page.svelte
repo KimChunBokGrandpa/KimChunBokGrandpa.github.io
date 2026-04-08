@@ -193,6 +193,8 @@
   let processingSettings = $derived(ip.settings);
   let saveFormat = $derived(ip.saveFormat);
   let saveQuality = $derived(ip.saveQuality);
+  let processingProgress = $derived(ip.processingProgress);
+  let processingStartTime = $derived(ip.processingStartTime);
 
   // ─── Event Handlers ───
   function handleImageSelected(file: File) {
@@ -394,6 +396,8 @@
         originalImageSrc={originalImageSrc}
         processedImageSrc={processedImageSrc}
         isProcessing={isProcessing}
+        {processingProgress}
+        {processingStartTime}
         processingSettings={processingSettings}
         bind:compareMode={compareMode}
         bind:tileMode={tileMode}

@@ -18,7 +18,7 @@ export interface WindowConfig {
 }
 
 // ─── Processing Types ───
-export type GlitchType = "none" | "rgb_split" | "noise" | "wave" | "slice";
+export type GlitchType = "none" | "rgb_split" | "noise" | "wave" | "slice" | "vhs_tracking" | "interlace";
 export type RenderMode = "pixel_perfect" | "bilinear" | "hqx";
 export type DitherType = "none" | "floyd_steinberg" | "ordered" | "atkinson";
 export type CrtMode = "none" | "horizontal" | "vertical";

@@ -14,8 +14,10 @@
     { type: 'glitch', glitchType: 'rgb_split', icon: '🔴', labelKey: 'effect_glitch_rgb_split' },
     { type: 'glitch', glitchType: 'wave',      icon: '📺', labelKey: 'effect_glitch_wave' },
     { type: 'glitch', glitchType: 'noise',     icon: '🧩', labelKey: 'effect_glitch_noise' },
-    { type: 'glitch', glitchType: 'slice',     icon: '🔪', labelKey: 'effect_glitch_slice' },
-    { type: 'hqx',                             icon: '✨', labelKey: 'effect_hqx' },
+    { type: 'glitch', glitchType: 'slice',        icon: '🔪', labelKey: 'effect_glitch_slice' },
+    { type: 'glitch', glitchType: 'vhs_tracking', icon: '📼', labelKey: 'effect_glitch_vhs_tracking' },
+    { type: 'glitch', glitchType: 'interlace',    icon: '📡', labelKey: 'effect_glitch_interlace' },
+    { type: 'hqx',                                icon: '✨', labelKey: 'effect_hqx' },
   ];
 
   let {

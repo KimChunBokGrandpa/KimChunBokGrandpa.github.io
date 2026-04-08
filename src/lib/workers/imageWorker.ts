@@ -4,6 +4,7 @@ import {
 } from "../utils/colorQuantizer";
 import { applyGlitch } from "../utils/glitchEngine";
 import { applyScaling } from "../utils/scaleEngine";
+import { getEffectWeight } from "../utils/effectRegistry";
 import type {
   EffectLayer,
   ImageWorkerMessage,
@@ -60,15 +61,6 @@ onmessage = (e: MessageEvent<ImageWorkerMessage>) => {
 
     postMessage({ id, type: 'progress', progress: 0.4 } as ImageWorkerResponse);
 
-    // Effect weight map: heavier effects get proportionally more progress
-    const EFFECT_WEIGHTS: Record<string, number> = {
-      noise: 1,
-      rgb_split: 1,
-      wave: 2,
-      slice: 3,
-      hqx: 4,
-    };
-
     // Normalize: convert legacy glitchFilters + renderMode into unified effectLayers
     let layers: EffectLayer[];
     if (effectLayers && effectLayers.length > 0) {
@@ -89,10 +81,12 @@ onmessage = (e: MessageEvent<ImageWorkerMessage>) => {
       }
     }
 
-    // Apply effect layers with progress tracking
+    // Apply effect layers with progress tracking (weights from registry)
+    const HQX_WEIGHT = 4;
     const totalWeight = layers.reduce((sum, l) => {
+      if (l.type === 'hqx') return sum + HQX_WEIGHT;
       const key = l.type === 'glitch' ? (l.glitchType || 'noise') : l.type;
-      return sum + (EFFECT_WEIGHTS[key] || 1);
+      return sum + getEffectWeight(key);
     }, 0);
     let completedWeight = 0;
 
@@ -108,7 +102,7 @@ onmessage = (e: MessageEvent<ImageWorkerMessage>) => {
         processedData = applyScaling(processedData, 'hqx');
       }
       const key = layer.type === 'glitch' ? (layer.glitchType || 'noise') : layer.type;
-      completedWeight += EFFECT_WEIGHTS[key] || 1;
+      completedWeight += layer.type === 'hqx' ? HQX_WEIGHT : getEffectWeight(key);
       const layerProgress = totalWeight > 0 ? completedWeight / totalWeight : 1;
       postMessage({ id, type: 'progress', progress: 0.4 + 0.5 * layerProgress } as ImageWorkerResponse);
     }

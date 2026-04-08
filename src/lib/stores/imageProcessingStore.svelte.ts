@@ -156,14 +156,25 @@ export function createImageProcessingStore() {
     handleDimensionCapped,
   });
 
+  // ─── Processing Progress ───
+  let processingProgress = $state(0);
+  let processingStartTime = $state(0);
+
   // ─── Processing Pipeline ───
   async function runProcessing() {
     const gen = ++processingGeneration;
     try {
       lastError = null;
+      processingProgress = 0;
+      processingStartTime = Date.now();
       const srcToProcess = transformedSrc || originalImageSrc;
       if (!srcToProcess) return;
-      const result = await processorService.processImage(srcToProcess, settings, handleDimensionCapped);
+      const result = await processorService.processImage(
+        srcToProcess,
+        settings,
+        handleDimensionCapped,
+        (p: number) => { processingProgress = p; },
+      );
       if (result !== null) {
         processedImageSrc = result;
         colorCount = processorService.getLastColorCount();
@@ -172,7 +183,10 @@ export function createImageProcessingStore() {
       console.error(err);
       lastError = err instanceof Error ? err.message : String(err);
     } finally {
-      if (gen === processingGeneration) isProcessing = false;
+      if (gen === processingGeneration) {
+        isProcessing = false;
+        processingProgress = 1;
+      }
     }
   }
 
@@ -396,6 +410,8 @@ export function createImageProcessingStore() {
     get autoProcess() { return autoProcess; },
     set autoProcess(v: boolean) { autoProcess = v; },
     get hasUnappliedChanges() { return hasUnappliedChanges; },
+    get processingProgress() { return processingProgress; },
+    get processingStartTime() { return processingStartTime; },
 
     // Transform state
     get rotation() { return rotation; },

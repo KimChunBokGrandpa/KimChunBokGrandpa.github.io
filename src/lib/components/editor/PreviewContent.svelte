@@ -16,6 +16,8 @@
     originalImageSrc,
     processedImageSrc,
     isProcessing,
+    processingProgress = 0,
+    processingStartTime = 0,
     processingSettings,
     compareMode = $bindable(false),
     onImageSelected,
@@ -55,6 +57,8 @@
     originalImageSrc: string | null;
     processedImageSrc: string | null;
     isProcessing: boolean;
+    processingProgress?: number;
+    processingStartTime?: number;
     processingSettings: ProcessingSettings;
     compareMode: boolean;
     onImageSelected: (file: File) => void;
@@ -122,6 +126,8 @@
   {originalImageSrc}
   {processedImageSrc}
   {isProcessing}
+  {processingProgress}
+  {processingStartTime}
   {processingSettings}
   {compareMode}
   {compareVariant}
