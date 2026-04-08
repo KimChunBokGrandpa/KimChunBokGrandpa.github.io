@@ -2,6 +2,10 @@
   import type { EffectLayer, GlitchType, RenderMode, ProcessingSettings } from '$lib/types';
   import { i18n } from '$lib/i18n/index.svelte';
   import type { TranslationKey } from '$lib/i18n/en';
+  import { getAllEffects } from '$lib/utils/effectRegistry';
+  import { ensureBuiltInEffectsRegistered } from '$lib/utils/effects';
+
+  ensureBuiltInEffectsRegistered();
 
   // CSS render mode options (HQx moved to effect layers)
   const CSS_RENDER_OPTIONS = [
@@ -9,15 +13,15 @@
     { id: 'bilinear', labelKey: 'bilinear_blur' as const, titleKey: 'bilinear_desc' as const },
   ] as const;
 
-  // Effect options for the add menu
-  const EFFECT_OPTIONS: { type: EffectLayer['type']; glitchType?: GlitchType; icon: string; labelKey: TranslationKey }[] = [
-    { type: 'glitch', glitchType: 'rgb_split', icon: '🔴', labelKey: 'effect_glitch_rgb_split' },
-    { type: 'glitch', glitchType: 'wave',      icon: '📺', labelKey: 'effect_glitch_wave' },
-    { type: 'glitch', glitchType: 'noise',     icon: '🧩', labelKey: 'effect_glitch_noise' },
-    { type: 'glitch', glitchType: 'slice',        icon: '🔪', labelKey: 'effect_glitch_slice' },
-    { type: 'glitch', glitchType: 'vhs_tracking', icon: '📼', labelKey: 'effect_glitch_vhs_tracking' },
-    { type: 'glitch', glitchType: 'interlace',    icon: '📡', labelKey: 'effect_glitch_interlace' },
-    { type: 'hqx',                                icon: '✨', labelKey: 'effect_hqx' },
+  type EffectOption = { type: EffectLayer['type']; glitchType?: GlitchType; icon: string; labelKey: TranslationKey };
+  const EFFECT_OPTIONS: EffectOption[] = [
+    ...getAllEffects().map((effect) => ({
+      type: 'glitch' as const,
+      glitchType: effect.id,
+      icon: effect.icon,
+      labelKey: effect.labelKey,
+    })),
+    { type: 'hqx', icon: '✨', labelKey: 'effect_hqx' },
   ];
 
   let {

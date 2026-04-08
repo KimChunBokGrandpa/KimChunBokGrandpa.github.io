@@ -36,6 +36,9 @@ npm install
 # 웹 개발 서버
 npm run dev
 
+# E2E 테스트
+npm run test:e2e
+
 # Tauri 데스크탑 앱 개발
 npm run td
 ```

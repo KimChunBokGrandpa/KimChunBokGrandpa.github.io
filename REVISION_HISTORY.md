@@ -35,6 +35,17 @@
   - tag push 기반 GitHub Releases workflow 추가
   - `package.json` / `tauri.conf.json` / `Cargo.toml` 버전 정합성 확보
   - local `cargo check` 통과로 Tauri 설정 충돌 없음 확인
+- **playwright.config.ts + e2e/app.spec.ts — E2E 기본 플로우 자동화**
+  - sample image 기준 core user flow: load -> palette adjust -> compare -> save download
+  - mobile landscape split layout smoke 시나리오 추가
+  - component test selectors용 최소 `data-testid` 보강
+- **effectRegistry.ts + utils/effects/* — effect architecture 완성**
+  - 효과 구현을 개별 모듈로 분리
+  - built-in effect registration initializer 추가
+  - EffectLayerStack add menu/label이 registry metadata 기반으로 동작
+- **ci.yml + eslint.config.js — CI Phase 2 완료**
+  - lint / test / typecheck / audit / PR summary comment workflow 추가
+  - 현재 저장소 기준 ESLint를 CI 가능한 수준으로 조정
 
 ### Tests
 
@@ -49,6 +60,8 @@
 - **paletteRecommender.test.ts** — recommendation sort / filtering / transparent image 테스트 추가
 - **Win98Window.test.ts** — mobile swipe callback / slot layout 변수 테스트 추가
 - **mobileWindowLayout.test.ts** — mobile focus cycle / portrait stack / landscape split 테스트 추가
+- **app.spec.ts** — desktop core flow / mobile landscape smoke Playwright E2E 추가
+- **effectRegistry.test.ts** — built-in registration / category metadata 테스트 추가
 
 ### Docs
 
@@ -58,7 +71,9 @@
 
 ### Build & Test Status (v1.6)
 - `svelte-check`: **0 errors, 0 warnings**
-- `vitest`: **411 tests passing** (44 files)
+- `vitest`: **414 tests passing** (45 files)
+- `eslint`: **0 errors, 17 warnings**
+- `playwright`: **2 E2E scenarios passing**
 - Production build: not run this turn
 
 ---

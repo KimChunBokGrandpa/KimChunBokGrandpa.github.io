@@ -70,6 +70,7 @@
   <!-- Compare -->
   <button
     class="tb-btn"
+    data-testid="toggle-compare-button"
     class:tb-active={compareMode}
     onclick={() => { compareMode = !compareMode; }}
     title={compareMode ? i18n.t('exit_compare') : i18n.t('shortcut_hint_compare')}
@@ -80,6 +81,7 @@
   {#if compareMode}
     <button
       class="tb-btn"
+      data-testid="cycle-compare-variant-button"
       onclick={cycleCompareVariant}
       title="{i18n.t('compare_mode_cycle')}"
       aria-label={i18n.t('btn_compare_variant')}

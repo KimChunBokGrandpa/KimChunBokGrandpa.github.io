@@ -1,0 +1,147 @@
+name: CI Quality Checks
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        run: npm run lint
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run unit tests
+        run: npm test
+
+  typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run svelte-check
+        run: npm run check
+
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run npm audit
+        run: npm run audit:ci
+
+  pr-summary:
+    if: always() && github.event_name == 'pull_request'
+    needs:
+      - lint
+      - test
+      - typecheck
+      - audit
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Post PR summary comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const marker = '<!-- retro-pixel-ci-summary -->';
+            const rows = [
+              ['Lint', '${{ needs.lint.result }}'],
+              ['Tests', '${{ needs.test.result }}'],
+              ['Type Check', '${{ needs.typecheck.result }}'],
+              ['Audit', '${{ needs.audit.result }}'],
+            ];
+
+            const iconFor = (result) => {
+              if (result === 'success') return '✅';
+              if (result === 'failure') return '❌';
+              if (result === 'cancelled') return '⚪';
+              return '⏳';
+            };
+
+            const body = [
+              marker,
+              '## CI Summary',
+              '',
+              '| Check | Result |',
+              '| --- | --- |',
+              ...rows.map(([label, result]) => `| ${label} | ${iconFor(result)} ${result} |`),
+              '',
+              `Workflow: ${context.workflow}`,
+              `Commit: \`${context.sha.slice(0, 7)}\``,
+            ].join('\n');
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const existing = comments.find((comment) => comment.body?.includes(marker));
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }

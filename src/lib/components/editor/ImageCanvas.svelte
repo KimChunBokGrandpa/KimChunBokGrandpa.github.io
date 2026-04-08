@@ -163,6 +163,7 @@
             bind:this={zp.previewImg}
             src={processedImageSrc}
             alt="Pixel Art - {getPaletteName(processingSettings.palette)}"
+            data-testid="processed-preview-image"
             class="preview-image"
             style:image-rendering={processingSettings.renderMode === 'bilinear'
               ? 'auto'

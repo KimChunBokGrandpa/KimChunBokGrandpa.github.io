@@ -5,6 +5,7 @@ import {
 import { applyGlitch } from "../utils/glitchEngine";
 import { applyScaling } from "../utils/scaleEngine";
 import { getEffectWeight } from "../utils/effectRegistry";
+import { ensureBuiltInEffectsRegistered } from "../utils/effects";
 import type {
   EffectLayer,
   ImageWorkerMessage,
@@ -36,6 +37,7 @@ onmessage = (e: MessageEvent<ImageWorkerMessage>) => {
   }
 
   try {
+    ensureBuiltInEffectsRegistered();
     const canvas = new OffscreenCanvas(width, height);
     const ctx = canvas.getContext("2d", {
       willReadFrequently: true,

@@ -219,6 +219,7 @@
             {#each QUICK_PALETTES as qp}
               <button
                 class="quick-palette-chip"
+                data-testid={"quick-palette-" + qp.id}
                 class:preset-active={settings.palette === qp.id}
                 onclick={() => { settings.palette = qp.id; update(); }}
                 title={getPaletteName(qp.id)}
@@ -305,6 +306,7 @@
     <div class="field-row save-row">
       <button
         class="save-btn"
+        data-testid="save-image-button"
         class:save-ready={hasProcessedImage}
         onclick={onSave}
         disabled={!hasImage}

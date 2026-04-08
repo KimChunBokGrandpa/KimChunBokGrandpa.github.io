@@ -29,10 +29,19 @@
 - `P2-003` Tauri 데스크톱 빌드 + GitHub Releases — ◐ 진행 중
   - tag 기반 GitHub Actions release workflow 추가
   - Tauri/Cargo 버전 `1.1.0` 정합성 맞춤, `cargo check` 통과
+- `P2-008` E2E 테스트 — ✅ 완료
+  - Playwright config + webServer 설정 추가
+  - sample image 기반 core flow / mobile landscape smoke 시나리오 통과
+- `P1-008` effect architecture 마무리 — ✅ 완료
+  - 효과별 모듈 분리 + built-in registration initializer 추가
+  - EffectLayerStack add menu/label이 registry metadata 기반으로 동작
+- `P1-004` CI Phase 2 — ✅ 완료
+  - `ci.yml`에 lint / test / check / audit / PR summary comment 추가
+  - `npm run lint` 기준 0 errors 상태로 정리
 - 다음 우선순위
-  - `P2-008` E2E 테스트
-  - `P1-008` effect architecture 마무리
   - `P2-003` GitHub tag release 실검증
+  - `P1-005` store 분리 마무리
+  - `P3-001` WebAssembly 양자화 검토
 
 ---
 
@@ -82,7 +91,8 @@
 
 - Pre-existing type errors 5건: CompareView.test.ts (3) + vitest.setup.ts (2) — svelte-check 전용, 런타임 무관
 - svelte-check 결과: **0 에러, 0 경고** (2026-04-08 확인)
-- npm test: **411 tests, 44 files** 전체 통과
+- npm test: **414 tests, 45 files** 전체 통과
+- npm run lint: **0 errors, 17 warnings**
 
 ---
 
@@ -90,8 +100,10 @@
 
 ```bash
 npm run dev          # 개발 서버 (port 1420)
+npm run lint         # ESLint (현재 0 errors, warnings only)
 npm run check        # 타입 체크
-npm test             # 테스트 실행 (411개, 44 files)
+npm test             # 테스트 실행 (414개, 45 files)
+npm run test:e2e     # Playwright E2E (2개 시나리오)
 npm run test:watch   # 테스트 워치 모드
 npm run storybook    # Storybook (port 6006)
 ```

@@ -150,8 +150,8 @@
       <p class="drop-or">{i18n.t('or')}</p>
       <div class="field-row" style="gap: 6px;">
         <input type="file" accept={ACCEPTED_TYPES.join(',')} id="file-upload" onchange={handleFileInput} style="display: none;" />
-        <button class="browse-btn" onclick={() => document.getElementById('file-upload')?.click()}>📂 {i18n.t('browse')}</button>
-        <button class="browse-btn sample-btn" onclick={loadSampleImage}>🌄 {i18n.t('try_sample')}</button>
+        <button class="browse-btn" data-testid="browse-image-button" onclick={() => document.getElementById('file-upload')?.click()}>📂 {i18n.t('browse')}</button>
+        <button class="browse-btn sample-btn" data-testid="try-sample-button" onclick={loadSampleImage}>🌄 {i18n.t('try_sample')}</button>
       </div>
       <p class="drop-hint">{i18n.t('paste_hint')}</p>
       <p class="drop-formats">{i18n.t('supported_formats')}</p>
