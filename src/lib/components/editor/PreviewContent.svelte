@@ -40,6 +40,7 @@
     onGifExportApng,
     onGifDeleteFrame,
     onGifDuplicateFrame,
+    onGifReorderFrame,
     // Color count
     colorCount = 0,
     // Tile mode
@@ -81,6 +82,7 @@
     onGifExportApng?: () => void;
     onGifDeleteFrame?: (frame: number) => void;
     onGifDuplicateFrame?: (frame: number) => void;
+    onGifReorderFrame?: (from: number, to: number) => void;
     // Color count
     colorCount?: number;
     // Tile mode
@@ -184,6 +186,7 @@
         onExportApng={onGifExportApng}
         onDeleteFrame={onGifDeleteFrame}
         onDuplicateFrame={onGifDuplicateFrame}
+        onReorderFrame={onGifReorderFrame}
       />
     {/if}
   {/snippet}

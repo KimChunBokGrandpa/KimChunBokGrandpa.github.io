@@ -18,6 +18,7 @@
     onExportApng,
     onDeleteFrame,
     onDuplicateFrame,
+    onReorderFrame,
   }: {
     currentFrame: number;
     frameCount: number;
@@ -34,6 +35,7 @@
     onExportApng?: () => void;
     onDeleteFrame?: (frame: number) => void;
     onDuplicateFrame?: (frame: number) => void;
+    onReorderFrame?: (from: number, to: number) => void;
   } = $props();
 </script>
 
@@ -80,6 +82,22 @@
         disabled={isExporting}
         use:tooltip
       >📋</button>
+    {/if}
+    {#if onReorderFrame}
+      <button
+        class="gif-btn"
+        onclick={() => onReorderFrame(currentFrame, currentFrame - 1)}
+        title={i18n.t('move_frame_left')}
+        disabled={isExporting || currentFrame === 0}
+        use:tooltip
+      >⬅</button>
+      <button
+        class="gif-btn"
+        onclick={() => onReorderFrame(currentFrame, currentFrame + 1)}
+        title={i18n.t('move_frame_right')}
+        disabled={isExporting || currentFrame >= frameCount - 1}
+        use:tooltip
+      >➡</button>
     {/if}
     <button
       class="gif-btn"

@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 npm run dev          # Web dev server (port 1420)
 npm run build        # Production build (static adapter → build/)
 npm run check        # svelte-check (type checking)
-npm test             # Run all tests (362 tests across 39 files)
+npm test             # Run all tests (377 tests across 40 files)
 npm run test:watch   # Vitest watch mode
 npx vitest run src/lib/utils/colorQuantizer.test.ts  # Single test file
 npm run td           # Tauri desktop dev (requires Rust toolchain)
@@ -35,8 +35,9 @@ npm run build-storybook  # Storybook static build
 ```
 src/lib/
 ├── types.ts                          # Central type hub
-├── stores/                           # Reactive state (6 .svelte.ts files)
+├── stores/                           # Reactive state (7 .svelte.ts files)
 │   ├── imageProcessingStore          # Image state, settings, undo/redo, GIF
+│   ├── historyStore                  # Undo/redo history (extracted from imageProcessingStore)
 │   ├── windowStore                   # 5 draggable windows, layout persistence
 │   ├── zoomPanStore                  # Zoom/pan state
 │   ├── customPaletteStore            # Custom palette CRUD (localStorage)
@@ -48,7 +49,8 @@ src/lib/
 │   └── exportService.ts              # SVG and spritesheet export
 ├── utils/                            # Pure functions
 │   ├── colorQuantizer.ts             # 5-bit LUT quantization + dithering
-│   ├── glitchEngine.ts               # RGB split, noise, wave, slice
+│   ├── effectRegistry.ts             # Plugin registry for image effects
+│   ├── glitchEngine.ts               # RGB split, noise, wave, slice, VHS, interlace
 │   ├── scaleEngine.ts                # HQx (EPX) upscaling
 │   ├── crtRenderer.ts                # CRT scanline effect
 │   ├── gifProcessor.ts               # GIF decode/encode
@@ -56,7 +58,9 @@ src/lib/
 │   ├── svgExporter.ts                # Pixel art → SVG <rect> elements
 │   ├── spritesheetExporter.ts        # GIF → sprite sheet PNG
 │   ├── palettes.ts / paletteData.ts  # Built-in palette definitions
-│   ├── colorUtils.ts / paletteIO.ts  # Color manipulation, palette import/export
+│   ├── colorUtils.ts / paletteIO.ts  # Color manipulation, palette import/export (.hex/.gpl/.pal/.ase/.act)
+│   ├── paletteExtractor.ts           # K-means palette extraction from images
+│   ├── apngEncoder.ts                # Animated PNG encoder
 │   ├── presets.ts                    # Default processing presets
 │   ├── tooltip.ts                    # Tooltip data-attribute sync
 │   └── env.ts                        # Environment detection (Tauri/web)
@@ -83,7 +87,7 @@ User Input → imageProcessingStore.loadImage()
   → processorService.processImage() [services/imageProcessor.ts singleton]
     → sends ImageBitmap to Web Worker (zero-copy transfer)
       → colorQuantizer: LUT-based palette quantization + dithering
-      → glitchEngine: RGB split, noise, wave, slice effects
+      → glitchEngine: effects via effectRegistry (RGB split, noise, wave, slice, VHS, interlace)
       → scaleEngine: HQx (EPX) pixel art upscaling
     → returns ImageData via transferable ArrayBuffer
   → blob URL → PreviewContent renders result
@@ -94,7 +98,8 @@ User Input → imageProcessingStore.loadImage()
 - **`types.ts`** — Central type hub: `ProcessingSettings`, `ImageWorkerMessage/Response`, window types
 - **`services/imageProcessor.ts`** — Singleton service managing the Web Worker lifecycle, request deduplication (by ID), image caching (LRU, max 10), canvas reuse, blob URL lifecycle, and dimension capping (2048px max, 1024px for HQx)
 - **`utils/colorQuantizer.ts`** — 5-bit LUT (32×32×32 entries) built once per palette for O(1) color lookup. Floyd-Steinberg error diffusion on reduced pixel grid. Bayer 8×8 ordered dithering with dynamic spread. Endianness-aware Uint32Array packing. Both packed (Uint32) and unpacked (RGB) LUTs built in single pass via `buildBothLuts()`
-- **`stores/imageProcessingStore.svelte.ts`** — Main application state: image src, settings, undo/redo history, debounced processing (150ms), GIF frame management, auto-process toggle, rotation/crop transform pipeline
+- **`utils/effectRegistry.ts`** — Plugin registry: effects register with `{ id, category, weight, apply }`. `glitchEngine.ts` registers 6 effects (rgb_split, noise, wave, slice, vhs_tracking, interlace). Worker uses `getEffectWeight()` for progress tracking. New effects = 1 function + 1 registration.
+- **`stores/imageProcessingStore.svelte.ts`** — Main application state: image src, settings, undo/redo history (delegated to historyStore), debounced processing (150ms), GIF frame management, auto-process toggle, rotation/crop transform pipeline, processing progress tracking
 - **`stores/windowStore.svelte.ts`** — 5 draggable windows (preview, settings, gallery, batch, history) with position/size/z-index, mobile stacking, localStorage persistence
 - **`utils/workerPool.ts`** — Worker pool for parallel GIF frame processing. Spawns N workers (hardwareConcurrency, max 8), task queue with automatic dispatch.
 
@@ -127,6 +132,21 @@ Animated GIFs are decoded into frames, each processed individually through the f
 - **PNG/JPEG/WebP** — Standard image export via `services/saveService.ts`
 - **SVG** — Pixel art converted to `<rect>` elements with horizontal run merging (`services/exportService.ts`)
 - **Sprite Sheet** — GIF frames arranged in auto-calculated grid as PNG (`services/exportService.ts`)
+- **APNG** — Animated PNG with full alpha channel (`utils/apngEncoder.ts` → `services/exportService.ts`)
+- **Frame Sequence** — GIF frames as individual PNGs in a ZIP (`services/exportService.ts`)
+
+### Effect Plugin Registry
+
+`utils/effectRegistry.ts` provides a plugin architecture for image effects:
+- `registerEffect({ id, category, weight, apply })` — register a new effect
+- `getEffect(id)` — look up by ID for the worker pipeline
+- `getEffectWeight(id)` — used by worker for progress tracking
+- New effects require: one `apply` function + one `registerEffect()` call + i18n keys
+- Categories: `'glitch'` (pixel manipulation), `'filter'` (color/brightness), `'transform'` (geometry)
+
+### Processing Progress
+
+`imageProcessingStore` tracks `processingProgress` (0–1) and `processingStartTime` for real-time progress display. The worker reports progress at quantization (10%), post-quantize (40%), per-effect-layer (40–90%), and finalize (90%). ImageCanvas shows percentage and estimated remaining time.
 
 ## Testing
 

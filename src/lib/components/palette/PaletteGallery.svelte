@@ -6,6 +6,7 @@
   import { parsePaletteFile, exportAsHex, exportAsGpl, downloadFile } from '$lib/utils/paletteIO';
   import { extractPaletteFromImage } from '$lib/utils/paletteExtractor';
   import { recommendPalettesFromImage, type PaletteRecommendation } from '$lib/utils/paletteRecommender';
+  import { blendPalettes } from '$lib/utils/colorUtils';
   import { i18n } from '$lib/i18n/index.svelte';
   import type { ThemeTab, VariantItem } from './types';
   import PaletteToolbar from './PaletteToolbar.svelte';
@@ -215,6 +216,48 @@
     saveFavorites();
   }
 
+  // ─── Palette Blending ───
+  let blendMode = $state(false);
+  let blendSourceId = $state<string | null>(null);
+  let blendFactor = $state(0.5);
+
+  function startBlend() {
+    blendSourceId = selectedPaletteId;
+    blendMode = true;
+  }
+
+  function cancelBlend() {
+    blendMode = false;
+    blendSourceId = null;
+  }
+
+  function getColorsForId(id: string): RGB[] {
+    if (id === 'original') return [];
+    if (id.startsWith('custom_')) {
+      return customPaletteStore.getPaletteById(id)?.colors ?? [];
+    }
+    return PALETTES[id] ?? [];
+  }
+
+  let blendedColors = $derived.by(() => {
+    if (!blendMode || !blendSourceId || blendSourceId === selectedPaletteId) return null;
+    const src = getColorsForId(blendSourceId);
+    const tgt = getColorsForId(selectedPaletteId);
+    if (src.length === 0 || tgt.length === 0) return null;
+    return blendPalettes(src, tgt, blendFactor);
+  });
+
+  function saveBlendedPalette() {
+    if (!blendedColors || blendedColors.length === 0) return;
+    const srcName = getPaletteName(blendSourceId!);
+    const tgtName = getPaletteName(selectedPaletteId);
+    const name = `${srcName} × ${tgtName} (${Math.round(blendFactor * 100)}%)`;
+    const newPalette = customPaletteStore.addPalette(name, blendedColors);
+    onSelect(newPalette.id);
+    activeThemeId = '_custom';
+    cancelBlend();
+  }
+
   // ─── Theme tabs (dynamic based on groupMode) ───
   let activeTabs = $derived.by<ThemeTab[]>(() => {
     const special: ThemeTab[] = [
@@ -408,6 +451,38 @@
       />
     </div>
 
+    <!-- Blend Panel -->
+    {#if blendMode}
+      <div class="blend-panel">
+        <div class="blend-header">
+          <span class="blend-title">🎨 {i18n.t('blend_palettes')}</span>
+          <button class="blend-close" onclick={cancelBlend}>✕</button>
+        </div>
+        <div class="blend-info">
+          {getPaletteName(blendSourceId!)} ↔ {getPaletteName(selectedPaletteId)}
+        </div>
+        <div class="blend-slider-row">
+          <span class="blend-label">0%</span>
+          <input type="range" class="blend-slider" min="0" max="100" value={Math.round(blendFactor * 100)} oninput={(e) => { blendFactor = parseInt((e.target as HTMLInputElement).value) / 100; }} />
+          <span class="blend-label">100%</span>
+        </div>
+        {#if blendedColors && blendedColors.length > 0}
+          <div class="blend-preview">
+            {#each blendedColors as c}
+              <div class="blend-swatch" style="background:rgb({c.r},{c.g},{c.b})"></div>
+            {/each}
+          </div>
+          <button class="blend-save-btn" onclick={saveBlendedPalette}>💾 {i18n.t('blend_save')}</button>
+        {:else}
+          <div class="blend-hint">{i18n.t('blend_select_target')}</div>
+        {/if}
+      </div>
+    {:else if selectedPaletteId !== 'original'}
+      <div class="blend-start-row">
+        <button class="blend-start-btn" onclick={startBlend}>🔀 {i18n.t('blend_start')}</button>
+      </div>
+    {/if}
+
     <!-- Status bar -->
     <div class="status-bar pg-status">
       <p class="status-bar-field">
@@ -444,5 +519,90 @@
   .pg-status {
     margin: 0 3px 3px 3px;
     flex-shrink: 0;
+  }
+
+  /* ── Blend Panel ── */
+  .blend-panel {
+    margin: 0 3px;
+    padding: 6px 8px;
+    background: #f0f0e8;
+    border: 1px solid var(--w98-shadow-light);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+  .blend-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .blend-title {
+    font-weight: bold;
+    font-size: var(--w98-font-size-base);
+    color: var(--w98-highlight);
+  }
+  .blend-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: var(--w98-font-size-sm);
+    color: var(--w98-shadow-808);
+    padding: 0 2px;
+  }
+  .blend-close:hover { color: #c00; }
+  .blend-info {
+    font-size: var(--w98-font-size-sm);
+    color: var(--w98-text);
+    text-align: center;
+  }
+  .blend-slider-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .blend-slider {
+    flex: 1;
+    height: 14px;
+    accent-color: var(--w98-highlight);
+  }
+  .blend-label {
+    font-size: var(--w98-font-size-caption);
+    color: var(--w98-shadow-808);
+    min-width: 24px;
+    text-align: center;
+  }
+  .blend-preview {
+    display: flex;
+    gap: 1px;
+    height: 16px;
+  }
+  .blend-swatch {
+    flex: 1;
+    min-width: 0;
+  }
+  .blend-save-btn {
+    font-size: var(--w98-font-size-sm);
+    font-weight: bold;
+    padding: 2px 8px;
+    cursor: pointer;
+    align-self: center;
+  }
+  .blend-hint {
+    font-size: var(--w98-font-size-sm);
+    color: var(--w98-shadow-808);
+    text-align: center;
+    font-style: italic;
+  }
+  .blend-start-row {
+    display: flex;
+    justify-content: center;
+    padding: 2px 3px;
+    flex-shrink: 0;
+  }
+  .blend-start-btn {
+    font-size: var(--w98-font-size-sm);
+    padding: 1px 10px;
+    cursor: pointer;
   }
 </style>

@@ -458,5 +458,6 @@ export function createImageProcessingStore() {
     cancelGifExport: gif.cancelExport,
     deleteGifFrame: gif.deleteFrame,
     duplicateGifFrame: gif.duplicateFrame,
+    reorderGifFrame: gif.reorderFrame,
   };
 }

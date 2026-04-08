@@ -443,6 +443,7 @@
         }}
         onGifDeleteFrame={(frame) => ip.deleteGifFrame(frame)}
         onGifDuplicateFrame={(frame) => ip.duplicateGifFrame(frame)}
+        onGifReorderFrame={(from, to) => ip.reorderGifFrame(from, to)}
         onRotate={(deg) => ip.rotate(deg)}
         onResetTransform={() => ip.resetTransform()}
         onCrop={(rect) => ip.setCrop(rect)}

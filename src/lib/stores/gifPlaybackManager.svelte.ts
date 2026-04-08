@@ -423,6 +423,24 @@ export function createGifPlaybackManager(deps: GifManagerDeps) {
     gifInfo = { ...gifInfo, frames: newFrames };
   }
 
+  /** Move a frame from one index to another. */
+  function reorderFrame(fromIndex: number, toIndex: number) {
+    if (!gifInfo) return;
+    const len = gifInfo.frames.length;
+    if (fromIndex < 0 || fromIndex >= len || toIndex < 0 || toIndex >= len) return;
+    if (fromIndex === toIndex) return;
+
+    pause();
+    invalidateCache();
+
+    const newFrames = [...gifInfo.frames];
+    const [moved] = newFrames.splice(fromIndex, 1);
+    newFrames.splice(toIndex, 0, moved);
+    gifInfo = { ...gifInfo, frames: newFrames };
+    gifCurrentFrame = toIndex;
+    showFrame(toIndex);
+  }
+
   return {
     // Reactive getters
     get isGif() { return isGif; },
@@ -446,5 +464,6 @@ export function createGifPlaybackManager(deps: GifManagerDeps) {
     invalidateCache,
     deleteFrame,
     duplicateFrame,
+    reorderFrame,
   };
 }
