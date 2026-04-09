@@ -16,12 +16,14 @@ export function getWindowTitle(id: WindowId): string {
 
 /** Desktop window definitions */
 export const WINDOW_CONFIGS: WindowConfig[] = [
-  { id: "preview", icon: "🖼️" },
-  { id: "settings", icon: "⚙️" },
-  { id: "gallery", icon: "🎨" },
-  { id: "batch", icon: "📦" },
-  { id: "history", icon: "⏱️" },
+  { id: "preview", icon: "🖼️", desktop: true },
+  { id: "settings", icon: "⚙️", desktop: false },
+  { id: "gallery", icon: "🎨", desktop: false },
+  { id: "batch", icon: "📦", desktop: false },
+  { id: "history", icon: "⏱️", desktop: false },
 ];
+
+export const DESKTOP_WINDOW_CONFIGS = WINDOW_CONFIGS.filter((config) => config.desktop);
 
 const WINDOW_IDS = WINDOW_CONFIGS.map((c) => c.id) as WindowId[];
 const STORAGE_KEY = "retro-pixel-window-layout";
@@ -75,7 +77,7 @@ export function createWindowStore() {
       y: saved?.settings?.y ?? 30,
       w: saved?.settings?.w ?? 340,
       h: saved?.settings?.h ?? 480,
-      z: 10,
+      z: 9,
       defaults: { x: 30, y: 30, w: 340, h: 480 },
     },
     preview: {
@@ -84,7 +86,7 @@ export function createWindowStore() {
       y: saved?.preview?.y ?? 30,
       w: saved?.preview?.w ?? 600,
       h: saved?.preview?.h ?? 500,
-      z: 9,
+      z: 10,
       defaults: { x: 400, y: 30, w: 600, h: 500 },
     },
     gallery: {
@@ -116,7 +118,7 @@ export function createWindowStore() {
     },
   });
 
-  let focusedWindow = $state<WindowId>("settings");
+  let focusedWindow = $state<WindowId>("preview");
 
   function focusWindow(id: WindowId) {
     const sorted = WINDOW_IDS.slice().sort((a, b) => wins[a].z - wins[b].z);

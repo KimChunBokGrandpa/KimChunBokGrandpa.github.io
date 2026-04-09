@@ -15,6 +15,7 @@ export interface WindowState {
 export interface WindowConfig {
   id: WindowId;
   icon: string;
+  desktop?: boolean;
 }
 
 // ─── Processing Types ───

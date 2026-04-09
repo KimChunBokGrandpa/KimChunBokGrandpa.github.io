@@ -101,6 +101,10 @@
   - 남은 테스트 stderr (`customPaletteStore` intentional parse log, jsdom canvas not implemented) 정리 여부 판단
   - 컴포넌트 테스트의 `binding_property_non_reactive` stderr 정리
 
+## vNext Planning Docs
+
+- 다음 버전 컨셉/앱구성/로드맵/체크리스트는 `docs/vnext/` 문서 세트를 기준으로 관리한다.
+
 ---
 
 ## Task List (우선순위 순)

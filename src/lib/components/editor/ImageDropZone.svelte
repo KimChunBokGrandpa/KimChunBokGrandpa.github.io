@@ -132,7 +132,7 @@
   class="window dropzone-wrapper"
 >
   <div class="title-bar">
-    <div class="title-bar-text">{i18n.t('open_image')}</div>
+    <div class="title-bar-text">{i18n.t('win_preview')}</div>
   </div>
   <div
     class="window-body dropzone"
@@ -146,11 +146,13 @@
   >
     <div class="drop-content">
       <span class="drop-icon">{isDragging ? '📥' : '🖼️'}</span>
+      <p class="drop-app-name">{i18n.t('win_preview')}</p>
       <p class="drop-title">{isDragging ? i18n.t('drop_here') : i18n.t('drag_drop_image')}</p>
+      <p class="drop-subtitle">{i18n.t('pixel_lab_subtitle')}</p>
       <p class="drop-or">{i18n.t('or')}</p>
       <div class="field-row" style="gap: 6px;">
         <input type="file" accept={ACCEPTED_TYPES.join(',')} id="file-upload" onchange={handleFileInput} style="display: none;" />
-        <button class="browse-btn" data-testid="browse-image-button" onclick={() => document.getElementById('file-upload')?.click()}>📂 {i18n.t('browse')}</button>
+        <button class="browse-btn" data-testid="browse-image-button" onclick={() => document.getElementById('file-upload')?.click()}>📂 {i18n.t('open_image')}</button>
         <button class="browse-btn sample-btn" data-testid="try-sample-button" onclick={loadSampleImage}>🌄 {i18n.t('try_sample')}</button>
       </div>
       <p class="drop-hint">{i18n.t('paste_hint')}</p>
@@ -240,6 +242,23 @@
     font-weight: bold;
     margin: 4px 0;
     color: var(--w98-text);
+  }
+
+  .drop-app-name {
+    font-size: var(--w98-font-size-action);
+    font-weight: bold;
+    margin: 0;
+    color: var(--w98-highlight);
+    letter-spacing: 0.3px;
+  }
+
+  .drop-subtitle {
+    margin: 0;
+    max-width: 340px;
+    text-align: center;
+    font-size: var(--w98-font-size-base);
+    color: var(--w98-text-secondary);
+    line-height: 1.35;
   }
 
   .drop-or {

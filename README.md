@@ -43,6 +43,10 @@
 - `P3-005` 추천 점수/설명 품질 개선
 - 선택적으로 `P3-001` 추가 성능 최적화와 interaction 테스트 보강
 
+## vNext 문서
+
+- 다음 버전 제품 방향과 작업 문서는 `docs/vnext/` 문서 세트와 [docs/vnext/README.md](docs/vnext/README.md) 에 정리합니다.
+
 ## 기술 스택
 
 - **프론트엔드**: SvelteKit 5 + TypeScript

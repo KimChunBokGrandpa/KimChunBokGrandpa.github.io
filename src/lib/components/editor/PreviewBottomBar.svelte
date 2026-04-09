@@ -36,7 +36,7 @@
 </script>
 
 <div class="toolbar">
-  <!-- Settings -->
+  <!-- Pixel Lab controls -->
   <button
     class="tb-btn"
     onclick={(e) => { e.stopPropagation(); onOpenSettings(); }}

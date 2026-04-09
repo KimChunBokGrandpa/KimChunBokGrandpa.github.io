@@ -48,7 +48,7 @@ describe('windowStore', () => {
 
     it('should set focusedWindow to settings initially', () => {
       const store = createWindowStore();
-      expect(store.focusedWindow).toBe('settings');
+      expect(store.focusedWindow).toBe('preview');
     });
   });
 
@@ -149,6 +149,11 @@ describe('windowStore', () => {
     it('should have unique ids', () => {
       const ids = WINDOW_CONFIGS.map(c => c.id);
       expect(new Set(ids).size).toBe(ids.length);
+    });
+
+    it('should expose only preview as a desktop shortcut', () => {
+      const desktopIds = WINDOW_CONFIGS.filter((config) => config.desktop).map((config) => config.id);
+      expect(desktopIds).toEqual(['preview']);
     });
   });
 

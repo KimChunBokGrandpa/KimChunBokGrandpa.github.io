@@ -2,6 +2,64 @@
 
 ---
 
+## v1.6.20 (2026-04-09)
+
+> vNext Tier 2 foundation started: local project schema and cross-app handoff contracts now exist in code as shared-engine scaffolding.
+
+### vNext T2 — Shared Project Model Skeleton
+
+- **Project schema — local-only contract 코드화**
+  - `src/lib/projects/schema.ts` 추가
+  - `AppId`, asset role, export history, recent project entry, per-program state union을 코드 타입으로 정리
+  - `Pixel Lab` 상태는 현재 실제 `ProcessingSettings`, `PostProcessFilters`, transform state 구조에 맞춰 고정
+  - manifest / recent entry 생성 helper와 clone helper 추가
+- **Storage adapter — shared persistence 경계 추가**
+  - `src/lib/projects/storageAdapter.ts` 추가
+  - `ProjectStorageAdapter` 인터페이스 정의
+  - `saveProject`, `loadProject`, `listRecentProjects`, `saveAsset`, `resolveAsset`, `deleteProject` 계약을 명시
+  - 실제 영속 구현 전 단계로 in-memory adapter를 제공해 이후 UI/Poster Maker 작업이 동일 계약을 기준으로 붙을 수 있게 정리
+- **Cross-app handoff — envelope + transient bus 추가**
+  - `src/lib/handoffs/contracts.ts` 추가
+  - `CrossAppHandoffEnvelopeV1`, intent, open mode, 생성 helper 추가
+  - `src/lib/handoffs/handoffBus.svelte.ts` 추가로 publish / peek / consume / clear 흐름의 최소 transient bus 마련
+
+### Verification
+
+- `npm run test -- src/lib/projects/schema.test.ts src/lib/projects/storageAdapter.test.ts src/lib/handoffs/handoffBus.test.ts`
+  - `8 passed`
+- `npm run check`
+  - `0 errors / 0 warnings`
+
+---
+
+## v1.6.19 (2026-04-09)
+
+> vNext Tier 1 started: the shell now frames the current tool as `Pixel Lab`, and the first-run entry flow reads more like a named program than a generic set of windows.
+
+### vNext T1 — Shell Reframing + Pixel Lab Packaging
+
+- **Desktop shell — top-level program identity 강화**
+  - desktop shortcut exposure를 `Pixel Lab` 1개로 축소
+  - 기존 `settings / gallery / batch / history`는 desktop peer가 아니라 Pixel Lab utility window로 재분류
+  - preview window를 primary app surface로 보고 기본 focus/z-order를 조정
+- **Window copy / i18n — Pixel Lab naming pass**
+  - shell-facing window titles를 `Pixel Lab`, `Pixel Lab - Controls`, `Pixel Lab - Presets`, `Pixel Lab - Batch Queue`, `Pixel Lab - History`로 정리
+  - preview toolbar의 settings affordance를 `Open Pixel Lab Controls` 의미로 보강
+- **Entry flow — first-run packaging 보강**
+  - empty-state drop zone title을 `Pixel Lab`으로 정렬
+  - drop zone에 Pixel Lab subtitle 추가
+  - onboarding title을 `Pixel Lab Quick Start` 계열로 조정
+  - settings toolbar에 utility launcher 묶음을 추가해 gallery / batch / history 접근성을 유지
+
+### Verification
+
+- `npm run test -- src/lib/stores/windowStore.test.ts src/lib/components/__tests__/DesktopIcons.test.ts src/lib/components/__tests__/Taskbar.test.ts src/lib/components/__tests__/ImageDropZone.test.ts src/lib/components/__tests__/PreviewContent.test.ts`
+  - `41 passed`
+- `npm run check`
+  - `0 errors / 0 warnings`
+
+---
+
 ## v1.6.18 (2026-04-09)
 
 > QA follow-up: non-reactive bind warnings were reduced at the component level.

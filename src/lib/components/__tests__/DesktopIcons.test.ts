@@ -20,10 +20,10 @@ describe('DesktopIcons', () => {
     expect(toolbar).toBeTruthy();
   });
 
-  it('renders 5 desktop icon buttons', () => {
+  it('renders only the Pixel Lab desktop icon', () => {
     const { container } = render(DesktopIcons, { props: defaultProps() });
     const buttons = container.querySelectorAll('.desktop-icon');
-    expect(buttons.length).toBe(5);
+    expect(buttons.length).toBe(1);
   });
 
   it('calls onIconClick when icon is clicked', async () => {

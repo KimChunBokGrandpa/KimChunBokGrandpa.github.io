@@ -57,11 +57,11 @@ export const en = {
   reroll_seed: 'Re-roll seed',
 
   // ─── Window Titles ───
-  win_preview: 'Preview',
-  win_settings: 'Settings',
-  win_gallery: 'Palette Gallery',
-  win_batch: 'Batch',
-  win_history: 'History',
+  win_preview: 'Pixel Lab',
+  win_settings: 'Pixel Lab - Controls',
+  win_gallery: 'Pixel Lab - Presets',
+  win_batch: 'Pixel Lab - Batch Queue',
+  win_history: 'Pixel Lab - History',
 
   // ─── Desktop ───
   drop_image_here: 'Drop image here',
@@ -95,7 +95,7 @@ export const en = {
   image_preview: 'Image preview',
   rendering: 'Rendering...',
   ready: 'Ready',
-  open_settings: 'Open Settings',
+  open_settings: 'Open Pixel Lab Controls',
   exit_compare: 'Exit Compare Mode',
   image_resolution: 'Image Resolution',
   unique_colors: 'Unique Colors',
@@ -320,13 +320,15 @@ export const en = {
   tab_presets: 'Presets',
 
   // ─── Onboarding ───
-  onboarding_title: 'Quick Start',
+  onboarding_title: 'Pixel Lab Quick Start',
   onboarding_step1_title: '1. Pixel Size',
   onboarding_step1_desc: 'Adjust the pixelation level',
   onboarding_step2_title: '2. Palette',
   onboarding_step2_desc: 'Choose a color palette',
   onboarding_step3_title: '3. Save',
   onboarding_step3_desc: 'Export your pixel art',
+  pixel_lab_subtitle: 'Retro image lab for pixel conversion, presets, and animated export.',
+  pixel_lab_utilities: 'Utilities',
   onboarding_dont_show: "Don't show again",
 
   // ─── Effect Layers ───
@@ -473,7 +475,7 @@ export const en = {
   move_down: 'Move Down',
   confirm_load_new_image: 'Loading a new image will discard your current work. Continue?',
   confirm_load_new_title: 'Load New Image',
-  btn_open_settings: 'Open Settings',
+  btn_open_settings: 'Open Pixel Lab Controls',
   btn_rotate_left: 'Rotate Left',
   btn_rotate_right: 'Rotate Right',
   btn_reset_transform: 'Reset Transform',

@@ -410,6 +410,7 @@
     >
       <div class="settings-body">
         <div class="settings-toolbar">
+          <span class="settings-toolbar-label">{i18n.t('pixel_lab_utilities')}</span>
           <button
             class="load-new-btn"
             onclick={handleLoadNewImage}
@@ -421,6 +422,24 @@
             onclick={(e) => { e.stopPropagation(); wm.openWindow('preview'); }}
           >
             <span aria-hidden="true">🖼️</span> {i18n.t('win_preview')}
+          </button>
+          <button
+            class="load-new-btn"
+            onclick={(e) => { e.stopPropagation(); wm.openWindow('gallery'); }}
+          >
+            <span aria-hidden="true">🎨</span> {i18n.t('win_gallery')}
+          </button>
+          <button
+            class="load-new-btn"
+            onclick={(e) => { e.stopPropagation(); wm.openWindow('batch'); }}
+          >
+            <span aria-hidden="true">📦</span> {i18n.t('win_batch')}
+          </button>
+          <button
+            class="load-new-btn"
+            onclick={(e) => { e.stopPropagation(); wm.openWindow('history'); }}
+          >
+            <span aria-hidden="true">⏱️</span> {i18n.t('win_history')}
           </button>
         </div>
         <ControlPanel
@@ -753,6 +772,19 @@
     border-bottom: 1px solid var(--w98-shadow-808);
     flex-shrink: 0;
   }
+  .settings-toolbar-label {
+    display: inline-flex;
+    align-items: center;
+    align-self: stretch;
+    padding: 0 6px;
+    margin-right: 2px;
+    background: var(--w98-surface-active);
+    color: var(--w98-text-secondary);
+    border-right: 1px solid var(--w98-shadow-808);
+    font-size: var(--w98-font-size-sm);
+    font-weight: bold;
+    white-space: nowrap;
+  }
   .settings-toolbar :global(.load-new-btn) {
     display: flex;
     align-items: center;
@@ -771,5 +803,10 @@
   }
   .settings-toolbar :global(.load-new-btn:active) {
     box-shadow: var(--w98-inset-thin);
+  }
+  @media (max-width: 700px) {
+    .settings-toolbar-label {
+      display: none;
+    }
   }
 </style>
