@@ -4,6 +4,7 @@
 > 추천 UI interaction 회귀 보강 반영 (2026-04-09).
 > QA 전체 리뷰 수행 (2026-03-25). P0~P2 수정 완료.
 > 제품 backlog 및 기능 우선순위는 `_workspace/plan_04_roadmap.md` 기준으로 운영.
+> 아키텍처 전제: 본 제품은 브라우저/Tauri 로컬 리소스만 사용하는 client-only 앱이며, 별도 서버/백엔드를 두지 않는다.
 
 ---
 
