@@ -15,7 +15,7 @@
   import { createWindowStore, WINDOW_CONFIGS } from '$lib/stores/windowStore.svelte';
   import { createZoomPan } from '$lib/stores/zoomPanStore.svelte';
   import { createImageProcessingStore } from '$lib/stores/imageProcessingStore.svelte';
-  import { getPaletteName, registerPaletteTranslator } from '$lib/utils/palettes';
+  import { registerPaletteTranslator } from '$lib/utils/palettes';
   import { exportSvg, exportSpritesheet, exportFrameSequence, exportApng, exportAnimatedWebp } from '$lib/services/exportService';
   import type { SaveFormat } from '$lib/services/saveService';
   import type { TaskbarWindowInfo } from '$lib/components/window/Taskbar.svelte';

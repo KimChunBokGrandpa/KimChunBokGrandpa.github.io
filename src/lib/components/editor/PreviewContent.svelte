@@ -4,12 +4,8 @@
   import ImageCanvas from './ImageCanvas.svelte';
   import GifControls from '../media/GifControls.svelte';
   import type { CompareVariant } from './CompareView.svelte';
-  import { getPaletteName } from '$lib/utils/palettes';
-  import { i18n } from '$lib/i18n/index.svelte';
   import type { createZoomPan } from '$lib/stores/zoomPanStore.svelte';
   import type { ProcessingSettings } from '$lib/types';
-  import type { TranslationKey } from '$lib/i18n/en';
-  import { tooltip } from '$lib/utils/tooltip';
 
   let {
     zp,
@@ -108,11 +104,6 @@
 
   // ─── Compare Mode ───
   const COMPARE_VARIANTS: CompareVariant[] = ['slider', 'side-by-side', 'onion'];
-  const COMPARE_VARIANT_LABELS: Record<CompareVariant, TranslationKey> = {
-    'slider': 'compare_slider',
-    'side-by-side': 'compare_side_by_side',
-    'onion': 'compare_onion',
-  };
   let compareVariant = $state<CompareVariant>('slider');
 
   function cycleCompareVariant() {
@@ -149,7 +140,6 @@
     <PreviewBottomBar
       {zp}
       bind:compareMode
-      {compareVariant}
       {compareVariantIcon}
       bind:cropModeActive
       bind:tileMode
@@ -194,4 +184,3 @@
     {/if}
   {/snippet}
 </ImageCanvas>
-

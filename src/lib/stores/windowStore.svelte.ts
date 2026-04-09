@@ -1,4 +1,4 @@
-import type { WindowState, WindowMode, WindowConfig, WindowId } from "$lib/types";
+import type { WindowState, WindowConfig, WindowId } from "$lib/types";
 import { i18n } from "$lib/i18n/index.svelte";
 import type { TranslationKey } from "$lib/i18n/en";
 

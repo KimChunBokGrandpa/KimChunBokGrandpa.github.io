@@ -7,6 +7,7 @@
   import CompareView, { type CompareVariant } from './CompareView.svelte';
   import CropOverlay from './CropOverlay.svelte';
   import { getPaletteName } from '$lib/utils/palettes';
+  import { getPixelGridStyle } from '$lib/utils/previewGrid';
   import type { createZoomPan } from '$lib/stores/zoomPanStore.svelte';
   import type { ProcessingSettings } from '$lib/types';
 
@@ -81,31 +82,16 @@
 
   let gridStyle = $derived.by(() => {
     if (!gridVisible || !zp.previewImg || !zp.previewContainer) return '';
-    const px = processingSettings.pixelSize;
-    const z = zp.zoomLevel;
-    const imgW = zp.previewImg.naturalWidth;
-    const imgH = zp.previewImg.naturalHeight;
-    const contW = zp.previewContainer.clientWidth;
-    const contH = zp.previewContainer.clientHeight;
-    if (!imgW || !imgH || !contW || !contH) return '';
-
-    const fitScale = Math.min(contW / imgW, contH / imgH);
-    const cellSize = px * fitScale * z;
-    if (cellSize < 4) return '';
-
-    const blocksX = Math.floor(imgW / px);
-    const blocksY = Math.floor(imgH / px);
-    const w = blocksX * cellSize;
-    const h = blocksY * cellSize;
-    const offsetX = ((imgW - blocksX * px) / 2) * fitScale * z;
-    const offsetY = ((imgH - blocksY * px) / 2) * fitScale * z;
-    const tx = zp.panX + offsetX;
-    const ty = zp.panY + offsetY;
-    return (
-      `width:${w}px;height:${h}px;` +
-      `background-size:${cellSize}px ${cellSize}px;` +
-      `transform:translate(calc(-50% + ${tx}px), calc(-50% + ${ty}px));`
-    );
+    return getPixelGridStyle({
+      pixelSize: processingSettings.pixelSize,
+      zoomLevel: zp.zoomLevel,
+      panX: zp.panX,
+      panY: zp.panY,
+      naturalWidth: zp.previewImg.naturalWidth,
+      naturalHeight: zp.previewImg.naturalHeight,
+      containerWidth: zp.previewContainer.clientWidth,
+      containerHeight: zp.previewContainer.clientHeight,
+    });
   });
 
   let hasImage = $derived(!!processedImageSrc);
@@ -410,6 +396,7 @@
     left: 50%;
     pointer-events: none;
     z-index: 3;
+    transform-origin: center center;
     background-image: linear-gradient(to right, rgba(255, 255, 255, 0.3) 1px, transparent 1px),
       linear-gradient(to bottom, rgba(255, 255, 255, 0.3) 1px, transparent 1px);
     background-position: 0 0;

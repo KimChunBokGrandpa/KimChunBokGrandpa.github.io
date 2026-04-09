@@ -165,4 +165,20 @@ describe('GifControls', () => {
     await fireEvent.click(animatedWebpBtn);
     expect(props.onExportAnimatedWebp).toHaveBeenCalledOnce();
   });
+
+  it('exposes export aria labels for sequence, APNG, and animated WebP actions', () => {
+    const props = {
+      ...reorderProps(),
+      onExportSequence: vi.fn(),
+      onExportApng: vi.fn(),
+    };
+    const { container } = render(GifControls, { props });
+    const buttons = Array.from(container.querySelectorAll('.gif-export-btn'));
+    const labeledButtons = buttons
+      .map((button) => button.getAttribute('aria-label'))
+      .filter((label): label is string => !!label);
+
+    expect(labeledButtons).toHaveLength(3);
+    labeledButtons.forEach((label) => expect(label.length).toBeGreaterThan(0));
+  });
 });

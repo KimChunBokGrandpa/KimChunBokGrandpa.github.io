@@ -26,10 +26,6 @@
 - `P2-007` 스와이프 제스처 + 가로모드 — ✅ 완료
   - 모바일 제목줄 좌우 스와이프로 창 전환
   - mobile landscape에서 settings + preview split layout 적용
-- `P2-003` Tauri 데스크톱 빌드 + GitHub Releases — ◐ 진행 중
-  - tag 기반 GitHub Actions release workflow 추가
-  - Tauri/Cargo 버전 `1.1.0` 정합성 맞춤, local debug app bundle 빌드 통과
-  - origin remote reachable 확인, 아직 release tag는 없음
 - `P2-008` E2E 테스트 — ✅ 완료
   - Playwright config + webServer 설정 추가
   - sample image 기반 core flow / mobile landscape smoke 시나리오 통과
@@ -42,10 +38,15 @@
 - `P1-005` store 분리 마무리 — ✅ 완료
   - `settingsStore` / `transformStore` 분리
   - `imageProcessingStore`는 coordinator 역할로 정리
+- `Phase 3 준비 정리` — ✅ 진행
+  - `P2-003` release workflow는 backlog에서 제외, GitHub release workflow 파일 제거
+  - pixel grid overlay 좌표 drift 보정
+  - Storybook build 경고 정리 및 정적 빌드 통과
+  - 미사용 i18n 키 30개 정리
 - 다음 우선순위
-  - `P2-003` GitHub tag release 실검증
   - `P3-001` WebAssembly 양자화 검토
   - `P3-004` 오프라인 PWA 지원 검토
+  - `P3-003` SVG 애니메이션 내보내기 검토
 
 ---
 
@@ -80,23 +81,24 @@
 | 13 | 키보드 단축키 `?` 필터링 보완 | `+page.svelte` | ✅ `HTMLSelectElement`, `isContentEditable` 체크 추가 |
 | 14 | `glitchEngine` PRNG 품질 개선 | `glitchEngine.ts` | ✅ `Math.sin` 해시 → xorshift32 PRNG 교체 |
 
-### P3 — 기존 Backlog (유지)
+### P3 — 기존 Backlog (업데이트)
 
-| # | 항목 | 파일 | 설명 |
+| # | 항목 | 파일 | 상태 |
 |---|------|------|------|
-| 15 | 미사용 i18n 번역 키 정리 (97개) | `src/lib/i18n/` | 향후 기능에서 사용 가능성 있어 보류 중 |
-| 16 | Pixel grid overlay 좌표 drift 보정 | — | `object-fit:contain` 계산 edge case |
-| 17 | Storybook 타입 호환성 | — | Svelte 5 ↔ Storybook 10, 런타임 무관. 차기 버전 대기 |
-| 18 | CompareView/EyedropperOverlay 인터랙션 테스트 | — | 커버리지 확장 가능 영역 |
+| 15 | 미사용 i18n 번역 키 정리 | `src/lib/i18n/` | ◐ 주요 미사용 키 30개 정리 완료, 동적 참조 키는 후속 점검 필요 |
+| 16 | Pixel grid overlay 좌표 drift 보정 | `ImageCanvas.svelte`, `previewGrid.ts` | ✅ object-fit contain + pan/zoom 기준으로 좌표계 재정렬 |
+| 17 | Storybook 타입/빌드 호환성 | `.storybook/` | ✅ MDX 패턴 경고 제거, `npm run build-storybook` 통과 |
+| 18 | CompareView/EyedropperOverlay 인터랙션 테스트 | — | ⏳ 커버리지 확장 가능 영역 |
 
 ---
 
 ## Known Issues
 
 - svelte-check 결과: **0 에러, 0 경고** (2026-04-09 확인)
-- npm test: **423 tests, 47 files** 전체 통과
-- npm run lint: **0 errors, 17 warnings**
+- npm test: **428 tests, 48 files** 전체 통과
+- npm run lint: **0 errors, 9 warnings**
 - `npm run tauri build -- --debug`: **macOS .app bundle 생성 성공**
+- `npm run build-storybook`: **정적 빌드 성공**
 
 ---
 
@@ -106,8 +108,9 @@
 npm run dev          # 개발 서버 (port 1420)
 npm run lint         # ESLint (현재 0 errors, warnings only)
 npm run check        # 타입 체크
-npm test             # 테스트 실행 (423개, 47 files)
+npm test             # 테스트 실행 (428개, 48 files)
 npm run test:e2e     # Playwright E2E (2개 시나리오)
+npm run build-storybook  # Storybook 정적 빌드
 npm run tauri build -- --debug  # 로컬 Tauri debug bundle 빌드
 npm run test:watch   # 테스트 워치 모드
 npm run storybook    # Storybook (port 6006)

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { render, cleanup } from '@testing-library/svelte';
+import { render, cleanup, screen } from '@testing-library/svelte';
 
 // Mock all transitive dependencies
 vi.mock('$lib/i18n/index.svelte', () => ({
@@ -60,7 +60,6 @@ function makeZoomPan(): ReturnType<typeof import('$lib/stores/zoomPanStore.svelt
     canZoomIn: true,
     canZoomOut: true,
     setZoom: vi.fn(),
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } as any;
 }
 
@@ -120,5 +119,14 @@ describe('PreviewContent', () => {
     const props = { ...defaultProps(), postFilterCss: 'brightness(120%)' };
     const { container } = render(PreviewContent, { props });
     expect(container.innerHTML).toBeTruthy();
+  });
+
+  it('renders preview toolbar buttons with stable action labels', () => {
+    const props = { ...defaultProps(), processedImageSrc: 'blob:test', originalImageSrc: 'blob:orig' };
+    render(PreviewContent, { props });
+
+    expect(screen.getByLabelText('btn_grid_toggle')).toBeTruthy();
+    expect(screen.getByLabelText('btn_tile_toggle')).toBeTruthy();
+    expect(screen.getByLabelText('btn_eyedropper_toggle')).toBeTruthy();
   });
 });

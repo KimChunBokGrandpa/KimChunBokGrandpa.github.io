@@ -198,6 +198,7 @@
         onclick={onExportSequence}
         disabled={isExporting}
         title={i18n.t('export_sequence_desc')}
+        aria-label={i18n.t('export_sequence')}
         use:tooltip
       >
         📁
@@ -209,6 +210,7 @@
         onclick={onExportApng}
         disabled={isExporting}
         title={i18n.t('export_apng_desc')}
+        aria-label={i18n.t('export_apng')}
         use:tooltip
       >
         🖼 APNG
@@ -220,6 +222,7 @@
         onclick={onExportAnimatedWebp}
         disabled={isExporting}
         title={i18n.t('export_animated_webp_desc')}
+        aria-label={i18n.t('export_animated_webp')}
         use:tooltip
       >
         🎞 WebP

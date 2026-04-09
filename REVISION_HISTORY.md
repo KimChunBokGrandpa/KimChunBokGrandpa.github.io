@@ -54,6 +54,18 @@
   - `imageProcessingStore`에서 처리 설정 / export 설정 / post filters / auto-apply 상태 분리
   - rotation / crop / transformed blob URL 상태를 `transformStore`로 이동
   - `imageProcessingStore`는 history + gif + processing coordinator 역할로 정리
+- **ImageCanvas.svelte + previewGrid.ts — pixel grid 좌표 보정**
+  - `object-fit: contain` 기준 렌더 크기와 pan/zoom 체인을 동일하게 적용
+  - overlay drift를 별도 계산 유틸로 분리해 검증 가능하게 정리
+- **.storybook/main.ts — Storybook 빌드 경고 정리**
+  - 사용하지 않는 MDX glob 제거
+  - Svelte 5 + Storybook 10 정적 빌드 경로 재검증
+- **tauri-release.yml 제거 — P2-003 제외**
+  - GitHub release automation 트랙을 현재 roadmap에서 제외
+  - Phase 3 backlog 중심으로 문서 우선순위 재정렬
+- **i18n cleanup — 미사용 키 축소**
+  - en/ko/ja에서 실제 사용되지 않는 번역 키 30개 제거
+  - 툴바 / export aria-label은 실제 액션 키를 재사용하도록 연결
 
 ### Tests
 
@@ -72,19 +84,24 @@
 - **effectRegistry.test.ts** — built-in registration / category metadata 테스트 추가
 - **settingsStore.test.ts** — settings hash / post-filter css / unapplied changes 테스트 추가
 - **transformStore.test.ts** — rotation / crop / reset blob URL lifecycle 테스트 추가
+- **previewGrid.test.ts** — pixel grid rendered size / zoom-pan transform 정렬 테스트 추가
+- **PreviewContent.test.ts** — preview toolbar action aria-label 렌더링 테스트 추가
+- **GifControls.test.ts** — sequence / APNG / animated WebP export action label 테스트 추가
 
 ### Docs
 
 - **plan_04_roadmap.md** — code-as-source-of-truth 기준으로 현재 backlog/status 반영
 - **PLAN_TASK.md** — 검증 수치 및 현재 우선순위 상태 갱신
 - **README.md** — GIF 편집 및 animated export 기능 요약 갱신
+- **plan_02_tech_strategy.md** — Phase 3 우선순위를 release automation 제외 기준으로 재정렬
 
 ### Build & Test Status (v1.6)
 - `svelte-check`: **0 errors, 0 warnings**
-- `vitest`: **423 tests passing** (47 files)
-- `eslint`: **0 errors, 17 warnings**
+- `vitest`: **428 tests passing** (48 files)
+- `eslint`: **0 errors, 9 warnings**
 - `playwright`: **2 E2E scenarios passing**
 - `tauri debug build`: **macOS .app bundle generated**
+- `storybook build`: **passes**
 - Production build: not run this turn
 
 ---

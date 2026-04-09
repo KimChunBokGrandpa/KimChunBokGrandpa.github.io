@@ -2,12 +2,10 @@
   import { i18n } from '$lib/i18n/index.svelte';
   import { tooltip } from '$lib/utils/tooltip';
   import type { createZoomPan } from '$lib/stores/zoomPanStore.svelte';
-  import type { CompareVariant } from './CompareView.svelte';
 
   let {
     zp,
     compareMode = $bindable(false),
-    compareVariant,
     compareVariantIcon,
     cropModeActive = $bindable(false),
     tileMode = $bindable(false),
@@ -22,7 +20,6 @@
   }: {
     zp: ReturnType<typeof createZoomPan>;
     compareMode: boolean;
-    compareVariant: CompareVariant;
     compareVariantIcon: string;
     cropModeActive: boolean;
     tileMode: boolean;
@@ -119,7 +116,7 @@
       class:tb-active={zp.showGrid}
       onclick={() => { zp.showGrid = !zp.showGrid; }}
       title={zp.showGrid ? i18n.t('hide_pixel_grid') : i18n.t('show_pixel_grid')}
-      aria-label={zp.showGrid ? i18n.t('hide_pixel_grid') : i18n.t('show_pixel_grid')}
+      aria-label={i18n.t('btn_grid_toggle')}
       aria-pressed={zp.showGrid}
       use:tooltip>#</button>
     <button
@@ -127,7 +124,7 @@
       class:tb-active={tileMode}
       onclick={() => { tileMode = !tileMode; }}
       title={tileMode ? i18n.t('exit_tile') : i18n.t('tile_preview')}
-      aria-label={tileMode ? i18n.t('exit_tile') : i18n.t('tile_preview')}
+      aria-label={i18n.t('btn_tile_toggle')}
       aria-pressed={tileMode}
       use:tooltip>⊞</button>
     <button
@@ -135,7 +132,7 @@
       class:tb-active={eyedropperActive}
       onclick={() => { eyedropperActive = !eyedropperActive; eyedropperOverlay?.dismiss(); }}
       title={eyedropperActive ? i18n.t('exit_eyedropper') : i18n.t('eyedropper')}
-      aria-label={eyedropperActive ? i18n.t('exit_eyedropper') : i18n.t('eyedropper')}
+      aria-label={i18n.t('btn_eyedropper_toggle')}
       aria-pressed={eyedropperActive}
       use:tooltip>💧</button>
   {/if}

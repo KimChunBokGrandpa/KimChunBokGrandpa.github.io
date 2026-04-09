@@ -36,7 +36,6 @@ export const en = {
   blend_start: 'Blend with...',
   blend_save: 'Save Blended',
   blend_select_target: 'Select a second palette to blend',
-  extract_color_count: 'Colors to extract',
   extract_no_image: 'Load an image first to extract a palette',
   recommended_palettes: 'Recommended',
   import_palette: 'Import',
@@ -46,7 +45,6 @@ export const en = {
   gallery_active: 'Active',
   custom_preset: 'Custom Preset',
   remove: 'Remove',
-  preset_load_error: 'Failed to load preset file. Please check the format.',
 
   // ─── History ───
   history_pixel: 'Pixel: {0}x',
@@ -68,12 +66,10 @@ export const en = {
   drop_image_here: 'Drop image here',
   unsupported_format: 'Please drop an image file (PNG, JPEG, GIF, BMP, WebP).',
   image_resized: 'Image resized: {0} \u2192 {1} (max 2048px)',
-  image_resized_title: 'Image Resized',
   processing_error: 'Processing Error',
   error_worker_crashed: 'Image processing failed. Please reload the page and try again.',
   error_image_load: 'Could not load the image. The file may be corrupted or unsupported.',
   error_canvas_context: 'Browser failed to create a drawing surface. Try closing other tabs.',
-  error_save_format: 'Could not save as {0}. Try a different format.',
   error_gif_export: 'GIF export failed. Try reducing the number of frames or image size.',
   load_new_image: 'Load New Image...',
 
@@ -98,9 +94,7 @@ export const en = {
   image_preview: 'Image preview',
   rendering: 'Rendering...',
   ready: 'Ready',
-  processing_image: 'Processing image...',
   open_settings: 'Open Settings',
-  compare_before_after: 'Compare Before/After',
   exit_compare: 'Exit Compare Mode',
   image_resolution: 'Image Resolution',
   unique_colors: 'Unique Colors',
@@ -139,13 +133,10 @@ export const en = {
   dither_atkinson_desc: 'Classic Mac-style dithering with high contrast',
   color_space: 'Color Space',
   use_oklab: 'Oklab (perceptual)',
-  post_processing: 'Post Processing',
   crt_scanlines: 'CRT Scanlines',
   crt_none: 'None',
   crt_horizontal: 'Horizontal',
   crt_vertical: 'Vertical',
-  glitch_filters: 'Glitch Filters',
-  multi_select: 'multi-select',
   none: 'None',
   rgb_split: 'RGB Split',
   wave: 'Wave',
@@ -157,30 +148,20 @@ export const en = {
   random: 'Random',
   fix: 'Fix',
   fixed: 'Fixed',
-  scaling_render: 'Scaling / Render Mode',
   pixel_perfect: 'Pixel Perfect',
   bilinear_blur: 'Bilinear Blur',
-  hqx_upscale: 'HQx Upscale',
   pixel_perfect_desc: 'Crisp & sharp dot edges',
   bilinear_desc: 'Smoothly interpolates for retro CRT feel',
-  hqx_desc: 'High quality curve-based edge upscaling',
-  adjust_post: 'Adjust (Post-Process)',
   brightness: 'Brightness',
   contrast: 'Contrast',
   saturation: 'Saturation',
   hue_rotate: 'Hue Rotate',
   reset_filters: 'Reset Filters',
-  current_settings: 'Current Settings',
   custom: 'Custom',
-  save_options: 'Save Options',
   format: 'Format',
   quality: 'Quality',
   save_as: 'Save As...',
   save_no_image: 'Load an image in Preview to save',
-  save_processed: 'Save Processed Image',
-  shortcut_undo: 'Ctrl+Z Undo',
-  shortcut_redo: 'Ctrl+Shift+Z Redo',
-  shortcut_save: 'Ctrl+S Save',
 
   // ─── Batch ───
   settings_applied: 'Settings applied',
@@ -241,7 +222,6 @@ export const en = {
   press_to_close: 'Press {0} or {1} to close',
 
   // ─── Auto-Process ───
-  auto_process: 'Processing Mode',
   auto_process_label: 'Auto-process on settings change',
   auto_process_short: 'Auto',
   apply_now: 'Apply Now',
@@ -295,11 +275,6 @@ export const en = {
   preset_dither_fs: 'Dither FS',
   preset_original: 'Original',
 
-  // ─── Collapsible Sections ───
-  section_effects_styling: 'Effects & Styling',
-  section_fine_tuning: 'Fine Tuning',
-  section_presets: 'Presets',
-
   // ─── Tab Labels ───
   tab_basic: 'Basic',
   tab_effects: 'Effects',
@@ -314,13 +289,7 @@ export const en = {
   onboarding_step2_desc: 'Choose a color palette',
   onboarding_step3_title: '3. Save',
   onboarding_step3_desc: 'Export your pixel art',
-  onboarding_got_it: 'Got it!',
   onboarding_dont_show: "Don't show again",
-
-  // ─── Preview Toolbar Groups ───
-  toolbar_transform: 'Transform',
-  toolbar_view: 'View',
-  toolbar_zoom: 'Zoom',
 
   // ─── Effect Layers ───
   effect_stack: 'Effect Stack',
@@ -513,9 +482,6 @@ export const en = {
   menu_help: 'Help',
   menu_image: 'Image',
 
-  // ─── Quick Palette ───
-  quick_palette: 'Quick Palette',
-
   // ─── Palette Formats ───
   import_palette_formats: 'Supported: .hex, .gpl, .pal, .ase, .act',
 
@@ -536,8 +502,6 @@ export const en = {
 
   // ─── Shortcut Hints ───
   shortcut_hint_save: 'Save (Ctrl+S)',
-  shortcut_hint_undo: 'Undo (Ctrl+Z)',
-  shortcut_hint_redo: 'Redo (Ctrl+Shift+Z)',
   shortcut_hint_compare: 'Compare (C)',
   shortcut_hint_zoom_in: 'Zoom In (+)',
   shortcut_hint_zoom_out: 'Zoom Out (-)',
