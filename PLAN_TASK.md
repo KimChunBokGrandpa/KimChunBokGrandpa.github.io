@@ -1,6 +1,6 @@
 # PLAN_TASK — Retro Pixel Converter
 
-> v1.6.0 기능/로드맵 갱신 완료 (2026-04-08). 전체 이력은 `REVISION_HISTORY.md` 참조.
+> v1.6.0 기능/로드맵 갱신 완료 (2026-04-09). 전체 이력은 `REVISION_HISTORY.md` 참조.
 > QA 전체 리뷰 수행 (2026-03-25). P0~P2 수정 완료.
 > 제품 backlog 및 기능 우선순위는 `_workspace/plan_04_roadmap.md` 기준으로 운영.
 
@@ -28,7 +28,8 @@
   - mobile landscape에서 settings + preview split layout 적용
 - `P2-003` Tauri 데스크톱 빌드 + GitHub Releases — ◐ 진행 중
   - tag 기반 GitHub Actions release workflow 추가
-  - Tauri/Cargo 버전 `1.1.0` 정합성 맞춤, `cargo check` 통과
+  - Tauri/Cargo 버전 `1.1.0` 정합성 맞춤, local debug app bundle 빌드 통과
+  - origin remote reachable 확인, 아직 release tag는 없음
 - `P2-008` E2E 테스트 — ✅ 완료
   - Playwright config + webServer 설정 추가
   - sample image 기반 core flow / mobile landscape smoke 시나리오 통과
@@ -38,10 +39,13 @@
 - `P1-004` CI Phase 2 — ✅ 완료
   - `ci.yml`에 lint / test / check / audit / PR summary comment 추가
   - `npm run lint` 기준 0 errors 상태로 정리
+- `P1-005` store 분리 마무리 — ✅ 완료
+  - `settingsStore` / `transformStore` 분리
+  - `imageProcessingStore`는 coordinator 역할로 정리
 - 다음 우선순위
   - `P2-003` GitHub tag release 실검증
-  - `P1-005` store 분리 마무리
   - `P3-001` WebAssembly 양자화 검토
+  - `P3-004` 오프라인 PWA 지원 검토
 
 ---
 
@@ -89,10 +93,10 @@
 
 ## Known Issues
 
-- Pre-existing type errors 5건: CompareView.test.ts (3) + vitest.setup.ts (2) — svelte-check 전용, 런타임 무관
-- svelte-check 결과: **0 에러, 0 경고** (2026-04-08 확인)
-- npm test: **414 tests, 45 files** 전체 통과
+- svelte-check 결과: **0 에러, 0 경고** (2026-04-09 확인)
+- npm test: **423 tests, 47 files** 전체 통과
 - npm run lint: **0 errors, 17 warnings**
+- `npm run tauri build -- --debug`: **macOS .app bundle 생성 성공**
 
 ---
 
@@ -102,8 +106,9 @@
 npm run dev          # 개발 서버 (port 1420)
 npm run lint         # ESLint (현재 0 errors, warnings only)
 npm run check        # 타입 체크
-npm test             # 테스트 실행 (414개, 45 files)
+npm test             # 테스트 실행 (423개, 47 files)
 npm run test:e2e     # Playwright E2E (2개 시나리오)
+npm run tauri build -- --debug  # 로컬 Tauri debug bundle 빌드
 npm run test:watch   # 테스트 워치 모드
 npm run storybook    # Storybook (port 6006)
 ```

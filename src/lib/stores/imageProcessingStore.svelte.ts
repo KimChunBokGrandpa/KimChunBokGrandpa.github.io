@@ -7,23 +7,13 @@ import { processorService } from '$lib/services/imageProcessor';
 import { saveImage } from '$lib/services/saveService';
 import type { SaveFormat } from '$lib/services/saveService';
 import type { ProcessingSettings, PostProcessFilters } from '$lib/types';
-import { DEFAULT_POST_FILTERS } from '$lib/types';
 import { applyCrtEffect } from '$lib/utils/crtRenderer';
 import { createGifPlaybackManager } from '$lib/stores/gifPlaybackManager.svelte';
 import { createHistoryStore } from '$lib/stores/historyStore.svelte';
+import { createSettingsStore, DEFAULT_PROCESSING_SETTINGS } from '$lib/stores/settingsStore.svelte';
+import { createTransformStore, type CropRect } from '$lib/stores/transformStore.svelte';
 
 const DEBOUNCE_MS = 150;
-
-const DEFAULT_SETTINGS: ProcessingSettings = {
-  pixelSize: 1,
-  palette: 'original',
-  crtEffect: 'none',
-  glitchFilters: [],
-  renderMode: 'pixel_perfect',
-  glitchSeed: null,
-  ditherType: 'none',
-  effectLayers: [],
-};
 
 export function createImageProcessingStore() {
   // ─── Reactive State ───
@@ -31,100 +21,17 @@ export function createImageProcessingStore() {
   let processedImageSrc = $state<string | null>(null);
   let isProcessing = $state(false);
   let lastError = $state<string | null>(null);
-  let settings = $state<ProcessingSettings>({ ...DEFAULT_SETTINGS });
-  let saveFormat = $state<SaveFormat>('png');
-  let saveQuality = $state(0.92);
   let colorCount = $state(0);
-  let postFilters = $state<PostProcessFilters>({ ...DEFAULT_POST_FILTERS });
-  let autoProcess = $state(true);
-  let hasUnappliedChanges = $state(false);
-
-  // ─── Transform State (pre-processing) ───
-  let rotation = $state(0); // 0, 90, 180, 270
-  let cropRect = $state<{ x: number; y: number; w: number; h: number } | null>(null);
-  let transformedSrc = $state<string | null>(null); // blob URL after rotation/crop
-  let transformedObjectUrl: string | null = null;
-
-  /**
-   * Apply rotation and crop to the original image, producing a transformed source.
-   * Returns a blob URL of the transformed image.
-   */
-  async function applyTransform(): Promise<string | null> {
-    if (!originalImageSrc) return null;
-
-    // No transform needed
-    if (rotation === 0 && !cropRect) {
-      if (transformedObjectUrl) {
-        URL.revokeObjectURL(transformedObjectUrl);
-        transformedObjectUrl = null;
-      }
-      transformedSrc = null;
-      return null;
-    }
-
-    try {
-      const img = new Image();
-      await new Promise<void>((resolve, reject) => {
-        img.onload = () => { img.onload = null; img.onerror = null; resolve(); };
-        img.onerror = () => { img.onload = null; img.onerror = null; reject(new Error('Failed to load image for transform')); };
-        img.src = originalImageSrc!;
-      });
-
-      let srcX = 0, srcY = 0, srcW = img.naturalWidth, srcH = img.naturalHeight;
-      if (cropRect) {
-        srcX = cropRect.x;
-        srcY = cropRect.y;
-        srcW = cropRect.w;
-        srcH = cropRect.h;
-      }
-
-      const isRotated90 = rotation === 90 || rotation === 270;
-      const outW = isRotated90 ? srcH : srcW;
-      const outH = isRotated90 ? srcW : srcH;
-
-      const canvas = document.createElement('canvas');
-      canvas.width = outW;
-      canvas.height = outH;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) throw new Error('Failed to get 2d context for transform');
-
-      ctx.save();
-      ctx.translate(outW / 2, outH / 2);
-      ctx.rotate((rotation * Math.PI) / 180);
-
-      // After rotation, draw centered
-      const drawW = srcW;
-      const drawH = srcH;
-      ctx.drawImage(img, srcX, srcY, srcW, srcH, -drawW / 2, -drawH / 2, drawW, drawH);
-      ctx.restore();
-
-      const blob = await new Promise<Blob>((resolve, reject) => {
-        canvas.toBlob((b) => {
-          if (!b) return reject(new Error('Failed to create transform blob'));
-          resolve(b);
-        }, 'image/png');
-      });
-
-      if (transformedObjectUrl) URL.revokeObjectURL(transformedObjectUrl);
-      transformedObjectUrl = URL.createObjectURL(blob);
-      transformedSrc = transformedObjectUrl;
-      return transformedObjectUrl;
-    } catch (err) {
-      // Clean up stale URL on error to prevent memory leak
-      if (transformedObjectUrl) {
-        URL.revokeObjectURL(transformedObjectUrl);
-        transformedObjectUrl = null;
-      }
-      transformedSrc = null;
-      throw err;
-    }
-  }
 
   // ─── Internal State ───
   let currentObjectUrl: string | null = null;
   let debounceTimer: ReturnType<typeof setTimeout> | null = null;
   let processingGeneration = 0;
   let dimensionCapShown = false;
+
+  // ─── Sub-Stores ───
+  const settingsStore = createSettingsStore(DEFAULT_PROCESSING_SETTINGS);
+  const transformStore = createTransformStore();
 
   // ─── Undo / Redo History ───
   const history = createHistoryStore();
@@ -138,17 +45,10 @@ export function createImageProcessingStore() {
     onDimensionCapped?.(original, capped);
   }
 
-  // ─── Settings Hash (for GIF cache invalidation) ───
-  let currentSettingsHash = $derived(JSON.stringify({
-    p: settings.pixelSize, pal: settings.palette, crt: settings.crtEffect,
-    g: settings.glitchFilters, r: settings.renderMode, s: settings.glitchSeed,
-    d: settings.ditherType, el: settings.effectLayers,
-  }));
-
   // ─── GIF Playback Manager ───
   const gif = createGifPlaybackManager({
-    getSettings: () => settings,
-    getSettingsHash: () => currentSettingsHash,
+    getSettings: () => settingsStore.settings,
+    getSettingsHash: () => settingsStore.settingsHash,
     setProcessedImageSrc: (src: string) => { processedImageSrc = src; },
     setIsProcessing: (v: boolean) => { isProcessing = v; },
     setColorCount: (v: number) => { colorCount = v; },
@@ -167,11 +67,11 @@ export function createImageProcessingStore() {
       lastError = null;
       processingProgress = 0;
       processingStartTime = Date.now();
-      const srcToProcess = transformedSrc || originalImageSrc;
+      const srcToProcess = transformStore.transformedSrc || originalImageSrc;
       if (!srcToProcess) return;
       const result = await processorService.processImage(
         srcToProcess,
-        settings,
+        settingsStore.settings,
         handleDimensionCapped,
         (p: number) => { processingProgress = p; },
       );
@@ -214,6 +114,7 @@ export function createImageProcessingStore() {
       processorService.clearImageCache();
     }
     gif.cleanup();
+    transformStore.reset();
 
     // Check if it's a GIF
     if (file.type === 'image/gif') {
@@ -251,15 +152,16 @@ export function createImageProcessingStore() {
       processorService.clearImageCache();
     }
     gif.cleanup();
+    transformStore.reset();
     originalImageSrc = null;
     processedImageSrc = null;
   }
 
   function updateSettings(newSettings: ProcessingSettings) {
-    history.push(settings);
-    settings = { ...newSettings };
-    if (!autoProcess) {
-      hasUnappliedChanges = true;
+    history.push(settingsStore.settings);
+    settingsStore.setSettings(newSettings);
+    if (!settingsStore.autoProcess) {
+      settingsStore.markUnappliedChanges();
       return;
     }
     if (gif.isGif && gif.gifInfo) {
@@ -271,10 +173,10 @@ export function createImageProcessingStore() {
   }
 
   function selectPalette(paletteId: string) {
-    history.push(settings);
-    settings.palette = paletteId;
-    if (!autoProcess) {
-      hasUnappliedChanges = true;
+    history.push(settingsStore.settings);
+    settingsStore.selectPalette(paletteId);
+    if (!settingsStore.autoProcess) {
+      settingsStore.markUnappliedChanges();
       return;
     }
     if (gif.isGif && gif.gifInfo) {
@@ -288,7 +190,7 @@ export function createImageProcessingStore() {
   /** Manual apply — used when autoProcess is off */
   function applyNow() {
     if (!originalImageSrc) return;
-    hasUnappliedChanges = false;
+    settingsStore.clearUnappliedChanges();
     if (gif.isGif && gif.gifInfo) {
       gif.stopPlayback();
       gif.showFrame(gif.gifCurrentFrame);
@@ -298,23 +200,23 @@ export function createImageProcessingStore() {
   }
 
   function undo() {
-    const prev = history.undo(settings);
+    const prev = history.undo(settingsStore.settings);
     if (!prev) return;
-    settings = prev;
-    if (autoProcess) applyProcessingDebounced();
+    settingsStore.setSettings(prev);
+    if (settingsStore.autoProcess) applyProcessingDebounced();
   }
 
   function redo() {
-    const next = history.redo(settings);
+    const next = history.redo(settingsStore.settings);
     if (!next) return;
-    settings = next;
-    if (autoProcess) applyProcessingDebounced();
+    settingsStore.setSettings(next);
+    if (settingsStore.autoProcess) applyProcessingDebounced();
   }
 
   function jumpToHistory(index: number, isRedoList: boolean = false) {
     // Temporarily disable autoProcess to prevent debounce stacking per step
-    const wasAutoProcess = autoProcess;
-    autoProcess = false;
+    const wasAutoProcess = settingsStore.autoProcess;
+    settingsStore.setAutoProcess(false);
     try {
       if (isRedoList) {
         for (let i = 0; i <= index; i++) redo();
@@ -323,59 +225,45 @@ export function createImageProcessingStore() {
         for (let i = 0; i <= distance; i++) undo();
       }
     } finally {
-      autoProcess = wasAutoProcess;
+      settingsStore.setAutoProcess(wasAutoProcess);
     }
     // Process once at the final state
     if (wasAutoProcess) applyProcessingDebounced();
   }
 
-  function postFilterCssString(): string {
-    const f = postFilters;
-    const parts: string[] = [];
-    if (f.brightness !== 100) parts.push(`brightness(${f.brightness}%)`);
-    if (f.contrast !== 100) parts.push(`contrast(${f.contrast}%)`);
-    if (f.saturation !== 100) parts.push(`saturate(${f.saturation}%)`);
-    if (f.hueRotate !== 0) parts.push(`hue-rotate(${f.hueRotate}deg)`);
-    return parts.join(' ');
-  }
-
   async function save(): Promise<string | null> {
     if (!processedImageSrc) return null;
     let canvas = processorService.getLastCanvas();
-    if (settings.crtEffect !== 'none' && canvas) {
-      canvas = applyCrtEffect(canvas, settings.crtEffect);
+    if (settingsStore.settings.crtEffect !== 'none' && canvas) {
+      canvas = applyCrtEffect(canvas, settingsStore.settings.crtEffect);
     }
-    const filterStr = postFilterCssString();
-    return saveImage(processedImageSrc, { format: saveFormat, quality: saveQuality }, canvas, filterStr || undefined);
+    const filterStr = settingsStore.postFilterCss;
+    return saveImage(
+      processedImageSrc,
+      { format: settingsStore.saveFormat, quality: settingsStore.saveQuality },
+      canvas,
+      filterStr || undefined,
+    );
   }
 
-  function setFormat(format: SaveFormat) { saveFormat = format; }
-  function setQuality(quality: number) { saveQuality = quality; }
+  function setFormat(format: SaveFormat) { settingsStore.setFormat(format); }
+  function setQuality(quality: number) { settingsStore.setQuality(quality); }
 
   // ─── Rotation & Crop ───
   async function rotate(degrees: 90 | -90 | 180) {
-    rotation = ((rotation + degrees) % 360 + 360) % 360;
-    cropRect = null;
-    await applyTransform();
+    await transformStore.rotate(originalImageSrc, degrees);
     processorService.clearImageCache();
     processImmediate();
   }
 
-  async function setCrop(rect: { x: number; y: number; w: number; h: number } | null) {
-    cropRect = rect;
-    await applyTransform();
+  async function setCrop(rect: CropRect | null) {
+    await transformStore.setCrop(originalImageSrc, rect);
     processorService.clearImageCache();
     processImmediate();
   }
 
   function resetTransform() {
-    rotation = 0;
-    cropRect = null;
-    if (transformedObjectUrl) {
-      URL.revokeObjectURL(transformedObjectUrl);
-      transformedObjectUrl = null;
-    }
-    transformedSrc = null;
+    transformStore.reset();
     processorService.clearImageCache();
     processImmediate();
   }
@@ -388,6 +276,7 @@ export function createImageProcessingStore() {
     if (debounceTimer) clearTimeout(debounceTimer);
     if (currentObjectUrl) URL.revokeObjectURL(currentObjectUrl);
     gif.cleanup();
+    transformStore.destroy();
     processorService.destroy();
   }
 
@@ -397,25 +286,25 @@ export function createImageProcessingStore() {
     get processedImageSrc() { return processedImageSrc; },
     get isProcessing() { return isProcessing; },
     get lastError() { return lastError; },
-    get settings() { return settings; },
-    set settings(v: ProcessingSettings) { settings = v; },
+    get settings() { return settingsStore.settings; },
+    set settings(v: ProcessingSettings) { settingsStore.setSettings(v); },
     get settingsHistory() { return history.undoStack; },
     get redoHistory() { return history.redoStack; },
-    get saveFormat() { return saveFormat; },
-    get saveQuality() { return saveQuality; },
+    get saveFormat() { return settingsStore.saveFormat; },
+    get saveQuality() { return settingsStore.saveQuality; },
     get colorCount() { return colorCount; },
-    get postFilters() { return postFilters; },
-    set postFilters(v: PostProcessFilters) { postFilters = v; },
-    get postFilterCss() { return postFilterCssString(); },
-    get autoProcess() { return autoProcess; },
-    set autoProcess(v: boolean) { autoProcess = v; },
-    get hasUnappliedChanges() { return hasUnappliedChanges; },
+    get postFilters() { return settingsStore.postFilters; },
+    set postFilters(v: PostProcessFilters) { settingsStore.setPostFilters(v); },
+    get postFilterCss() { return settingsStore.postFilterCss; },
+    get autoProcess() { return settingsStore.autoProcess; },
+    set autoProcess(v: boolean) { settingsStore.setAutoProcess(v); },
+    get hasUnappliedChanges() { return settingsStore.hasUnappliedChanges; },
     get processingProgress() { return processingProgress; },
     get processingStartTime() { return processingStartTime; },
 
     // Transform state
-    get rotation() { return rotation; },
-    get cropRect() { return cropRect; },
+    get rotation() { return transformStore.rotation; },
+    get cropRect() { return transformStore.cropRect; },
 
     // GIF state (delegated to gifPlaybackManager)
     get isGif() { return gif.isGif; },

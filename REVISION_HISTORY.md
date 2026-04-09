@@ -35,6 +35,10 @@
   - tag push 기반 GitHub Releases workflow 추가
   - `package.json` / `tauri.conf.json` / `Cargo.toml` 버전 정합성 확보
   - local `cargo check` 통과로 Tauri 설정 충돌 없음 확인
+- **tauri.conf.json + image_processor.rs — Tauri 로컬 빌드 경고 정리**
+  - bundle identifier를 `com.retropixel.converter`로 조정
+  - Rust unused import 제거
+  - local `npm run tauri build -- --debug`로 macOS `.app` bundle 생성 확인
 - **playwright.config.ts + e2e/app.spec.ts — E2E 기본 플로우 자동화**
   - sample image 기준 core user flow: load -> palette adjust -> compare -> save download
   - mobile landscape split layout smoke 시나리오 추가
@@ -46,6 +50,10 @@
 - **ci.yml + eslint.config.js — CI Phase 2 완료**
   - lint / test / typecheck / audit / PR summary comment workflow 추가
   - 현재 저장소 기준 ESLint를 CI 가능한 수준으로 조정
+- **settingsStore.svelte.ts + transformStore.svelte.ts — store 분리 마감**
+  - `imageProcessingStore`에서 처리 설정 / export 설정 / post filters / auto-apply 상태 분리
+  - rotation / crop / transformed blob URL 상태를 `transformStore`로 이동
+  - `imageProcessingStore`는 history + gif + processing coordinator 역할로 정리
 
 ### Tests
 
@@ -62,6 +70,8 @@
 - **mobileWindowLayout.test.ts** — mobile focus cycle / portrait stack / landscape split 테스트 추가
 - **app.spec.ts** — desktop core flow / mobile landscape smoke Playwright E2E 추가
 - **effectRegistry.test.ts** — built-in registration / category metadata 테스트 추가
+- **settingsStore.test.ts** — settings hash / post-filter css / unapplied changes 테스트 추가
+- **transformStore.test.ts** — rotation / crop / reset blob URL lifecycle 테스트 추가
 
 ### Docs
 
@@ -71,9 +81,10 @@
 
 ### Build & Test Status (v1.6)
 - `svelte-check`: **0 errors, 0 warnings**
-- `vitest`: **414 tests passing** (45 files)
+- `vitest`: **423 tests passing** (47 files)
 - `eslint`: **0 errors, 17 warnings**
 - `playwright`: **2 E2E scenarios passing**
+- `tauri debug build`: **macOS .app bundle generated**
 - Production build: not run this turn
 
 ---
