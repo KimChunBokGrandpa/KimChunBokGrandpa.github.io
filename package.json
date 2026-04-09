@@ -16,6 +16,8 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "test:e2e:pwa": "playwright test --config playwright.pwa.config.ts",
+    "benchmark:quantizer": "vitest run src/lib/utils/quantizerBenchmark.test.ts",
+    "build:wasm:quantizer": "bash ./scripts/build-quantizer-wasm.sh",
     "audit:ci": "npm audit --audit-level=high",
     "build-storybook": "storybook build",
     "lint": "eslint src/"

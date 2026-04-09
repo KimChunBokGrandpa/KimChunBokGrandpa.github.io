@@ -1,0 +1,1 @@
+/Users/jhpark/code/imageToPixel/crates/quantizer-wasm/target/wasm32-unknown-unknown/release/quantizer_wasm.wasm: /Users/jhpark/code/imageToPixel/crates/quantizer-wasm/src/../../../src-tauri/src/quantizer_core.rs /Users/jhpark/code/imageToPixel/crates/quantizer-wasm/src/lib.rs

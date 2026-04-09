@@ -1,0 +1,50 @@
+{
+  "cases": [
+    {
+      "name": "no_op_passthrough",
+      "width": 2,
+      "height": 1,
+      "pixel_size": 1,
+      "dither_type": "none",
+      "palette": [],
+      "input": [10, 20, 30, 255, 40, 50, 60, 255],
+      "expected": [10, 20, 30, 255, 40, 50, 60, 255]
+    },
+    {
+      "name": "palette_mapping_with_transparency_threshold",
+      "width": 2,
+      "height": 1,
+      "pixel_size": 1,
+      "dither_type": "none",
+      "palette": [
+        { "r": 255, "g": 0, "b": 0 },
+        { "r": 0, "g": 255, "b": 0 }
+      ],
+      "input": [250, 10, 10, 255, 10, 250, 10, 100],
+      "expected": [255, 0, 0, 255, 0, 0, 0, 0]
+    },
+    {
+      "name": "block_average_then_palette_lookup",
+      "width": 2,
+      "height": 2,
+      "pixel_size": 2,
+      "dither_type": "none",
+      "palette": [
+        { "r": 255, "g": 0, "b": 0 },
+        { "r": 0, "g": 0, "b": 255 }
+      ],
+      "input": [
+        255, 0, 0, 255,
+        255, 0, 0, 255,
+        255, 0, 0, 255,
+        255, 0, 0, 255
+      ],
+      "expected": [
+        255, 0, 0, 255,
+        255, 0, 0, 255,
+        255, 0, 0, 255,
+        255, 0, 0, 255
+      ]
+    }
+  ]
+}

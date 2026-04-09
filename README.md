@@ -10,6 +10,8 @@
 - **CRT 스캔라인 효과**: 레트로 모니터 느낌의 후처리 효과
 - **추천 프리셋**: Retro CRT, Gameboy, NES, Cyberpunk 등 원클릭 프리셋
 - **프리셋 프리뷰 썸네일**: 적용 전 결과를 카드에서 바로 미리보기
+- **프리셋 공유 링크/코드**: 현재 설정을 URL로 복사하거나 공유 코드를 붙여넣어 빠르게 불러오기
+- **스타일 추천**: 업로드한 이미지 분위기에 맞는 프리셋 스타일을 자동 제안
 - **자동 팔레트 추천**: 업로드 이미지에 어울리는 팔레트를 추천 리스트로 제안
 - **팔레트 블렌딩**: 두 팔레트를 섞어 중간 팔레트를 미리보고 커스텀 팔레트로 저장
 - **GIF 편집 도구**: 프레임 삭제, 복제, 순서 변경
@@ -25,7 +27,7 @@
 - **프론트엔드**: SvelteKit 5 + TypeScript
 - **스타일**: [98.css](https://jdan.github.io/98.css/) (Windows 98 UI 라이브러리)
 - **네이티브**: [Tauri v2](https://v2.tauri.app/) (Rust)
-- **이미지 처리**: Web Worker + OffscreenCanvas
+- **이미지 처리**: Web Worker + OffscreenCanvas + Rust/WASM quantizer backend
 - **배포**: GitHub Pages (웹 버전)
 
 ## 시작하기
@@ -42,6 +44,12 @@ npm run test:e2e
 
 # PWA 오프라인 스모크 테스트
 npm run test:e2e:pwa
+
+# quantizer benchmark harness
+npm run benchmark:quantizer
+
+# quantizer wasm asset rebuild
+npm run build:wasm:quantizer
 
 # Tauri 데스크탑 앱 개발
 npm run td

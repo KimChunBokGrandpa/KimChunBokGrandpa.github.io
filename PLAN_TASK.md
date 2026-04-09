@@ -48,6 +48,11 @@
   - 기존 Tauri command는 thin wrapper로 유지
   - web 쪽도 `quantizerBackend` 인터페이스로 호출 경계 분리
   - Rust 단위 테스트 3개 추가로 no-op / 팔레트 매핑 / block average 검증
+  - JS/Rust 공용 golden fixture와 benchmark harness 추가
+  - `benchmark:quantizer` 스크립트로 baseline timing 진입점 확보
+  - `quantizer-wasm` crate + worker async loader로 실제 wasm backend 연결
+  - web worker/GIF frame worker는 기본적으로 wasm backend를 시도하고 unsupported case는 JS fallback
+  - `build:wasm:quantizer`로 `.wasm` asset 재생성 가능
 - `P3-004` 오프라인 PWA 지원 — ✅ 완료
   - `+layout.svelte`에서 production web 환경만 서비스 워커 등록
   - service worker에 prerendered shell precache + navigation offline fallback 추가
@@ -57,10 +62,19 @@
   - GIF 프레임을 SMIL 기반 animated SVG로 export하는 `animatedFramesToSvg` 추가
   - GIF controls에 animated SVG export 버튼/토스트 연결
   - SVG/export/GIF controls 테스트 추가
+- `P3-002` 프리셋 공유 — 🚧 진행 시작
+  - preset settings를 공유 코드/base64 URL로 encode/decode하는 `presetShare` 유틸 추가
+  - PresetManager에서 `copy share link` / `paste shared preset` UI 추가
+  - JSON import와 share import가 같은 validation/sanitization 경로를 사용하도록 통합
+  - 현재 범위는 로컬 공유 MVP이며, community feed / account sync / backend 저장소는 후속
+- `P3-005` 스타일 추천 MVP — 🚧 진행 시작
+  - `styleRecommender` 유틸로 이미지 밝기/채도/에지 특성과 palette match를 함께 점수화
+  - PresetManager 프리셋 탭에 추천 스타일 카드와 이유 문구 추가
+  - 현재 범위는 로컬 휴리스틱 추천이며, 실제 model-backed 추천은 후속
 - 다음 우선순위
-  - `P3-001` WASM 엔트리 / benchmark / golden image 비교
-  - `P3-002` 프리셋 클라우드 공유 설계
-  - `P3-005` AI 스타일 추천 검토
+  - `P3-001` oklab/atkinson parity 및 benchmark 표 정리
+  - `P3-002` community/cloud layer 범위 정의
+  - `P3-005` model-backed 추천 여부/범위 검토
 
 ---
 
@@ -109,7 +123,7 @@
 ## Known Issues
 
 - svelte-check 결과: **0 에러, 0 경고** (2026-04-09 확인)
-- npm test: **428 tests, 48 files** 전체 통과
+- npm test: **457 tests, 54 files** 전체 통과
 - npm run lint: **0 errors, 9 warnings**
 - `npm run tauri build -- --debug`: **macOS .app bundle 생성 성공**
 - `npm run build-storybook`: **정적 빌드 성공**
@@ -122,7 +136,7 @@
 npm run dev          # 개발 서버 (port 1420)
 npm run lint         # ESLint (현재 0 errors, warnings only)
 npm run check        # 타입 체크
-npm test             # 테스트 실행 (428개, 48 files)
+npm test             # 테스트 실행 (457개, 54 files)
 npm run test:e2e     # Playwright E2E (2개 시나리오)
 npm run build-storybook  # Storybook 정적 빌드
 npm run tauri build -- --debug  # 로컬 Tauri debug bundle 빌드

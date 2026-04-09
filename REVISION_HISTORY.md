@@ -2,6 +2,127 @@
 
 ---
 
+## v1.6.7 (2026-04-09)
+
+> Phase 3 continued: style recommendation MVP landed.
+
+### P3 — Style Recommendation MVP
+
+- **styleRecommender.ts — 이미지 특성 기반 스타일 추천 유틸 추가**
+  - 밝기 / 대비 / 채도 / edge density와 palette recommendation을 함께 점수화
+  - built-in preset 후보를 top N 추천으로 정렬해 반환
+  - 현재는 local heuristic path이며, 향후 model-backed 추천으로 확장 가능
+- **PresetManager.svelte + ControlPanel.svelte + +page.svelte — 추천 스타일 UI 연결**
+  - 프리셋 탭 상단에 추천 스타일 카드와 이유 문구 추가
+  - 원본 이미지가 있을 때만 자동 추천을 계산하고 stale result를 방지
+  - 추천 카드를 누르면 바로 preset apply 가능
+- **tests + i18n — 회귀 방지**
+  - en/ko/ja 번역 키 추가
+  - `styleRecommender.test.ts`, `PresetManager.test.ts`로 추천 엔진/UI 흐름 검증
+
+### Verification
+
+- `npm run check`
+  - `0 errors / 0 warnings`
+- `npx vitest run src/lib/utils/styleRecommender.test.ts src/lib/components/__tests__/PresetManager.test.ts`
+  - `12 passed`
+- `npm test`
+  - `457 passed (54 files)`
+
+---
+
+## v1.6.6 (2026-04-09)
+
+> Phase 3 continued: preset sharing MVP landed.
+
+### P3 — Preset Sharing MVP
+
+- **presetShare.ts — 공유 코드/URL 유틸 추가**
+  - `ProcessingSettings`를 shareable base64url payload로 encode/decode하는 helper 추가
+  - legacy preset JSON과 shared preset input이 동일한 sanitization 경로를 사용하도록 정리
+  - effect layers / `useOklab` / `atkinson`까지 포함한 normalized import 지원
+- **PresetManager.svelte — copy/paste sharing UI 추가**
+  - current preset을 공유 링크로 복사하는 버튼 추가
+  - 공유 URL 또는 코드 붙여넣기 입력창과 apply 흐름 추가
+  - JSON import도 동일 validator를 재사용하도록 통합
+- **tests + i18n — 회귀 방지**
+  - en/ko/ja 번역 키 추가
+  - `presetShare.test.ts`, `PresetManager.test.ts`로 encode/decode / clipboard copy / shared import 검증
+
+### Verification
+
+- `npm run check`
+  - `0 errors / 0 warnings`
+- `npx vitest run src/lib/utils/presetShare.test.ts src/lib/components/__tests__/PresetManager.test.ts`
+  - `12 passed`
+- `npm test`
+  - `452 passed (53 files)`
+
+---
+
+## v1.6.5 (2026-04-09)
+
+> Phase 3 continued: actual wasm quantizer worker path wired.
+
+### P3 — WASM Backend Wiring
+
+- **quantizer-wasm crate + build script — wasm asset 생성 경로 추가**
+  - `crates/quantizer-wasm`에서 raw wasm quantizer module 빌드
+  - `build:wasm:quantizer` 스크립트로 `src/lib/wasm/quantizer_wasm.wasm` 재생성 가능
+- **wasmQuantizer.ts + quantizerBackend.ts — async wasm loader 연결**
+  - worker 경로에서 wasm asset을 로드해 quantization 실행
+  - unsupported case(`useOklab`, `atkinson`) 또는 로드 실패 시 JS quantizer로 안전 fallback
+- **imageWorker.ts + imageProcessor.ts + gifPlaybackManager.svelte.ts — 실제 worker 사용 경로 전환**
+  - 일반 이미지 처리 worker와 GIF frame worker가 기본적으로 wasm backend를 시도하도록 변경
+  - post-processing/effect pipeline은 기존 구조 유지
+- **tests/build verification — wasm asset bundling 확인**
+  - quantizer backend async path 테스트 추가
+  - production build에서 worker wasm asset 번들링 확인
+
+### Verification
+
+- `npm run build:wasm:quantizer`
+  - `.wasm` asset 생성 성공
+- `cargo test --manifest-path src-tauri/Cargo.toml --lib`
+  - `4 passed`
+- `npm run check`
+  - `0 errors / 0 warnings`
+- `npx vitest run src/lib/utils/quantizerBackend.test.ts src/lib/utils/quantizerGolden.test.ts src/lib/utils/quantizerBenchmark.test.ts src/lib/services/imageProcessor.test.ts`
+  - `21 passed`
+- `npm run build`
+  - worker wasm asset bundle 포함 성공
+
+---
+
+## v1.6.4 (2026-04-09)
+
+> Phase 3 continued: quantizer golden fixtures and benchmark harness added.
+
+### P3 — WASM Groundwork Follow-up
+
+- **quantizer_golden_cases.json — JS/Rust 공용 fixture 추가**
+  - quantizer parity를 확인하는 shared golden cases 추가
+  - no-op / palette mapping / block average 시나리오를 언어 공통으로 고정
+- **quantizerGolden.test.ts + quantizer_core.rs — cross-path parity 검증**
+  - JS quantizer 경로가 golden output과 일치하는지 검증
+  - Rust quantizer core도 같은 fixture를 읽어 동일 output을 검증
+- **quantizerBenchmark.ts — baseline benchmark harness 추가**
+  - 현재 backend token 기준 quantization timing을 재는 helper 추가
+  - `benchmark:quantizer` 스크립트로 후속 WASM 대비 baseline 측정 진입점 확보
+
+### Verification
+
+- `cargo test --manifest-path src-tauri/Cargo.toml --lib`
+  - `4 passed`
+- `npm run check`
+  - `0 errors / 0 warnings`
+- `npx vitest run src/lib/utils/quantizerGolden.test.ts src/lib/utils/quantizerBenchmark.test.ts src/lib/utils/quantizerBackend.test.ts`
+  - `8 passed`
+- `npm run benchmark:quantizer`
+  - `2 passed`
+
+---
+
 ## v1.6.3 (2026-04-09)
 
 > Phase 3 continued: animated SVG export completed.

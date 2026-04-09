@@ -350,6 +350,7 @@
           bind:settings={processingSettings}
           bind:postFilters={ip.postFilters}
           bind:autoProcess={ip.autoProcess}
+          imageSrc={originalImageSrc}
           hasUnappliedChanges={ip.hasUnappliedChanges}
           {saveFormat}
           {saveQuality}

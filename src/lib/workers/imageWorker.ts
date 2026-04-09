@@ -1,6 +1,6 @@
 import { clearPaletteCachesExcept } from "../utils/colorQuantizer";
 import { applyGlitch } from "../utils/glitchEngine";
-import { applyQuantization } from "../utils/quantizerBackend";
+import { applyQuantizationAsync } from "../utils/quantizerBackend";
 import { applyScaling } from "../utils/scaleEngine";
 import { getEffectWeight } from "../utils/effectRegistry";
 import { ensureBuiltInEffectsRegistered } from "../utils/effects";
@@ -10,7 +10,7 @@ import type {
   ImageWorkerResponse,
 } from "../types";
 
-onmessage = (e: MessageEvent<ImageWorkerMessage>) => {
+onmessage = async (e: MessageEvent<ImageWorkerMessage>) => {
   const {
     id,
     imageBitmap,
@@ -48,7 +48,7 @@ onmessage = (e: MessageEvent<ImageWorkerMessage>) => {
     // Report progress: quantization starting
     postMessage({ id, type: 'progress', progress: 0.1 } as ImageWorkerResponse);
 
-    let processedData = applyQuantization({
+    let processedData = await applyQuantizationAsync({
       imageData: sourceData,
       pixelSize,
       palette,

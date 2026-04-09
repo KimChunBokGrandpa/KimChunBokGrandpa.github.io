@@ -27,6 +27,7 @@
 
   let {
     settings = $bindable({ pixelSize: 1, palette: 'original', crtEffect: 'none' as const, glitchFilters: [] as GlitchFilter[], renderMode: 'pixel_perfect' as const, glitchSeed: null as (number | null), ditherType: 'none' as const }),
+    imageSrc = null,
     saveFormat = 'png' as SaveFormat,
     saveQuality = 0.92,
     onChange,
@@ -44,6 +45,7 @@
     onError,
   }: {
     settings: ProcessingSettings;
+    imageSrc?: string | null;
     saveFormat?: SaveFormat;
     saveQuality?: number;
     onChange: (settings: ProcessingSettings) => void;
@@ -275,7 +277,7 @@
 
     <!-- ─── Presets Tab ─── -->
     {:else if activeTab === 'presets'}
-      <PresetManager bind:settings onChange={update} onError={onError} />
+      <PresetManager bind:settings {imageSrc} onChange={update} onError={onError} />
     {/if}
   </div>
 

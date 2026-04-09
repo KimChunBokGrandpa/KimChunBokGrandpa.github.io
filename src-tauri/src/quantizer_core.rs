@@ -365,6 +365,24 @@ fn apply_floyd_steinberg(
 #[cfg(test)]
 mod tests {
     use super::{QuantizeRequest, Rgb, quantize_rgba};
+    use serde::Deserialize;
+
+    #[derive(Deserialize)]
+    struct GoldenFixtures {
+        cases: Vec<GoldenCase>,
+    }
+
+    #[derive(Deserialize)]
+    struct GoldenCase {
+        name: String,
+        width: u32,
+        height: u32,
+        pixel_size: u32,
+        dither_type: String,
+        palette: Vec<Rgb>,
+        input: Vec<u8>,
+        expected: Vec<u8>,
+    }
 
     #[test]
     fn returns_original_bytes_for_no_op_request() {
@@ -416,5 +434,25 @@ mod tests {
 
         assert_eq!(out.len(), data.len());
         assert!(out.chunks_exact(4).all(|px| px == [255, 0, 0, 255]));
+    }
+
+    #[test]
+    fn shared_golden_cases_match_expected_output() {
+        let fixtures: GoldenFixtures =
+            serde_json::from_str(include_str!("../../fixtures/quantizer_golden_cases.json"))
+                .expect("golden fixtures should deserialize");
+
+        for case in fixtures.cases {
+            let req = QuantizeRequest {
+                width: case.width,
+                height: case.height,
+                pixel_size: case.pixel_size,
+                palette: case.palette,
+                dither_type: case.dither_type,
+            };
+
+            let out = quantize_rgba(&case.input, &req);
+            assert_eq!(out, case.expected, "golden case failed: {}", case.name);
+        }
     }
 }

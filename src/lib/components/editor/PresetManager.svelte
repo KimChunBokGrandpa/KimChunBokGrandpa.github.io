@@ -1,17 +1,26 @@
 <script lang="ts">
   import { getPaletteName } from '$lib/utils/palettes';
   import { PRESETS, type Preset } from '$lib/utils/presets';
-  import type { EffectLayer, GlitchType, ProcessingSettings } from '$lib/types';
+  import type { EffectLayer, ProcessingSettings } from '$lib/types';
   import { i18n } from '$lib/i18n/index.svelte';
   import { getCustomPresets, addCustomPreset, removeCustomPreset, type CustomPreset } from '$lib/stores/customPresetStore.svelte';
   import { getPresetPreview } from '$lib/utils/presetPreview';
+  import { recommendStylesFromImage, type StyleRecommendation } from '$lib/utils/styleRecommender';
+  import {
+    buildPresetShareUrl,
+    decodePresetShareInput,
+    encodePresetShareCode,
+    sanitizeImportedPresetSettings,
+  } from '$lib/utils/presetShare';
 
   let {
     settings = $bindable(),
+    imageSrc = null,
     onChange,
     onError,
   }: {
     settings: ProcessingSettings;
+    imageSrc?: string | null;
     onChange: () => void;
     onError?: (message: string) => void;
   } = $props();
@@ -79,6 +88,9 @@
   let newPresetName = $state('');
   let customPresets = $derived(getCustomPresets());
   let presetPreviews = $state<Record<string, string>>({});
+  let styleRecommendations = $state<StyleRecommendation[]>([]);
+  let isRecommendingStyles = $state(false);
+  let styleRecommendationRequestId = 0;
 
   async function loadPreview(id: string, previewSource: ProcessingSettings, name?: string) {
     if (presetPreviews[id]) return;
@@ -110,6 +122,30 @@
     customPresets.forEach((preset) => {
       void loadPreview(preset.id, preset.settings, preset.name);
     });
+  });
+
+  $effect(() => {
+    const requestId = ++styleRecommendationRequestId;
+    if (!imageSrc) {
+      styleRecommendations = [];
+      isRecommendingStyles = false;
+      return;
+    }
+
+    isRecommendingStyles = true;
+    recommendStylesFromImage(imageSrc, 3)
+      .then((recommendations) => {
+        if (requestId !== styleRecommendationRequestId) return;
+        styleRecommendations = recommendations;
+      })
+      .catch(() => {
+        if (requestId !== styleRecommendationRequestId) return;
+        styleRecommendations = [];
+      })
+      .finally(() => {
+        if (requestId !== styleRecommendationRequestId) return;
+        isRecommendingStyles = false;
+      });
   });
 
   function saveCurrentAsPreset() {
@@ -159,6 +195,10 @@
 
   // ─── Preset Sharing ───
   let presetFileInput = $state<HTMLInputElement>();
+  let shareImportVisible = $state(false);
+  let shareInput = $state('');
+  let shareStatus = $state('');
+  const shareBasePath = import.meta.env.BASE_URL === '/' ? '' : import.meta.env.BASE_URL.replace(/\/$/, '');
 
   function exportPreset() {
     const preset = {
@@ -180,6 +220,37 @@
     presetFileInput?.click();
   }
 
+  async function copyShareLink() {
+    const shareCode = encodePresetShareCode(settings, i18n.t('custom_preset'));
+    const shareUrl = buildPresetShareUrl(shareCode, window.location.origin, shareBasePath);
+
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      shareStatus = i18n.t('share_link_copied');
+    } catch {
+      shareInput = shareUrl;
+      shareImportVisible = true;
+      shareStatus = i18n.t('copy_failed');
+      onError?.(i18n.t('copy_failed'));
+    }
+  }
+
+  function applySharedPreset() {
+    try {
+      const shared = decodePresetShareInput(shareInput);
+      settings = shared.settings;
+      newPresetName = shared.name;
+      shareInput = '';
+      shareImportVisible = false;
+      shareStatus = i18n.t('preset_share_imported');
+      onChange();
+    } catch {
+      const message = i18n.t('preset_error_invalid_share');
+      shareStatus = message;
+      onError?.(message);
+    }
+  }
+
   const MAX_PRESET_FILE_SIZE = 1024 * 1024; // 1MB
 
   async function handlePresetFile(e: Event) {
@@ -191,34 +262,9 @@
       }
       const text = await input.files[0].text();
       const data = JSON.parse(text);
-      const s = data.settings;
-      if (!s || typeof s.pixelSize !== 'number' || typeof s.palette !== 'string') {
-        throw new Error('Invalid preset format');
-      }
-      const imported: ProcessingSettings = {
-        pixelSize: Math.max(1, Math.min(64, s.pixelSize)),
-        palette: s.palette,
-        crtEffect: ['none', 'horizontal', 'vertical'].includes(s.crtEffect) ? s.crtEffect : (s.crtEffect === true ? 'horizontal' : 'none'),
-        glitchFilters: Array.isArray(s.glitchFilters) ? s.glitchFilters.map((f: { type: GlitchType; intensity: number }) => ({ type: f.type, intensity: f.intensity })) : [],
-        renderMode: ['pixel_perfect', 'bilinear', 'hqx'].includes(s.renderMode) ? s.renderMode : 'pixel_perfect',
-        glitchSeed: s.glitchSeed ?? null,
-        ditherType: ['none', 'floyd_steinberg', 'ordered'].includes(s.ditherType) ? s.ditherType : 'none',
-      };
-      imported.effectLayers = Array.isArray(s.effectLayers)
-        ? s.effectLayers
-            .filter((l: unknown): l is Record<string, unknown> =>
-              typeof l === 'object' && l !== null &&
-              typeof (l as Record<string, unknown>).type === 'string' &&
-              ['glitch', 'hqx'].includes((l as Record<string, unknown>).type as string)
-            )
-            .map((l: EffectLayer) => ({
-              id: l.id || crypto.randomUUID(),
-              type: l.type,
-              enabled: typeof l.enabled === 'boolean' ? l.enabled : true,
-              ...(l.type === 'glitch' ? { glitchType: l.glitchType, intensity: typeof l.intensity === 'number' ? l.intensity : 1 } : {}),
-            }))
-        : migrateToEffectLayers(imported);
+      const imported = sanitizeImportedPresetSettings(data.settings);
       settings = imported;
+      shareStatus = i18n.t('preset_share_imported');
       onChange();
     } catch (err) {
       const reason = err instanceof SyntaxError
@@ -235,6 +281,42 @@
 </script>
 
 <div class="tab-panel" role="tabpanel">
+  {#if imageSrc}
+    <div class="section-label">
+      ✨ {i18n.t('recommended_styles')}
+      {#if isRecommendingStyles}
+        <span class="recommend-loading"> · {i18n.t('loading')}</span>
+      {/if}
+    </div>
+    {#if styleRecommendations.length > 0}
+      <div class="field-row preset-grid style-grid" data-testid="style-recommendations">
+        {#each styleRecommendations as recommendation}
+          {@const preset = PRESETS.find((item) => item.id === recommendation.id)}
+          {#if preset}
+            <button
+              class:preset-active={matchesPreset(preset)}
+              class="preset-btn preset-card style-card"
+              data-testid={`style-recommendation-${preset.id}`}
+              onclick={() => applyPreset(preset)}
+              title={i18n.t(recommendation.reasonKey)}
+            >
+              {#if presetPreviews[preset.id]}
+                <img
+                  class="preset-card-thumb"
+                  src={presetPreviews[preset.id]}
+                  alt={i18n.t(preset.labelKey)}
+                  draggable="false"
+                />
+              {/if}
+              <span class="preset-card-icon">{preset.icon}</span>
+              <span class="preset-card-name">{i18n.t(preset.labelKey)}</span>
+              <span class="style-reason">{i18n.t(recommendation.reasonKey)}</span>
+            </button>
+          {/if}
+        {/each}
+      </div>
+    {/if}
+  {/if}
   <div class="field-row preset-grid">
     {#each PRESETS as preset}
       <button
@@ -260,8 +342,46 @@
   <div class="field-row preset-share-row">
     <button class="preset-share-btn" onclick={exportPreset} title={i18n.t('export_preset')}>📤 {i18n.t('export_btn')}</button>
     <button class="preset-share-btn" onclick={importPreset} title={i18n.t('import_preset')}>📥 {i18n.t('import_btn')}</button>
+    <button
+      class="preset-share-btn"
+      data-testid="preset-share-copy-link"
+      onclick={copyShareLink}
+      title={i18n.t('copy_share_link')}
+    >🔗 {i18n.t('copy_btn')}</button>
+    <button
+      class="preset-share-btn"
+      data-testid="preset-share-open-import"
+      onclick={() => { shareImportVisible = !shareImportVisible; }}
+      title={i18n.t('import_share_link')}
+    >🧾 {i18n.t('paste_btn')}</button>
     <input bind:this={presetFileInput} type="file" accept=".json" onchange={handlePresetFile} style="display:none" />
   </div>
+  {#if shareImportVisible}
+    <div class="field-row preset-share-row">
+      <input
+        type="text"
+        class="preset-name-input"
+        data-testid="preset-share-import-input"
+        bind:value={shareInput}
+        placeholder={i18n.t('share_link_placeholder')}
+        onkeydown={(e) => { if (e.key === 'Enter') applySharedPreset(); if (e.key === 'Escape') shareImportVisible = false; }}
+      />
+      <button
+        class="preset-share-btn"
+        data-testid="preset-share-apply-import"
+        onclick={applySharedPreset}
+        aria-label={i18n.t('apply_share_link')}
+      >↩</button>
+      <button
+        class="preset-share-btn"
+        onclick={() => { shareImportVisible = false; shareInput = ''; }}
+        aria-label={i18n.t('cancel')}
+      >✕</button>
+    </div>
+  {/if}
+  {#if shareStatus}
+    <div class="section-label">{shareStatus}</div>
+  {/if}
 
   <!-- Custom Presets -->
   {#if customPresets.length > 0}
@@ -324,6 +444,9 @@
     font-size: var(--w98-font-size-base);
     margin-bottom: 2px;
   }
+  .recommend-loading {
+    color: var(--w98-shadow-808);
+  }
 
   /* ===== Preset Grid ===== */
   .preset-grid {
@@ -378,6 +501,20 @@
     font-size: var(--w98-font-size-micro);
     color: var(--w98-shadow-808);
     line-height: 1;
+  }
+  .style-grid {
+    margin-bottom: 8px;
+  }
+  .style-card {
+    align-items: flex-start;
+    text-align: left;
+    min-width: 120px;
+  }
+  .style-reason {
+    font-size: var(--w98-font-size-micro);
+    color: var(--w98-shadow-808);
+    line-height: 1.2;
+    white-space: normal;
   }
 
   /* ===== Custom Preset ===== */

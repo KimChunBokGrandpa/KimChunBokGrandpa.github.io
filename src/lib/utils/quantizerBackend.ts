@@ -1,6 +1,7 @@
 import type { DitherType, QuantizationBackend } from '$lib/types';
 import { applyPixelationAndPalette } from './colorQuantizer';
 import type { RGB } from './palettes';
+import { quantizeWithWasm } from './wasmQuantizer';
 
 export interface QuantizationRequest {
   imageData: ImageData;
@@ -17,20 +18,6 @@ export function resolveQuantizationBackend(backend?: QuantizationBackend): Quant
 }
 
 export function applyQuantization(request: QuantizationRequest): ImageData {
-  const backend = resolveQuantizationBackend(request.backend);
-
-  // WASM path is intentionally a soft fallback until the module lands.
-  if (backend === 'wasm') {
-    return applyPixelationAndPalette(
-      request.imageData,
-      request.pixelSize,
-      request.palette,
-      request.ditherType ?? 'none',
-      request.customPaletteColors,
-      request.useOklab,
-    );
-  }
-
   return applyPixelationAndPalette(
     request.imageData,
     request.pixelSize,
@@ -39,4 +26,22 @@ export function applyQuantization(request: QuantizationRequest): ImageData {
     request.customPaletteColors,
     request.useOklab,
   );
+}
+
+export async function applyQuantizationAsync(request: QuantizationRequest): Promise<ImageData> {
+  const backend = resolveQuantizationBackend(request.backend);
+
+  if (backend === 'wasm') {
+    const wasmResult = await quantizeWithWasm({
+      imageData: request.imageData,
+      pixelSize: request.pixelSize,
+      ditherType: request.ditherType,
+      customPaletteColors: request.customPaletteColors,
+      useOklab: request.useOklab,
+    });
+
+    if (wasmResult) return wasmResult;
+  }
+
+  return applyQuantization(request);
 }
