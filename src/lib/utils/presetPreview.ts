@@ -1,7 +1,7 @@
 import type { ProcessingSettings, EffectLayer } from '$lib/types';
 import type { RGB } from './palettes';
-import { applyPixelationAndPalette } from './colorQuantizer';
 import { applyGlitch } from './glitchEngine';
+import { applyQuantization } from './quantizerBackend';
 import { applyScaling } from './scaleEngine';
 import { applyCrtEffect } from './crtRenderer';
 import { customPaletteStore } from '$lib/stores/customPaletteStore.svelte';
@@ -114,14 +114,14 @@ function renderPresetPreview(input: PresetPreviewInput): string {
   if (!sampleCtx) throw new Error('Failed to get 2d context for sample image');
 
   let imageData = sampleCtx.getImageData(0, 0, sampleCanvas.width, sampleCanvas.height);
-  imageData = applyPixelationAndPalette(
+  imageData = applyQuantization({
     imageData,
-    input.settings.pixelSize,
-    input.settings.palette,
-    input.settings.ditherType ?? 'none',
+    pixelSize: input.settings.pixelSize,
+    palette: input.settings.palette,
+    ditherType: input.settings.ditherType ?? 'none',
     customPaletteColors,
-    input.settings.useOklab,
-  );
+    useOklab: input.settings.useOklab,
+  });
 
   const layers = normalizeLayers(input.settings);
   for (let i = 0; i < layers.length; i++) {

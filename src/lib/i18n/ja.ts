@@ -472,6 +472,11 @@ export const ja: Record<TranslationKey, string> = {
   export_apng_desc: 'アニメーションPNG — GIFより高品質',
   apng_exported: 'APNG書き出し完了！',
 
+  // ─── Animated SVG Export ───
+  export_animated_svg: 'Animated SVGで書き出す',
+  export_animated_svg_desc: 'Animated SVG — Web埋め込み向けベクタータイムライン',
+  animated_svg_exported: 'Animated SVG書き出し完了！',
+
   // ─── Animated WebP Export ───
   export_animated_webp: 'Animated WebPで書き出す',
   export_animated_webp_desc: 'Animated WebP — 高効率なモダンアニメーション形式',

@@ -472,6 +472,11 @@ export const ko: Record<TranslationKey, string> = {
   export_apng_desc: '애니메이션 PNG — GIF보다 고품질',
   apng_exported: 'APNG 내보내기 완료!',
 
+  // ─── Animated SVG Export ───
+  export_animated_svg: 'Animated SVG로 내보내기',
+  export_animated_svg_desc: 'Animated SVG — 웹 임베드용 벡터 타임라인',
+  animated_svg_exported: 'Animated SVG 내보내기 완료!',
+
   // ─── Animated WebP Export ───
   export_animated_webp: 'Animated WebP로 내보내기',
   export_animated_webp_desc: 'Animated WebP — 현대적인 고효율 애니메이션 포맷',

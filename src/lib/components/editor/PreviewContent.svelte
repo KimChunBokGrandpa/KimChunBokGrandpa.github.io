@@ -34,6 +34,7 @@
     onGifExportSpritesheet,
     onGifExportSequence,
     onGifExportApng,
+    onGifExportAnimatedSvg,
     onGifExportAnimatedWebp,
     onGifDeleteFrame,
     onGifDuplicateFrame,
@@ -77,6 +78,7 @@
     onGifExportSpritesheet?: () => void;
     onGifExportSequence?: () => void;
     onGifExportApng?: () => void;
+    onGifExportAnimatedSvg?: () => void;
     onGifExportAnimatedWebp?: () => void;
     onGifDeleteFrame?: (frame: number) => void;
     onGifDuplicateFrame?: (frame: number) => void;
@@ -176,6 +178,7 @@
         onExportSpritesheet={onGifExportSpritesheet}
         onExportSequence={onGifExportSequence}
         onExportApng={onGifExportApng}
+        onExportAnimatedSvg={onGifExportAnimatedSvg}
         onExportAnimatedWebp={onGifExportAnimatedWebp}
         onDeleteFrame={onGifDeleteFrame}
         onDuplicateFrame={onGifDuplicateFrame}

@@ -2,6 +2,97 @@
 
 ---
 
+## v1.6.3 (2026-04-09)
+
+> Phase 3 continued: animated SVG export completed.
+
+### P3 — Animated SVG Export
+
+- **svgExporter.ts — animated SVG 생성 지원**
+  - 프레임별 `<g>` 그룹과 SMIL `visibility` animation을 생성하는 `animatedFramesToSvg` 추가
+  - 기존 정적 SVG export는 동일 유틸 내부 rect renderer를 재사용하도록 정리
+- **exportService.ts — animated SVG 다운로드 경로 추가**
+  - GIF frame RGBA 데이터를 `ImageData`로 변환한 뒤 `.svg` 애니메이션 파일로 저장
+  - 기존 `downloadSvg` 경로를 재사용해 web download 흐름 유지
+- **GifControls.svelte + PreviewContent.svelte + +page.svelte — UI 연결**
+  - GIF controls에 animated SVG export 버튼 추가
+  - 토스트/에러 흐름을 APNG/WebP와 같은 패턴으로 통합
+- **i18n + tests — 회귀 방지**
+  - en/ko/ja 번역 키 추가
+  - SVG exporter / export service / GIF controls 테스트 확장
+
+### Verification
+
+- `npm run check`
+  - `0 errors / 0 warnings`
+- `npx vitest run src/lib/utils/svgExporter.test.ts src/lib/services/exportService.test.ts src/lib/components/__tests__/GifControls.test.ts`
+  - `40 passed`
+
+---
+
+## v1.6.2 (2026-04-09)
+
+> Phase 3 continued: offline PWA shell completed.
+
+### P3 — Offline PWA
+
+- **serviceWorker.ts + +layout.svelte — 서비스 워커 등록 연결**
+  - production web 환경에서만 service worker를 등록하도록 분기
+  - Tauri / dev 환경에서는 등록하지 않아 local noise와 충돌 방지
+- **src/service-worker.ts — 오프라인 앱 셸 캐시 전략 보강**
+  - `build + files + prerendered` 자산을 precache
+  - navigation 요청은 network-first, offline 시 cached app shell fallback
+  - base path 배포에서도 `index.html` fallback을 찾을 수 있게 경로 계산 보강
+- **manifest.json + app.html — 설치/모바일 메타 정리**
+  - relative `start_url` / `scope` / icon 경로로 base path 대응
+  - mobile web app capability meta 추가
+- **PWA smoke — offline revisit 검증 추가**
+  - `playwright.pwa.config.ts`와 [pwa.spec.ts](/Users/jhpark/code/imageToPixel/e2e/pwa.spec.ts) 추가
+  - first load -> service worker ready -> offline reload 흐름 검증
+
+### Verification
+
+- `npm run check`
+  - `0 errors / 0 warnings`
+- `npm run build`
+  - production build + `service-worker.mjs` 생성 확인
+- `npx vitest run src/lib/utils/serviceWorker.test.ts`
+  - `2 passed`
+- `npm run test:e2e:pwa`
+  - `1 passed`
+
+---
+
+## v1.6.1 (2026-04-09)
+
+> Phase 3 kickoff: WebAssembly quantization groundwork.
+
+### P3 — Foundation Start
+
+- **quantizer_core.rs + image_processor.rs — Rust 양자화 코어 분리**
+  - 기존 `process_image_rs` 내부 양자화 로직을 `quantizer_core` 모듈로 이동
+  - Tauri command는 request 전달만 담당하는 thin wrapper로 축소
+  - 이후 WASM entrypoint를 같은 코어 위에 추가할 수 있는 구조로 정리
+- **quantizerBackend.ts + imageWorker.ts — web quantizer 경계 추가**
+  - worker / preset preview가 직접 `colorQuantizer`를 호출하지 않고 backend interface를 통과하도록 정리
+  - 현재 `wasm` backend token은 JS quantizer로 soft fallback
+  - 실제 WASM 모듈 연결 시 교체 범위를 한 지점으로 축소
+- **quantizer_core.rs tests — Phase 3 시작점 회귀 방지**
+  - no-op 요청 passthrough 검증
+  - 팔레트 매핑 + transparency threshold 검증
+  - pixel block average 후 팔레트 lookup 검증
+
+### Verification
+
+- `cargo test --manifest-path src-tauri/Cargo.toml --lib`
+  - `3 passed`
+- `npm run check`
+  - `0 errors / 0 warnings`
+- `npx vitest run src/lib/utils/quantizerBackend.test.ts src/lib/utils/presetPreview.test.ts src/lib/services/imageProcessor.test.ts`
+  - `17 passed`
+
+---
+
 ## v1.6.0 (2026-04-08)
 
 > Product roadmap refresh + GIF editing/export feature expansion.

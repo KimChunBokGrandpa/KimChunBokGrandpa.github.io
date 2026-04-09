@@ -13,6 +13,17 @@ export interface SvgExportOptions {
   includeBackground?: boolean;
 }
 
+export interface AnimatedSvgFrame {
+  imageData: ImageData;
+  delay: number;
+}
+
+interface SvgRenderResult {
+  svgW: number;
+  svgH: number;
+  rects: string[];
+}
+
 /**
  * Convert ImageData to an SVG string.
  * Merges horizontal runs of identical colors for smaller output.
@@ -21,6 +32,83 @@ export function imageDataToSvg(
   imageData: ImageData,
   options: SvgExportOptions = {},
 ): string {
+  const { svgW, svgH, rects } = renderImageDataToSvgRects(imageData, options);
+
+  return [
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${svgW}" height="${svgH}" viewBox="0 0 ${svgW} ${svgH}" shape-rendering="crispEdges">`,
+    ...rects,
+    '</svg>',
+  ].join('\n');
+}
+
+export function animatedFramesToSvg(
+  frames: AnimatedSvgFrame[],
+  options: SvgExportOptions = {},
+): string {
+  if (frames.length === 0) throw new Error('No frames to export');
+
+  const renderedFrames = frames.map((frame) => renderImageDataToSvgRects(frame.imageData, options));
+  const { svgW, svgH } = renderedFrames[0];
+  const totalDurationMs = Math.max(
+    frames.reduce((sum, frame) => sum + Math.max(frame.delay, 20), 0),
+    20,
+  );
+
+  let elapsedMs = 0;
+  const groups = renderedFrames.map((frame, index) => {
+    const start = elapsedMs / totalDurationMs;
+    elapsedMs += Math.max(frames[index].delay, 20);
+    const end = elapsedMs / totalDurationMs;
+
+    return [
+      `<g id="frame-${index}" visibility="hidden">`,
+      buildVisibilityAnimation(start, end, totalDurationMs),
+      ...frame.rects,
+      '</g>',
+    ].join('\n');
+  });
+
+  return [
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${svgW}" height="${svgH}" viewBox="0 0 ${svgW} ${svgH}" shape-rendering="crispEdges">`,
+    ...groups,
+    '</svg>',
+  ].join('\n');
+}
+
+function buildVisibilityAnimation(start: number, end: number, totalDurationMs: number): string {
+  const keyTimes: number[] = [0];
+  const values: string[] = [start === 0 ? 'visible' : 'hidden'];
+
+  if (start > 0) {
+    keyTimes.push(start);
+    values.push('visible');
+  }
+
+  if (end > start) {
+    keyTimes.push(end);
+    values.push('hidden');
+  }
+
+  if (end < 1) {
+    keyTimes.push(1);
+    values.push('hidden');
+  }
+
+  return `<animate attributeName="visibility" values="${values.join(';')}" keyTimes="${keyTimes.map(formatKeyTime).join(';')}" dur="${formatSeconds(totalDurationMs)}" repeatCount="indefinite" calcMode="discrete"/>`;
+}
+
+function formatKeyTime(value: number): string {
+  return Number(value.toFixed(4)).toString();
+}
+
+function formatSeconds(durationMs: number): string {
+  return `${Number((durationMs / 1000).toFixed(3)).toString()}s`;
+}
+
+function renderImageDataToSvgRects(
+  imageData: ImageData,
+  options: SvgExportOptions = {},
+): SvgRenderResult {
   const { cellSize = 1, includeBackground = true } = options;
   const { width, height, data } = imageData;
   const svgW = width * cellSize;
@@ -85,11 +173,7 @@ export function imageDataToSvg(
     }
   }
 
-  return [
-    `<svg xmlns="http://www.w3.org/2000/svg" width="${svgW}" height="${svgH}" viewBox="0 0 ${svgW} ${svgH}" shape-rendering="crispEdges">`,
-    ...rects,
-    '</svg>',
-  ].join('\n');
+  return { svgW, svgH, rects };
 }
 
 /**

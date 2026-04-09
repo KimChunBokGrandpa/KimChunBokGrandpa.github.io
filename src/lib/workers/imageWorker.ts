@@ -1,8 +1,6 @@
-import {
-  applyPixelationAndPalette,
-  clearPaletteCachesExcept,
-} from "../utils/colorQuantizer";
+import { clearPaletteCachesExcept } from "../utils/colorQuantizer";
 import { applyGlitch } from "../utils/glitchEngine";
+import { applyQuantization } from "../utils/quantizerBackend";
 import { applyScaling } from "../utils/scaleEngine";
 import { getEffectWeight } from "../utils/effectRegistry";
 import { ensureBuiltInEffectsRegistered } from "../utils/effects";
@@ -25,6 +23,7 @@ onmessage = (e: MessageEvent<ImageWorkerMessage>) => {
     glitchSeed,
     ditherType,
     useOklab,
+    quantizationBackend,
     customPaletteColors,
     effectLayers,
   } = e.data;
@@ -49,14 +48,15 @@ onmessage = (e: MessageEvent<ImageWorkerMessage>) => {
     // Report progress: quantization starting
     postMessage({ id, type: 'progress', progress: 0.1 } as ImageWorkerResponse);
 
-    let processedData = applyPixelationAndPalette(
-      sourceData,
+    let processedData = applyQuantization({
+      imageData: sourceData,
       pixelSize,
       palette,
-      ditherType || 'none',
+      ditherType: ditherType || 'none',
       customPaletteColors,
       useOklab,
-    );
+      backend: quantizationBackend,
+    });
 
     // Clear cached color lookups for unused palettes
     clearPaletteCachesExcept(palette);

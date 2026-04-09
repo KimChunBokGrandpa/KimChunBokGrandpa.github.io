@@ -4,6 +4,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 // Mock dependencies
 vi.mock('$lib/utils/svgExporter', () => ({
   imageDataToSvg: vi.fn(() => '<svg></svg>'),
+  animatedFramesToSvg: vi.fn(() => '<svg><g></g></svg>'),
   downloadSvg: vi.fn(),
 }));
 
@@ -20,8 +21,8 @@ vi.mock('$lib/utils/webpEncoder', () => ({
   encodeAnimatedWebp: vi.fn(() => new Uint8Array([82, 73, 70, 70])),
 }));
 
-const { exportSvg, exportSpritesheet, exportAnimatedWebp } = await import('./exportService');
-const { imageDataToSvg, downloadSvg } = await import('$lib/utils/svgExporter');
+const { exportSvg, exportSpritesheet, exportAnimatedWebp, exportAnimatedSvg } = await import('./exportService');
+const { imageDataToSvg, animatedFramesToSvg, downloadSvg } = await import('$lib/utils/svgExporter');
 const { createSpritesheet, downloadSpritesheet } = await import('$lib/utils/spritesheetExporter');
 const { frameToBlobUrl } = await import('$lib/utils/gifProcessor');
 const { encodeAnimatedWebp } = await import('$lib/utils/webpEncoder');
@@ -204,5 +205,34 @@ describe('exportAnimatedWebp', () => {
     const revokeSpy = vi.spyOn(URL, 'revokeObjectURL');
     await exportAnimatedWebp(makeGifInfo());
     expect(revokeSpy).toHaveBeenCalledWith('blob:animated-webp');
+  });
+});
+
+describe('exportAnimatedSvg', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  const makeGifInfo = (frameCount = 2) => ({
+    width: 16,
+    height: 16,
+    totalDuration: frameCount * 100,
+    frames: Array.from({ length: frameCount }, () => ({
+      data: new Uint8ClampedArray(16 * 16 * 4),
+      delay: 100,
+      width: 16,
+      height: 16,
+    })),
+  });
+
+  it('returns a filename with .svg extension', async () => {
+    const filename = await exportAnimatedSvg(makeGifInfo());
+    expect(filename).toMatch(/^animated-\d+\.svg$/);
+  });
+
+  it('calls animatedFramesToSvg and downloadSvg', async () => {
+    await exportAnimatedSvg(makeGifInfo(3));
+    expect(animatedFramesToSvg).toHaveBeenCalledTimes(1);
+    expect(downloadSvg).toHaveBeenCalledTimes(1);
   });
 });

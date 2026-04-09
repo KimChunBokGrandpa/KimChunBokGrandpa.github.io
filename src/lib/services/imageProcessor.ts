@@ -334,6 +334,7 @@ class ImageProcessorService {
         glitchSeed: settings.glitchSeed,
         ditherType: settings.ditherType,
         useOklab: settings.useOklab,
+        quantizationBackend: 'js',
         customPaletteColors: settings.palette.startsWith('custom_')
           ? customPaletteStore.getPaletteById(settings.palette)?.colors
               ?.map(c => ({ r: c.r, g: c.g, b: c.b }))

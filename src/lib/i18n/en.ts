@@ -495,6 +495,11 @@ export const en = {
   export_apng_desc: 'Animated PNG — better quality than GIF',
   apng_exported: 'APNG exported successfully!',
 
+  // ─── Animated SVG Export ───
+  export_animated_svg: 'Export as Animated SVG',
+  export_animated_svg_desc: 'Animated SVG — vector timeline for web embeds',
+  animated_svg_exported: 'Animated SVG exported successfully!',
+
   // ─── Animated WebP Export ───
   export_animated_webp: 'Export as Animated WebP',
   export_animated_webp_desc: 'Animated WebP — compact modern animation format',

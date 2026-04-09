@@ -23,6 +23,7 @@ function defaultProps() {
 function reorderProps() {
   return {
     ...defaultProps(),
+    onExportAnimatedSvg: vi.fn(),
     onExportAnimatedWebp: vi.fn(),
     onDeleteFrame: vi.fn(),
     onDuplicateFrame: vi.fn(),
@@ -157,6 +158,15 @@ describe('GifControls', () => {
     expect(props.onSeek).toHaveBeenCalledWith(4);
   });
 
+  it('calls animated SVG export callback when button is clicked', async () => {
+    const props = reorderProps();
+    const { container } = render(GifControls, { props });
+    const buttons = Array.from(container.querySelectorAll('.gif-export-btn'));
+    const animatedSvgBtn = buttons.at(-2) as HTMLButtonElement;
+    await fireEvent.click(animatedSvgBtn);
+    expect(props.onExportAnimatedSvg).toHaveBeenCalledOnce();
+  });
+
   it('calls animated WebP export callback when button is clicked', async () => {
     const props = reorderProps();
     const { container } = render(GifControls, { props });
@@ -166,7 +176,7 @@ describe('GifControls', () => {
     expect(props.onExportAnimatedWebp).toHaveBeenCalledOnce();
   });
 
-  it('exposes export aria labels for sequence, APNG, and animated WebP actions', () => {
+  it('exposes export aria labels for sequence, APNG, animated SVG, and animated WebP actions', () => {
     const props = {
       ...reorderProps(),
       onExportSequence: vi.fn(),
@@ -178,7 +188,7 @@ describe('GifControls', () => {
       .map((button) => button.getAttribute('aria-label'))
       .filter((label): label is string => !!label);
 
-    expect(labeledButtons).toHaveLength(3);
+    expect(labeledButtons).toHaveLength(4);
     labeledButtons.forEach((label) => expect(label.length).toBeGreaterThan(0));
   });
 });

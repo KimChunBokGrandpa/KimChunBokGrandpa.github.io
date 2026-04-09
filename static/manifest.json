@@ -2,13 +2,14 @@
   "name": "Retro Pixel Converter",
   "short_name": "RetroPixel",
   "description": "Transform images into retro pixel art with classic palettes and effects",
-  "start_url": "/",
+  "start_url": ".",
+  "scope": ".",
   "display": "standalone",
   "background_color": "#008080",
   "theme_color": "#000080",
   "icons": [
     {
-      "src": "/favicon.png",
+      "src": "./favicon.png",
       "sizes": "256x256",
       "type": "image/png",
       "purpose": "any maskable"

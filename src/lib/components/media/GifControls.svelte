@@ -16,6 +16,7 @@
     onExportSpritesheet,
     onExportSequence,
     onExportApng,
+    onExportAnimatedSvg,
     onExportAnimatedWebp,
     onDeleteFrame,
     onDuplicateFrame,
@@ -34,6 +35,7 @@
     onExportSpritesheet?: () => void;
     onExportSequence?: () => void;
     onExportApng?: () => void;
+    onExportAnimatedSvg?: () => void;
     onExportAnimatedWebp?: () => void;
     onDeleteFrame?: (frame: number) => void;
     onDuplicateFrame?: (frame: number) => void;
@@ -214,6 +216,18 @@
         use:tooltip
       >
         🖼 APNG
+      </button>
+    {/if}
+    {#if onExportAnimatedSvg}
+      <button
+        class="gif-btn gif-export-btn"
+        onclick={onExportAnimatedSvg}
+        disabled={isExporting}
+        title={i18n.t('export_animated_svg_desc')}
+        aria-label={i18n.t('export_animated_svg')}
+        use:tooltip
+      >
+        ▦ SVG
       </button>
     {/if}
     {#if onExportAnimatedWebp}

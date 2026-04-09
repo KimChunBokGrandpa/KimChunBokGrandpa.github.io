@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { imageDataToSvg } from './svgExporter';
+import { animatedFramesToSvg, imageDataToSvg } from './svgExporter';
 import { solidImageData } from './testHelpers';
 
 describe('imageDataToSvg', () => {
@@ -66,5 +66,24 @@ describe('imageDataToSvg', () => {
     const img = solidImageData(1, 1, 0, 0, 0);
     const svg = imageDataToSvg(img);
     expect(svg).toContain('shape-rendering="crispEdges"');
+  });
+});
+
+describe('animatedFramesToSvg', () => {
+  it('produces animated SVG markup for multiple frames', () => {
+    const svg = animatedFramesToSvg([
+      { imageData: solidImageData(2, 2, 255, 0, 0), delay: 100 },
+      { imageData: solidImageData(2, 2, 0, 255, 0), delay: 200 },
+    ]);
+
+    expect(svg).toContain('<g id="frame-0"');
+    expect(svg).toContain('<g id="frame-1"');
+    expect(svg).toContain('<animate attributeName="visibility"');
+    expect(svg).toContain('dur="0.3s"');
+    expect(svg).toContain('repeatCount="indefinite"');
+  });
+
+  it('throws when no frames are provided', () => {
+    expect(() => animatedFramesToSvg([])).toThrow('No frames to export');
   });
 });

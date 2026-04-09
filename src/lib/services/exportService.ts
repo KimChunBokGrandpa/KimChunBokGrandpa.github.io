@@ -2,7 +2,7 @@
  * Export Service — Handles SVG, spritesheet, and frame sequence export operations.
  * Extracts export logic from +page.svelte for separation of concerns.
  */
-import { imageDataToSvg, downloadSvg } from '$lib/utils/svgExporter';
+import { animatedFramesToSvg, imageDataToSvg, downloadSvg } from '$lib/utils/svgExporter';
 import { createSpritesheet, downloadSpritesheet } from '$lib/utils/spritesheetExporter';
 import { frameToBlobUrl, type GifInfo } from '$lib/utils/gifProcessor';
 import { encodeApng, type ApngFrame } from '$lib/utils/apngEncoder';
@@ -208,5 +208,21 @@ export async function exportAnimatedWebp(gifInfo: GifInfo, quality: number = 0.9
   a.click();
   URL.revokeObjectURL(url);
 
+  return filename;
+}
+
+export async function exportAnimatedSvg(gifInfo: GifInfo): Promise<string> {
+  const { frames } = gifInfo;
+  if (frames.length === 0) throw new Error('No frames to export');
+
+  const svgString = animatedFramesToSvg(
+    frames.map((frame) => ({
+      imageData: new ImageData(new Uint8ClampedArray(frame.data), frame.width, frame.height),
+      delay: frame.delay,
+    })),
+  );
+
+  const filename = `animated-${Date.now()}.svg`;
+  downloadSvg(svgString, filename);
   return filename;
 }

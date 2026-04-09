@@ -43,10 +43,24 @@
   - pixel grid overlay 좌표 drift 보정
   - Storybook build 경고 정리 및 정적 빌드 통과
   - 미사용 i18n 키 30개 정리
+- `P3-001` WebAssembly 양자화 — 🚧 진행 시작
+  - Rust 양자화 로직을 `quantizer_core.rs`로 분리
+  - 기존 Tauri command는 thin wrapper로 유지
+  - web 쪽도 `quantizerBackend` 인터페이스로 호출 경계 분리
+  - Rust 단위 테스트 3개 추가로 no-op / 팔레트 매핑 / block average 검증
+- `P3-004` 오프라인 PWA 지원 — ✅ 완료
+  - `+layout.svelte`에서 production web 환경만 서비스 워커 등록
+  - service worker에 prerendered shell precache + navigation offline fallback 추가
+  - manifest를 relative `start_url`/`scope`로 조정해 base path 배포 대응
+  - `test:e2e:pwa`로 offline revisit 스모크 추가
+- `P3-003` SVG 애니메이션 내보내기 — ✅ 완료
+  - GIF 프레임을 SMIL 기반 animated SVG로 export하는 `animatedFramesToSvg` 추가
+  - GIF controls에 animated SVG export 버튼/토스트 연결
+  - SVG/export/GIF controls 테스트 추가
 - 다음 우선순위
-  - `P3-001` WebAssembly 양자화 검토
-  - `P3-004` 오프라인 PWA 지원 검토
-  - `P3-003` SVG 애니메이션 내보내기 검토
+  - `P3-001` WASM 엔트리 / benchmark / golden image 비교
+  - `P3-002` 프리셋 클라우드 공유 설계
+  - `P3-005` AI 스타일 추천 검토
 
 ---
 

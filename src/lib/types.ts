@@ -22,6 +22,7 @@ export type GlitchType = "none" | "rgb_split" | "noise" | "wave" | "slice" | "vh
 export type RenderMode = "pixel_perfect" | "bilinear" | "hqx";
 export type DitherType = "none" | "floyd_steinberg" | "ordered" | "atkinson";
 export type CrtMode = "none" | "horizontal" | "vertical";
+export type QuantizationBackend = "js" | "wasm";
 
 export interface GlitchFilter {
   type: GlitchType;
@@ -79,6 +80,7 @@ export interface ImageWorkerMessage {
   glitchSeed?: number | null;
   ditherType?: DitherType;
   useOklab?: boolean;
+  quantizationBackend?: QuantizationBackend;
   customPaletteColors?: { r: number; g: number; b: number }[];
   effectLayers?: EffectLayer[];
 }
