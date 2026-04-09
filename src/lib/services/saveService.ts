@@ -15,6 +15,13 @@ export interface SaveOptions {
   filename?: string; // Custom filename (without extension)
 }
 
+export interface ImageExportInput {
+  processedImageSrc: string;
+  sourceCanvas?: HTMLCanvasElement | null;
+  cssFilter?: string;
+  filename?: string;
+}
+
 const MIME_MAP: Record<SaveFormat, string> = {
   png: "image/png",
   jpeg: "image/jpeg",
@@ -76,6 +83,7 @@ async function imageSrcToBlob(
  * Convert a canvas directly to Blob (avoids re-decoding from URL).
  */
 const BLOB_TIMEOUT_MS = 10_000;
+const DOWNLOAD_URL_REVOKE_DELAY_MS = 1_000;
 
 function canvasToBlob(
   canvas: HTMLCanvasElement,
@@ -100,6 +108,81 @@ function canvasToBlob(
   });
 }
 
+function resolveFilename(options: SaveOptions): string {
+  const ext = EXT_MAP[options.format];
+  return options.filename
+    ? `${options.filename}.${ext}`
+    : `retro_pixel_${Date.now()}.${ext}`;
+}
+
+async function buildBlobData(
+  processedImageSrc: string,
+  options: SaveOptions,
+  sourceCanvas?: HTMLCanvasElement | null,
+  cssFilter?: string,
+): Promise<Blob> {
+  if (cssFilter && sourceCanvas) {
+    const filtered = document.createElement("canvas");
+    filtered.width = sourceCanvas.width;
+    filtered.height = sourceCanvas.height;
+    const fctx = filtered.getContext("2d");
+    if (!fctx) throw new Error("Failed to get 2d context for filtered canvas");
+    fctx.filter = cssFilter;
+    fctx.drawImage(sourceCanvas, 0, 0);
+    return canvasToBlob(filtered, options.format, options.quality);
+  }
+
+  if (sourceCanvas) {
+    return canvasToBlob(sourceCanvas, options.format, options.quality);
+  }
+
+  return imageSrcToBlob(processedImageSrc, options.format, options.quality);
+}
+
+async function buildExportFile(
+  processedImageSrc: string,
+  options: SaveOptions,
+  sourceCanvas?: HTMLCanvasElement | null,
+  cssFilter?: string,
+): Promise<File> {
+  const blobData = await buildBlobData(processedImageSrc, options, sourceCanvas, cssFilter);
+  const mime = MIME_MAP[options.format];
+  return new File([blobData], resolveFilename(options), { type: mime });
+}
+
+function triggerBrowserDownload(file: File): string {
+  const url = URL.createObjectURL(file);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = file.name;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => {
+    URL.revokeObjectURL(url);
+  }, DOWNLOAD_URL_REVOKE_DELAY_MS);
+  return i18n.t('image_downloaded');
+}
+
+async function shareFiles(files: File[]): Promise<string> {
+  const canShareFiles = typeof navigator.share === 'function'
+    && (typeof navigator.canShare !== 'function' || navigator.canShare({ files }));
+
+  if (!canShareFiles) {
+    throw new Error(i18n.t('share_not_supported'));
+  }
+
+  try {
+    await navigator.share({ files });
+    return i18n.t('image_shared');
+  } catch (err) {
+    if (err instanceof Error && err.name === 'AbortError') {
+      return '';
+    }
+    throw err;
+  }
+}
+
 /**
  * Save the processed image.
  * @param sourceCanvas - Optional pre-rendered canvas to avoid re-decoding.
@@ -111,26 +194,9 @@ export async function saveImage(
   sourceCanvas?: HTMLCanvasElement | null,
   cssFilter?: string,
 ): Promise<string> {
-  let blobData: Blob;
-  if (cssFilter && sourceCanvas) {
-    // Re-draw with CSS filter applied via canvas.filter
-    const filtered = document.createElement("canvas");
-    filtered.width = sourceCanvas.width;
-    filtered.height = sourceCanvas.height;
-    const fctx = filtered.getContext("2d");
-    if (!fctx) throw new Error("Failed to get 2d context for filtered canvas");
-    fctx.filter = cssFilter;
-    fctx.drawImage(sourceCanvas, 0, 0);
-    blobData = await canvasToBlob(filtered, options.format, options.quality);
-  } else if (sourceCanvas) {
-    blobData = await canvasToBlob(sourceCanvas, options.format, options.quality);
-  } else {
-    blobData = await imageSrcToBlob(processedImageSrc, options.format, options.quality);
-  }
+  const blobData = await buildBlobData(processedImageSrc, options, sourceCanvas, cssFilter);
   const ext = EXT_MAP[options.format];
-  const filename = options.filename
-    ? `${options.filename}.${ext}`
-    : `retro_pixel_${Date.now()}.${ext}`;
+  const filename = resolveFilename(options);
 
   if (isTauri) {
     const { save } = await import("@tauri-apps/plugin-dialog");
@@ -150,31 +216,34 @@ export async function saveImage(
       }
     }
     return ""; // User cancelled
-  } else {
-    // Try Web Share API first (works reliably on mobile browsers)
-    const mime = MIME_MAP[options.format];
-    const file = new File([blobData], filename, { type: mime });
-    if (typeof navigator.share === 'function' && navigator.canShare?.({ files: [file] })) {
-      try {
-        await navigator.share({ files: [file] });
-        return i18n.t('image_downloaded');
-      } catch (err) {
-        // User cancelled share or share failed — fall through to download
-        if (err instanceof Error && err.name === 'AbortError') {
-          return ""; // User cancelled
-        }
-      }
-    }
-
-    // Fallback: programmatic <a> download (desktop browsers)
-    const url = URL.createObjectURL(blobData);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    return i18n.t('image_downloaded');
   }
+
+  const mime = MIME_MAP[options.format];
+  const file = new File([blobData], filename, { type: mime });
+  return triggerBrowserDownload(file);
+}
+
+export async function shareImage(
+  processedImageSrc: string,
+  options: SaveOptions = { format: "png", quality: 0.92 },
+  sourceCanvas?: HTMLCanvasElement | null,
+  cssFilter?: string,
+): Promise<string> {
+  const file = await buildExportFile(processedImageSrc, options, sourceCanvas, cssFilter);
+  return shareFiles([file]);
+}
+
+export async function shareImageFiles(
+  inputs: ImageExportInput[],
+  options: Omit<SaveOptions, 'filename'> = { format: "png", quality: 0.92 },
+): Promise<string> {
+  const files = await Promise.all(inputs.map((input) =>
+    buildExportFile(
+      input.processedImageSrc,
+      { ...options, filename: input.filename },
+      input.sourceCanvas,
+      input.cssFilter,
+    )
+  ));
+  return shareFiles(files);
 }

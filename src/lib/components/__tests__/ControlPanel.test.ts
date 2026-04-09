@@ -1,7 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { render, screen, cleanup } from '@testing-library/svelte';
-import { fireEvent } from '@testing-library/svelte';
+import { render, cleanup } from '@testing-library/svelte';
 
 // Mock $app/environment
 vi.mock('$app/environment', () => ({ browser: true }));
@@ -30,7 +29,6 @@ vi.mock('$lib/stores/customPaletteStore.svelte', () => ({
 
 import ControlPanel from '../editor/ControlPanel.svelte';
 import type { ProcessingSettings } from '$lib/types';
-import { DEFAULT_POST_FILTERS } from '$lib/types';
 
 afterEach(() => cleanup());
 
@@ -53,6 +51,7 @@ function defaultProps() {
     settings: makeSettings(),
     onChange: vi.fn(),
     onSave: vi.fn(),
+    onShare: vi.fn(),
     onOpenGallery: vi.fn(),
   };
 }
@@ -71,10 +70,14 @@ describe('ControlPanel', () => {
 
   it('renders save button', () => {
     const { container } = render(ControlPanel, { props: defaultProps() });
-    const saveBtn = container.querySelector('.save-btn, button[aria-label]');
-    // At minimum, there should be some button for save
     const allButtons = container.querySelectorAll('button');
     expect(allButtons.length).toBeGreaterThan(0);
+  });
+
+  it('renders a separate share button when provided', () => {
+    const { getByTestId } = render(ControlPanel, { props: defaultProps() });
+    expect(getByTestId('save-image-button')).toBeTruthy();
+    expect(getByTestId('share-image-button')).toBeTruthy();
   });
 
   it('shows pixel size control', () => {

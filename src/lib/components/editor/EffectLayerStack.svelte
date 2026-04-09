@@ -159,7 +159,14 @@
 <!-- CRT Scanline Mode -->
 <div class="section-label">{i18n.t('crt_scanlines')}:</div>
 <div class="field-row">
-  <select id="crt-effect" bind:value={settings.crtEffect} onchange={onChange}>
+  <select
+    id="crt-effect"
+    value={settings.crtEffect}
+    onchange={(e) => {
+      settings.crtEffect = (e.currentTarget as HTMLSelectElement).value as ProcessingSettings['crtEffect'];
+      onChange();
+    }}
+  >
     <option value="none">{i18n.t('crt_none')}</option>
     <option value="horizontal">{i18n.t('crt_horizontal')}</option>
     <option value="vertical">{i18n.t('crt_vertical')}</option>

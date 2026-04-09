@@ -5,6 +5,7 @@ import {
   createSharedPresetPayload,
   decodePresetShareInput,
   encodePresetShareCode,
+  normalizePresetShareInput,
   sanitizeImportedPresetSettings,
 } from './presetShare';
 
@@ -42,6 +43,14 @@ describe('presetShare', () => {
     const decoded = decodePresetShareInput(`https://example.com/retro/?preset=${code}`);
 
     expect(decoded.name).toBe('URL Share');
+  });
+
+  it('normalizes share input and returns the extracted code', () => {
+    const code = encodePresetShareCode(makeSettings(), 'Normalized Share');
+    const normalized = normalizePresetShareInput(`https://example.com/retro/?preset=${code}`);
+
+    expect(normalized.code).toBe(code);
+    expect(normalized.payload.name).toBe('Normalized Share');
   });
 
   it('builds a share URL with base path', () => {

@@ -10,20 +10,27 @@ vi.mock('$lib/i18n/index.svelte', () => ({
 }));
 
 const { saveImage } = await import('./saveService');
+const { shareImage, shareImageFiles } = await import('./saveService');
 
 describe('saveImage', () => {
   let appendChildSpy: ReturnType<typeof vi.spyOn>;
   let removeChildSpy: ReturnType<typeof vi.spyOn>;
   let clickSpy: ReturnType<typeof vi.fn<() => void>>;
   let revokeObjectURLSpy: ReturnType<typeof vi.spyOn>;
+  let navigatorShareSpy: ReturnType<typeof vi.fn>;
+  let navigatorCanShareSpy: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     vi.clearAllMocks();
     clickSpy = vi.fn();
+    navigatorShareSpy = vi.fn().mockResolvedValue(undefined);
+    navigatorCanShareSpy = vi.fn().mockReturnValue(true);
     appendChildSpy = vi.spyOn(document.body, 'appendChild').mockImplementation((node) => node);
     removeChildSpy = vi.spyOn(document.body, 'removeChild').mockImplementation((node) => node);
     revokeObjectURLSpy = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
     vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:mock-download');
+    Object.defineProperty(navigator, 'share', { configurable: true, value: navigatorShareSpy });
+    Object.defineProperty(navigator, 'canShare', { configurable: true, value: navigatorCanShareSpy });
 
     // Mock createElement for anchor tag
     const origCreate = document.createElement.bind(document);
@@ -50,6 +57,7 @@ describe('saveImage', () => {
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     vi.restoreAllMocks();
   });
 
@@ -59,6 +67,7 @@ describe('saveImage', () => {
     const result = await saveImage('blob:src', { format: 'png', quality: 0.92 }, mockCanvas);
 
     expect(clickSpy).toHaveBeenCalled();
+    expect(navigatorShareSpy).not.toHaveBeenCalled();
     expect(result).toBe('image_downloaded');
   });
 
@@ -90,10 +99,13 @@ describe('saveImage', () => {
   });
 
   it('revokes blob URL after download', async () => {
+    vi.useFakeTimers();
     const mockCanvas = document.createElement('canvas');
     await saveImage('blob:src', { format: 'png', quality: 0.92 }, mockCanvas);
+    await vi.runAllTimersAsync();
 
     expect(revokeObjectURLSpy).toHaveBeenCalledWith('blob:mock-download');
+    vi.useRealTimers();
   });
 
   it('cleans up anchor element after download', async () => {
@@ -102,5 +114,36 @@ describe('saveImage', () => {
 
     expect(appendChildSpy).toHaveBeenCalled();
     expect(removeChildSpy).toHaveBeenCalled();
+  });
+
+  it('shares a single image when explicitly requested', async () => {
+    const mockCanvas = document.createElement('canvas');
+    const result = await shareImage('blob:src', { format: 'png', quality: 0.92 }, mockCanvas);
+
+    expect(navigatorShareSpy).toHaveBeenCalledTimes(1);
+    expect(clickSpy).not.toHaveBeenCalled();
+    expect(result).toBe('image_shared');
+  });
+
+  it('shares multiple files when explicitly requested', async () => {
+    const firstCanvas = document.createElement('canvas');
+    const secondCanvas = document.createElement('canvas');
+    const result = await shareImageFiles([
+      { processedImageSrc: 'blob:1', filename: 'one', sourceCanvas: firstCanvas },
+      { processedImageSrc: 'blob:2', filename: 'two', sourceCanvas: secondCanvas },
+    ], { format: 'png', quality: 0.92 });
+
+    expect(navigatorShareSpy).toHaveBeenCalledTimes(1);
+    const sharedPayload = navigatorShareSpy.mock.calls[0][0] as { files: File[] };
+    expect(sharedPayload.files.map((file) => file.name)).toEqual(['one.png', 'two.png']);
+    expect(result).toBe('image_shared');
+  });
+
+  it('throws a translated error when file sharing is unsupported', async () => {
+    navigatorCanShareSpy.mockReturnValue(false);
+    const mockCanvas = document.createElement('canvas');
+
+    await expect(shareImage('blob:src', { format: 'png', quality: 0.92 }, mockCanvas))
+      .rejects.toThrow('share_not_supported');
   });
 });

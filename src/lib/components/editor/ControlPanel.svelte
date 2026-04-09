@@ -32,6 +32,7 @@
     saveQuality = 0.92,
     onChange,
     onSave,
+    onShare,
     onExportSvg,
     onOpenGallery,
     onFormatChange,
@@ -50,6 +51,7 @@
     saveQuality?: number;
     onChange: (settings: ProcessingSettings) => void;
     onSave: () => void;
+    onShare?: () => void;
     onExportSvg?: () => void;
     onOpenGallery: () => void;
     onFormatChange?: (format: SaveFormat) => void;
@@ -195,8 +197,11 @@
               min="1"
               max="10"
               step="1"
-              bind:value={settings.pixelSize}
-              oninput={update}
+              value={settings.pixelSize}
+              oninput={(e) => {
+                settings.pixelSize = Number((e.currentTarget as HTMLInputElement).value);
+                update();
+              }}
               class="slider-input"
               aria-label={i18n.t('pixel_size')}
             />
@@ -316,6 +321,17 @@
       >
         💾 {i18n.t('save_as')}
       </button>
+      {#if onShare}
+        <button
+          class="save-btn share-btn"
+          data-testid="share-image-button"
+          onclick={onShare}
+          disabled={!hasImage}
+          title={i18n.t('share_image')}
+        >
+          📤 {i18n.t('share_image')}
+        </button>
+      {/if}
       {#if onExportSvg}
         <button
           class="save-btn svg-btn"
@@ -607,6 +623,9 @@
   }
   .save-btn.save-ready {
     animation: save-pulse 2s ease-in-out 1;
+  }
+  .share-btn {
+    min-width: fit-content;
   }
   @keyframes save-pulse {
     0%, 100% { box-shadow: var(--w98-outset-thin); }

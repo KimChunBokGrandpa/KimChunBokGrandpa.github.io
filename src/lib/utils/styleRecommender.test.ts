@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { PALETTES } from './palettes';
+import { PRESETS } from './presets';
 import { analyzeImageStyle, recommendStyles } from './styleRecommender';
 
 function makeImageDataFromPalette(paletteId: keyof typeof PALETTES, width = 8, height = 8): ImageData {
@@ -33,8 +34,8 @@ describe('styleRecommender', () => {
     const recommendations = recommendStyles(makeImageDataFromPalette('dmg'), 3);
 
     expect(recommendations).toHaveLength(3);
-    expect(recommendations.some((item) => item.id === 'gameboy')).toBe(true);
-    expect(recommendations[0].reasonKey).toBeTruthy();
+    expect(recommendations[0].id).toBe('gameboy');
+    expect(recommendations[0].reasonKey).toBe('style_reason_palette_match');
   });
 
   it('recommends the matching neon preset for cyberpunk-like images', () => {
@@ -46,5 +47,12 @@ describe('styleRecommender', () => {
   it('does not include the original preset in style recommendations', () => {
     const recommendations = recommendStyles(makeImageDataFromPalette('win256'), 5);
     expect(recommendations.some((item) => item.id === 'original')).toBe(false);
+  });
+
+  it('keeps lower recommendation slots more diverse for broad palettes', () => {
+    const recommendations = recommendStyles(makeImageDataFromPalette('win256'), 3);
+    const paletteIds = recommendations.map((item) => PRESETS.find((preset) => preset.id === item.id)?.palette);
+
+    expect(new Set(paletteIds).size).toBeGreaterThan(1);
   });
 });

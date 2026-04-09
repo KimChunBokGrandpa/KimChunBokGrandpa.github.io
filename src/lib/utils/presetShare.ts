@@ -7,6 +7,11 @@ export interface SharedPresetPayload {
   settings: ProcessingSettings;
 }
 
+export interface NormalizedPresetShareInput {
+  code: string;
+  payload: SharedPresetPayload;
+}
+
 function generateId(): string {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
     return crypto.randomUUID();
@@ -122,7 +127,7 @@ export function buildPresetShareUrl(code: string, origin: string, basePath = '')
   return `${origin}${basePath || ''}/?preset=${encodeURIComponent(code)}`;
 }
 
-export function decodePresetShareInput(input: string): SharedPresetPayload {
+export function normalizePresetShareInput(input: string): NormalizedPresetShareInput {
   const trimmed = input.trim();
   if (!trimmed) throw new Error('Invalid preset share');
 
@@ -147,9 +152,16 @@ export function decodePresetShareInput(input: string): SharedPresetPayload {
 
   const payload = parsed as Record<string, unknown>;
   return {
-    kind: 'retro-pixel-preset',
-    version: 1,
-    name: typeof payload.name === 'string' && payload.name.trim() ? payload.name.trim() : 'Shared Preset',
-    settings: sanitizeImportedPresetSettings(payload.settings),
+    code,
+    payload: {
+      kind: 'retro-pixel-preset',
+      version: 1,
+      name: typeof payload.name === 'string' && payload.name.trim() ? payload.name.trim() : 'Shared Preset',
+      settings: sanitizeImportedPresetSettings(payload.settings),
+    },
   };
+}
+
+export function decodePresetShareInput(input: string): SharedPresetPayload {
+  return normalizePresetShareInput(input).payload;
 }

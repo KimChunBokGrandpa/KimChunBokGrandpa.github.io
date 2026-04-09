@@ -1,6 +1,7 @@
 import type { DitherType, QuantizationBackend } from '$lib/types';
 import { applyQuantization } from './quantizerBackend';
 import { PALETTES } from './palettes';
+import { getWasmQuantizationSupport, quantizeWithWasm, type WasmQuantizationFallbackReason } from './wasmQuantizer';
 
 export interface QuantizerBenchmarkOptions {
   width?: number;
@@ -22,6 +23,19 @@ export interface QuantizerBenchmarkResult {
   ditherType: DitherType;
   totalMs: number;
   avgMs: number;
+}
+
+export interface QuantizerBenchmarkMatrixScenario extends QuantizerBenchmarkOptions {
+  label: string;
+  useOklab?: boolean;
+}
+
+export interface QuantizerBenchmarkMatrixRow extends QuantizerBenchmarkResult {
+  label: string;
+  requestedBackend: QuantizationBackend;
+  actualBackend: QuantizationBackend;
+  useOklab: boolean;
+  fallbackReason?: WasmQuantizationFallbackReason | 'runtime_unavailable';
 }
 
 export function createBenchmarkImageData(width: number, height: number): ImageData {
@@ -89,4 +103,136 @@ export function benchmarkQuantization(options: QuantizerBenchmarkOptions = {}): 
     totalMs,
     avgMs: totalMs / iterations,
   };
+}
+
+export async function benchmarkQuantizationScenario(
+  scenario: QuantizerBenchmarkMatrixScenario,
+): Promise<QuantizerBenchmarkMatrixRow> {
+  const {
+    label,
+    width = 256,
+    height = 256,
+    pixelSize = 3,
+    iterations = 5,
+    palette = 'win256',
+    ditherType = 'ordered',
+    backend = 'js',
+    useOklab = false,
+  } = scenario;
+
+  const input = createBenchmarkImageData(width, height);
+  const customPaletteColors = PALETTES[palette];
+  const request = {
+    imageData: input,
+    pixelSize,
+    palette,
+    ditherType,
+    customPaletteColors,
+    useOklab,
+    backend,
+  } as const;
+
+  let actualBackend: QuantizationBackend = backend;
+  let fallbackReason: QuantizerBenchmarkMatrixRow['fallbackReason'];
+
+  if (backend === 'wasm') {
+    const support = getWasmQuantizationSupport({ ditherType, useOklab });
+    if (!support.supported) {
+      actualBackend = 'js';
+      fallbackReason = support.reason;
+      applyQuantization(request);
+    } else {
+      const warmup = await quantizeWithWasm({
+        imageData: input,
+        pixelSize,
+        ditherType,
+        customPaletteColors,
+        useOklab,
+      });
+      if (!warmup) {
+        actualBackend = 'js';
+        fallbackReason = 'runtime_unavailable';
+        applyQuantization(request);
+      }
+    }
+  } else {
+    applyQuantization(request);
+  }
+
+  if (backend === 'wasm' && actualBackend === 'wasm') {
+    const started = performance.now();
+    for (let i = 0; i < iterations; i++) {
+      await quantizeWithWasm({
+        imageData: input,
+        pixelSize,
+        ditherType,
+        customPaletteColors,
+        useOklab,
+      });
+    }
+    const totalMs = performance.now() - started;
+    return {
+      label,
+      backend,
+      requestedBackend: backend,
+      actualBackend,
+      fallbackReason,
+      width,
+      height,
+      pixelSize,
+      iterations,
+      palette,
+      ditherType,
+      useOklab,
+      totalMs,
+      avgMs: totalMs / iterations,
+    };
+  }
+
+  const started = performance.now();
+  for (let i = 0; i < iterations; i++) {
+    applyQuantization(request);
+  }
+  const totalMs = performance.now() - started;
+
+  return {
+    label,
+    backend,
+    requestedBackend: backend,
+    actualBackend,
+    fallbackReason,
+    width,
+    height,
+    pixelSize,
+    iterations,
+    palette,
+    ditherType,
+    useOklab,
+    totalMs,
+    avgMs: totalMs / iterations,
+  };
+}
+
+export async function benchmarkQuantizationMatrix(
+  scenarios: QuantizerBenchmarkMatrixScenario[],
+): Promise<QuantizerBenchmarkMatrixRow[]> {
+  const rows: QuantizerBenchmarkMatrixRow[] = [];
+  for (const scenario of scenarios) {
+    rows.push(await benchmarkQuantizationScenario(scenario));
+  }
+  return rows;
+}
+
+export function formatQuantizerBenchmarkTable(rows: QuantizerBenchmarkMatrixRow[]): string {
+  const header = [
+    '| Scenario | Requested | Actual | Dither | Oklab | Avg ms | Notes |',
+    '|---|---|---|---|---|---:|---|',
+  ];
+
+  const body = rows.map((row) => {
+    const note = row.fallbackReason ? `fallback: ${row.fallbackReason}` : 'native path';
+    return `| ${row.label} | ${row.requestedBackend} | ${row.actualBackend} | ${row.ditherType} | ${row.useOklab ? 'yes' : 'no'} | ${row.avgMs.toFixed(2)} | ${note} |`;
+  });
+
+  return [...header, ...body].join('\n');
 }

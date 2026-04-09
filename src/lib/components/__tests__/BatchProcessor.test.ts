@@ -1,6 +1,11 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { render, cleanup } from '@testing-library/svelte';
+import { render, cleanup, fireEvent, waitFor } from '@testing-library/svelte';
+
+const { saveImageMock, shareImageFilesMock } = vi.hoisted(() => ({
+  saveImageMock: vi.fn().mockResolvedValue('saved'),
+  shareImageFilesMock: vi.fn().mockResolvedValue('image_shared'),
+}));
 
 vi.mock('$app/environment', () => ({ browser: true }));
 
@@ -18,7 +23,8 @@ vi.mock('$lib/services/imageProcessor', () => ({
 }));
 
 vi.mock('$lib/services/saveService', () => ({
-  saveImage: vi.fn().mockResolvedValue('saved'),
+  saveImage: saveImageMock,
+  shareImageFiles: shareImageFilesMock,
 }));
 
 vi.mock('$lib/utils/palettes', () => ({
@@ -34,7 +40,13 @@ vi.mock('$lib/stores/customPaletteStore.svelte', () => ({
 import BatchProcessor from '../media/BatchProcessor.svelte';
 import type { ProcessingSettings } from '$lib/types';
 
-afterEach(() => cleanup());
+afterEach(() => {
+  cleanup();
+  vi.useRealTimers();
+  vi.restoreAllMocks();
+  saveImageMock.mockClear();
+  shareImageFilesMock.mockClear();
+});
 
 function makeSettings(): ProcessingSettings {
   return {
@@ -76,5 +88,33 @@ describe('BatchProcessor', () => {
     const { container } = render(BatchProcessor, { props: defaultProps() });
     // Should show empty state or just the drop zone
     expect(container.innerHTML).toBeTruthy();
+  });
+
+  it('saves every processed batch result with unique filenames', async () => {
+    vi.useFakeTimers();
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      blob: async () => new Blob(['processed'], { type: 'image/png' }),
+    } as Response);
+
+    const { container, getByText } = render(BatchProcessor, { props: defaultProps() });
+    const input = container.querySelector('input[type="file"]') as HTMLInputElement;
+    const fileA = new File(['a'], 'sprite.png', { type: 'image/png' });
+    const fileB = new File(['b'], 'sprite.webp', { type: 'image/webp' });
+
+    await fireEvent.change(input, { target: { files: [fileA, fileB] } });
+    await fireEvent.click(getByText(/process_all/));
+
+    await waitFor(() => {
+      expect(container.textContent).toContain('2 done');
+    });
+
+    await fireEvent.click(getByText(/save_all/));
+    await vi.runAllTimersAsync();
+
+    expect(saveImageMock).toHaveBeenCalledTimes(2);
+    expect(saveImageMock.mock.calls[0][1]).toMatchObject({ filename: 'retro_sprite' });
+    expect(saveImageMock.mock.calls[1][1]).toMatchObject({ filename: 'retro_sprite_2' });
+
+    vi.useRealTimers();
   });
 });

@@ -62,8 +62,8 @@ describe('applyCrtEffect', () => {
     vi.spyOn(document, 'createElement').mockImplementation((tag: string) => {
       const el = origCreate(tag);
       if (tag === 'canvas') {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        vi.spyOn(el as any, 'getContext').mockReturnValue(fakeCtx as unknown as CanvasRenderingContext2D);
+        const canvasEl = el as HTMLCanvasElement;
+        vi.spyOn(canvasEl, 'getContext').mockReturnValue(fakeCtx as unknown as CanvasRenderingContext2D);
       }
       return el;
     });

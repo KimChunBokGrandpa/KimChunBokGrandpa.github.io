@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { browser } from '$app/environment';
   import { onDestroy } from 'svelte';
   import Win98Window from '$lib/components/window/Win98Window.svelte';
   import ControlPanel from '$lib/components/editor/ControlPanel.svelte';
@@ -23,6 +24,8 @@
   import { i18n } from '$lib/i18n/index.svelte';
   import { getWindowTitle } from '$lib/stores/windowStore.svelte';
   import { getMobileWindowSlot, getNextMobileFocusId } from '$lib/utils/mobileWindowLayout';
+  import { applyCloudPresetByShortId } from '$lib/services/cloudPresetService';
+  import { importSharedPreset } from '$lib/stores/sharedPresetStore.svelte';
 
   // Register i18n translator for palette names
   registerPaletteTranslator((key) => i18n.t(key));
@@ -188,6 +191,70 @@
   let saveQuality = $derived(ip.saveQuality);
   let processingProgress = $derived(ip.processingProgress);
   let processingStartTime = $derived(ip.processingStartTime);
+  let handledIncomingSharedPreset = $state(false);
+  let handledIncomingCloudPreset = $state(false);
+
+  function consumeIncomingSharedPreset() {
+    if (!browser || handledIncomingSharedPreset) return;
+    handledIncomingSharedPreset = true;
+
+    const url = new URL(window.location.href);
+    const presetParam = url.searchParams.get('preset');
+    if (!presetParam) return;
+
+    try {
+      const sharedPreset = importSharedPreset(url.toString());
+      ip.updateSettings({
+        ...sharedPreset.settings,
+        glitchFilters: sharedPreset.settings.glitchFilters.map((filter) => ({ ...filter })),
+        effectLayers: sharedPreset.settings.effectLayers?.map((layer) => ({ ...layer })) ?? [],
+      });
+      enqueueToast(i18n.t('preset_share_imported'));
+      url.searchParams.delete('preset');
+      window.history.replaceState({}, '', url.toString());
+      wm.openWindow('settings');
+    } catch {
+      enqueueToast(i18n.t('preset_error_invalid_share'), 'error');
+      url.searchParams.delete('preset');
+      window.history.replaceState({}, '', url.toString());
+    }
+  }
+
+  $effect(() => {
+    consumeIncomingSharedPreset();
+  });
+
+  async function consumeIncomingCloudPreset() {
+    if (!browser || handledIncomingCloudPreset) return;
+    handledIncomingCloudPreset = true;
+
+    const url = new URL(window.location.href);
+    const cloudPresetParam = url.searchParams.get('cloudPreset');
+    if (!cloudPresetParam) return;
+
+    try {
+      const cloudPreset = await applyCloudPresetByShortId(cloudPresetParam);
+      if (!cloudPreset) throw new Error('missing');
+
+      ip.updateSettings({
+        ...cloudPreset.settings,
+        glitchFilters: cloudPreset.settings.glitchFilters.map((filter) => ({ ...filter })),
+        effectLayers: cloudPreset.settings.effectLayers?.map((layer) => ({ ...layer })) ?? [],
+      });
+      enqueueToast(i18n.t('cloud_preset_applied'));
+      url.searchParams.delete('cloudPreset');
+      window.history.replaceState({}, '', url.toString());
+      wm.openWindow('settings');
+    } catch {
+      enqueueToast(i18n.t('cloud_preset_not_found'), 'error');
+      url.searchParams.delete('cloudPreset');
+      window.history.replaceState({}, '', url.toString());
+    }
+  }
+
+  $effect(() => {
+    void consumeIncomingCloudPreset();
+  });
 
   // ─── Event Handlers ───
   function handleImageSelected(file: File) {
@@ -216,6 +283,16 @@
     } catch (err) {
       console.error('Failed to save file:', err);
       showDialog(i18n.t('save_error'), i18n.t('error'));
+    }
+  }
+
+  async function handleShare() {
+    try {
+      const message = await ip.share();
+      if (message) enqueueToast(message);
+    } catch (err) {
+      console.error('Failed to share file:', err);
+      showDialog(err instanceof Error ? err.message : i18n.t('save_error'), i18n.t('error'));
     }
   }
 
@@ -358,6 +435,7 @@
           hasProcessedImage={!!processedImageSrc && !isProcessing}
           onChange={handleSettingsChange}
           onSave={handleSave}
+          onShare={handleShare}
           onExportSvg={handleExportSvg}
           onOpenGallery={() => { queueMicrotask(() => wm.openWindow('gallery')); }}
           onFormatChange={handleFormatChange}
@@ -524,6 +602,7 @@
         saveFormat={saveFormat}
         saveQuality={saveQuality}
         onError={(msg) => showDialog(msg, 'Error')}
+        onMessage={(msg) => enqueueToast(msg)}
         onItemClick={(file) => {
           handleImageSelected(file);
           wm.openWindow('preview');

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { PALETTE_THEMES, PALETTE_GROUPS, PALETTES, getPaletteName } from '$lib/utils/palettes';
-  import type { RGB, PaletteTheme } from '$lib/utils/palettes';
+  import type { RGB } from '$lib/utils/palettes';
   import { customPaletteStore } from '$lib/stores/customPaletteStore.svelte';
   import CustomPaletteEditor from './CustomPaletteEditor.svelte';
   import { parsePaletteFile, exportAsHex, exportAsGpl, downloadFile } from '$lib/utils/paletteIO';

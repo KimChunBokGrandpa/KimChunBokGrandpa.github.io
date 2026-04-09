@@ -4,11 +4,25 @@
   import type { EffectLayer, ProcessingSettings } from '$lib/types';
   import { i18n } from '$lib/i18n/index.svelte';
   import { getCustomPresets, addCustomPreset, removeCustomPreset, type CustomPreset } from '$lib/stores/customPresetStore.svelte';
+  import {
+    buildCloudPresetShareUrl,
+    listOwnCloudPresets,
+    listPublicCloudPresets,
+    publishCloudPreset,
+    type CloudPresetRecord,
+    type CloudPresetVisibility,
+  } from '$lib/services/cloudPresetService';
+  import {
+    getSharedPresets,
+    importSharedPreset,
+    markSharedPresetApplied,
+    removeSharedPreset,
+    type SharedPresetRecord,
+  } from '$lib/stores/sharedPresetStore.svelte';
   import { getPresetPreview } from '$lib/utils/presetPreview';
   import { recommendStylesFromImage, type StyleRecommendation } from '$lib/utils/styleRecommender';
   import {
     buildPresetShareUrl,
-    decodePresetShareInput,
     encodePresetShareCode,
     sanitizeImportedPresetSettings,
   } from '$lib/utils/presetShare';
@@ -87,9 +101,15 @@
   let showSavePreset = $state(false);
   let newPresetName = $state('');
   let customPresets = $derived(getCustomPresets());
+  let sharedPresets = $derived(getSharedPresets());
   let presetPreviews = $state<Record<string, string>>({});
+  let cloudPresets = $state<CloudPresetRecord[]>([]);
+  let communityPresets = $state<CloudPresetRecord[]>([]);
   let styleRecommendations = $state<StyleRecommendation[]>([]);
   let isRecommendingStyles = $state(false);
+  let isPublishingCloudPreset = $state(false);
+  let cloudPublishVisible = $state(false);
+  let cloudPublishName = $state('');
   let styleRecommendationRequestId = 0;
 
   async function loadPreview(id: string, previewSource: ProcessingSettings, name?: string) {
@@ -122,6 +142,22 @@
     customPresets.forEach((preset) => {
       void loadPreview(preset.id, preset.settings, preset.name);
     });
+
+    sharedPresets.forEach((preset) => {
+      void loadPreview(preset.id, preset.settings, preset.name);
+    });
+
+    cloudPresets.forEach((preset) => {
+      void loadPreview(preset.id, preset.settings, preset.name);
+    });
+
+    communityPresets.forEach((preset) => {
+      void loadPreview(preset.id, preset.settings, preset.name);
+    });
+  });
+
+  $effect(() => {
+    void refreshCloudPresets();
   });
 
   $effect(() => {
@@ -161,6 +197,29 @@
       glitchFilters: preset.settings.glitchFilters.map(f => ({ ...f })),
       effectLayers: preset.settings.effectLayers?.map(l => ({ ...l })) || migrateToEffectLayers(preset.settings),
     };
+    onChange();
+  }
+
+  function applySharedPresetRecord(preset: SharedPresetRecord) {
+    const refreshed = markSharedPresetApplied(preset.id) ?? preset;
+    settings = {
+      ...refreshed.settings,
+      glitchFilters: refreshed.settings.glitchFilters.map((filter) => ({ ...filter })),
+      effectLayers: refreshed.settings.effectLayers?.map((layer) => ({ ...layer })) || migrateToEffectLayers(refreshed.settings),
+    };
+    newPresetName = refreshed.name;
+    shareStatus = i18n.t('preset_share_imported');
+    onChange();
+  }
+
+  function applyCloudPresetRecord(preset: CloudPresetRecord) {
+    settings = {
+      ...preset.settings,
+      glitchFilters: preset.settings.glitchFilters.map((filter) => ({ ...filter })),
+      effectLayers: preset.settings.effectLayers?.map((layer) => ({ ...layer })) || migrateToEffectLayers(preset.settings),
+    };
+    newPresetName = preset.name;
+    shareStatus = i18n.t('cloud_preset_applied');
     onChange();
   }
 
@@ -235,10 +294,53 @@
     }
   }
 
+  async function refreshCloudPresets() {
+    const [own, community] = await Promise.all([
+      listOwnCloudPresets(),
+      listPublicCloudPresets(),
+    ]);
+    cloudPresets = own;
+    communityPresets = community;
+  }
+
+  async function publishToCloud(visibility: CloudPresetVisibility) {
+    if (isPublishingCloudPreset) return;
+    isPublishingCloudPreset = true;
+    try {
+      const record = await publishCloudPreset({
+        name: cloudPublishName.trim() || newPresetName.trim() || i18n.t('custom_preset'),
+        settings,
+        visibility,
+      });
+      const shareUrl = buildCloudPresetShareUrl(record.shortId, window.location.origin, shareBasePath);
+      cloudPublishVisible = false;
+      cloudPublishName = record.name;
+      await refreshCloudPresets();
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+      } catch {
+        shareInput = shareUrl;
+        cloudPublishVisible = true;
+      }
+      shareStatus = visibility === 'public'
+        ? i18n.t('cloud_publish_public_success')
+        : i18n.t('cloud_publish_unlisted_success');
+    } catch {
+      shareStatus = i18n.t('cloud_publish_failed');
+      onError?.(i18n.t('cloud_publish_failed'));
+    } finally {
+      isPublishingCloudPreset = false;
+    }
+  }
+
   function applySharedPreset() {
     try {
-      const shared = decodePresetShareInput(shareInput);
-      settings = shared.settings;
+      const shared = importSharedPreset(shareInput);
+      settings = {
+        ...shared.settings,
+        glitchFilters: shared.settings.glitchFilters.map((filter) => ({ ...filter })),
+        effectLayers: shared.settings.effectLayers?.map((layer) => ({ ...layer })) || migrateToEffectLayers(shared.settings),
+      };
       newPresetName = shared.name;
       shareInput = '';
       shareImportVisible = false;
@@ -285,7 +387,7 @@
     <div class="section-label">
       ✨ {i18n.t('recommended_styles')}
       {#if isRecommendingStyles}
-        <span class="recommend-loading"> · {i18n.t('loading')}</span>
+        <span class="recommend-loading" data-testid="style-recommendations-loading"> · {i18n.t('loading')}</span>
       {/if}
     </div>
     {#if styleRecommendations.length > 0}
@@ -322,6 +424,7 @@
       <button
         class:preset-active={matchesPreset(preset)}
         class="preset-btn preset-card"
+        data-testid={`preset-${preset.id}`}
         onclick={() => applyPreset(preset)}
         title="{i18n.t('pixel_size')}: {preset.pixelSize}px | {i18n.t('palette')}: {getPaletteName(preset.palette)} | {i18n.t('dithering')}: {preset.ditherType}{preset.crtEffect !== 'none' ? ` | CRT (${preset.crtEffect})` : ''}{preset.glitchFilters.length > 0 ? ` | ${preset.glitchFilters.length} effects` : ''}"
       >
@@ -354,6 +457,12 @@
       onclick={() => { shareImportVisible = !shareImportVisible; }}
       title={i18n.t('import_share_link')}
     >🧾 {i18n.t('paste_btn')}</button>
+    <button
+      class="preset-share-btn"
+      data-testid="preset-cloud-open-publish"
+      onclick={() => { cloudPublishVisible = !cloudPublishVisible; cloudPublishName = newPresetName || i18n.t('custom_preset'); }}
+      title={i18n.t('publish_cloud_preset')}
+    >☁ {i18n.t('publish_btn')}</button>
     <input bind:this={presetFileInput} type="file" accept=".json" onchange={handlePresetFile} style="display:none" />
   </div>
   {#if shareImportVisible}
@@ -381,6 +490,121 @@
   {/if}
   {#if shareStatus}
     <div class="section-label">{shareStatus}</div>
+  {/if}
+
+  {#if cloudPublishVisible}
+    <div class="field-row preset-share-row">
+      <input
+        type="text"
+        class="preset-name-input"
+        data-testid="preset-cloud-name-input"
+        bind:value={cloudPublishName}
+        placeholder={i18n.t('preset_name_placeholder')}
+        onkeydown={(e) => {
+          if (e.key === 'Enter') void publishToCloud('public');
+          if (e.key === 'Escape') cloudPublishVisible = false;
+        }}
+      />
+      <button
+        class="preset-share-btn"
+        data-testid="preset-cloud-publish-public"
+        onclick={() => void publishToCloud('public')}
+        disabled={isPublishingCloudPreset}
+        aria-label={i18n.t('publish_public')}
+      >🌐</button>
+      <button
+        class="preset-share-btn"
+        data-testid="preset-cloud-publish-unlisted"
+        onclick={() => void publishToCloud('unlisted')}
+        disabled={isPublishingCloudPreset}
+        aria-label={i18n.t('publish_unlisted')}
+      >🔒</button>
+      <button
+        class="preset-share-btn"
+        onclick={() => { cloudPublishVisible = false; }}
+        aria-label={i18n.t('cancel')}
+      >✕</button>
+    </div>
+  {/if}
+
+  {#if communityPresets.length > 0}
+    <div class="section-label">{i18n.t('community_presets')}:</div>
+    <div class="field-row preset-grid" data-testid="community-presets">
+      {#each communityPresets as preset}
+        <button
+          class="preset-btn custom-preset-btn"
+          onclick={() => applyCloudPresetRecord(preset)}
+          title={preset.name}
+        >
+          {#if presetPreviews[preset.id]}
+            <img
+              class="preset-card-thumb custom-preset-thumb"
+              src={presetPreviews[preset.id]}
+              alt={preset.name}
+              draggable="false"
+            />
+          {/if}
+          🌐 {preset.name}
+          <span class="preset-card-info">{preset.applyCount} {i18n.t('uses_label')}</span>
+        </button>
+      {/each}
+    </div>
+  {/if}
+
+  {#if cloudPresets.length > 0}
+    <div class="section-label">{i18n.t('published_presets')}:</div>
+    <div class="field-row preset-grid" data-testid="published-cloud-presets">
+      {#each cloudPresets as preset}
+        <button
+          class="preset-btn custom-preset-btn"
+          onclick={() => applyCloudPresetRecord(preset)}
+          title={preset.name}
+        >
+          {#if presetPreviews[preset.id]}
+            <img
+              class="preset-card-thumb custom-preset-thumb"
+              src={presetPreviews[preset.id]}
+              alt={preset.name}
+              draggable="false"
+            />
+          {/if}
+          {preset.visibility === 'public' ? '☁️' : '🔒'} {preset.name}
+          <span class="preset-card-info">{preset.shortId}</span>
+        </button>
+      {/each}
+    </div>
+  {/if}
+
+  {#if sharedPresets.length > 0}
+    <div class="section-label">{i18n.t('shared_presets')}:</div>
+    <div class="field-row preset-grid" data-testid="shared-presets">
+      {#each sharedPresets as preset}
+        <button
+          class="preset-btn custom-preset-btn"
+          onclick={() => applySharedPresetRecord(preset)}
+          title={preset.name}
+        >
+          {#if presetPreviews[preset.id]}
+            <img
+              class="preset-card-thumb custom-preset-thumb"
+              src={presetPreviews[preset.id]}
+              alt={preset.name}
+              draggable="false"
+            />
+          {/if}
+          🔗 {preset.name}
+          <span class="preset-card-info">{new Date(preset.lastAppliedAt).toLocaleDateString()}</span>
+          <!-- svelte-ignore a11y_no_static_element_interactions -->
+          <span
+            class="preset-delete"
+            role="button"
+            tabindex="0"
+            onclick={(e) => { e.stopPropagation(); removeSharedPreset(preset.id); }}
+            onkeydown={(e) => { e.stopPropagation(); if (e.key === 'Enter') removeSharedPreset(preset.id); }}
+          >×</span>
+        </button>
+      {/each}
+    </div>
   {/if}
 
   <!-- Custom Presets -->

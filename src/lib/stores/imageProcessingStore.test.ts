@@ -18,6 +18,7 @@ vi.mock('$lib/services/imageProcessor', () => ({
 
 vi.mock('$lib/services/saveService', () => ({
   saveImage: vi.fn().mockResolvedValue('saved-file.png'),
+  shareImage: vi.fn().mockResolvedValue('shared-file.png'),
 }));
 
 vi.mock('$lib/utils/crtRenderer', () => ({
@@ -48,7 +49,6 @@ vi.mock('$lib/stores/gifPlaybackManager.svelte', () => ({
 }));
 
 // Mock URL.createObjectURL / revokeObjectURL
-const originalURL = globalThis.URL;
 let objectUrlCounter = 0;
 globalThis.URL.createObjectURL = vi.fn(() => `blob:mock-${++objectUrlCounter}`);
 globalThis.URL.revokeObjectURL = vi.fn();

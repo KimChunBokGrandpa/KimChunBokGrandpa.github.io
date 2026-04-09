@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, afterEach } from 'vitest';
-import { render, cleanup } from '@testing-library/svelte';
+import { render, cleanup, fireEvent } from '@testing-library/svelte';
 import CompareView from '../editor/CompareView.svelte';
 
 afterEach(() => cleanup());
@@ -89,6 +89,21 @@ describe('CompareView', () => {
       });
       const value = container.querySelector('.onion-value');
       expect(value?.textContent).toBe('50%');
+    });
+
+    it('updates overlay opacity and label when slider changes', async () => {
+      const { container } = render(CompareView, {
+        props: { ...defaultProps, variant: 'onion' },
+      });
+
+      const slider = container.querySelector('.onion-slider') as HTMLInputElement;
+      const overlay = container.querySelector('.onion-overlay') as HTMLImageElement;
+      const value = container.querySelector('.onion-value');
+
+      await fireEvent.input(slider, { target: { value: '0.8' } });
+
+      expect(overlay.style.opacity).toBe('0.8');
+      expect(value?.textContent).toBe('80%');
     });
 
     it('applies postFilterCss to overlay image', () => {

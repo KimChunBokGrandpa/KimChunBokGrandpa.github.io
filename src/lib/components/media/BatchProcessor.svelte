@@ -5,7 +5,7 @@
    */
 
   import { processorService } from '$lib/services/imageProcessor';
-  import { saveImage } from '$lib/services/saveService';
+  import { saveImage, shareImageFiles } from '$lib/services/saveService';
   import { i18n } from '$lib/i18n/index.svelte';
   import { getPaletteName } from '$lib/utils/palettes';
   import type { ProcessingSettings } from '$lib/types';
@@ -16,12 +16,14 @@
     saveFormat = 'png' as SaveFormat,
     saveQuality = 0.92,
     onError,
+    onMessage,
     onItemClick,
   }: {
     settings: ProcessingSettings;
     saveFormat?: SaveFormat;
     saveQuality?: number;
     onError?: (msg: string) => void;
+    onMessage?: (msg: string) => void;
     onItemClick?: (file: File) => void;
   } = $props();
 
@@ -39,6 +41,7 @@
   let items = $state<BatchItem[]>([]);
   let isDragging = $state(false);
   let isProcessingAll = $state(false);
+  let isSharingAll = $state(false);
   let isPaused = $state(false);
 
   const ACCEPTED_TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/bmp', 'image/webp'];
@@ -159,7 +162,17 @@
 
   // ─── Save All ───
   /** Delay between downloads to prevent browser throttling of rapid a.click() */
-  const DOWNLOAD_DELAY_MS = 300;
+  const DOWNLOAD_DELAY_MS = 500;
+
+  function createBatchFilenameBuilder() {
+    const seen = new Map<string, number>();
+    return (name: string) => {
+      const baseName = name.replace(/\.[^.]+$/, '');
+      const nextCount = (seen.get(baseName) ?? 0) + 1;
+      seen.set(baseName, nextCount);
+      return nextCount === 1 ? `retro_${baseName}` : `retro_${baseName}_${nextCount}`;
+    };
+  }
 
   async function saveAll() {
     const doneItems = items.filter(i => i.status === 'done' && i.resultUrl);
@@ -168,15 +181,14 @@
       return;
     }
 
+    const buildFilename = createBatchFilenameBuilder();
     for (let i = 0; i < doneItems.length; i++) {
       const item = doneItems[i];
       try {
-        // Strip extension from original filename for custom naming
-        const baseName = item.name.replace(/\.[^.]+$/, '');
         await saveImage(item.resultUrl!, {
           format: saveFormat,
           quality: saveQuality,
-          filename: `retro_${baseName}`,
+          filename: buildFilename(item.name),
         });
         // Delay between downloads so the browser processes each one
         if (i < doneItems.length - 1) {
@@ -185,6 +197,35 @@
       } catch (err) {
         console.error(`Failed to save ${item.name}:`, err);
       }
+    }
+  }
+
+  async function shareAll() {
+    const doneItems = items.filter(i => i.status === 'done' && i.resultUrl);
+    if (doneItems.length === 0) {
+      onError?.(i18n.t('no_processed'));
+      return;
+    }
+
+    isSharingAll = true;
+    try {
+      const buildFilename = createBatchFilenameBuilder();
+      const message = await shareImageFiles(
+        doneItems.map((item) => ({
+          processedImageSrc: item.resultUrl!,
+          filename: buildFilename(item.name),
+        })),
+        {
+          format: saveFormat,
+          quality: saveQuality,
+        },
+      );
+      if (!message) return;
+      onMessage?.(message);
+    } catch (err) {
+      onError?.(err instanceof Error ? err.message : i18n.t('save_error'));
+    } finally {
+      isSharingAll = false;
     }
   }
 
@@ -315,8 +356,11 @@
           ▶️ {i18n.t('process_all')}
         </button>
       {/if}
-      <button onclick={saveAll} disabled={doneCount === 0}>
+      <button onclick={saveAll} disabled={doneCount === 0 || isSharingAll}>
         💾 {i18n.t('save_all')}
+      </button>
+      <button onclick={shareAll} disabled={doneCount === 0 || isSharingAll}>
+        📤 {i18n.t('share_all')}
       </button>
       <button onclick={clearAll} disabled={items.length === 0 || isProcessingAll}>
         🗑️ {i18n.t('clear')}

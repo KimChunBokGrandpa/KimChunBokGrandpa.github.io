@@ -1,6 +1,6 @@
 import type { TranslationKey } from '$lib/i18n/en';
 import { PRESETS } from '$lib/utils/presets';
-import { recommendPalettes } from './paletteRecommender';
+import { recommendPalettes, type PaletteRecommendation } from './paletteRecommender';
 
 export interface StyleRecommendation {
   id: string;
@@ -8,11 +8,21 @@ export interface StyleRecommendation {
   reasonKey: TranslationKey;
 }
 
+interface StyleRecommendationCandidate extends StyleRecommendation {
+  paletteId: string;
+}
+
 interface ImageStyleProfile {
   brightness: number;
   contrast: number;
   saturation: number;
   edgeDensity: number;
+}
+
+interface PaletteRecommendationStats {
+  rankMap: Map<string, number>;
+  strengthMap: Map<string, number>;
+  topPaletteId: string | null;
 }
 
 function clamp01(value: number): number {
@@ -91,10 +101,57 @@ export function analyzeImageStyle(imageData: ImageData): ImageStyleProfile {
   };
 }
 
-function paletteAffinity(paletteId: string, rankMap: Map<string, number>): number {
-  const rank = rankMap.get(paletteId);
+function buildPaletteRecommendationStats(
+  recommendations: PaletteRecommendation[],
+): PaletteRecommendationStats {
+  const rankMap = new Map<string, number>();
+  const strengthMap = new Map<string, number>();
+
+  recommendations.forEach((recommendation, index) => {
+    rankMap.set(recommendation.id, index);
+  });
+
+  if (recommendations.length === 0) {
+    return {
+      rankMap,
+      strengthMap,
+      topPaletteId: null,
+    };
+  }
+
+  const bestScore = recommendations[0].score;
+  const worstScore = recommendations[recommendations.length - 1].score;
+  const span = Math.max(1e-9, worstScore - bestScore);
+
+  recommendations.forEach((recommendation) => {
+    const closeness = clamp01(1 - (recommendation.score - bestScore) / span);
+    strengthMap.set(recommendation.id, closeness);
+  });
+
+  return {
+    rankMap,
+    strengthMap,
+    topPaletteId: recommendations[0]?.id ?? null,
+  };
+}
+
+function paletteAffinity(paletteId: string, stats: PaletteRecommendationStats): number {
+  const rank = stats.rankMap.get(paletteId);
   if (rank === undefined) return 0;
-  return Math.max(0, 1 - rank * 0.16);
+
+  const rankAffinity = Math.max(0, 1 - rank * 0.16);
+  const closeness = stats.strengthMap.get(paletteId) ?? 0;
+  return rankAffinity * 0.45 + closeness * 0.85;
+}
+
+function paletteMatchBonus(paletteId: string, stats: PaletteRecommendationStats): number {
+  const rank = stats.rankMap.get(paletteId);
+  if (rank === undefined) return 0;
+
+  const closeness = stats.strengthMap.get(paletteId) ?? 0;
+  if (rank === 0) return 0.55 + closeness * 0.85;
+  if (rank <= 2) return 0.15 + closeness * 0.35;
+  return closeness * 0.12;
 }
 
 function scorePreset(presetId: string, profile: ImageStyleProfile): { score: number; reasonKey: TranslationKey } {
@@ -134,7 +191,8 @@ function scorePreset(presetId: string, profile: ImageStyleProfile): { score: num
       };
     case 'cyberpunk':
       return {
-        score: 0.95 * vivid + 0.55 * darkScene + 0.25 * contrasty,
+        // Neon presets should win more decisively for dark, vivid scenes.
+        score: 1.35 * vivid + 0.95 * darkScene + 0.35 * contrasty + 0.1 * saturated,
         reasonKey: 'style_reason_neon',
       };
     case 'glitch_art':
@@ -165,25 +223,73 @@ function scorePreset(presetId: string, profile: ImageStyleProfile): { score: num
   }
 }
 
+function pickReasonKey(
+  paletteId: string,
+  heuristicReasonKey: TranslationKey,
+  stats: PaletteRecommendationStats,
+): TranslationKey {
+  const closeness = stats.strengthMap.get(paletteId) ?? 0;
+  if (stats.topPaletteId === paletteId && closeness >= 0.82) {
+    return 'style_reason_palette_match';
+  }
+  return heuristicReasonKey;
+}
+
+function selectDiverseRecommendations(
+  candidates: StyleRecommendationCandidate[],
+  topN: number,
+): StyleRecommendation[] {
+  if (candidates.length <= 1) {
+    return candidates.slice(0, topN).map(({ paletteId: _paletteId, ...recommendation }) => recommendation);
+  }
+
+  const remaining = [...candidates].sort((a, b) => b.score - a.score);
+  const selected: StyleRecommendationCandidate[] = [];
+
+  while (remaining.length > 0 && selected.length < topN) {
+    const nextIndex = selected.length === 0
+      ? 0
+      : remaining.reduce((bestIndex, candidate, index) => {
+          const samePaletteCount = selected.filter((item) => item.paletteId === candidate.paletteId).length;
+          const sameReasonCount = selected.filter((item) => item.reasonKey === candidate.reasonKey).length;
+          const penalty = samePaletteCount * 0.38 + sameReasonCount * 0.08;
+          const adjustedScore = candidate.score - penalty;
+          const best = remaining[bestIndex];
+          const bestSamePaletteCount = selected.filter((item) => item.paletteId === best.paletteId).length;
+          const bestSameReasonCount = selected.filter((item) => item.reasonKey === best.reasonKey).length;
+          const bestAdjustedScore = best.score - (bestSamePaletteCount * 0.38 + bestSameReasonCount * 0.08);
+
+          return adjustedScore > bestAdjustedScore ? index : bestIndex;
+        }, 0);
+
+    selected.push(remaining.splice(nextIndex, 1)[0]);
+  }
+
+  return selected.map(({ paletteId: _paletteId, ...recommendation }) => recommendation);
+}
+
 export function recommendStyles(imageData: ImageData, topN: number = 3): StyleRecommendation[] {
   const paletteRecommendations = recommendPalettes(imageData, 10);
-  const paletteRankMap = new Map<string, number>(
-    paletteRecommendations.map((rec, index) => [rec.id, index]),
-  );
+  const paletteStats = buildPaletteRecommendationStats(paletteRecommendations);
   const profile = analyzeImageStyle(imageData);
 
-  return PRESETS
+  const candidates = PRESETS
     .filter((preset) => preset.id !== 'original')
     .map((preset) => {
       const heuristic = scorePreset(preset.id, profile);
       return {
         id: preset.id,
-        score: paletteAffinity(preset.palette, paletteRankMap) * 1.4 + heuristic.score,
-        reasonKey: heuristic.reasonKey,
+        paletteId: preset.palette,
+        score:
+          paletteAffinity(preset.palette, paletteStats) * 1.1
+          + paletteMatchBonus(preset.palette, paletteStats)
+          + heuristic.score,
+        reasonKey: pickReasonKey(preset.palette, heuristic.reasonKey, paletteStats),
       };
     })
-    .sort((a, b) => b.score - a.score)
-    .slice(0, topN);
+    .sort((a, b) => b.score - a.score);
+
+  return selectDiverseRecommendations(candidates, topN);
 }
 
 export async function recommendStylesFromImage(

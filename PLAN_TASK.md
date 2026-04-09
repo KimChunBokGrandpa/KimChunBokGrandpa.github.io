@@ -1,6 +1,7 @@
 # PLAN_TASK — Retro Pixel Converter
 
-> v1.6.0 기능/로드맵 갱신 완료 (2026-04-09). 전체 이력은 `REVISION_HISTORY.md` 참조.
+> v1.6.18 기준 상태 반영 완료 (2026-04-09). 전체 구현 이력은 `REVISION_HISTORY.md` 참조.
+> 추천 UI interaction 회귀 보강 반영 (2026-04-09).
 > QA 전체 리뷰 수행 (2026-03-25). P0~P2 수정 완료.
 > 제품 backlog 및 기능 우선순위는 `_workspace/plan_04_roadmap.md` 기준으로 운영.
 
@@ -34,16 +35,16 @@
   - EffectLayerStack add menu/label이 registry metadata 기반으로 동작
 - `P1-004` CI Phase 2 — ✅ 완료
   - `ci.yml`에 lint / test / check / audit / PR summary comment 추가
-  - `npm run lint` 기준 0 errors 상태로 정리
+  - `npm run lint` 기준 0 errors / 0 warnings 상태로 정리
 - `P1-005` store 분리 마무리 — ✅ 완료
   - `settingsStore` / `transformStore` 분리
   - `imageProcessingStore`는 coordinator 역할로 정리
-- `Phase 3 준비 정리` — ✅ 진행
+- `Phase 3 준비 정리` — ✅ 완료
   - `P2-003` release workflow는 backlog에서 제외, GitHub release workflow 파일 제거
   - pixel grid overlay 좌표 drift 보정
   - Storybook build 경고 정리 및 정적 빌드 통과
   - 미사용 i18n 키 30개 정리
-- `P3-001` WebAssembly 양자화 — 🚧 진행 시작
+- `P3-001` WebAssembly 양자화 — ✅ PoC/benchmark 마감
   - Rust 양자화 로직을 `quantizer_core.rs`로 분리
   - 기존 Tauri command는 thin wrapper로 유지
   - web 쪽도 `quantizerBackend` 인터페이스로 호출 경계 분리
@@ -51,7 +52,11 @@
   - JS/Rust 공용 golden fixture와 benchmark harness 추가
   - `benchmark:quantizer` 스크립트로 baseline timing 진입점 확보
   - `quantizer-wasm` crate + worker async loader로 실제 wasm backend 연결
-  - web worker/GIF frame worker는 기본적으로 wasm backend를 시도하고 unsupported case는 JS fallback
+  - `atkinson` dithering은 Rust/WASM path까지 parity 확장
+  - benchmark matrix/table formatter와 fallback reason(`use_oklab`, runtime unavailable) 추적 유틸 추가
+  - `useOklab` parity를 Rust/WASM path까지 마감하고 LUT precompute 최적화로 browser micro-benchmark 병목 제거
+  - Playwright 기반 `benchmark:quantizer:runtime`로 browser runtime snapshot 확보
+  - web worker/GIF frame worker는 기본적으로 wasm backend를 시도하고 runtime unavailable 시 JS fallback
   - `build:wasm:quantizer`로 `.wasm` asset 재생성 가능
 - `P3-004` 오프라인 PWA 지원 — ✅ 완료
   - `+layout.svelte`에서 production web 환경만 서비스 워커 등록
@@ -62,19 +67,38 @@
   - GIF 프레임을 SMIL 기반 animated SVG로 export하는 `animatedFramesToSvg` 추가
   - GIF controls에 animated SVG export 버튼/토스트 연결
   - SVG/export/GIF controls 테스트 추가
-- `P3-002` 프리셋 공유 — 🚧 진행 시작
+- `P3-002` 프리셋 공유 — ✅ 클라이언트 전용 범위 완료
   - preset settings를 공유 코드/base64 URL로 encode/decode하는 `presetShare` 유틸 추가
   - PresetManager에서 `copy share link` / `paste shared preset` UI 추가
   - JSON import와 share import가 같은 validation/sanitization 경로를 사용하도록 통합
-  - 현재 범위는 로컬 공유 MVP이며, community feed / account sync / backend 저장소는 후속
-- `P3-005` 스타일 추천 MVP — 🚧 진행 시작
+  - `?preset=` URL 진입 시 shared preset을 자동 적용하고 query param을 정리하도록 연결
+  - imported shared preset을 local inbox에 저장해 재적용/삭제 가능하게 확장
+  - `cloudPresetService` + local repository로 public/unlisted publish, short cloud link, community feed, published preset section 추가
+  - 현재 범위는 local share + deep link + shared inbox + local mock cloud/community layer이며, 서버 없이 전부 클라이언트에서 동작
+- `P3-005` 스타일 추천 MVP — 🚧 진행 중
   - `styleRecommender` 유틸로 이미지 밝기/채도/에지 특성과 palette match를 함께 점수화
   - PresetManager 프리셋 탭에 추천 스타일 카드와 이유 문구 추가
-  - 현재 범위는 로컬 휴리스틱 추천이며, 실제 model-backed 추천은 후속
-- 다음 우선순위
-  - `P3-001` oklab/atkinson parity 및 benchmark 표 정리
-  - `P3-002` community/cloud layer 범위 정의
-  - `P3-005` model-backed 추천 여부/범위 검토
+  - 팔레트 rank만 보던 추천을 실제 palette distance 기반 strength로 보정
+  - exact palette fit가 강한 경우 `palette match` 설명을 우선 노출하도록 개선
+  - broad palette 이미지에서는 하위 추천 슬롯이 한 팔레트로만 몰리지 않도록 diversity re-rank 추가
+  - recommendation loading / stale result ignore / click apply 흐름 테스트 보강
+  - 현재 범위는 로컬 휴리스틱 추천이며, 다음 단계도 클라이언트 사이드 품질 개선 기준으로 진행
+- `Interaction Coverage` — ✅ 추가 보강 완료
+  - `CompareView` onion slider interaction 테스트 추가
+  - `EyedropperOverlay` pick / copy / dismiss / panning guard 테스트 추가
+- `Component Warning Cleanup` — ✅ 1차 정리 완료
+  - `ControlPanel`, `EffectLayerStack`, `ImageCanvas`의 non-reactive bind 경고 원인 제거
+  - 관련 테스트 stderr가 줄어들고 주요 interaction 테스트는 clean run 상태로 확인
+
+## Next Up
+
+- `P3-005` 추천 품질 개선
+  - 남은 휴리스틱 edge case를 더 찾고 설명 문구 선택 기준을 다듬기
+  - PresetManager recommendation UI 회귀를 필요 시 더 세분화
+- 선택적 follow-up
+  - `P3-001` browser runtime snapshot 기반 추가 perf tuning
+  - 남은 테스트 stderr (`customPaletteStore` intentional parse log, jsdom canvas not implemented) 정리 여부 판단
+  - 컴포넌트 테스트의 `binding_property_non_reactive` stderr 정리
 
 ---
 
@@ -123,10 +147,16 @@
 ## Known Issues
 
 - svelte-check 결과: **0 에러, 0 경고** (2026-04-09 확인)
-- npm test: **457 tests, 54 files** 전체 통과
-- npm run lint: **0 errors, 9 warnings**
+- npm test: **482 tests, 58 files** 전체 통과
+- npm run lint: **0 errors, 0 warnings**
+- `verify:client`: **lint + check + test 전체 통과**
 - `npm run tauri build -- --debug`: **macOS .app bundle 생성 성공**
 - `npm run build-storybook`: **정적 빌드 성공**
+- `npm run benchmark:quantizer:runtime`: **1 browser snapshot scenario 통과**
+- `npm run test:e2e -- e2e/app.spec.ts`: **4 Playwright scenarios 통과**
+  - 192x192 / 4 iterations snapshot:
+  - `JS Ordered 0.68ms`, `JS Ordered + Oklab 0.47ms`
+  - `WASM Ordered 10.15ms`, `WASM Ordered + Oklab 14.70ms`, `WASM Atkinson 11.15ms`
 
 ---
 
@@ -134,10 +164,12 @@
 
 ```bash
 npm run dev          # 개발 서버 (port 1420)
-npm run lint         # ESLint (현재 0 errors, warnings only)
+npm run verify:client # lint + 타입 체크 + 테스트 일괄 검증
+npm run lint         # ESLint (현재 0 errors / 0 warnings)
 npm run check        # 타입 체크
-npm test             # 테스트 실행 (457개, 54 files)
-npm run test:e2e     # Playwright E2E (2개 시나리오)
+npm test             # 테스트 실행 (482개, 58 files)
+npm run test:e2e     # Playwright E2E (4개 시나리오)
+npm run benchmark:quantizer:runtime  # 브라우저 quantizer runtime snapshot
 npm run build-storybook  # Storybook 정적 빌드
 npm run tauri build -- --debug  # 로컬 Tauri debug bundle 빌드
 npm run test:watch   # 테스트 워치 모드

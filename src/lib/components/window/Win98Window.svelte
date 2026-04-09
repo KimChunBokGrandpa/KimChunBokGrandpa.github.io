@@ -83,7 +83,7 @@
         snapPreview = null;
       }
     };
-    const onUp = (e: MouseEvent | TouchEvent) => {
+    const onUp = () => {
       isDragging = false;
       // Apply snap
       if (snapPreview) {

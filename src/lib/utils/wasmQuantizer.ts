@@ -15,6 +15,7 @@ interface WasmQuantizerExports {
     palettePtr: number,
     paletteLen: number,
     ditherType: number,
+    useOklab: number,
   ): number;
 }
 
@@ -24,6 +25,13 @@ interface WasmQuantizeRequest {
   ditherType?: DitherType;
   customPaletteColors?: RGB[];
   useOklab?: boolean;
+}
+
+export type WasmQuantizationFallbackReason = 'unsupported_dither';
+
+export interface WasmQuantizationSupport {
+  supported: boolean;
+  reason?: WasmQuantizationFallbackReason;
 }
 
 let cachedWasm: Promise<WasmQuantizerExports | null> | null = null;
@@ -37,8 +45,16 @@ function ditherTypeToCode(ditherType: DitherType | undefined): number | null {
     case 'floyd_steinberg':
       return 2;
     case 'atkinson':
-      return null;
+      return 3;
   }
+}
+
+export function getWasmQuantizationSupport(request: Pick<WasmQuantizeRequest, 'ditherType' | 'useOklab'>): WasmQuantizationSupport {
+  if (ditherTypeToCode(request.ditherType) === null) {
+    return { supported: false, reason: 'unsupported_dither' };
+  }
+
+  return { supported: true };
 }
 
 async function loadWasmQuantizer(): Promise<WasmQuantizerExports | null> {
@@ -80,7 +96,8 @@ function buildPaletteBytes(colors?: RGB[]): Uint8Array {
 }
 
 export async function quantizeWithWasm(request: WasmQuantizeRequest): Promise<ImageData | null> {
-  if (request.useOklab) return null;
+  const support = getWasmQuantizationSupport(request);
+  if (!support.supported) return null;
 
   const ditherCode = ditherTypeToCode(request.ditherType);
   if (ditherCode === null) return null;
@@ -108,6 +125,7 @@ export async function quantizeWithWasm(request: WasmQuantizeRequest): Promise<Im
       palettePtr,
       paletteBytes.length,
       ditherCode,
+      request.useOklab ? 1 : 0,
     );
 
     if (outputPtr === 0) return null;

@@ -30,14 +30,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Sync SvelteKit
-        run: npx svelte-kit sync
-
-      - name: Run tests
-        run: npm test
-
-      - name: Type check
-        run: npm run check
+      - name: Run client verification
+        run: npm run verify:client
 
       - name: Build Svelte project
         run: |

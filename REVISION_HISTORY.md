@@ -2,6 +2,314 @@
 
 ---
 
+## v1.6.18 (2026-04-09)
+
+> QA follow-up: non-reactive bind warnings were reduced at the component level.
+
+### Warning Cleanup
+
+- **ControlPanel.svelte — nested bind 제거**
+  - pixel size range input을 direct bind 대신 explicit input handler로 전환
+- **EffectLayerStack.svelte — nested bind 제거**
+  - CRT mode select를 explicit change handler로 전환
+- **ImageCanvas.svelte — local element refs로 정리**
+  - `zp.previewImg` / `zp.previewContainer`에 직접 bind하지 않고 local ref를 거쳐 동기화
+  - targeted component tests에서 `binding_property_non_reactive` stderr가 사라짐
+
+### Verification
+
+- `npx vitest run src/lib/components/__tests__/ControlPanel.test.ts src/lib/components/__tests__/EffectLayerStack.test.ts src/lib/components/__tests__/PreviewContent.test.ts`
+  - `18 passed`
+- `npm run verify:client`
+  - `482 passed (482)`
+
+---
+
+## v1.6.17 (2026-04-09)
+
+> QA follow-up: compare/eyedropper interaction coverage expanded.
+
+### Interaction Coverage
+
+- **CompareView.test.ts — onion slider interaction 추가**
+  - onion opacity slider를 실제로 움직였을 때 overlay opacity와 퍼센트 라벨이 함께 갱신되는지 검증
+- **EyedropperOverlay.test.ts — 핵심 interaction 회귀 추가**
+  - color pick tooltip 표시
+  - clipboard copy
+  - dismiss button 동작
+  - panning 중 pick guard
+
+### Verification
+
+- `npx vitest run src/lib/components/__tests__/CompareView.test.ts src/lib/components/__tests__/EyedropperOverlay.test.ts`
+  - `16 passed`
+- `npm run verify:client`
+  - `482 passed (482)`
+
+---
+
+## v1.6.16 (2026-04-09)
+
+> Phase 3 continued: recommendation UI interaction coverage is now stronger.
+
+### P3 — Recommendation Interaction Regression Coverage
+
+- **PresetManager.svelte — recommendation test hooks 보강**
+  - loading indicator와 built-in preset card에 stable `data-testid` 추가
+  - 추천 카드와 preset 카드 상태를 테스트에서 직접 검증 가능하게 정리
+- **PresetManager.test.ts — stale/loading/apply 회귀 추가**
+  - recommendation loading state 노출 검증
+  - image source 변경 후 stale recommendation result가 무시되는지 검증
+  - recommendation card click 시 `onChange`와 preset active state가 함께 갱신되는지 검증
+
+### Verification
+
+- `npx vitest run src/lib/components/__tests__/PresetManager.test.ts src/lib/utils/styleRecommender.test.ts`
+  - `18 passed`
+- `npm run verify:client`
+  - `477 passed (477)`
+
+---
+
+## v1.6.15 (2026-04-09)
+
+> Phase 3 continued: style recommendations now keep more variety in lower slots without changing the client-only architecture.
+
+### P3 — Recommendation Diversity Tuning
+
+- **styleRecommender.ts — diversity-aware top N selection 추가**
+  - top 1 recommendation은 그대로 유지하면서, 하위 추천 슬롯은 같은 palette/reason이 반복될 때 penalty를 주는 greedy re-rank 추가
+  - broad palette 이미지에서 추천 카드가 한 palette 계열로만 몰리는 현상을 완화
+- **styleRecommender.test.ts — 다양성 회귀 추가**
+  - `win256`처럼 범용 palette 이미지에서 top 3 recommendation에 palette variety가 생기는지 검증
+  - 기존 `dmg` / `cyberpunk16` 추천 회귀는 그대로 유지
+
+### Verification
+
+- `npx vitest run src/lib/utils/styleRecommender.test.ts src/lib/components/__tests__/PresetManager.test.ts`
+  - `16 passed`
+- `npm run check`
+  - `0 errors / 0 warnings`
+- `npm run verify:client`
+  - `475 passed (475)`
+
+---
+
+## v1.6.14 (2026-04-09)
+
+> Phase 3 continued: style recommendation quality improved while staying fully client-side.
+
+### P3 — Recommendation Quality Tuning
+
+- **styleRecommender.ts — palette distance 기반 추천 strength 보정**
+  - palette rank만 보던 추천 보조 점수를 실제 palette distance spread 기준으로 정규화
+  - exact palette fit가 강할 때 `style_reason_palette_match` 설명을 우선 노출
+  - preset heuristic score는 유지하면서 설명 품질과 추천 납득도를 개선
+- **styleRecommender.test.ts + i18n — 회귀 보강**
+  - `dmg` 샘플에서 `gameboy`가 top recommendation + `palette_match` 설명으로 유지되는지 검증
+  - en/ko/ja 번역에 새 explanation key 추가
+
+### Verification
+
+- `npx vitest run src/lib/utils/styleRecommender.test.ts src/lib/components/__tests__/PresetManager.test.ts`
+  - `15 passed`
+- `npm run verify:client`
+  - `lint + check + test passed`
+
+---
+
+## v1.6.13 (2026-04-09)
+
+> Phase 3 scope realigned: the product remains client-side only, with no remote backend follow-up.
+
+### Scope Alignment
+
+- **cloudPresetService.ts — remote backend 전환 코드 제거**
+  - fetch 기반 remote repository와 `PUBLIC_CLOUD_PRESET_API_BASE` 전환 경로 제거
+  - preset publish/list/apply 흐름은 local repository 기준으로만 유지
+- **cloudPresetService.test.ts — remote contract 회귀 제거**
+  - 서버 계약 검증 테스트를 제거하고 client-only share/publish 흐름만 유지
+- **styleRecommender.ts — neon preset 추천 회귀 복구**
+  - `cyberpunk` preset이 vivid/dark 이미지에서 top recommendation으로 다시 잡히도록 점수식을 보강
+- **workflow/docs cleanup — client-only 검증 경로 정리**
+  - `verify:client` 스크립트 추가
+  - deploy workflow가 static build 전에 client verification을 먼저 수행하도록 정리
+  - scope/strategy/readme 문서에서 서버처럼 보일 수 있는 표현을 로컬 엔진/SPA 기준으로 정정
+- **문서 재정렬**
+  - `PLAN_TASK.md`, `_workspace/plan_04_roadmap.md`, `README.md`를 client-only 제품 방향에 맞게 갱신
+  - 다음 작업은 server/API가 아니라 local recommendation 품질 개선과 선택적 perf/test 후속으로 재정렬
+
+### Verification
+
+- `npm run check`
+  - `0 errors / 0 warnings`
+- `npm test`
+  - `474 passed (57 files)`
+
+---
+
+## v1.6.12 (2026-04-09)
+
+> Phase 3 continued: cloud preset sharing is now ready for remote backend wiring.
+
+### P3 — Remote Repository Contract
+
+- **cloudPresetService.ts — operation-based repository contract로 확장**
+  - 기존 local `list/save` 성격을 `publish/listOwn/listPublic/getByShortId/applyByShortId` 계약으로 재정리
+  - local repository는 유지하면서 remote repository가 같은 API를 구현할 수 있게 정리
+  - `PUBLIC_CLOUD_PRESET_API_BASE`가 있으면 fetch 기반 remote repository로 전환 가능
+- **cloudPresetService.test.ts — remote API contract 회귀 추가**
+  - mocked fetch로 publish/list/apply 흐름을 검증
+  - 실제 서버 구현 전에도 클라이언트 계약이 고정되도록 보강
+- **PresetManager tests — async publish 회귀 안정화**
+  - cloud publish clipboard 타이밍을 `waitFor`로 안정화
+
+### Verification
+
+- `npm run check`
+  - `0 errors / 0 warnings`
+- `npx vitest run src/lib/services/cloudPresetService.test.ts src/lib/components/__tests__/PresetManager.test.ts`
+  - `16 passed`
+- `npm test`
+  - `475 passed (57 files)`
+
+---
+
+## v1.6.11 (2026-04-09)
+
+> Phase 3 continued: preset sharing now includes a local mock cloud/community layer.
+
+### P3 — Cloud Sharing Mock Layer
+
+- **cloudPresetService.ts — repository-based cloud preset service 추가**
+  - localStorage-backed mock repository 위에 publish/list/apply API를 분리
+  - `public` / `unlisted` visibility, short share ID, apply count를 추적
+  - 이후 remote backend로 교체할 수 있는 service boundary를 확보
+- **PresetManager.svelte — publish/community UI 연결**
+  - current preset을 public/unlisted로 publish하는 UI 추가
+  - published presets와 public community presets 섹션 추가
+  - clipboard 실패 시에도 publish는 유지하고 링크를 수동 복사할 수 있게 보강
+- **+page.svelte + app.spec.ts — `?cloudPreset=` deep link 지원**
+  - short cloud link로 진입하면 preset을 적용하고 query param을 정리
+  - Playwright에서 core flow + shared preset + cloud publish/community section까지 회귀 검증
+
+### Verification
+
+- `npm run check`
+  - `0 errors / 0 warnings`
+- `npx vitest run src/lib/services/cloudPresetService.test.ts src/lib/components/__tests__/PresetManager.test.ts`
+  - `15 passed`
+- `npm run test:e2e -- e2e/app.spec.ts`
+  - `4 passed`
+- `npm test`
+  - `474 passed (57 files)`
+
+---
+
+## v1.6.10 (2026-04-09)
+
+> Phase 3 continued: preset sharing now supports deep links and a local shared inbox.
+
+### P3 — Preset Sharing Follow-up
+
+- **sharedPresetStore.svelte.ts — local shared preset inbox 추가**
+  - imported shared preset을 localStorage에 기록하고 최근 사용순으로 유지
+  - 같은 share code는 dedupe하고, 재적용 시 `lastAppliedAt` 갱신
+  - future backend/community sync를 붙일 수 있는 local history 계층 확보
+- **+page.svelte — `?preset=` deep link 자동 적용**
+  - shared preset URL로 진입하면 settings에 바로 반영
+  - 적용 후 query param을 제거해 URL을 정리
+  - invalid share input은 error toast로 처리
+- **PresetManager.svelte + tests — shared inbox UI 연결**
+  - Presets 탭에 `Shared Presets` 섹션 추가
+  - imported shared preset을 다시 적용하거나 삭제 가능
+  - `PresetManager.test.ts`, `sharedPresetStore.test.ts`, Playwright app spec로 local inbox / deep link / query cleanup 회귀 검증
+
+### Verification
+
+- `npm run check`
+  - `0 errors / 0 warnings`
+- `npx vitest run src/lib/utils/presetShare.test.ts src/lib/stores/sharedPresetStore.test.ts src/lib/components/__tests__/PresetManager.test.ts`
+  - `19 passed`
+- `npm run test:e2e -- e2e/app.spec.ts`
+  - `3 passed`
+- `npm test`
+  - `468 passed (56 files)`
+
+---
+
+## v1.6.9 (2026-04-09)
+
+> Phase 3 continued: Oklab wasm parity closed and browser runtime benchmark snapshot captured.
+
+### P3 — WASM Parity Closeout
+
+- **quantizer_core.rs — Oklab LUT precompute 최적화**
+  - palette Oklab 값을 LUT 구축 전에 1회만 계산하도록 정리
+  - LUT cell당 target Oklab만 계산하고 palette candidate와 재사용 비교하도록 변경
+  - browser runtime snapshot 기준 `WASM Ordered + Oklab` 평균 시간이 약 `980ms -> 14.70ms`로 감소
+- **e2e/quantizer-benchmark.spec.ts + package.json — browser runtime snapshot 경로 추가**
+  - Playwright로 실제 브라우저에서 `js`/`wasm` quantizer matrix를 측정하는 전용 경로 추가
+  - 기본 E2E에는 섞지 않고 `benchmark:quantizer:runtime`에서만 실행되도록 분리
+  - snapshot table로 requested/actual backend와 dither/Oklab 조합을 함께 기록 가능
+- **styleRecommender.ts — palette match weighting 회귀 보정**
+  - top palette recommendation에 bonus를 주도록 조정
+  - `cyberpunk` 스타일 추천 회귀를 복구해 전체 테스트 green 상태 회복
+
+### Verification
+
+- `cargo test --manifest-path src-tauri/Cargo.toml --lib`
+  - `6 passed`
+- `npx vitest run src/lib/utils/quantizerBenchmark.test.ts src/lib/utils/wasmQuantizer.test.ts`
+  - `7 passed`
+- `npm run benchmark:quantizer:runtime`
+  - `1 passed`
+  - `JS Ordered 0.68ms`
+  - `JS Ordered + Oklab 0.47ms`
+  - `WASM Ordered 10.15ms`
+  - `WASM Ordered + Oklab 14.70ms`
+  - `WASM Atkinson 11.15ms`
+- `npm run check`
+  - `0 errors / 0 warnings`
+- `npm test`
+  - `462 passed (55 files)`
+
+---
+
+## v1.6.8 (2026-04-09)
+
+> Phase 3 continued: wasm quantizer parity expanded and benchmark matrix utilities added.
+
+### P3 — WASM Parity Follow-up
+
+- **quantizer_core.rs + quantizer-wasm crate — Atkinson dithering parity 추가**
+  - Rust quantizer core에 `atkinson` dithering path 추가
+  - wasm export code가 `atkinson` routing token을 인식하도록 확장
+  - Rust lib test에 `atkinson` palette quantization coverage 추가
+- **wasmQuantizer.ts — static support/fallback reason 정리**
+  - wasm 경로 지원 여부를 `getWasmQuantizationSupport()`로 분리
+  - `useOklab` fallback reason과 supported dither 범위를 코드에서 명시
+  - `atkinson`은 이제 wasm 지원 경로로 통과
+- **quantizerBenchmark.ts — benchmark matrix/table formatter 추가**
+  - requested backend와 actual backend를 함께 기록하는 async benchmark scenario 유틸 추가
+  - markdown table formatter로 benchmark snapshot 정리 가능
+  - unsupported case는 `use_oklab`/`runtime_unavailable` 같은 note로 남기도록 보강
+
+### Verification
+
+- `npm run check`
+  - `0 errors / 0 warnings`
+- `npx vitest run src/lib/utils/wasmQuantizer.test.ts src/lib/utils/quantizerBenchmark.test.ts src/lib/utils/quantizerBackend.test.ts`
+  - `11 passed`
+- `cargo test --manifest-path src-tauri/Cargo.toml --lib`
+  - `5 passed`
+- `npm run build:wasm:quantizer`
+  - `.wasm` asset 재생성 성공
+- `npm test`
+  - `461 passed (55 files)`
+
+---
+
 ## v1.6.7 (2026-04-09)
 
 > Phase 3 continued: style recommendation MVP landed.

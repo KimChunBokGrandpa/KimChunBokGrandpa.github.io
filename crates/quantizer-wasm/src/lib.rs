@@ -34,6 +34,7 @@ pub extern "C" fn quantize(
     palette_ptr: *const u8,
     palette_len: usize,
     dither_type: u32,
+    use_oklab: u32,
 ) -> *mut u8 {
     if input_ptr.is_null() || input_len == 0 {
         return std::ptr::null_mut();
@@ -65,8 +66,10 @@ pub extern "C" fn quantize(
         dither_type: match dither_type {
             1 => "ordered".to_string(),
             2 => "floyd_steinberg".to_string(),
+            3 => "atkinson".to_string(),
             _ => "none".to_string(),
         },
+        use_oklab: use_oklab != 0,
     };
 
     let mut out = quantize_rgba(input, &req);

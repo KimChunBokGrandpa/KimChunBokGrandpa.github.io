@@ -53,8 +53,16 @@
     children?: Snippet;
   } = $props();
 
-  let displayedWidth = $derived(zp.previewImg?.naturalWidth ?? 0);
-  let displayedHeight = $derived(zp.previewImg?.naturalHeight ?? 0);
+  let previewContainerEl = $state<HTMLDivElement | null>(null);
+  let previewImgEl = $state<HTMLImageElement | null>(null);
+
+  $effect(() => {
+    zp.previewContainer = previewContainerEl ?? undefined;
+    zp.previewImg = previewImgEl ?? undefined;
+  });
+
+  let displayedWidth = $derived(previewImgEl?.naturalWidth ?? 0);
+  let displayedHeight = $derived(previewImgEl?.naturalHeight ?? 0);
 
   function handlePreviewClick(e: MouseEvent) {
     eyedropperOverlay?.pick(e);
@@ -81,16 +89,16 @@
   let gridVisible = $derived(zp.showGrid && zp.zoomLevel >= 2 && processingSettings.pixelSize > 1);
 
   let gridStyle = $derived.by(() => {
-    if (!gridVisible || !zp.previewImg || !zp.previewContainer) return '';
+    if (!gridVisible || !previewImgEl || !previewContainerEl) return '';
     return getPixelGridStyle({
       pixelSize: processingSettings.pixelSize,
       zoomLevel: zp.zoomLevel,
       panX: zp.panX,
       panY: zp.panY,
-      naturalWidth: zp.previewImg.naturalWidth,
-      naturalHeight: zp.previewImg.naturalHeight,
-      containerWidth: zp.previewContainer.clientWidth,
-      containerHeight: zp.previewContainer.clientHeight,
+      naturalWidth: previewImgEl.naturalWidth,
+      naturalHeight: previewImgEl.naturalHeight,
+      containerWidth: previewContainerEl.clientWidth,
+      containerHeight: previewContainerEl.clientHeight,
     });
   });
 
@@ -103,7 +111,7 @@
   class="preview-body"
   class:panning={zp.isPanning}
   class:eyedropper={eyedropperActive}
-  bind:this={zp.previewContainer}
+  bind:this={previewContainerEl}
   onclick={handlePreviewClick}
   onkeydown={handlePreviewKeydown}
   onwheel={cropModeActive ? undefined : zp.handleWheel}
@@ -146,7 +154,7 @@
       <CrtDisplay active={processingSettings.crtEffect !== 'none'} mode={processingSettings.crtEffect}>
         {#snippet children()}
           <img
-            bind:this={zp.previewImg}
+            bind:this={previewImgEl}
             src={processedImageSrc}
             alt="Pixel Art - {getPaletteName(processingSettings.palette)}"
             data-testid="processed-preview-image"
@@ -171,8 +179,8 @@
     <!-- Crop Overlay -->
     {#if cropModeActive && processedImageSrc && !compareMode && !tileMode}
       <CropOverlay
-        imageEl={zp.previewImg ?? null}
-        containerEl={zp.previewContainer ?? null}
+        imageEl={previewImgEl}
+        containerEl={previewContainerEl}
         onApply={(rect) => { onCrop?.(rect); cropModeActive = false; }}
         onCancel={() => { cropModeActive = false; }}
       />
