@@ -80,6 +80,13 @@ describe('ControlPanel', () => {
     expect(getByTestId('share-image-button')).toBeTruthy();
   });
 
+  it('renders send to Poster Maker button when provided', () => {
+    const { getByTestId } = render(ControlPanel, {
+      props: { ...defaultProps(), onSendToPosterMaker: vi.fn(), hasProcessedImage: true },
+    });
+    expect(getByTestId('send-to-poster-maker-button')).toBeTruthy();
+  });
+
   it('shows pixel size control', () => {
     const { container } = render(ControlPanel, { props: defaultProps() });
     // Look for range input or pixel size related element

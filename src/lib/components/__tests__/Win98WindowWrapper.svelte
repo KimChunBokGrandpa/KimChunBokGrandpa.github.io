@@ -12,6 +12,7 @@
     zIndex = 1,
     mobileSlot = null,
     swipeEnabled = false,
+    menuItems = [] as string[],
     onClose,
     onFocus,
     onSwipeLeft,
@@ -27,6 +28,7 @@
     zIndex?: number;
     mobileSlot?: { top: string; height: string; left?: string; width?: string } | null;
     swipeEnabled?: boolean;
+    menuItems?: string[];
     onClose?: () => void;
     onFocus?: () => void;
     onSwipeLeft?: () => void;
@@ -45,6 +47,7 @@
   {zIndex}
   {mobileSlot}
   {swipeEnabled}
+  {menuItems}
   {onClose}
   {onFocus}
   {onSwipeLeft}

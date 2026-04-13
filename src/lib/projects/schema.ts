@@ -99,6 +99,11 @@ export interface PosterFrameLayerV1 extends BasePosterLayerV1 {
   frameStyleId: string;
 }
 
+export interface PosterOverlayLayerV1 extends BasePosterLayerV1 {
+  type: 'overlay';
+  overlayStyleId: string;
+}
+
 export interface PosterStickerLayerV1 extends BasePosterLayerV1 {
   type: 'sticker';
   stickerId: string;
@@ -108,6 +113,7 @@ export type PosterMakerLayerV1 =
   | PosterImageLayerV1
   | PosterTextLayerV1
   | PosterFrameLayerV1
+  | PosterOverlayLayerV1
   | PosterStickerLayerV1;
 
 export interface PosterMakerProjectStateV1 {
@@ -333,4 +339,3 @@ export function createRecentProjectEntry(manifest: RetroProjectManifestV1): Rece
     previewAssetId: manifest.previewAssetId,
   };
 }
-

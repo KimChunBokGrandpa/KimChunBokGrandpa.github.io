@@ -422,6 +422,7 @@
     padding: 0;
     border-bottom: 1px solid var(--w98-shadow-808);
     flex-shrink: 0;
+    overflow-x: auto;
   }
   .win98-menu-item {
     display: flex;
@@ -435,6 +436,7 @@
     cursor: default;
     color: var(--w98-text);
     white-space: nowrap;
+    flex: 0 0 auto;
   }
   .win98-menu-item:hover {
     background: var(--w98-highlight);

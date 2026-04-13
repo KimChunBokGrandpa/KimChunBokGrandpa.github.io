@@ -4,7 +4,7 @@
  * Extracted from +page.svelte for separation of concerns.
  */
 import { processorService } from '$lib/services/imageProcessor';
-import { saveImage, shareImage } from '$lib/services/saveService';
+import { createExportFile, saveImage, shareImage } from '$lib/services/saveService';
 import type { SaveFormat } from '$lib/services/saveService';
 import type { ProcessingSettings, PostProcessFilters } from '$lib/types';
 import { applyCrtEffect } from '$lib/utils/crtRenderer';
@@ -261,6 +261,21 @@ export function createImageProcessingStore() {
     );
   }
 
+  async function createTransferFile(filename = 'pixel-lab-transfer'): Promise<File | null> {
+    if (!processedImageSrc) return null;
+    let canvas = processorService.getLastCanvas();
+    if (settingsStore.settings.crtEffect !== 'none' && canvas) {
+      canvas = applyCrtEffect(canvas, settingsStore.settings.crtEffect);
+    }
+    const filterStr = settingsStore.postFilterCss;
+    return createExportFile(
+      processedImageSrc,
+      { format: 'png', quality: settingsStore.saveQuality, filename },
+      canvas,
+      filterStr || undefined,
+    );
+  }
+
   function setFormat(format: SaveFormat) { settingsStore.setFormat(format); }
   function setQuality(quality: number) { settingsStore.setQuality(quality); }
 
@@ -341,6 +356,7 @@ export function createImageProcessingStore() {
     jumpToHistory,
     save,
     share,
+    createTransferFile,
     setFormat,
     setQuality,
     setDimensionCapCallback,

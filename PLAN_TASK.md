@@ -1,10 +1,11 @@
 # PLAN_TASK — Retro Pixel Converter
 
-> v1.6.18 기준 상태 반영 완료 (2026-04-09). 전체 구현 이력은 `REVISION_HISTORY.md` 참조.
+> v1.6.34 기준 상태 반영 완료 (2026-04-13). 전체 구현 이력은 `REVISION_HISTORY.md` 참조.
 > 추천 UI interaction 회귀 보강 반영 (2026-04-09).
 > QA 전체 리뷰 수행 (2026-03-25). P0~P2 수정 완료.
-> 제품 backlog 및 기능 우선순위는 `_workspace/plan_04_roadmap.md` 기준으로 운영.
+> 제품 backlog 및 기능 우선순위는 `docs/vnext/` 문서 세트를 우선 기준으로 운영하며, `_workspace/plan_04_roadmap.md`는 레거시 계획 참고 문서로 유지한다.
 > 아키텍처 전제: 본 제품은 브라우저/Tauri 로컬 리소스만 사용하는 client-only 앱이며, 별도 서버/백엔드를 두지 않는다.
+> 품질 전제: 앞으로 모든 작업은 `웹 브라우저 사용성`, `Windows 98 UI 컨셉 유지`, `19.5:9급 모바일 반응형/UX`를 비기능 요구사항으로 함께 만족해야 한다.
 
 ---
 
@@ -84,6 +85,12 @@
   - broad palette 이미지에서는 하위 추천 슬롯이 한 팔레트로만 몰리지 않도록 diversity re-rank 추가
   - recommendation loading / stale result ignore / click apply 흐름 테스트 보강
   - 현재 범위는 로컬 휴리스틱 추천이며, 다음 단계도 클라이언트 사이드 품질 개선 기준으로 진행
+- `vNext / WP-05` RetroCam MVP — 🚧 handoff slice 진행 중
+  - `RetroCam` desktop app/window/icon shell 연결
+  - `retroCamStore`로 webcam permission 상태(`requesting/ready/denied/unavailable/busy/unsupported/error`) 관리 추가
+  - live preset strip + still snapshot capture/save UI 추가
+  - `Open in Pixel Lab` 버튼, capture asset/project wiring, `edit_capture` handoff 소비 연결
+  - `RetroCam` / `retroCamStore` / handoff / shell icon/window 회귀 테스트 보강
 - `Interaction Coverage` — ✅ 추가 보강 완료
   - `CompareView` onion slider interaction 테스트 추가
   - `EyedropperOverlay` pick / copy / dismiss / panning guard 테스트 추가
@@ -93,17 +100,31 @@
 
 ## Next Up
 
+- `vNext / WP-05` RetroCam MVP 착수
+  - scope freeze 완료: `webcam-only + still snapshot + RetroCam -> Pixel Lab`
+  - shell/window + permission/live preview + snapshot save + `Pixel Lab` handoff 연결 완료
+  - 다음 구현: route-level `RetroCam -> Pixel Lab` integration coverage 확대 또는 camera device switch 최소 UX 검토
+  - 선택 follow-up: durable project storage 전환 전 handoff persistence 한계 문서화 보강
 - `P3-005` 추천 품질 개선
   - 남은 휴리스틱 edge case를 더 찾고 설명 문구 선택 기준을 다듬기
-  - PresetManager recommendation UI 회귀를 필요 시 더 세분화
 - 선택적 follow-up
+  - Tauri/native save branch QA 보강 여부 판단
   - `P3-001` browser runtime snapshot 기반 추가 perf tuning
   - 남은 테스트 stderr (`customPaletteStore` intentional parse log, jsdom canvas not implemented) 정리 여부 판단
-  - 컴포넌트 테스트의 `binding_property_non_reactive` stderr 정리
 
 ## vNext Planning Docs
 
 - 다음 버전 컨셉/앱구성/로드맵/체크리스트는 `docs/vnext/` 문서 세트를 기준으로 관리한다.
+- 현재 active tier는 `WP-05 RetroCam MVP` 이며, `WP-01` ~ `WP-04`, `WP-07`은 구현/QA 기준 완료 상태다.
+- `RetroCam` 첫 MVP 범위는 `docs/vnext/12_retrocam_mvp_spec.md`를 기준으로 고정한다.
+- UI/UX 비기능 요구사항은 `docs/vnext/04_ui_system_guidelines.md`, `05_master_checklists.md`, `11_status_review.md`를 함께 기준으로 본다.
+
+## UX / Device Guardrails
+
+- 웹 페이지로 처음 진입한 사용자도 핵심 작업을 몇 초 안에 이해할 수 있어야 한다.
+- 모든 신규 화면은 Win98 데스크탑 안의 소프트웨어처럼 보여야 하며, generic modern UI로 흐려지면 안 된다.
+- 모바일은 보조 채널이 아니라 지원 대상이며, `19.5:9` 비율의 tall-phone viewport에서도 launch / focus switching / 핵심 액션 수행이 가능해야 한다.
+- 자동 테스트가 green이어도 tall-phone 실기기 또는 동등 viewport 기준 수동 점검 가치가 높은 작업은 별도 확인 대상으로 남긴다.
 
 ---
 
@@ -151,10 +172,14 @@
 
 ## Known Issues
 
-- svelte-check 결과: **0 에러, 0 경고** (2026-04-09 확인)
-- npm test: **482 tests, 58 files** 전체 통과
+- svelte-check 결과: **0 에러, 0 경고** (2026-04-13 확인)
+- npm test: **537 tests, 72 files** 전체 통과
+- `RetroCam` webcam flow와 `Open in Pixel Lab` handoff는 자동 테스트 green이지만 실제 브라우저 권한 프롬프트/디바이스별 수동 확인은 아직 필요
 - npm run lint: **0 errors, 0 warnings**
 - `verify:client`: **lint + check + test 전체 통과**
+- 프로젝트 runtime storage는 현재 in-memory adapter 기반이라 새로고침/재시작 간 durable persistence는 아직 미구현
+- Tauri/native save branch는 browser path 대비 자동 회귀 검증이 얕아 후속 수동/자동 QA 가치가 높음
+- jsdom canvas `getContext()` stderr와 `customPaletteStore` corrupted-localStorage stderr는 현재 허용된 테스트 노이즈로 남아 있음
 - `npm run tauri build -- --debug`: **macOS .app bundle 생성 성공**
 - `npm run build-storybook`: **정적 빌드 성공**
 - `npm run benchmark:quantizer:runtime`: **1 browser snapshot scenario 통과**
@@ -172,7 +197,7 @@ npm run dev          # 개발 서버 (port 1420)
 npm run verify:client # lint + 타입 체크 + 테스트 일괄 검증
 npm run lint         # ESLint (현재 0 errors / 0 warnings)
 npm run check        # 타입 체크
-npm test             # 테스트 실행 (482개, 58 files)
+npm test             # 테스트 실행 (현재 529개, 69 files)
 npm run test:e2e     # Playwright E2E (4개 시나리오)
 npm run benchmark:quantizer:runtime  # 브라우저 quantizer runtime snapshot
 npm run build-storybook  # Storybook 정적 빌드

@@ -128,20 +128,20 @@ Add a fast, playful, immediate-use third app.
 
 #### W7. Capture Input
 
-- webcam and/or image input
+- webcam-only input for first MVP slice
 - permission/error handling
 - local-only capture flow
 
 #### W8. Fast Filters
 
 - instant preset switching
-- low-friction capture/export
-- loop/snapshot modes
+- low-friction snapshot capture/export
+- short loop mode deferred until still-capture slice is stable
 
 #### W9. Asset Handoff
 
 - open capture in Pixel Lab
-- optionally route snapshot into Poster Maker
+- route snapshot into Poster Maker only after the first Pixel Lab handoff slice is stable
 
 ### Exit Criteria
 
@@ -238,6 +238,11 @@ Make the entire desktop feel cohesive.
 - [ ] RetroCam launches independently
 - [ ] Capture and export are usable without another app
 - [ ] At least one handoff into Pixel Lab or Poster Maker is working
+
+Current phase-scope note:
+
+- first required handoff is `RetroCam -> Pixel Lab`
+- first required input mode is `webcam-only`
 
 ### Phase 4
 

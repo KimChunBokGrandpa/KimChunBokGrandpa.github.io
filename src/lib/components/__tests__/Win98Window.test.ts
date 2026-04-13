@@ -103,6 +103,19 @@ describe('Win98Window', () => {
     expect(windowEl.getAttribute('style')).toContain('--mobile-w: 62vw');
   });
 
+  it('renders menubar items when provided', () => {
+    const { getByRole, getByText } = render(Win98WindowWrapper, {
+      props: {
+        ...defaultProps(),
+        menuItems: ['File', 'View', 'Help'],
+      },
+    });
+
+    expect(getByRole('menubar')).toBeTruthy();
+    expect(getByText('File')).toBeTruthy();
+    expect(getByText('Help')).toBeTruthy();
+  });
+
   it('fires swipe callbacks from the mobile title bar', async () => {
     const onSwipeLeft = vi.fn();
     const onSwipeRight = vi.fn();

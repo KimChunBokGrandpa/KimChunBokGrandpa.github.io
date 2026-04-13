@@ -1,6 +1,6 @@
 // ─── Window Types ───
 export type WindowMode = "windowed" | "maximized" | "minimized" | "closed";
-export type WindowId = "preview" | "settings" | "gallery" | "batch" | "history";
+export type WindowId = "preview" | "settings" | "gallery" | "batch" | "history" | "poster_maker" | "retrocam";
 
 export interface WindowState {
   mode: WindowMode;

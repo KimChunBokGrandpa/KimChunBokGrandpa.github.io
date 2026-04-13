@@ -2,6 +2,458 @@
 
 ---
 
+## v1.6.34 (2026-04-13)
+
+> RetroCam can now hand captured snapshots into Pixel Lab through the shared project/handoff pipeline, so the third program is connected to the main editing workflow instead of ending at local save.
+
+### vNext Tier 5 — RetroCam to Pixel Lab Handoff
+
+- **RetroCam handoff helpers — capture asset/project wiring 추가**
+  - `src/lib/handoffs/retroCamToPixelLab.ts`, `src/lib/handoffs/retroCamToPixelLabFlow.ts`, `src/lib/handoffs/consumePixelLabCaptureHandoff.ts` 추가
+  - snapshot file을 local project asset으로 저장하고 `retrocam -> pixel-lab` `edit_capture` envelope를 발행하는 경로 구현
+- **Pixel Lab route orchestration — handoff 소비 연결**
+  - `src/routes/+page.svelte`에서 pending `edit_capture` handoff를 소비해 `Pixel Lab`에 캡처 이미지를 로드하도록 연결
+  - `RetroCam`에서 전송 시 `settings + preview` surface를 열고 toast를 띄우는 flow 추가
+- **RetroCam UI / i18n — Open in Pixel Lab 액션 추가**
+  - `src/lib/components/retrocam/RetroCam.svelte`에 `Open in Pixel Lab` 버튼 추가
+  - `src/lib/i18n/en.ts`, `src/lib/i18n/ko.ts`, `src/lib/i18n/ja.ts`에 관련 메시지 키 추가
+- **Regression coverage — handoff helpers와 UI 테스트 추가**
+  - `src/lib/handoffs/retroCamToPixelLab.test.ts`
+  - `src/lib/handoffs/retroCamToPixelLabFlow.test.ts`
+  - `src/lib/handoffs/consumePixelLabCaptureHandoff.test.ts`
+  - `src/lib/components/__tests__/RetroCam.test.ts` 업데이트
+
+### Verification
+
+- `npm run test -- src/lib/handoffs/retroCamToPixelLab.test.ts src/lib/handoffs/retroCamToPixelLabFlow.test.ts src/lib/handoffs/consumePixelLabCaptureHandoff.test.ts src/lib/components/__tests__/RetroCam.test.ts`
+  - `11 passed`
+- `npm run check`
+  - `0 errors / 0 warnings`
+- `npm run verify:client`
+  - `72 files passed / 537 tests passed`
+
+### Notes
+
+- 현재 `RetroCam`은 local save로 끝나지 않고 `Pixel Lab` 편집 흐름으로 이어진다.
+- project runtime이 아직 in-memory adapter 기반이라 새로고침/재시작 간 handoff/project continuity는 후속 과제다.
+
+---
+
+## v1.6.33 (2026-04-13)
+
+> Task and UX guardrails were tightened: web usability, Win98 identity, and tall-phone mobile UX are now explicit non-functional requirements for future work.
+
+### Documentation Guardrails — UX / Device Baseline
+
+- **UI guideline update — 비기능 요구사항 명시**
+  - `docs/vnext/04_ui_system_guidelines.md`에 다음 3개 guardrail을 명시
+    - 웹 브라우저 사용성 유지
+    - Windows 98 UI 정체성 유지
+    - `19.5:9`급 모바일 viewport UX 유지
+- **Checklist and status update — task 문서 기준 강화**
+  - `docs/vnext/05_master_checklists.md`에 web / Win98 / mobile guardrail checklist 추가
+  - `docs/vnext/11_status_review.md`에 모바일 confidence와 guardrail drift watchlist 반영
+  - `PLAN_TASK.md`에 품질 전제와 `UX / Device Guardrails` 섹션 추가
+
+### Verification
+
+- 문서 정리 작업으로 별도 테스트는 재실행하지 않음
+- 최신 검증 상태는 `v1.6.32`와 동일:
+  - `npm run verify:client`
+  - `69 files passed / 529 tests passed`
+
+---
+
+## v1.6.32 (2026-04-13)
+
+> RetroCam implementation started: the third program now exists in the shell with webcam permission handling, live preset preview, and still snapshot save flow.
+
+### vNext Tier 5 — RetroCam First Vertical Slice
+
+- **RetroCam shell integration — third program 창 연결**
+  - `src/lib/types.ts`, `src/lib/stores/windowStore.svelte.ts`, `src/routes/+page.svelte` 업데이트
+  - desktop shortcut / taskbar / window layout 체계에 `retrocam` 추가
+- **RetroCam runtime/store — webcam 상태와 snapshot 관리 추가**
+  - `src/lib/stores/retroCamStore.svelte.ts` 추가
+  - permission 상태 매핑, preset state, snapshot URL/file state, camera cleanup 로직 추가
+- **RetroCam UI — live preview + still snapshot save**
+  - `src/lib/components/retrocam/RetroCam.svelte` 추가
+  - webcam preview, instant preset strip, capture button, save/clear snapshot 흐름 구현
+- **Regression coverage — RetroCam + shell 반영**
+  - `src/lib/stores/retroCamStore.test.ts` 추가
+  - `src/lib/components/__tests__/RetroCam.test.ts` 추가
+  - `src/lib/components/__tests__/DesktopIcons.test.ts`, `src/lib/stores/windowStore.test.ts` 업데이트
+  - shell harness timeout 조정으로 full verify 안정성 유지
+
+### Verification
+
+- `npm run test -- src/lib/components/__tests__/RetroCam.test.ts src/lib/stores/retroCamStore.test.ts src/lib/stores/windowStore.test.ts src/lib/components/__tests__/DesktopIcons.test.ts`
+  - `34 passed`
+- `npm run check`
+  - `0 errors / 0 warnings`
+- `npm run verify:client`
+  - `69 files passed / 529 tests passed`
+
+### Notes
+
+- 현재 `RetroCam` slice는 `webcam-only + still snapshot save`까지 포함한다.
+- 다음 구현 우선순위는 `RetroCam -> Pixel Lab` handoff와 capture asset/project wiring이다.
+
+---
+
+## v1.6.31 (2026-04-13)
+
+> RetroCam planning moved from broad concept to active implementation contract: MVP scope is now frozen as `webcam-only + still snapshot + RetroCam -> Pixel Lab`.
+
+### vNext Tier 5 — RetroCam Scope Freeze
+
+- **RetroCam MVP contract — 범위/비목표/실패상태 정리**
+  - `docs/vnext/12_retrocam_mvp_spec.md` 추가
+  - 첫 deliverable을 `webcam-only`, `still snapshot`, `RetroCam -> Pixel Lab` handoff로 고정
+  - screen capture, image-upload mode, short loop export, direct `Poster Maker` handoff는 후속 slice로 분리
+- **Planning doc sync — WP-05 기준 정렬**
+  - `docs/vnext/README.md`, `02_program_suite.md`, `03_execution_roadmap.md`, `06_work_packages.md`, `09_cross_app_handoff_spec.md`, `10_role_execution_plan.md`, `PLAN_TASK.md` 업데이트
+  - `RetroCam`은 broad concept이 아니라 active implementation contract 기준으로 읽히도록 정리
+
+### Verification
+
+- 문서 정리 작업으로 별도 테스트는 재실행하지 않음
+- 최신 검증 상태는 `v1.6.29`와 동일:
+  - `npm run verify:client`
+  - `67 files passed / 523 tests passed`
+
+---
+
+## v1.6.30 (2026-04-13)
+
+> Post-Tier-4 review pass: current implementation status, issue watchlist, and documentation authority were audited and recorded for the move into `RetroCam MVP`.
+
+### vNext Audit — Status and Issue Review
+
+- **Status review document — 구현 상태/리스크 정리**
+  - `docs/vnext/11_status_review.md` 추가
+  - 현재 완료 tier, active tier, 확인된 제한사항, 다음 확인 우선순위를 한 문서로 정리
+- **Documentation authority — 기준 문서 정렬**
+  - `docs/vnext/README.md`에 review note index 추가
+  - `PLAN_TASK.md`에서 `docs/vnext/`를 우선 기준 문서로 명시
+  - known issue 섹션에 in-memory project runtime, native save coverage gap, accepted test noise를 명시
+
+### Verification
+
+- 문서 정리 작업으로 별도 테스트는 재실행하지 않음
+- 최신 검증 상태는 `v1.6.29`와 동일:
+  - `npm run verify:client`
+  - `67 files passed / 523 tests passed`
+
+---
+
+## v1.6.29 (2026-04-13)
+
+> vNext Tier 4 closed: mobile shell/program DOM sanity now has dedicated regression coverage, so the shell + Poster Maker QA gate is complete and the active tier moves to `RetroCam MVP`.
+
+### vNext T4 — Mobile Shell QA Closeout
+
+- **Mobile shell harness — DOM slot regression 추가**
+  - `src/lib/components/__tests__/MobileShellFlowWrapper.svelte` 추가
+  - `src/lib/components/__tests__/MobileShellFlow.test.ts` 추가
+  - 실제 `DesktopWorkspace + Win98Window + Taskbar + mobileWindowLayout` 조합으로
+    - compact strip stacking
+    - focused mobile slot expansion
+    - taskbar focus 변경 시 mobile slot 재배치
+    - compact arrow / menubar DOM 존재
+    를 직접 검증
+- **Task document sync — Tier 4 종료 반영**
+  - `docs/vnext/05_master_checklists.md`, `06_work_packages.md`, `10_role_execution_plan.md`, `PLAN_TASK.md` 업데이트
+  - `WP-07`을 완료 상태로 정리하고 다음 active tier를 `WP-05 RetroCam MVP`로 전환
+
+### Verification
+
+- `npm run test -- src/lib/components/__tests__/MobileShellFlow.test.ts`
+  - `2 passed`
+- `npm run check`
+  - `0 errors / 0 warnings`
+- `npm run verify:client`
+  - `67 files passed / 523 tests passed`
+
+### Notes
+
+- `PosterMaker` 관련 jsdom 테스트의 `HTMLCanvasElement.getContext()` stderr는 기존과 동일하게 남아 있다.
+- `customPaletteStore` corrupted-localStorage parse stderr도 기존과 동일하지만 verify는 통과 기준으로 관리한다.
+
+---
+
+## v1.6.28 (2026-04-13)
+
+> vNext Tier 4 continued: desktop shell launch and taskbar behavior now have real UI-flow regression coverage, and `WP-07` documents were tightened to reflect the one remaining mobile DOM gap.
+
+### vNext T4 — Shell Launch QA Pass
+
+- **Shell harness regression — desktop launch/focus flow 추가**
+  - `src/lib/components/__tests__/DesktopShellFlowWrapper.svelte` 추가
+  - `src/lib/components/__tests__/DesktopShellFlow.test.ts` 추가
+  - 실제 `DesktopWorkspace + Win98Window + Taskbar + windowStore` 조합으로
+    - `Pixel Lab` desktop icon relaunch
+    - `Poster Maker` desktop icon launch
+    - taskbar focus -> minimize -> restore 흐름을 직접 검증
+- **Task document sync — 남은 gap 재정렬**
+  - `docs/vnext/05_master_checklists.md`, `06_work_packages.md`, `10_role_execution_plan.md`, `PLAN_TASK.md` 업데이트
+  - save/share matrix는 완료로 유지하고, `WP-07` 남은 핵심 gap을 `mobile DOM-level shell/program sanity` 하나로 정리
+
+### Verification
+
+- `npm run test -- src/lib/components/__tests__/DesktopShellFlow.test.ts`
+  - `2 passed`
+- `npm run check`
+  - `0 errors / 0 warnings`
+- `npm run verify:client`
+  - `66 files passed / 521 tests passed`
+
+### Notes
+
+- `PosterMaker` 관련 jsdom 테스트의 `HTMLCanvasElement.getContext()` stderr는 기존과 동일하게 남아 있다.
+- `customPaletteStore` corrupted-localStorage parse stderr도 기존과 동일하지만 verify는 통과 기준으로 관리한다.
+
+---
+
+## v1.6.27 (2026-04-13)
+
+> vNext Tier 4 continued: save/share/export regression coverage was expanded for batch workflows, and the active task documents were synchronized to the current QA-gate state.
+
+### vNext T4 — Save/Share Matrix + Task Doc Sync
+
+- **Save/share regression expansion — batch branch coverage 추가**
+  - `src/lib/services/saveService.test.ts`에 export file metadata, multi-file share abort path 검증 추가
+  - `src/lib/components/__tests__/BatchProcessor.test.ts`에 `shareAll` success / abort / error path 검증 추가
+  - batch save/share matrix가 route helper coverage와 함께 Tier 4 QA gate에 포함되도록 정리
+- **Task document sync — active tier 상태 반영**
+  - `docs/vnext/05_master_checklists.md`에 현재 `WP-07` snapshot 정리
+  - `docs/vnext/06_work_packages.md`에 완료된 `WP-01` ~ `WP-04` 및 `WP-07` coverage 상태 반영
+  - `docs/vnext/10_role_execution_plan.md`에 Tier 4 current status 업데이트
+  - `PLAN_TASK.md`에 active tier, next-up, verify count를 최신 상태로 정리
+
+### Verification
+
+- `npm run test -- src/lib/services/saveService.test.ts src/lib/components/__tests__/BatchProcessor.test.ts`
+  - `19 passed`
+- `npm run check`
+  - `0 errors / 0 warnings`
+- `npm run verify:client`
+  - `65 files passed / 519 tests passed`
+
+### Notes
+
+- `PosterMaker` 관련 jsdom 테스트의 `HTMLCanvasElement.getContext()` stderr는 기존과 동일하게 남아 있다.
+- `customPaletteStore` corrupted-localStorage parse stderr도 기존과 동일하지만 verify는 통과한다.
+
+---
+
+## v1.6.26 (2026-04-13)
+
+> vNext Tier 4 continued: route-side `Send to Poster Maker` flow now goes through a dedicated orchestration helper, with window-open and toast side effects covered by regression tests.
+
+### vNext T4 — Route Orchestration Follow-up
+
+- **Route orchestration helper — launch flow 분리**
+  - `src/lib/handoffs/pixelLabToPosterMakerFlow.ts` 추가
+  - `+page.svelte`의 `Send to Poster Maker` 클릭 처리에서 helper 호출 후 UI side effect만 남기도록 정리
+  - `createTransferFile -> handoff helper -> open window -> toast` 흐름을 재사용 가능한 단위로 분리
+- **Regression coverage — flow test 추가**
+  - `src/lib/handoffs/pixelLabToPosterMakerFlow.test.ts` 추가
+  - transfer file 없음/null path와 정상 open+notify path를 직접 검증
+- **Gate stability — full client verify 유지**
+  - route import 정리 후 `verify:client` 재통과
+
+### Verification
+
+- `npm run test -- src/lib/handoffs/pixelLabToPosterMaker.test.ts src/lib/handoffs/pixelLabToPosterMakerFlow.test.ts src/lib/components/__tests__/PosterMaker.test.ts src/lib/stores/imageProcessingStore.test.ts`
+  - `43 passed`
+- `npm run check`
+  - `0 errors / 0 warnings`
+- `npm run verify:client`
+  - `65 files passed / 514 tests passed`
+
+### Notes
+
+- `PosterMaker` 관련 jsdom 테스트의 `HTMLCanvasElement.getContext()` stderr는 그대로 남아 있다.
+- `customPaletteStore` corrupted-localStorage parse stderr도 기존과 동일하지만 verify는 통과한다.
+
+---
+
+## v1.6.25 (2026-04-13)
+
+> vNext Tier 4 continued: `Pixel Lab -> Poster Maker` handoff orchestration is now extracted from the route and covered by dedicated regression tests, while style recommendation diversity was stabilized to keep full client verify green.
+
+### vNext T4 — Handoff Orchestration Coverage
+
+- **Route handoff extraction — testable helper 분리**
+  - `src/lib/handoffs/pixelLabToPosterMaker.ts` 추가
+  - `+page.svelte`에 있던 `transfer file -> asset save -> project save -> handoff publish` 흐름을 route 밖 helper로 이동
+  - route는 helper 호출 후 window open / toast 처리만 담당하도록 단순화
+- **Regression coverage — helper 계약 테스트 추가**
+  - `src/lib/handoffs/pixelLabToPosterMaker.test.ts` 추가
+  - transfer file 없음/null path, 저장/manifest/handoff publish 정상 path를 직접 검증
+- **Style recommendation stability — verify flake 정리**
+  - `src/lib/utils/styleRecommender.ts`의 diverse selection 로직을 보강
+  - lower recommendation slots가 가능한 한 서로 다른 palette를 우선 사용하도록 정리해 전체 verify 안정성 개선
+
+### Verification
+
+- `npm run test -- src/lib/handoffs/pixelLabToPosterMaker.test.ts src/lib/handoffs/handoffBus.test.ts src/lib/stores/imageProcessingStore.test.ts src/lib/components/__tests__/PosterMaker.test.ts`
+  - `43 passed`
+- `npm run check`
+  - `0 errors / 0 warnings`
+- `npm run verify:client`
+  - `64 files passed / 512 tests passed`
+
+### Notes
+
+- `PosterMaker` 관련 jsdom 테스트에서는 여전히 `HTMLCanvasElement.getContext()` 미구현 stderr가 출력된다.
+- `customPaletteStore` corrupted-localStorage 테스트의 parse stderr는 기존과 동일하게 남아 있지만 verify는 통과한다.
+
+---
+
+## v1.6.24 (2026-04-13)
+
+> vNext Tier 4 started: shell + `Pixel Lab` + `Poster Maker` QA gate now has broader regression coverage for save/share/transfer flow and cross-app poster handoff behavior.
+
+### vNext T4 — QA Gate Coverage Pass 1
+
+- **Pixel Lab export regression — save/share/transfer flow 보강**
+  - `src/lib/stores/imageProcessingStore.test.ts`에 `save`, `share`, `createTransferFile` 회귀 테스트 추가
+  - active export format/quality, CRT canvas path, handoff transfer PNG 생성 흐름을 직접 검증
+- **Poster Maker interaction regression — handoff + document actions 보강**
+  - `src/lib/components/__tests__/PosterMaker.test.ts`에 Pixel Lab handoff consume, 새 문서 생성, 레이아웃 reset 흐름 추가
+  - component가 runtime handoff bus와 project storage를 함께 쓰는 경로를 회귀 대상으로 고정
+- **QA gate verification — targeted + full client verify 통과**
+  - shell / poster / save-share 관련 targeted test set 재정비
+  - `npm run verify:client`까지 녹색 확인
+
+### Verification
+
+- `npm run test -- src/lib/stores/imageProcessingStore.test.ts src/lib/components/__tests__/PosterMaker.test.ts src/lib/stores/posterMakerStore.test.ts src/lib/components/__tests__/Taskbar.test.ts src/lib/components/__tests__/DesktopIcons.test.ts src/lib/components/__tests__/ControlPanel.test.ts src/lib/components/__tests__/Win98Window.test.ts src/lib/utils/mobileWindowLayout.test.ts src/lib/stores/windowStore.test.ts`
+  - `108 passed`
+- `npm run check`
+  - `0 errors / 0 warnings`
+- `npm run verify:client`
+  - `63 files passed / 510 tests passed`
+
+### Notes
+
+- `PosterMaker` 관련 jsdom 테스트에서는 여전히 `HTMLCanvasElement.getContext()` 미구현 stderr가 출력된다.
+- `customPaletteStore` corrupted-localStorage 테스트는 의도된 parse stderr를 출력하지만 전체 verify는 통과한다.
+
+---
+
+## v1.6.23 (2026-04-13)
+
+> vNext Tier 3 advanced: `Poster Maker` now has document actions, decorative template layers, and minimum mobile-safe behavior needed before the dedicated QA gate.
+
+### vNext T3 — Poster Maker Complete Template Slice
+
+- **Template completion — frame / overlay / sticker MVP 추가**
+  - `src/lib/poster/styles.ts` 추가
+  - frame / overlay / sticker style contract를 `Poster Maker` 공용 모듈로 분리
+  - `Poster Maker` canvas preview에 decorative frame, tint overlay, sticker badge render 추가
+- **Document actions — New / Reset 흐름 추가**
+  - `src/lib/stores/posterMakerStore.svelte.ts`에 문서 장식 상태와 `createNewDocument`, `resetCurrentDocument` 추가
+  - 현재 프로젝트를 새 문서로 시작하거나 현재 imported image를 유지한 채 레이아웃만 초기화할 수 있게 정리
+  - 최근 draft 복원 시 장식 레이어 상태도 함께 복원
+- **Poster Maker UI — 완성형 템플릿 흐름 보강**
+  - `src/lib/components/poster/PosterMaker.svelte`에 `New Document`, `Reset Layout`, frame/overlay/sticker 선택 UI 추가
+  - 현재 문서 이름과 준비 상태 표시 추가
+  - 최소 한 개의 poster preset이 더 완성된 결과물처럼 보이도록 visual density 강화
+- **Mobile minimum bar — Tier 3 mobile review 반영**
+  - `src/lib/utils/mobileWindowLayout.ts`에서 `poster_maker`가 포함된 2-window 모바일 조합에 compact-strip 예외 추가
+  - `src/lib/components/poster/PosterMaker.svelte`에 모바일 toolbar/canvas/meta 안전 규칙 추가
+  - `src/lib/components/window/Win98Window.svelte` menubar에 horizontal overflow 안전 장치 추가
+
+### Verification
+
+- `npm run test -- src/lib/stores/posterMakerStore.test.ts src/lib/components/__tests__/PosterMaker.test.ts src/lib/components/__tests__/ControlPanel.test.ts src/lib/components/__tests__/Win98Window.test.ts src/lib/utils/mobileWindowLayout.test.ts src/lib/stores/windowStore.test.ts src/lib/components/__tests__/DesktopIcons.test.ts`
+  - `63 passed`
+- `npm run check`
+  - `0 errors / 0 warnings`
+
+### Notes
+
+- jsdom 환경에서는 여전히 `HTMLCanvasElement.getContext()` 미구현 stderr가 출력되지만, `Poster Maker` 관련 회귀 테스트는 통과한다.
+
+---
+
+## v1.6.22 (2026-04-13)
+
+> vNext Tier 3 continued: `Poster Maker` now keeps its own project document state, restores the latest local draft, and consumes Pixel Lab handoffs through a reusable store layer.
+
+### vNext T3 — Poster Maker Document Store
+
+- **Poster document state — local project persistence 정리**
+  - `src/lib/stores/posterMakerStore.svelte.ts` 추가
+  - active preset / title / subtitle / imported asset / project id를 `Poster Maker` 전용 store로 이동
+  - 최근 `Poster Maker` 프로젝트 자동 재열기와 blank document 초기화 흐름 추가
+  - singleton reset helper까지 제공해서 이후 UI/integration 테스트 격리 기반 마련
+- **Shared poster config — preset 계약 분리**
+  - `src/lib/poster/presets.ts` 추가
+  - poster / banner / profile preset 정의와 default title/subtitle를 공용 모듈로 이동
+  - component/store가 같은 preset source를 참조하도록 정리
+- **Poster Maker component — store 기반으로 리팩터링**
+  - `src/lib/components/poster/PosterMaker.svelte`에서 로컬 문서 상태 제거
+  - imported asset id 기준으로 project storage에서 이미지를 다시 resolve하도록 변경
+  - handoff envelope 수신 시 store가 문서를 갱신하고, component는 preview render만 담당하도록 역할 분리
+- **Test isolation — runtime reset 보강**
+  - `src/lib/handoffs/runtime.ts`에 bus clear helper 추가
+  - `PosterMaker` 테스트가 runtime singleton에 덜 의존하도록 초기화 경로 정리
+
+### Verification
+
+- `npm run test -- src/lib/stores/posterMakerStore.test.ts src/lib/components/__tests__/PosterMaker.test.ts src/lib/components/__tests__/ControlPanel.test.ts src/lib/stores/windowStore.test.ts src/lib/components/__tests__/DesktopIcons.test.ts`
+  - `40 passed`
+- `npm run check`
+  - `0 errors / 0 warnings`
+
+### Notes
+
+- jsdom 환경에서는 여전히 `HTMLCanvasElement.getContext()` 미구현 stderr가 출력되지만, 현재 `PosterMaker` 회귀 테스트는 통과한다.
+
+---
+
+## v1.6.21 (2026-04-13)
+
+> vNext Tier 3 started: `Poster Maker` is now wired into the desktop shell as the second launchable program, with a first end-to-end Pixel Lab handoff slice.
+
+### vNext T3 — Poster Maker MVP Slice 1
+
+- **Shell integration — Poster Maker 프로그램 등록**
+  - `poster_maker` window id 추가
+  - desktop shortcut에 `Poster Maker` 노출
+  - window store / taskbar / mobile window order에 새 프로그램 반영
+- **Poster Maker UI — 첫 수직 슬라이스 추가**
+  - `src/lib/components/poster/PosterMaker.svelte` 추가
+  - poster / banner / profile card preset 선택
+  - one-image poster workflow
+  - title / subtitle 편집
+  - canvas 기반 preview + local poster export
+- **Pixel Lab -> Poster Maker handoff — 실제 연결**
+  - Pixel Lab control panel save row에 `Send to Poster Maker` 버튼 추가
+  - `imageProcessingStore`에 handoff용 transfer file 생성 helper 추가
+  - processed image를 shared project storage에 asset으로 저장 후 transient handoff envelope 발행
+  - Poster Maker가 envelope를 consume하고 transferred asset을 바로 문서에 배치
+- **Runtime singletons — shared engine 연결 보강**
+  - `src/lib/projects/runtime.ts` / `src/lib/handoffs/runtime.ts` 추가
+  - shared project storage adapter와 handoff bus를 UI 레이어에서 재사용 가능하게 정리
+
+### Verification
+
+- `npm run test -- src/lib/stores/windowStore.test.ts src/lib/components/__tests__/DesktopIcons.test.ts src/lib/components/__tests__/ControlPanel.test.ts src/lib/components/__tests__/PosterMaker.test.ts`
+  - `38 passed`
+- `npm run check`
+  - `0 errors / 0 warnings`
+
+### Notes
+
+- jsdom 환경에서는 `PosterMaker`의 canvas render path에서 `HTMLCanvasElement.getContext()` 미구현 stderr가 출력되지만, 테스트 자체는 통과한다.
+
+---
+
 ## v1.6.20 (2026-04-09)
 
 > vNext Tier 2 foundation started: local project schema and cross-app handoff contracts now exist in code as shared-engine scaffolding.

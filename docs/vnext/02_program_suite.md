@@ -134,10 +134,17 @@ The quick capture and live-play program.
 
 ### MVP Scope
 
-- camera or image input
+- webcam-only input for the first deliverable
 - fast preset switching
 - snapshot capture
+- `RetroCam -> Pixel Lab` handoff
+
+Deferred within the broader `RetroCam` track:
+
+- image input mode
+- screen capture
 - short loop or animated export
+- `RetroCam -> Poster Maker` direct handoff
 
 ### Why It Matters
 

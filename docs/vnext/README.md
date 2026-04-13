@@ -27,6 +27,10 @@
    Versioned contract for app-to-app asset routing and open behavior.
 10. [10_role_execution_plan.md](10_role_execution_plan.md)
    Priority-tier execution order across PM, frontend, shared-engine, mobile, and QA.
+11. [11_status_review.md](11_status_review.md)
+   Current implementation audit, issue watchlist, and documentation caveats after the Tier 4 QA gate.
+12. [12_retrocam_mvp_spec.md](12_retrocam_mvp_spec.md)
+   Scope freeze for the first RetroCam deliverable: webcam-only input, still snapshot flow, and Pixel Lab handoff priority.
 
 ---
 

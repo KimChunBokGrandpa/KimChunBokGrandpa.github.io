@@ -34,10 +34,12 @@ export function getMobileWindowSlot(params: {
 
   const idx = visibleIds.indexOf(id);
   if (idx === -1) return null;
+  const count = visibleIds.length;
+  const currentFocusedId = focusedId && visibleIds.includes(focusedId) ? focusedId : visibleIds[0];
 
   if (
     isLandscapeMobile &&
-    visibleIds.length === 2 &&
+    count === 2 &&
     visibleIds.includes('settings') &&
     visibleIds.includes('preview')
   ) {
@@ -60,7 +62,25 @@ export function getMobileWindowSlot(params: {
     }
   }
 
-  const count = visibleIds.length;
+  if (count === 2 && visibleIds.includes('poster_maker')) {
+    const focusedIdx = visibleIds.indexOf(currentFocusedId);
+    const isFocused = currentFocusedId === id;
+
+    if (isFocused) {
+      return {
+        top: `${focusedIdx === 0 ? 0 : MOBILE_COMPACT_H}px`,
+        height: `calc(100dvh - var(--taskbar-h) - ${MOBILE_COMPACT_H}px)`,
+      };
+    }
+
+    return idx < focusedIdx
+      ? { top: '0px', height: `${MOBILE_COMPACT_H}px` }
+      : {
+          top: `calc(100dvh - var(--taskbar-h) - ${MOBILE_COMPACT_H}px)`,
+          height: `${MOBILE_COMPACT_H}px`,
+        };
+  }
+
   if (count <= 2) {
     const slotHeight = `calc((100dvh - var(--taskbar-h)) / ${count})`;
     const slotTop = idx === 0 ? '0px' : `calc((100dvh - var(--taskbar-h)) / ${count} * ${idx})`;
@@ -68,7 +88,6 @@ export function getMobileWindowSlot(params: {
   }
 
   const compactTotal = (count - 1) * MOBILE_COMPACT_H;
-  const currentFocusedId = focusedId && visibleIds.includes(focusedId) ? focusedId : visibleIds[0];
   const focusedIdx = visibleIds.indexOf(currentFocusedId);
   const isFocused = currentFocusedId === id;
 

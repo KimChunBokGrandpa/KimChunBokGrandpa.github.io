@@ -8,7 +8,7 @@ const meta = {
   argTypes: {
     selectedIcon: {
       control: 'select',
-      options: [null, 'preview', 'settings', 'gallery', 'batch', 'history'],
+      options: [null, 'preview', 'poster_maker', 'settings', 'gallery', 'batch', 'history'],
     },
   },
 } satisfies Meta;

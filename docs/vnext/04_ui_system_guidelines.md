@@ -6,11 +6,55 @@
 
 These guidelines exist to stop vNext from collapsing back into "one app with more tabs".
 
+They also exist to protect three non-negotiable product conditions:
+
+- web usage must remain clear and usable as a browser app, not only as a concept demo
+- the Windows 98 desktop/software fantasy must remain recognizable
+- mobile usage must stay functional and understandable, including tall-phone layouts around a `19.5:9` class viewport such as Galaxy S25 Plus
+
 ---
 
 ## Core UX Rule
 
 If a workflow is important enough to market as a program, the user must be able to discover and launch it from the desktop directly.
+
+---
+
+## Non-Negotiable Quality Guardrails
+
+### 1. Web Usability Must Stay Strong
+
+- browser-first usage must remain practical even when the desktop fantasy gets deeper
+- core actions must still be discoverable without requiring prior knowledge of the concept
+- important actions must not be hidden behind novelty UI alone
+- desktop-style framing must not reduce readability, input affordance clarity, or save/export discoverability
+
+Review question:
+
+- if a first-time web user lands here, can they understand how to start within a few seconds?
+
+### 2. Windows 98 Identity Must Stay Intact
+
+- shell chrome, taskbar, title bars, window affordances, and icon naming should continue to read as Win98-inspired software
+- new programs may vary in content mood, but should not abandon the shared OS universe
+- avoid modern-app patterns that break the fiction unless there is a strong usability reason
+
+Review question:
+
+- does this still feel like software running inside a Win98-style desktop, not just a themed modern page?
+
+### 3. Mobile UX Must Be Real, Not Secondary
+
+- mobile is not allowed to become a broken fallback
+- tall-phone layouts around `19.5:9` must preserve app identity, action discoverability, and safe interaction targets
+- narrow/mobile layout must remain usable for:
+  - launch
+  - focus switching
+  - core app action completion
+
+Review question:
+
+- does this still work cleanly on a modern tall phone without forcing desktop assumptions?
 
 ---
 
@@ -43,6 +87,12 @@ Avoid generic titles like:
 - `Gallery`
 
 unless they are sub-utilities clearly scoped under a parent app.
+
+### Web-First Interaction Safety
+
+- drag/drop, buttons, keyboard shortcuts, and file actions must still make sense in normal browser usage
+- desktop-style layout should not create dead ends on touch devices or small laptops
+- decorative shell behavior must never block the main workflow
 
 ---
 
@@ -170,6 +220,12 @@ Avoid feature-list language in primary affordances:
 - iconography should distinguish apps without breaking the same OS universe
 - all apps should feel made by the same fictional software company
 
+### Mobile Continuity Rules
+
+- mobile windows should still feel like compact software surfaces, not generic stacked cards
+- compact strips, split panes, and focus states must preserve program identity
+- controls that matter most for the current app must stay visible in the initial viewport on tall phones
+
 ---
 
 ## Future UI Review Questions
@@ -181,3 +237,6 @@ Before approving new UI work, ask:
 3. Does the user know what this program is for?
 4. Would this still make sense if launched from an icon?
 5. Is there any part that secretly behaves like a hidden tab instead of a true app?
+6. Is browser usability still strong even without explaining the Win98 concept first?
+7. Does this preserve the Win98 software fantasy instead of drifting into generic modern UI?
+8. Does this remain usable on a `19.5:9` mobile viewport without awkward clipping or unclear actions?

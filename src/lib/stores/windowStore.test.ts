@@ -27,6 +27,8 @@ describe('windowStore', () => {
     it('should create store with default window states', () => {
       const store = createWindowStore();
       expect(store.wins.preview).toBeDefined();
+      expect(store.wins.poster_maker).toBeDefined();
+      expect(store.wins.retrocam).toBeDefined();
       expect(store.wins.settings).toBeDefined();
       expect(store.wins.gallery).toBeDefined();
       expect(store.wins.batch).toBeDefined();
@@ -39,11 +41,12 @@ describe('windowStore', () => {
       expect(store.wins.preview.mode).toBe('windowed');
     });
 
-    it('should have gallery, batch, history closed by default', () => {
+    it('should have gallery, batch, history, retrocam closed by default', () => {
       const store = createWindowStore();
       expect(store.wins.gallery.mode).toBe('closed');
       expect(store.wins.batch.mode).toBe('closed');
       expect(store.wins.history.mode).toBe('closed');
+      expect(store.wins.retrocam.mode).toBe('closed');
     });
 
     it('should set focusedWindow to settings initially', () => {
@@ -142,8 +145,8 @@ describe('windowStore', () => {
   });
 
   describe('WINDOW_CONFIGS', () => {
-    it('should define 5 windows', () => {
-      expect(WINDOW_CONFIGS).toHaveLength(5);
+    it('should define 6 windows', () => {
+      expect(WINDOW_CONFIGS).toHaveLength(7);
     });
 
     it('should have unique ids', () => {
@@ -153,7 +156,7 @@ describe('windowStore', () => {
 
     it('should expose only preview as a desktop shortcut', () => {
       const desktopIds = WINDOW_CONFIGS.filter((config) => config.desktop).map((config) => config.id);
-      expect(desktopIds).toEqual(['preview']);
+      expect(desktopIds).toEqual(['preview', 'poster_maker', 'retrocam']);
     });
   });
 
@@ -162,6 +165,8 @@ describe('windowStore', () => {
       const saved = {
         settings: { x: 100, y: 200, w: 300, h: 400 },
         preview: { x: 500, y: 600, w: 700, h: 800 },
+        poster_maker: { x: 140, y: 160, w: 780, h: 600 },
+        retrocam: { x: 180, y: 120, w: 760, h: 520 },
         gallery: { x: 10, y: 20, w: 30, h: 40 },
         batch: { x: 50, y: 60, w: 70, h: 80 },
         history: { x: 90, y: 100, w: 110, h: 120 },

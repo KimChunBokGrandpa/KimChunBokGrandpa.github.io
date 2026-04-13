@@ -117,4 +117,84 @@ describe('BatchProcessor', () => {
 
     vi.useRealTimers();
   });
+
+  it('shares every processed batch result with unique filenames and forwards success message', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      blob: async () => new Blob(['processed'], { type: 'image/png' }),
+    } as Response);
+
+    const onMessage = vi.fn();
+    const { container, getByText } = render(BatchProcessor, {
+      props: { ...defaultProps(), onMessage },
+    });
+    const input = container.querySelector('input[type="file"]') as HTMLInputElement;
+    const fileA = new File(['a'], 'sprite.png', { type: 'image/png' });
+    const fileB = new File(['b'], 'sprite.webp', { type: 'image/webp' });
+
+    await fireEvent.change(input, { target: { files: [fileA, fileB] } });
+    await fireEvent.click(getByText(/process_all/));
+
+    await waitFor(() => {
+      expect(container.textContent).toContain('2 done');
+    });
+
+    await fireEvent.click(getByText(/share_all/));
+
+    expect(shareImageFilesMock).toHaveBeenCalledTimes(1);
+    expect(shareImageFilesMock.mock.calls[0]?.[0]).toMatchObject([
+      { filename: 'retro_sprite' },
+      { filename: 'retro_sprite_2' },
+    ]);
+    expect(onMessage).toHaveBeenCalledWith('image_shared');
+  });
+
+  it('does not notify when batch share is aborted', async () => {
+    shareImageFilesMock.mockResolvedValueOnce('');
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      blob: async () => new Blob(['processed'], { type: 'image/png' }),
+    } as Response);
+
+    const onMessage = vi.fn();
+    const { container, getByText } = render(BatchProcessor, {
+      props: { ...defaultProps(), onMessage },
+    });
+    const input = container.querySelector('input[type="file"]') as HTMLInputElement;
+    const fileA = new File(['a'], 'sprite.png', { type: 'image/png' });
+
+    await fireEvent.change(input, { target: { files: [fileA] } });
+    await fireEvent.click(getByText(/process_all/));
+
+    await waitFor(() => {
+      expect(container.textContent).toContain('1 done');
+    });
+
+    await fireEvent.click(getByText(/share_all/));
+
+    expect(onMessage).not.toHaveBeenCalled();
+  });
+
+  it('forwards batch share errors to onError', async () => {
+    shareImageFilesMock.mockRejectedValueOnce(new Error('share_failed'));
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      blob: async () => new Blob(['processed'], { type: 'image/png' }),
+    } as Response);
+
+    const onError = vi.fn();
+    const { container, getByText } = render(BatchProcessor, {
+      props: { ...defaultProps(), onError },
+    });
+    const input = container.querySelector('input[type="file"]') as HTMLInputElement;
+    const fileA = new File(['a'], 'sprite.png', { type: 'image/png' });
+
+    await fireEvent.change(input, { target: { files: [fileA] } });
+    await fireEvent.click(getByText(/process_all/));
+
+    await waitFor(() => {
+      expect(container.textContent).toContain('1 done');
+    });
+
+    await fireEvent.click(getByText(/share_all/));
+
+    expect(onError).toHaveBeenCalledWith('share_failed');
+  });
 });

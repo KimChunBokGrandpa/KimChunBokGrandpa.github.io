@@ -9,7 +9,7 @@ vi.mock('$lib/i18n/index.svelte', () => ({
   i18n: { t: vi.fn((key: string) => key) },
 }));
 
-const { saveImage } = await import('./saveService');
+const { createExportFile, saveImage } = await import('./saveService');
 const { shareImage, shareImageFiles } = await import('./saveService');
 
 describe('saveImage', () => {
@@ -98,6 +98,18 @@ describe('saveImage', () => {
     expect(clickSpy).toHaveBeenCalled();
   });
 
+  it('creates export files with requested filename and mime type', async () => {
+    const mockCanvas = document.createElement('canvas');
+    const file = await createExportFile(
+      'blob:src',
+      { format: 'webp', quality: 0.9, filename: 'poster-draft' },
+      mockCanvas,
+    );
+
+    expect(file.name).toBe('poster-draft.webp');
+    expect(file.type).toBe('image/webp');
+  });
+
   it('revokes blob URL after download', async () => {
     vi.useFakeTimers();
     const mockCanvas = document.createElement('canvas');
@@ -137,6 +149,17 @@ describe('saveImage', () => {
     const sharedPayload = navigatorShareSpy.mock.calls[0][0] as { files: File[] };
     expect(sharedPayload.files.map((file) => file.name)).toEqual(['one.png', 'two.png']);
     expect(result).toBe('image_shared');
+  });
+
+  it('returns empty string when multi-file share is aborted by the user', async () => {
+    navigatorShareSpy.mockRejectedValueOnce(Object.assign(new Error('cancelled'), { name: 'AbortError' }));
+    const firstCanvas = document.createElement('canvas');
+
+    const result = await shareImageFiles([
+      { processedImageSrc: 'blob:1', filename: 'one', sourceCanvas: firstCanvas },
+    ], { format: 'png', quality: 0.92 });
+
+    expect(result).toBe('');
   });
 
   it('throws a translated error when file sharing is unsupported', async () => {

@@ -153,6 +153,7 @@ Expected behavior:
 - create a new Pixel Lab project when the current workspace is non-empty
 - otherwise allow `reuse_empty_project`
 - load the captured asset as the active source image
+- this is the required first `RetroCam` MVP handoff
 
 ### 3. RetroCam -> Poster Maker
 
@@ -168,6 +169,11 @@ Expected behavior:
 
 - create or reuse an empty poster document
 - place the capture as an image layer
+
+Implementation note:
+
+- valid contract path
+- not required for the first `RetroCam` MVP slice
 
 ### Deferred Handoffs
 

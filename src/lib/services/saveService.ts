@@ -150,6 +150,15 @@ async function buildExportFile(
   return new File([blobData], resolveFilename(options), { type: mime });
 }
 
+export async function createExportFile(
+  processedImageSrc: string,
+  options: SaveOptions = { format: "png", quality: 0.92 },
+  sourceCanvas?: HTMLCanvasElement | null,
+  cssFilter?: string,
+): Promise<File> {
+  return buildExportFile(processedImageSrc, options, sourceCanvas, cssFilter);
+}
+
 function triggerBrowserDownload(file: File): string {
   const url = URL.createObjectURL(file);
   const a = document.createElement("a");

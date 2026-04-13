@@ -8,6 +8,8 @@
   import MessageDialog from '$lib/components/feedback/MessageDialog.svelte';
   import BatchProcessor from '$lib/components/media/BatchProcessor.svelte';
   import HistoryPanel from '$lib/components/feedback/HistoryPanel.svelte';
+  import PosterMaker from '$lib/components/poster/PosterMaker.svelte';
+  import RetroCam from '$lib/components/retrocam/RetroCam.svelte';
   import DesktopWorkspace from '$lib/components/window/DesktopWorkspace.svelte';
   import PreviewContent from '$lib/components/editor/PreviewContent.svelte';
   import ToastNotification from '$lib/components/feedback/ToastNotification.svelte';
@@ -26,6 +28,12 @@
   import { getMobileWindowSlot, getNextMobileFocusId } from '$lib/utils/mobileWindowLayout';
   import { applyCloudPresetByShortId } from '$lib/services/cloudPresetService';
   import { importSharedPreset } from '$lib/stores/sharedPresetStore.svelte';
+  import { getProjectStorageAdapter } from '$lib/projects/runtime';
+  import { getHandoffBus } from '$lib/handoffs/runtime';
+  import { launchPosterMakerFromPixelLab } from '$lib/handoffs/pixelLabToPosterMakerFlow';
+  import { launchPixelLabFromRetroCam } from '$lib/handoffs/retroCamToPixelLabFlow';
+  import { consumePixelLabCaptureHandoff } from '$lib/handoffs/consumePixelLabCaptureHandoff';
+  import type { RetroCamPresetId } from '$lib/stores/retroCamStore.svelte';
 
   // Register i18n translator for palette names
   registerPaletteTranslator((key) => i18n.t(key));
@@ -34,6 +42,8 @@
   const wm = createWindowStore();
   const zp = createZoomPan();
   const ip = createImageProcessingStore();
+  const projectStorage = getProjectStorageAdapter();
+  const handoffBus = getHandoffBus();
 
   // ─── Dialog & Toast State ───
   let dialogMessage: string | null = $state(null);
@@ -150,7 +160,7 @@
   });
 
   // ─── Mobile split layout ───
-  const WINDOW_ORDER = ['preview', 'settings', 'gallery', 'batch', 'history'] as const;
+  const WINDOW_ORDER = ['preview', 'poster_maker', 'retrocam', 'settings', 'gallery', 'batch', 'history'] as const;
   let mobileVisibleIds = $derived(
     WINDOW_ORDER.filter(id => wm.wins[id].mode !== 'closed' && wm.wins[id].mode !== 'minimized')
   );
@@ -256,6 +266,18 @@
     void consumeIncomingCloudPreset();
   });
 
+  $effect(() => {
+    const pending = handoffBus.current;
+    if (!pending || pending.toAppId !== 'pixel-lab' || pending.intent !== 'edit_capture') return;
+    void consumePixelLabCaptureHandoff({
+      handoffBus,
+      projectStorage,
+      loadImage: (file) => handleImageSelected(file),
+      notifyMissingAsset: (message) => enqueueToast(message, 'error'),
+      missingAssetMessage: i18n.t('retrocam_open_in_pixel_lab_missing'),
+    });
+  });
+
   // ─── Event Handlers ───
   function handleImageSelected(file: File) {
     ip.loadImage(file);
@@ -294,6 +316,40 @@
       console.error('Failed to share file:', err);
       showDialog(err instanceof Error ? err.message : i18n.t('save_error'), i18n.t('error'));
     }
+  }
+
+  async function handleSendToPosterMaker() {
+    await launchPosterMakerFromPixelLab({
+      createTransferFile: (filename) => ip.createTransferFile(filename),
+      snapshot: {
+        settings: ip.settings,
+        postFilters: ip.postFilters,
+        rotation: ip.rotation,
+        cropRect: ip.cropRect,
+        saveFormat: ip.saveFormat,
+        saveQuality: ip.saveQuality,
+      },
+      projectStorage,
+      handoffBus,
+      openPosterMaker: () => wm.openWindow('poster_maker'),
+      notify: (message) => enqueueToast(message),
+      successMessage: i18n.t('send_to_poster_maker'),
+    });
+  }
+
+  async function handleOpenRetroCamSnapshotInPixelLab(file: File, presetId: RetroCamPresetId) {
+    await launchPixelLabFromRetroCam({
+      snapshotFile: file,
+      activePresetId: presetId,
+      projectStorage,
+      handoffBus,
+      openPixelLab: () => {
+        wm.openWindow('settings');
+        wm.openWindow('preview');
+      },
+      notify: (message) => enqueueToast(message),
+      successMessage: i18n.t('retrocam_sent_to_pixel_lab'),
+    });
   }
 
   async function handleExportSvg() {
@@ -456,6 +512,7 @@
           onSave={handleSave}
           onShare={handleShare}
           onExportSvg={handleExportSvg}
+          onSendToPosterMaker={handleSendToPosterMaker}
           onOpenGallery={() => { queueMicrotask(() => wm.openWindow('gallery')); }}
           onFormatChange={handleFormatChange}
           onQualityChange={handleQualityChange}
@@ -593,6 +650,61 @@
         selectedPaletteId={processingSettings.palette}
         onSelect={handleGallerySelect}
         imageSrc={ip.originalImageSrc}
+      />
+    </Win98Window>
+  {/if}
+
+  <!-- ═══ Poster Maker Window ═══ -->
+  {#if wm.wins.poster_maker.mode !== 'closed'}
+    <Win98Window
+      title={getWindowTitle('poster_maker')}
+      icon="📰"
+      bind:mode={wm.wins.poster_maker.mode}
+      bind:x={wm.wins.poster_maker.x}
+      bind:y={wm.wins.poster_maker.y}
+      bind:width={wm.wins.poster_maker.w}
+      bind:height={wm.wins.poster_maker.h}
+      zIndex={wm.wins.poster_maker.z}
+      mobileSlot={getMobileSlot('poster_maker')}
+      menuItems={[i18n.t('menu_file'), i18n.t('menu_view'), i18n.t('menu_help')]}
+      onClose={() => wm.close('poster_maker')}
+      onFocus={() => wm.focusWindow('poster_maker')}
+      onLayoutChange={wm.persistLayout}
+      swipeEnabled={isMobile && mobileVisibleIds.length > 1}
+      onSwipeLeft={() => focusAdjacentMobileWindow('next')}
+      onSwipeRight={() => focusAdjacentMobileWindow('prev')}
+    >
+      <PosterMaker
+        onMessage={(msg) => enqueueToast(msg)}
+        onError={(msg) => showDialog(msg, 'Error')}
+      />
+    </Win98Window>
+  {/if}
+
+  <!-- ═══ RetroCam Window ═══ -->
+  {#if wm.wins.retrocam.mode !== 'closed'}
+    <Win98Window
+      title={getWindowTitle('retrocam')}
+      icon="📷"
+      bind:mode={wm.wins.retrocam.mode}
+      bind:x={wm.wins.retrocam.x}
+      bind:y={wm.wins.retrocam.y}
+      bind:width={wm.wins.retrocam.w}
+      bind:height={wm.wins.retrocam.h}
+      zIndex={wm.wins.retrocam.z}
+      mobileSlot={getMobileSlot('retrocam')}
+      menuItems={[i18n.t('menu_file'), i18n.t('menu_view'), i18n.t('menu_help')]}
+      onClose={() => wm.close('retrocam')}
+      onFocus={() => wm.focusWindow('retrocam')}
+      onLayoutChange={wm.persistLayout}
+      swipeEnabled={isMobile && mobileVisibleIds.length > 1}
+      onSwipeLeft={() => focusAdjacentMobileWindow('next')}
+      onSwipeRight={() => focusAdjacentMobileWindow('prev')}
+    >
+      <RetroCam
+        onMessage={(msg) => enqueueToast(msg)}
+        onError={(msg) => showDialog(msg, 'Error')}
+        onOpenInPixelLab={handleOpenRetroCamSnapshotInPixelLab}
       />
     </Win98Window>
   {/if}

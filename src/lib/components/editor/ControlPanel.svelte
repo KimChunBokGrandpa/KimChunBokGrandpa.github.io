@@ -34,6 +34,7 @@
     onSave,
     onShare,
     onExportSvg,
+    onSendToPosterMaker,
     onOpenGallery,
     onFormatChange,
     onQualityChange,
@@ -53,6 +54,7 @@
     onSave: () => void;
     onShare?: () => void;
     onExportSvg?: () => void;
+    onSendToPosterMaker?: () => void;
     onOpenGallery: () => void;
     onFormatChange?: (format: SaveFormat) => void;
     onQualityChange?: (quality: number) => void;
@@ -340,6 +342,17 @@
           title={i18n.t('export_svg')}
         >
           🖼 SVG
+        </button>
+      {/if}
+      {#if onSendToPosterMaker}
+        <button
+          class="save-btn poster-btn"
+          data-testid="send-to-poster-maker-button"
+          onclick={onSendToPosterMaker}
+          disabled={!hasProcessedImage}
+          title={i18n.t('send_to_poster_maker')}
+        >
+          📰 {i18n.t('send_to_poster_maker')}
         </button>
       {/if}
     </div>

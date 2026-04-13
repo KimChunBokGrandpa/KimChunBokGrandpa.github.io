@@ -175,6 +175,16 @@ Deliverables:
 
 Run a dedicated shell-and-Poster-Maker QA gate before RetroCam expands scope.
 
+### Current Status
+
+- handoff helper contracts are covered
+- route-side Pixel Lab -> Poster Maker launch flow is covered through orchestration helpers
+- Poster Maker document actions and persistence are covered
+- Pixel Lab save/share/transfer regression is covered
+- shell launch/focus/minimize/restore UI integration is covered through desktop harness tests
+- mobile DOM-level shell/program sanity is covered through dedicated shell harness tests
+- Tier 4 QA gate is complete; next active tier is `RetroCam MVP`
+
 ### QA Ownership
 
 Must verify:
@@ -198,6 +208,20 @@ Must verify:
 ### Goal
 
 Add `RetroCam` as the third program after the shell and handoff model are proven.
+
+### Scope Freeze
+
+- first input mode: `webcam-only`
+- first required output: still snapshot
+- first required handoff: `RetroCam -> Pixel Lab`
+- defer `RetroCam -> Poster Maker` and short-loop export until the first capture slice is stable
+
+### Current Status
+
+- `RetroCam` shell/window identity is implemented
+- webcam permission-state handling is implemented
+- fast preset switching and still snapshot save flow are implemented
+- next critical slice is `RetroCam -> Pixel Lab` handoff plus shared project/asset wiring
 
 ### Frontend Ownership
 

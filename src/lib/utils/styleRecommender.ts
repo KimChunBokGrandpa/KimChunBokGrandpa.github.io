@@ -247,21 +247,27 @@ function selectDiverseRecommendations(
   const selected: StyleRecommendationCandidate[] = [];
 
   while (remaining.length > 0 && selected.length < topN) {
-    const nextIndex = selected.length === 0
-      ? 0
-      : remaining.reduce((bestIndex, candidate, index) => {
+    const unseenPaletteCandidates = remaining.filter(
+      (candidate) => !selected.some((item) => item.paletteId === candidate.paletteId),
+    );
+    const candidatePool = unseenPaletteCandidates.length > 0 ? unseenPaletteCandidates : remaining;
+
+    const nextCandidate = selected.length === 0
+      ? candidatePool[0]
+      : candidatePool.reduce((bestCandidate, candidate) => {
           const samePaletteCount = selected.filter((item) => item.paletteId === candidate.paletteId).length;
           const sameReasonCount = selected.filter((item) => item.reasonKey === candidate.reasonKey).length;
           const penalty = samePaletteCount * 0.38 + sameReasonCount * 0.08;
           const adjustedScore = candidate.score - penalty;
-          const best = remaining[bestIndex];
-          const bestSamePaletteCount = selected.filter((item) => item.paletteId === best.paletteId).length;
-          const bestSameReasonCount = selected.filter((item) => item.reasonKey === best.reasonKey).length;
-          const bestAdjustedScore = best.score - (bestSamePaletteCount * 0.38 + bestSameReasonCount * 0.08);
 
-          return adjustedScore > bestAdjustedScore ? index : bestIndex;
-        }, 0);
+          const bestSamePaletteCount = selected.filter((item) => item.paletteId === bestCandidate.paletteId).length;
+          const bestSameReasonCount = selected.filter((item) => item.reasonKey === bestCandidate.reasonKey).length;
+          const bestAdjustedScore = bestCandidate.score - (bestSamePaletteCount * 0.38 + bestSameReasonCount * 0.08);
 
+          return adjustedScore > bestAdjustedScore ? candidate : bestCandidate;
+        }, candidatePool[0]);
+
+    const nextIndex = remaining.indexOf(nextCandidate);
     selected.push(remaining.splice(nextIndex, 1)[0]);
   }
 

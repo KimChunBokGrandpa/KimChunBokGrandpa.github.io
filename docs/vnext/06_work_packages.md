@@ -15,18 +15,18 @@ Reframe the current product as a desktop shell containing a named primary progra
 
 ### Tasks
 
-- [ ] Define first-party program names and icons
-- [ ] Rename shell-facing labels and window titles
-- [ ] Audit desktop icon naming
-- [ ] Audit taskbar naming
-- [ ] Audit menu/context labels that still sound like one-tool language
-- [ ] Decide which existing windows remain utilities vs become app windows
+- [x] Define first-party program names and icons
+- [x] Rename shell-facing labels and window titles
+- [x] Audit desktop icon naming
+- [x] Audit taskbar naming
+- [x] Audit menu/context labels that still sound like one-tool language
+- [x] Decide which existing windows remain utilities vs become app windows
 
 ### Acceptance
 
-- [ ] `Pixel Lab` appears as the primary editing app
-- [ ] generic labels no longer dominate top-level UI
-- [ ] user can identify at least one real program from the desktop alone
+- [x] `Pixel Lab` appears as the primary editing app
+- [x] generic labels no longer dominate top-level UI
+- [x] user can identify at least one real program from the desktop alone
 
 ---
 
@@ -43,17 +43,17 @@ Turn the current converter workflow into a clearly bounded program.
 
 ### Tasks
 
-- [ ] map existing windows to Pixel Lab responsibilities
-- [ ] identify which panels are inside Pixel Lab vs shared shell utilities
-- [ ] review save/share/export wording
-- [ ] review preset/gallery/batch wording
-- [ ] define Pixel Lab entry screen and first-run framing
+- [x] map existing windows to Pixel Lab responsibilities
+- [x] identify which panels are inside Pixel Lab vs shared shell utilities
+- [x] review save/share/export wording
+- [x] review preset/gallery/batch wording
+- [x] define Pixel Lab entry screen and first-run framing
 
 ### Acceptance
 
-- [ ] Pixel Lab has a coherent identity
-- [ ] current power-user functionality remains intact
-- [ ] no core regression in conversion/edit/export flow
+- [x] Pixel Lab has a coherent identity
+- [x] current power-user functionality remains intact
+- [x] no core regression in conversion/edit/export flow
 
 ---
 
@@ -71,24 +71,24 @@ Create a local project structure that can support multiple programs without remo
 
 ### Tasks
 
-- [ ] define project metadata fields
-- [ ] define per-program payload sections
-- [ ] define local persistence format
-- [ ] define recent-projects behavior
-- [ ] define import/export boundaries for projects
-- [ ] define cross-program asset references
+- [x] define project metadata fields
+- [x] define per-program payload sections
+- [x] define local persistence format
+- [x] define recent-projects behavior
+- [x] define import/export boundaries for projects
+- [x] define cross-program asset references
 
 ### Role Split
 
-- [ ] Shared-engine: manifest types and storage adapter contract
+- [x] Shared-engine: manifest types and storage adapter contract
 - [ ] Frontend: project-aware shell entry points and recent-project surfacing
-- [ ] QA: persistence and restore regression coverage
+- [x] QA: persistence and restore regression coverage
 
 ### Acceptance
 
-- [ ] project model supports Pixel Lab and Poster Maker
-- [ ] local-only persistence is explicit
-- [ ] project ownership by program is understandable
+- [x] project model supports Pixel Lab and Poster Maker
+- [x] local-only persistence is explicit
+- [x] project ownership by program is understandable
 
 ---
 
@@ -107,26 +107,26 @@ Ship the first clearly new second program.
 
 ### Tasks
 
-- [ ] define poster document presets
-- [ ] implement canvas/document state
-- [ ] implement text block flow
-- [ ] implement one or more image slots
-- [ ] implement overlay/frame/sticker MVP
-- [ ] implement export flow
-- [ ] implement Pixel Lab -> Poster Maker handoff
+- [x] define poster document presets
+- [x] implement canvas/document state
+- [x] implement text block flow
+- [x] implement one or more image slots
+- [x] implement overlay/frame/sticker MVP
+- [x] implement export flow
+- [x] implement Pixel Lab -> Poster Maker handoff
 
 ### Role Split
 
-- [ ] Frontend: Poster Maker primary window and composition UI
-- [ ] Shared-engine: project-state shape and handoff resolution
-- [ ] Mobile: narrow-layout editing behavior
-- [ ] QA: launch, handoff, and export regression coverage
+- [x] Frontend: Poster Maker primary window and composition UI
+- [x] Shared-engine: project-state shape and handoff resolution
+- [x] Mobile: narrow-layout editing behavior
+- [x] QA: launch, handoff, and export regression coverage
 
 ### Acceptance
 
-- [ ] user can launch Poster Maker from desktop
-- [ ] user can finish a poster without using hidden internal tools
-- [ ] at least one real output template feels complete
+- [x] user can launch Poster Maker from desktop
+- [x] user can finish a poster without using hidden internal tools
+- [x] at least one real output template feels complete
 
 ---
 
@@ -145,24 +145,24 @@ Ship a fast, immediate, playful third program.
 
 ### Tasks
 
-- [ ] choose input scope for MVP: webcam only or webcam + image
-- [ ] define instant preset set
-- [ ] define snapshot flow
-- [ ] define loop/export flow
-- [ ] define permission and failure UX
-- [ ] define handoff into Pixel Lab or Poster Maker
+- [x] choose input scope for MVP: webcam only
+- [x] define instant preset set
+- [x] define snapshot flow
+- [ ] define loop/export flow follow-up after still snapshot slice
+- [x] define permission and failure UX
+- [x] define first handoff into Pixel Lab
 
 ### Role Split
 
-- [ ] Frontend: capture UI and fast preset interaction
+- [x] Frontend: capture UI and fast preset interaction
 - [ ] Shared-engine: project-state type and handoff adapters
 - [ ] Mobile: permission and capture behavior
 - [ ] QA: permission failure and handoff regression coverage
 
 ### Acceptance
 
-- [ ] RetroCam launches independently
-- [ ] capture flow is fast
+- [x] RetroCam launches independently
+- [x] capture flow is fast
 - [ ] output is meaningfully different from Pixel Lab and Poster Maker
 
 ---
@@ -209,18 +209,18 @@ Keep the growing desktop suite stable while the shell metaphor gets deeper.
 
 ### Tasks
 
-- [ ] add shell interaction coverage
-- [ ] add program launch coverage
-- [ ] add cross-program handoff coverage
-- [ ] add project persistence coverage
-- [ ] add save/export/share regression coverage
-- [ ] add mobile/narrow viewport coverage for multi-program shell
+- [x] add shell interaction coverage
+- [x] add program launch coverage
+- [x] add cross-program handoff coverage
+- [x] add project persistence coverage
+- [x] add save/export/share regression coverage
+- [x] add mobile/narrow viewport coverage for multi-program shell
 
 ### Acceptance
 
-- [ ] new program flows are covered
-- [ ] old image-conversion workflows remain green
-- [ ] shell regressions are caught early
+- [x] new program flows are covered
+- [x] old image-conversion workflows remain green
+- [x] shell regressions are caught early
 
 ---
 

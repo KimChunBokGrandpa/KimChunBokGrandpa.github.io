@@ -77,6 +77,49 @@ describe('getMobileWindowSlot', () => {
     });
   });
 
+  it('gives poster maker the primary height in a two-window mobile pair', () => {
+    expect(
+      getMobileWindowSlot({
+        id: 'poster_maker',
+        isMobile: true,
+        isLandscapeMobile: false,
+        visibleIds: ['preview', 'poster_maker'],
+        focusedId: 'poster_maker',
+      }),
+    ).toEqual({
+      top: '34px',
+      height: 'calc(100dvh - var(--taskbar-h) - 34px)',
+    });
+
+    expect(
+      getMobileWindowSlot({
+        id: 'preview',
+        isMobile: true,
+        isLandscapeMobile: false,
+        visibleIds: ['preview', 'poster_maker'],
+        focusedId: 'poster_maker',
+      }),
+    ).toEqual({
+      top: '0px',
+      height: '34px',
+    });
+  });
+
+  it('collapses poster maker to a compact strip when another window is focused', () => {
+    expect(
+      getMobileWindowSlot({
+        id: 'poster_maker',
+        isMobile: true,
+        isLandscapeMobile: false,
+        visibleIds: ['poster_maker', 'history'],
+        focusedId: 'history',
+      }),
+    ).toEqual({
+      top: '0px',
+      height: '34px',
+    });
+  });
+
   it('returns compact slots around the focused window', () => {
     expect(
       getMobileWindowSlot({

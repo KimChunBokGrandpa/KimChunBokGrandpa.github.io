@@ -17,6 +17,7 @@ vi.mock('$lib/services/imageProcessor', () => ({
 }));
 
 vi.mock('$lib/services/saveService', () => ({
+  createExportFile: vi.fn().mockResolvedValue(new File(['transfer'], 'pixel-lab-transfer.png', { type: 'image/png' })),
   saveImage: vi.fn().mockResolvedValue('saved-file.png'),
   shareImage: vi.fn().mockResolvedValue('shared-file.png'),
 }));
@@ -54,6 +55,8 @@ globalThis.URL.createObjectURL = vi.fn(() => `blob:mock-${++objectUrlCounter}`);
 globalThis.URL.revokeObjectURL = vi.fn();
 
 const { createImageProcessingStore } = await import('./imageProcessingStore.svelte');
+const { saveImage, shareImage, createExportFile } = await import('$lib/services/saveService');
+const { applyCrtEffect } = await import('$lib/utils/crtRenderer');
 
 function makeSettings(overrides?: Partial<ProcessingSettings>): ProcessingSettings {
   return {
@@ -245,6 +248,68 @@ describe('createImageProcessingStore', () => {
     it('updates save quality', () => {
       store.setQuality(0.8);
       expect(store.saveQuality).toBe(0.8);
+    });
+  });
+
+  describe('save/share/transfer flow', () => {
+    async function loadProcessedImage() {
+      store.loadImage(new File(['pixels'], 'sample.png', { type: 'image/png' }));
+      await Promise.resolve();
+      await Promise.resolve();
+      expect(store.processedImageSrc).toBe('blob:processed');
+    }
+
+    it('save delegates to saveImage with active export options', async () => {
+      await loadProcessedImage();
+      store.setFormat('webp');
+      store.setQuality(0.77);
+      store.postFilters = { brightness: 120, contrast: 90, saturation: 110, hueRotate: 15 };
+
+      const result = await store.save();
+
+      expect(result).toBe('saved-file.png');
+      expect(saveImage).toHaveBeenCalledWith(
+        'blob:processed',
+        { format: 'webp', quality: 0.77 },
+        null,
+        'brightness(120%) contrast(90%) saturate(110%) hue-rotate(15deg)',
+      );
+    });
+
+    it('share delegates to shareImage and applies CRT canvas when enabled', async () => {
+      const canvas = {} as HTMLCanvasElement;
+      mockProcessorService.getLastCanvas.mockReturnValue(canvas);
+      (applyCrtEffect as ReturnType<typeof vi.fn>).mockReturnValue(canvas);
+
+      await loadProcessedImage();
+      store.settings = makeSettings({ crtEffect: 'horizontal' });
+
+      const result = await store.share();
+
+      expect(result).toBe('shared-file.png');
+      expect(applyCrtEffect).toHaveBeenCalledWith(canvas, 'horizontal');
+      expect(shareImage).toHaveBeenCalledWith(
+        'blob:processed',
+        { format: 'png', quality: 0.92 },
+        canvas,
+        undefined,
+      );
+    });
+
+    it('createTransferFile builds png export file for handoff', async () => {
+      mockProcessorService.getLastCanvas.mockReturnValue(null);
+      await loadProcessedImage();
+      store.setQuality(0.81);
+
+      const file = await store.createTransferFile('poster-input');
+
+      expect(file?.name).toBe('pixel-lab-transfer.png');
+      expect(createExportFile).toHaveBeenCalledWith(
+        'blob:processed',
+        { format: 'png', quality: 0.81, filename: 'poster-input' },
+        null,
+        undefined,
+      );
     });
   });
 

@@ -105,6 +105,24 @@ Use before promoting any workflow into its own desktop program.
 - [ ] Copy reflects software/app language, not feature-panel language
 - [ ] Onboarding supports the multi-program mental model
 
+### Web Usability Guardrail
+
+- [ ] Browser-first usage is still clear without explaining the concept first
+- [ ] Core actions remain readable and discoverable on the web page
+- [ ] Novel shell styling does not hide save/open/capture/export actions
+
+### Win98 Identity Guardrail
+
+- [ ] The shell still reads clearly as Win98-inspired software
+- [ ] New program surfaces still belong to the same fictional desktop OS
+- [ ] Modern UI patterns have not diluted the retro desktop identity unnecessarily
+
+### Mobile Guardrail
+
+- [ ] Core flows remain usable on a tall-phone viewport around `19.5:9`
+- [ ] Mobile layout preserves app identity, not generic stacked-page behavior
+- [ ] Important actions remain visible and reachable without broken scrolling/clipping
+
 ---
 
 ## 9. Client-Only Architecture Checklist
@@ -128,6 +146,21 @@ Use before promoting any workflow into its own desktop program.
 - [ ] Accessibility states are reviewed
 - [ ] Client-only assumptions are preserved in tests and docs
 - [ ] Regression matrix is aligned to the current priority tier in `10_role_execution_plan.md`
+
+Current `WP-07` snapshot:
+
+- [x] Shared handoff helpers and bus flow are covered
+- [x] Poster Maker document restore/new/reset flows are covered
+- [x] Pixel Lab save/share/transfer store flow is covered
+- [x] Batch `saveAll` filename uniqueness and `shareAll` success/error/abort paths are covered
+- [x] Desktop icon launch and taskbar focus/minimize/restore shell flow are covered
+- [x] Mobile stacked shell/program DOM slot rendering is covered
+- [x] Full `verify:client` is currently green
+
+Current mobile confidence note:
+
+- [x] mobile layout math and DOM slot rendering are covered
+- [ ] real-device manual QA for a `19.5:9` tall-phone viewport remains desirable as features expand
 
 ---
 

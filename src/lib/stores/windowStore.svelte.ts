@@ -8,6 +8,8 @@ const TITLE_KEYS: Record<WindowId, TranslationKey> = {
   gallery: 'win_gallery',
   batch: 'win_batch',
   history: 'win_history',
+  poster_maker: 'win_poster_maker',
+  retrocam: 'win_retrocam',
 };
 
 export function getWindowTitle(id: WindowId): string {
@@ -17,6 +19,8 @@ export function getWindowTitle(id: WindowId): string {
 /** Desktop window definitions */
 export const WINDOW_CONFIGS: WindowConfig[] = [
   { id: "preview", icon: "🖼️", desktop: true },
+  { id: "poster_maker", icon: "📰", desktop: true },
+  { id: "retrocam", icon: "📷", desktop: true },
   { id: "settings", icon: "⚙️", desktop: false },
   { id: "gallery", icon: "🎨", desktop: false },
   { id: "batch", icon: "📦", desktop: false },
@@ -89,13 +93,31 @@ export function createWindowStore() {
       z: 10,
       defaults: { x: 400, y: 30, w: 600, h: 500 },
     },
+    poster_maker: {
+      mode: "closed",
+      x: saved?.poster_maker?.x ?? 160,
+      y: saved?.poster_maker?.y ?? 70,
+      w: saved?.poster_maker?.w ?? 760,
+      h: saved?.poster_maker?.h ?? 560,
+      z: 8,
+      defaults: { x: 160, y: 70, w: 760, h: 560 },
+    },
+    retrocam: {
+      mode: "closed",
+      x: saved?.retrocam?.x ?? 220,
+      y: saved?.retrocam?.y ?? 90,
+      w: saved?.retrocam?.w ?? 760,
+      h: saved?.retrocam?.h ?? 520,
+      z: 7,
+      defaults: { x: 220, y: 90, w: 760, h: 520 },
+    },
     gallery: {
       mode: "closed",
       x: saved?.gallery?.x ?? 100,
       y: saved?.gallery?.y ?? 60,
       w: saved?.gallery?.w ?? 480,
       h: saved?.gallery?.h ?? 460,
-      z: 8,
+      z: 6,
       defaults: { x: 100, y: 60, w: 480, h: 460 },
     },
     batch: {
@@ -104,7 +126,7 @@ export function createWindowStore() {
       y: saved?.batch?.y ?? 40,
       w: saved?.batch?.w ?? 520,
       h: saved?.batch?.h ?? 440,
-      z: 7,
+      z: 5,
       defaults: { x: 150, y: 40, w: 520, h: 440 },
     },
     history: {
@@ -113,7 +135,7 @@ export function createWindowStore() {
       y: saved?.history?.y ?? 60,
       w: saved?.history?.w ?? 280,
       h: saved?.history?.h ?? 360,
-      z: 6,
+      z: 4,
       defaults: { x: 50, y: 60, w: 280, h: 360 },
     },
   });
