@@ -4,7 +4,7 @@ import type {
   ImageWorkerResponse,
 } from "../types";
 import { customPaletteStore } from "../stores/customPaletteStore.svelte";
-import { PALETTES } from "../utils/palettes";
+import { PALETTES, normalizePaletteId } from "../utils/palettes";
 import { invoke } from "@tauri-apps/api/core";
 
 /**
@@ -218,6 +218,7 @@ class ImageProcessorService {
   ): Promise<string | null> {
     const requestId = crypto.randomUUID();
     this.currentRequestId = requestId;
+    const normalizedPalette = normalizePaletteId(settings.palette);
 
     // Cancel previous pending requests — resolve as null (stale)
     if (this.pendingResolvers.size > 0) {
@@ -230,7 +231,7 @@ class ImageProcessorService {
     // Early return: no processing needed
     if (
       settings.pixelSize <= 1 &&
-      settings.palette === "original" &&
+      normalizedPalette === "original" &&
       settings.glitchFilters.length === 0 &&
       settings.renderMode !== "hqx" &&
       (!settings.ditherType || settings.ditherType === 'none')
@@ -270,9 +271,9 @@ class ImageProcessorService {
           ctx.drawImage(img, 0, 0, procWidth, procHeight);
           const imageData = ctx.getImageData(0, 0, procWidth, procHeight);
 
-          const paletteColors = settings.palette.startsWith('custom_')
-            ? customPaletteStore.getPaletteById(settings.palette)?.colors?.map(c => ({ r: c.r, g: c.g, b: c.b })) ?? []
-            : PALETTES[settings.palette] ?? [];
+          const paletteColors = normalizedPalette.startsWith('custom_')
+            ? customPaletteStore.getPaletteById(normalizedPalette)?.colors?.map(c => ({ r: c.r, g: c.g, b: c.b })) ?? []
+            : PALETTES[normalizedPalette] ?? [];
 
           const processedBytes = await invoke<Uint8Array>('process_image_rs', {
             data: Array.from(imageData.data),
@@ -325,7 +326,7 @@ class ImageProcessorService {
         width: procWidth,
         height: procHeight,
         pixelSize: settings.pixelSize,
-        palette: settings.palette,
+        palette: normalizedPalette,
         glitchFilters: settings.glitchFilters.map((f) => ({
           type: f.type,
           intensity: f.intensity,
@@ -335,8 +336,8 @@ class ImageProcessorService {
         ditherType: settings.ditherType,
         useOklab: settings.useOklab,
         quantizationBackend: 'wasm',
-        customPaletteColors: settings.palette.startsWith('custom_')
-          ? customPaletteStore.getPaletteById(settings.palette)?.colors
+        customPaletteColors: normalizedPalette.startsWith('custom_')
+          ? customPaletteStore.getPaletteById(normalizedPalette)?.colors
               ?.map(c => ({ r: c.r, g: c.g, b: c.b }))
           : undefined,
         effectLayers: settings.effectLayers?.map(l => ({ ...l })),

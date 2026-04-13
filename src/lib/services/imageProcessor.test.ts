@@ -235,6 +235,44 @@ describe('ImageProcessorService', () => {
     });
   });
 
+  describe('palette normalization', () => {
+    it('normalizes legacy palette ids before posting work to the worker', async () => {
+      const origImage = globalThis.Image;
+      globalThis.Image = class extends origImage {
+        constructor() {
+          super();
+          Object.defineProperty(this, 'src', {
+            set: () => { setTimeout(() => this.onload?.(new Event('load')), 0); },
+            get: () => '',
+          });
+          Object.defineProperty(this, 'width', { get: () => 64, configurable: true });
+          Object.defineProperty(this, 'height', { get: () => 64, configurable: true });
+        }
+      } as unknown as typeof Image;
+
+      const mockBitmap = { width: 64, height: 64, close: vi.fn() };
+      vi.stubGlobal('createImageBitmap', vi.fn().mockResolvedValue(mockBitmap));
+
+      const settings = makeSettings({ palette: 'gameboy' });
+      const promise = processorService.processImage('blob:legacy-palette', settings);
+
+      await vi.waitFor(() => {
+        const worker = (processorService as unknown as { worker: MockWorker | null }).worker;
+        expect(worker?.postMessage).toHaveBeenCalled();
+      }, { timeout: 2000 });
+
+      const worker = (processorService as unknown as { worker: MockWorker | null }).worker;
+      const [message] = worker!.postMessage.mock.calls[0];
+      expect(message.palette).toBe('dmg');
+
+      processorService.destroy();
+      await promise.catch(() => {});
+
+      globalThis.Image = origImage;
+      vi.restoreAllMocks();
+    });
+  });
+
   // ─── Destroy ───
 
   describe('destroy', () => {

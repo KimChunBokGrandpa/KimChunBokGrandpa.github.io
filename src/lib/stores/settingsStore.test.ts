@@ -45,13 +45,13 @@ describe('createSettingsStore', () => {
     expect(store.settings.effectLayers![0].intensity).toBe(0.4);
   });
 
-  it('updates palette and derives a settings hash', () => {
+  it('normalizes legacy palette ids and derives a settings hash', () => {
     const store = createSettingsStore();
 
     store.selectPalette('gameboy');
 
-    expect(store.settings.palette).toBe('gameboy');
-    expect(store.settingsHash).toContain('"pal":"gameboy"');
+    expect(store.settings.palette).toBe('dmg');
+    expect(store.settingsHash).toContain('"pal":"dmg"');
   });
 
   it('tracks save settings and post-filter css', () => {

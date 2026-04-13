@@ -1,4 +1,5 @@
 import type { EffectLayer, GlitchType, ProcessingSettings } from '$lib/types';
+import { normalizePaletteId } from '$lib/utils/palettes';
 
 export interface SharedPresetPayload {
   kind: 'retro-pixel-preset';
@@ -62,7 +63,7 @@ export function sanitizeImportedPresetSettings(source: unknown): ProcessingSetti
 
   const imported: ProcessingSettings = {
     pixelSize: Math.max(1, Math.min(64, s.pixelSize)),
-    palette: s.palette,
+    palette: normalizePaletteId(s.palette),
     crtEffect: ['none', 'horizontal', 'vertical'].includes(String(s.crtEffect))
       ? (s.crtEffect as ProcessingSettings['crtEffect'])
       : (s.crtEffect === true ? 'horizontal' : 'none'),

@@ -1,6 +1,7 @@
 import type { SaveFormat } from '$lib/services/saveService';
 import type { ProcessingSettings, PostProcessFilters } from '$lib/types';
 import { DEFAULT_POST_FILTERS } from '$lib/types';
+import { normalizePaletteId } from '$lib/utils/palettes';
 
 export const DEFAULT_PROCESSING_SETTINGS: ProcessingSettings = {
   pixelSize: 1,
@@ -16,6 +17,7 @@ export const DEFAULT_PROCESSING_SETTINGS: ProcessingSettings = {
 function cloneSettings(settings: ProcessingSettings): ProcessingSettings {
   return {
     ...settings,
+    palette: normalizePaletteId(settings.palette),
     glitchFilters: settings.glitchFilters.map((filter) => ({ ...filter })),
     effectLayers: settings.effectLayers?.map((layer) => ({ ...layer })) ?? [],
   };
@@ -36,7 +38,7 @@ export function createSettingsStore(initialSettings: ProcessingSettings = DEFAUL
   function selectPalette(paletteId: string) {
     settings = {
       ...settings,
-      palette: paletteId,
+      palette: normalizePaletteId(paletteId),
     };
   }
 

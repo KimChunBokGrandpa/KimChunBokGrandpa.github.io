@@ -1,6 +1,6 @@
 # PLAN_TASK — Retro Pixel Converter
 
-> v1.6.34 기준 상태 반영 완료 (2026-04-13). 전체 구현 이력은 `REVISION_HISTORY.md` 참조.
+> v1.6.36 기준 상태 반영 완료 (2026-04-13). 전체 구현 이력은 `REVISION_HISTORY.md` 참조.
 > 추천 UI interaction 회귀 보강 반영 (2026-04-09).
 > QA 전체 리뷰 수행 (2026-03-25). P0~P2 수정 완료.
 > 제품 backlog 및 기능 우선순위는 `docs/vnext/` 문서 세트를 우선 기준으로 운영하며, `_workspace/plan_04_roadmap.md`는 레거시 계획 참고 문서로 유지한다.
@@ -85,11 +85,16 @@
   - broad palette 이미지에서는 하위 추천 슬롯이 한 팔레트로만 몰리지 않도록 diversity re-rank 추가
   - recommendation loading / stale result ignore / click apply 흐름 테스트 보강
   - 현재 범위는 로컬 휴리스틱 추천이며, 다음 단계도 클라이언트 사이드 품질 개선 기준으로 진행
+- `Pixel Lab palette compatibility` — ✅ 레거시 alias 보정 완료
+  - `gameboy -> dmg` canonical palette normalization 추가
+  - settings / preset import / processing 경계에서 legacy palette id를 정규화
+  - `Pixel Lab` 팔레트 적용 회귀 테스트 보강
 - `vNext / WP-05` RetroCam MVP — 🚧 handoff slice 진행 중
   - `RetroCam` desktop app/window/icon shell 연결
   - `retroCamStore`로 webcam permission 상태(`requesting/ready/denied/unavailable/busy/unsupported/error`) 관리 추가
   - live preset strip + still snapshot capture/save UI 추가
   - `Open in Pixel Lab` 버튼, capture asset/project wiring, `edit_capture` handoff 소비 연결
+  - desktop icon launch -> capture -> `Pixel Lab` load integration harness 추가
   - `RetroCam` / `retroCamStore` / handoff / shell icon/window 회귀 테스트 보강
 - `Interaction Coverage` — ✅ 추가 보강 완료
   - `CompareView` onion slider interaction 테스트 추가
@@ -102,8 +107,8 @@
 
 - `vNext / WP-05` RetroCam MVP 착수
   - scope freeze 완료: `webcam-only + still snapshot + RetroCam -> Pixel Lab`
-  - shell/window + permission/live preview + snapshot save + `Pixel Lab` handoff 연결 완료
-  - 다음 구현: route-level `RetroCam -> Pixel Lab` integration coverage 확대 또는 camera device switch 최소 UX 검토
+  - shell/window + permission/live preview + snapshot save + `Pixel Lab` handoff + desktop integration coverage 완료
+  - 다음 구현: camera device switch 최소 UX 검토
   - 선택 follow-up: durable project storage 전환 전 handoff persistence 한계 문서화 보강
 - `P3-005` 추천 품질 개선
   - 남은 휴리스틱 edge case를 더 찾고 설명 문구 선택 기준을 다듬기
@@ -173,8 +178,9 @@
 ## Known Issues
 
 - svelte-check 결과: **0 에러, 0 경고** (2026-04-13 확인)
-- npm test: **537 tests, 72 files** 전체 통과
+- npm test: **targeted palette regression 59 tests 통과**
 - `RetroCam` webcam flow와 `Open in Pixel Lab` handoff는 자동 테스트 green이지만 실제 브라우저 권한 프롬프트/디바이스별 수동 확인은 아직 필요
+- `.agents/results/bugs/bug-20260413-pixel-lab-palette-legacy-alias.md`에 이번 palette issue 조사/수정 내역을 기록
 - npm run lint: **0 errors, 0 warnings**
 - `verify:client`: **lint + check + test 전체 통과**
 - 프로젝트 runtime storage는 현재 in-memory adapter 기반이라 새로고침/재시작 간 durable persistence는 아직 미구현

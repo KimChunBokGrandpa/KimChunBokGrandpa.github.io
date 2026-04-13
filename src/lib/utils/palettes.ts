@@ -230,6 +230,10 @@ export const PALETTES: Record<string, RGB[]> = {
   win256: generateWebSafePalette(),
 };
 
+export const PALETTE_ID_ALIASES: Record<string, string> = {
+  gameboy: 'dmg',
+};
+
 // ─── Palette Display Name Lookup ───
 // Each palette has a nameKey (i18n TranslationKey) and a fallback English name.
 const DISPLAY_NAMES: Record<string, { name: string; nameKey: TranslationKey }> = {
@@ -370,15 +374,20 @@ export function registerPaletteTranslator(fn: (key: TranslationKey) => string): 
   _translate = fn;
 }
 
+export function normalizePaletteId(id: string): string {
+  return PALETTE_ID_ALIASES[id] ?? id;
+}
+
 export function getPaletteName(id: string): string {
-  const entry = DISPLAY_NAMES[id];
+  const normalizedId = normalizePaletteId(id);
+  const entry = DISPLAY_NAMES[normalizedId];
   if (entry) {
     if (_translate) return _translate(entry.nameKey);
     return entry.name;
   }
-  const info = _paletteIdLookup.get(id);
+  const info = _paletteIdLookup.get(normalizedId);
   if (info) return `${info.theme} (${info.colorCount})`;
-  return id;
+  return normalizedId;
 }
 
 // ─── Theme-based palette grouping (auto-built from PALETTE_GROUPS) ───

@@ -168,9 +168,9 @@ describe('createImageProcessingStore', () => {
   });
 
   describe('selectPalette', () => {
-    it('changes palette and pushes history', () => {
+    it('normalizes legacy palette ids, changes palette, and pushes history', () => {
       store.selectPalette('gameboy');
-      expect(store.settings.palette).toBe('gameboy');
+      expect(store.settings.palette).toBe('dmg');
       expect(store.settingsHistory).toHaveLength(1);
     });
 

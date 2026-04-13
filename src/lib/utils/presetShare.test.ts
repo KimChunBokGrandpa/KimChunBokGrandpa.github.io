@@ -61,7 +61,7 @@ describe('presetShare', () => {
   it('sanitizes imported settings with legacy fallback behavior', () => {
     const sanitized = sanitizeImportedPresetSettings({
       pixelSize: 999,
-      palette: 'dmg',
+      palette: 'gameboy',
       crtEffect: true,
       glitchFilters: [{ type: 'rgb_split', intensity: 2 }],
       renderMode: 'hqx',
@@ -69,6 +69,7 @@ describe('presetShare', () => {
     });
 
     expect(sanitized.pixelSize).toBe(64);
+    expect(sanitized.palette).toBe('dmg');
     expect(sanitized.crtEffect).toBe('horizontal');
     expect(sanitized.effectLayers?.some((layer) => layer.type === 'hqx')).toBe(true);
   });

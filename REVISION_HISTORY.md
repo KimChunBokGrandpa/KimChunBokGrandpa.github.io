@@ -2,6 +2,69 @@
 
 ---
 
+## v1.6.36 (2026-04-13)
+
+> Pixel Lab palette application was stabilized for legacy data paths by normalizing old palette ids such as `gameboy` to the current canonical palette id `dmg`.
+
+### Pixel Lab Palette Compatibility Fix
+
+- **Central palette alias normalization — legacy id 호환 추가**
+  - `src/lib/utils/palettes.ts`에 `gameboy -> dmg` alias normalization 추가
+  - palette display name도 canonical id 기준으로 해석되도록 정리
+- **Boundary fixes — settings / import / processing 경계 보강**
+  - `src/lib/stores/settingsStore.svelte.ts`에서 저장 시 palette id 정규화
+  - `src/lib/utils/presetShare.ts`에서 imported/shared preset palette id 정규화
+  - `src/lib/services/imageProcessor.ts`에서 quantization/worker message 전 palette id 정규화
+- **Regression coverage — palette apply 회귀 테스트 추가**
+  - `src/lib/stores/settingsStore.test.ts`
+  - `src/lib/stores/imageProcessingStore.test.ts`
+  - `src/lib/utils/presetShare.test.ts`
+  - `src/lib/services/imageProcessor.test.ts`
+- **Bug knowledge base — 조사 내용 문서화**
+  - `.agents/results/bugs/bug-20260413-pixel-lab-palette-legacy-alias.md` 추가
+
+### Verification
+
+- `npm run test -- src/lib/services/imageProcessor.test.ts src/lib/stores/settingsStore.test.ts src/lib/stores/imageProcessingStore.test.ts src/lib/utils/presetShare.test.ts`
+  - `59 passed`
+- `npm run check`
+  - `0 errors / 0 warnings`
+
+### Notes
+
+- 이번 수정은 legacy palette id 호환성 보강이며, 현재 active tier는 계속 `WP-05 RetroCam MVP`다.
+
+---
+
+## v1.6.35 (2026-04-13)
+
+> RetroCam to Pixel Lab handoff is now covered by a desktop-shell integration test, so the launch -> capture -> open-in-editor flow is guarded end to end inside the Win98 program shell.
+
+### vNext Tier 5 — RetroCam Desktop Integration Coverage
+
+- **Desktop flow harness — shell 수준 통합 회귀 추가**
+  - `src/lib/components/__tests__/RetroCamPixelLabFlowWrapper.svelte` 추가
+  - `RetroCam`, `Pixel Lab` preview/settings surface, desktop icons, taskbar를 한 하네스에 묶어 실제 데스크탑 흐름을 재현
+- **Integration test — icon launch -> capture -> Pixel Lab load**
+  - `src/lib/components/__tests__/RetroCamPixelLabFlow.test.ts` 추가
+  - desktop에서 `RetroCam` 아이콘 실행 후 snapshot capture와 `Open in Pixel Lab`을 거쳐 preview/taskbar focus까지 확인
+
+### Verification
+
+- `npm run test -- src/lib/components/__tests__/RetroCamPixelLabFlow.test.ts src/lib/components/__tests__/RetroCam.test.ts src/lib/handoffs/retroCamToPixelLab.test.ts src/lib/handoffs/consumePixelLabCaptureHandoff.test.ts`
+  - `10 passed`
+- `npm run check`
+  - `0 errors / 0 warnings`
+- `npm run verify:client`
+  - `73 files passed / 538 tests passed`
+
+### Notes
+
+- `RetroCam -> Pixel Lab` 흐름은 helper/unit 범위를 넘어 데스크탑 shell interaction까지 회귀가 확보됐다.
+- `WP-05`의 다음 우선순위는 webcam device switch 최소 UX다.
+
+---
+
 ## v1.6.34 (2026-04-13)
 
 > RetroCam can now hand captured snapshots into Pixel Lab through the shared project/handoff pipeline, so the third program is connected to the main editing workflow instead of ending at local save.
