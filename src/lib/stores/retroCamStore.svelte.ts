@@ -9,6 +9,12 @@ export type RetroCamPermissionState =
   | 'error';
 
 export type RetroCamPresetId = 'clean_pixel' | 'crt_pop' | 'game_boy' | 'warm_poster';
+export type RetroCamDeviceId = string | 'auto';
+
+export interface RetroCamDeviceOption {
+  deviceId: string;
+  label: string;
+}
 
 export interface RetroCamPreset {
   id: RetroCamPresetId;
@@ -18,6 +24,7 @@ export interface RetroCamPreset {
 
 export interface MediaDevicesLike {
   getUserMedia(constraints: MediaStreamConstraints): Promise<MediaStream>;
+  enumerateDevices?(): Promise<MediaDeviceInfo[]>;
 }
 
 export const RETROCAM_PRESETS: RetroCamPreset[] = [
@@ -42,6 +49,8 @@ export function createRetroCamStore(mediaDevicesOverride?: MediaDevicesLike | nu
   let permissionState = $state<RetroCamPermissionState>('idle');
   let stream = $state<MediaStream | null>(null);
   let activePresetId = $state<RetroCamPresetId>('clean_pixel');
+  let availableDevices = $state<RetroCamDeviceOption[]>([]);
+  let selectedDeviceId = $state<RetroCamDeviceId>('auto');
   let lastSnapshotUrl = $state<string | null>(null);
   let lastSnapshotFile = $state<File | null>(null);
 
@@ -52,6 +61,35 @@ export function createRetroCamStore(mediaDevicesOverride?: MediaDevicesLike | nu
       }
     }
     stream = null;
+  }
+
+  async function refreshDevices() {
+    const mediaDevices = detectMediaDevices(mediaDevicesOverride);
+    if (!mediaDevices?.enumerateDevices) {
+      availableDevices = [];
+      selectedDeviceId = 'auto';
+      return [];
+    }
+
+    try {
+      const devices = await mediaDevices.enumerateDevices();
+      availableDevices = devices
+        .filter((device) => device.kind === 'videoinput')
+        .map((device, index) => ({
+          deviceId: device.deviceId,
+          label: device.label || `Camera ${index + 1}`,
+        }));
+
+      if (selectedDeviceId !== 'auto' && !availableDevices.some((device) => device.deviceId === selectedDeviceId)) {
+        selectedDeviceId = 'auto';
+      }
+
+      return availableDevices;
+    } catch {
+      availableDevices = [];
+      selectedDeviceId = 'auto';
+      return [];
+    }
   }
 
   async function requestCamera() {
@@ -66,11 +104,14 @@ export function createRetroCamStore(mediaDevicesOverride?: MediaDevicesLike | nu
 
     try {
       const nextStream = await mediaDevices.getUserMedia({
-        video: { facingMode: 'user' },
+        video: selectedDeviceId === 'auto'
+          ? { facingMode: 'user' }
+          : { deviceId: { exact: selectedDeviceId } },
         audio: false,
       });
       stream = nextStream;
       permissionState = 'ready';
+      await refreshDevices();
       return nextStream;
     } catch (error) {
       const err = error as DOMException | Error;
@@ -94,6 +135,11 @@ export function createRetroCamStore(mediaDevicesOverride?: MediaDevicesLike | nu
       }
       return null;
     }
+  }
+
+  async function selectDevice(nextDeviceId: RetroCamDeviceId) {
+    selectedDeviceId = nextDeviceId;
+    return requestCamera();
   }
 
   function setPreset(nextPresetId: RetroCamPresetId) {
@@ -128,6 +174,12 @@ export function createRetroCamStore(mediaDevicesOverride?: MediaDevicesLike | nu
     get activePresetId() {
       return activePresetId;
     },
+    get availableDevices() {
+      return availableDevices;
+    },
+    get selectedDeviceId() {
+      return selectedDeviceId;
+    },
     get lastSnapshotUrl() {
       return lastSnapshotUrl;
     },
@@ -135,6 +187,8 @@ export function createRetroCamStore(mediaDevicesOverride?: MediaDevicesLike | nu
       return lastSnapshotFile;
     },
     requestCamera,
+    refreshDevices,
+    selectDevice,
     stopCamera,
     setPreset,
     setSnapshot,

@@ -2,6 +2,65 @@
 
 ---
 
+## v1.6.38 (2026-04-14)
+
+> Tauri Rust processing no longer fails on palette application because the missing `use_oklab` field is now included in the native invoke payload.
+
+### Pixel Lab Tauri Payload Fix
+
+- **Rust command contract fix — `use_oklab` 누락 보정**
+  - `src/lib/services/imageProcessor.ts`의 `process_image_rs` invoke payload에 `use_oklab: settings.useOklab ?? false` 추가
+  - 웹 worker 경로의 camelCase 설정과 Tauri Rust 경로의 snake_case 요청 형식 차이를 명시적으로 맞춤
+- **Regression coverage — native path 회귀 추가**
+  - `src/lib/services/imageProcessor.test.ts`에 Tauri 환경에서 `invoke()` 요청이 `use_oklab`를 포함하는지 검증 추가
+- **Bug knowledge base — 조사 내용 문서화**
+  - `.agents/results/bugs/bug-20260414-tauri-use-oklab-missing.md` 추가
+
+### Verification
+
+- `npm run verify:client`
+  - `73 files passed / 544 tests passed`
+
+### Notes
+
+- 이번 이슈는 palette 자체보다 Tauri native invoke contract mismatch 문제였다.
+
+## v1.6.37 (2026-04-14)
+
+> Pixel Lab palette selection now reaches the actual WASM quantizer path, and the next WP-05 slice added a minimal RetroCam camera-device switch flow with regression coverage.
+
+### Pixel Lab Palette Application Fix
+
+- **WASM palette resolution fix — built-in palette가 실제 backend까지 전달되도록 수정**
+  - `src/lib/utils/quantizerBackend.ts`에서 built-in palette id를 canonical id로 정규화한 뒤 `PALETTES[paletteId]`를 resolve해서 `quantizeWithWasm()`에 전달
+  - JS fallback도 같은 normalized palette / resolved colors 기준을 사용하도록 정리
+- **Regression coverage — 실제 apply path 회귀 보강**
+  - `src/lib/utils/quantizerBackend.test.ts`에 built-in palette와 legacy alias가 WASM 경로에서 정상 해석되는지 검증 추가
+- **Bug knowledge base — 조사 내용 문서화**
+  - `.agents/results/bugs/bug-20260414-pixel-lab-wasm-palette-apply.md` 추가
+
+### vNext Tier 5 — RetroCam Camera Device Switch
+
+- **Store/device inventory — 카메라 장치 목록/선택 상태 추가**
+  - `src/lib/stores/retroCamStore.svelte.ts`에 `availableDevices`, `selectedDeviceId`, `refreshDevices()`, `selectDevice()` 추가
+  - 권한 승인 후 `enumerateDevices()`로 video input 목록을 읽고 선택 장치가 사라지면 `auto`로 복귀하도록 정리
+- **RetroCam UI — 최소 camera source selector 추가**
+  - `src/lib/components/retrocam/RetroCam.svelte`에 `Camera / Auto Camera` selector 추가
+  - `src/lib/i18n/en.ts`, `src/lib/i18n/ko.ts`, `src/lib/i18n/ja.ts`에 camera source 문자열 추가
+- **Regression coverage — selector flow 테스트 보강**
+  - `src/lib/stores/retroCamStore.test.ts`
+  - `src/lib/components/__tests__/RetroCam.test.ts`
+
+### Verification
+
+- `npm run verify:client`
+  - `73 files passed / 543 tests passed`
+
+### Notes
+
+- `Pixel Lab` palette bug는 legacy alias issue를 넘어서 WASM path의 built-in palette color 전달 누락이 실제 원인이었다.
+- `WP-05 RetroCam MVP`는 minimal device switch UX까지 반영됐고, 다음 우선순위는 camera permission/device edge-case polish 또는 durable project storage follow-up이다.
+
 ## v1.6.36 (2026-04-13)
 
 > Pixel Lab palette application was stabilized for legacy data paths by normalizing old palette ids such as `gameboy` to the current canonical palette id `dmg`.

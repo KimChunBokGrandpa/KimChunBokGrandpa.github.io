@@ -224,6 +224,8 @@ export const en = {
   retrocam_save_snapshot: 'Save Snapshot',
   retrocam_open_in_pixel_lab: 'Open in Pixel Lab',
   retrocam_clear_snapshot: 'Clear Snapshot',
+  retrocam_camera_source: 'Camera',
+  retrocam_camera_auto: 'Auto Camera',
   retrocam_live_preview: 'Live Preview',
   retrocam_last_snapshot: 'Last Snapshot',
   retrocam_no_snapshot: 'No snapshot yet. Capture a frame to save it locally.',

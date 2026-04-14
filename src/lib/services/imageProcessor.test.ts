@@ -2,9 +2,15 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { ProcessingSettings } from '$lib/types';
 
+const mockInvoke = vi.fn();
+
 // ─── Mock $app/environment (required by customPaletteStore) ───
 vi.mock('$app/environment', () => ({
   browser: true,
+}));
+
+vi.mock('@tauri-apps/api/core', () => ({
+  invoke: mockInvoke,
 }));
 
 // ─── Mock Web Worker ───
@@ -269,6 +275,69 @@ describe('ImageProcessorService', () => {
       await promise.catch(() => {});
 
       globalThis.Image = origImage;
+      vi.restoreAllMocks();
+    });
+  });
+
+  describe('Tauri processing payload', () => {
+    it('includes use_oklab in the Rust invoke request', async () => {
+      const origImage = globalThis.Image;
+      const originalTauriInternals = (window as Window & { __TAURI_INTERNALS__?: object }).__TAURI_INTERNALS__;
+
+      globalThis.Image = class extends origImage {
+        constructor() {
+          super();
+          Object.defineProperty(this, 'src', {
+            set: () => { setTimeout(() => this.onload?.(new Event('load')), 0); },
+            get: () => '',
+          });
+          Object.defineProperty(this, 'width', { get: () => 32, configurable: true });
+          Object.defineProperty(this, 'height', { get: () => 32, configurable: true });
+        }
+      } as unknown as typeof Image;
+
+      (window as Window & { __TAURI_INTERNALS__?: object }).__TAURI_INTERNALS__ = {};
+      mockInvoke.mockResolvedValue(new Uint8Array(32 * 32 * 4));
+
+      const mockCtx = {
+        drawImage: vi.fn(),
+        getImageData: vi.fn(() => ({
+          data: new Uint8ClampedArray(32 * 32 * 4),
+        })),
+        putImageData: vi.fn(),
+      };
+      const mockCanvas = {
+        width: 0,
+        height: 0,
+        getContext: vi.fn(() => mockCtx),
+        toBlob: vi.fn((cb: (b: Blob | null) => void) => {
+          cb(new Blob(['png'], { type: 'image/png' }));
+        }),
+      };
+      vi.spyOn(document, 'createElement').mockImplementation((tag: string) => {
+        if (tag === 'canvas') return mockCanvas as unknown as HTMLCanvasElement;
+        return document.createElementNS('http://www.w3.org/1999/xhtml', tag) as HTMLElement;
+      });
+
+      const result = await processorService.processImage(
+        'blob:tauri-use-oklab',
+        makeSettings({ palette: 'dmg', useOklab: true }),
+      );
+
+      expect(result).toBeTruthy();
+      expect(mockInvoke).toHaveBeenCalledWith('process_image_rs', expect.objectContaining({
+        req: expect.objectContaining({
+          use_oklab: true,
+          dither_type: 'none',
+        }),
+      }));
+
+      globalThis.Image = origImage;
+      if (originalTauriInternals === undefined) {
+        delete (window as Window & { __TAURI_INTERNALS__?: object }).__TAURI_INTERNALS__;
+      } else {
+        (window as Window & { __TAURI_INTERNALS__?: object }).__TAURI_INTERNALS__ = originalTauriInternals;
+      }
       vi.restoreAllMocks();
     });
   });

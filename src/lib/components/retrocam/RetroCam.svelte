@@ -5,6 +5,7 @@
   import {
     RETROCAM_PRESETS,
     retroCamStore,
+    type RetroCamDeviceId,
     type RetroCamPresetId,
   } from '$lib/stores/retroCamStore.svelte';
 
@@ -46,6 +47,11 @@
 
   async function retryCamera() {
     const stream = await retroCamStore.requestCamera();
+    if (stream) onMessage?.(i18n.t('retrocam_camera_ready'));
+  }
+
+  async function handleDeviceChange(nextDeviceId: RetroCamDeviceId) {
+    const stream = await retroCamStore.selectDevice(nextDeviceId);
     if (stream) onMessage?.(i18n.t('retrocam_camera_ready'));
   }
 
@@ -129,6 +135,20 @@
     </div>
 
     <div class="retrocam-actions">
+      <label class="retrocam-device-picker">
+        <span>{i18n.t('retrocam_camera_source')}</span>
+        <select
+          data-testid="retrocam-device-select"
+          value={retroCamStore.selectedDeviceId}
+          onchange={(event) => handleDeviceChange((event.target as HTMLSelectElement).value as RetroCamDeviceId)}
+          disabled={retroCamStore.permissionState === 'requesting' || retroCamStore.availableDevices.length === 0}
+        >
+          <option value="auto">{i18n.t('retrocam_camera_auto')}</option>
+          {#each retroCamStore.availableDevices as device}
+            <option value={device.deviceId}>{device.label}</option>
+          {/each}
+        </select>
+      </label>
       <button class="toolbar-btn" onclick={retryCamera}>
         {i18n.t(retroCamStore.permissionState === 'ready' ? 'retrocam_retry_camera' : 'retrocam_start_camera')}
       </button>
@@ -236,6 +256,23 @@
     display: flex;
     gap: 6px;
     flex-wrap: wrap;
+  }
+
+  .retrocam-device-picker {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+  }
+
+  .retrocam-device-picker select {
+    min-width: 150px;
+    height: 24px;
+    border: none;
+    box-shadow: var(--w98-inset-thin);
+    background: #fff;
+    font: inherit;
+    padding: 2px 6px;
   }
 
   .toolbar-btn,

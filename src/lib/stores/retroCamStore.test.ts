@@ -42,4 +42,42 @@ describe('retroCamStore', () => {
 
     expect(store.permissionState).toBe('unsupported');
   });
+
+  it('loads available camera devices after successful permission grant', async () => {
+    const store = createRetroCamStore({
+      getUserMedia: vi.fn().mockResolvedValue({
+        getTracks: () => [{ stop: vi.fn() }],
+      } as unknown as MediaStream),
+      enumerateDevices: vi.fn().mockResolvedValue([
+        { kind: 'videoinput', deviceId: 'front-cam', label: 'Front Camera' },
+        { kind: 'videoinput', deviceId: 'rear-cam', label: 'Rear Camera' },
+      ] as MediaDeviceInfo[]),
+    });
+
+    await store.requestCamera();
+
+    expect(store.availableDevices).toHaveLength(2);
+    expect(store.availableDevices[0].label).toBe('Front Camera');
+    expect(store.selectedDeviceId).toBe('auto');
+  });
+
+  it('requests selected device by exact deviceId when user switches camera', async () => {
+    const getUserMedia = vi.fn().mockResolvedValue({
+      getTracks: () => [{ stop: vi.fn() }],
+    } as unknown as MediaStream);
+    const store = createRetroCamStore({
+      getUserMedia,
+      enumerateDevices: vi.fn().mockResolvedValue([
+        { kind: 'videoinput', deviceId: 'front-cam', label: 'Front Camera' },
+      ] as MediaDeviceInfo[]),
+    });
+
+    await store.selectDevice('front-cam');
+
+    expect(getUserMedia).toHaveBeenCalledWith({
+      video: { deviceId: { exact: 'front-cam' } },
+      audio: false,
+    });
+    expect(store.selectedDeviceId).toBe('front-cam');
+  });
 });

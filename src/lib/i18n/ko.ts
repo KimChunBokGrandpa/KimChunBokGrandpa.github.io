@@ -214,6 +214,8 @@ export const ko: Record<TranslationKey, string> = {
   retrocam_save_snapshot: '\uc2a4\ub0c5\uc0f7 \uc800\uc7a5',
   retrocam_open_in_pixel_lab: 'Pixel Lab\uc5d0\uc11c \uc5f4\uae30',
   retrocam_clear_snapshot: '\uc2a4\ub0c5\uc0f7 \uc9c0\uc6b0\uae30',
+  retrocam_camera_source: '\uce74\uba54\ub77c',
+  retrocam_camera_auto: '\uc790\ub3d9 \uce74\uba54\ub77c',
   retrocam_live_preview: '\uc2e4\uc2dc\uac04 \ubbf8\ub9ac\ubcf4\uae30',
   retrocam_last_snapshot: '\ub9c8\uc9c0\ub9c9 \uc2a4\ub0c5\uc0f7',
   retrocam_no_snapshot: '\uc544\uc9c1 \uc2a4\ub0c5\uc0f7\uc774 \uc5c6\uc2b5\ub2c8\ub2e4. \ud55c \ud504\ub808\uc784\uc744 \ucc0d\uc5b4 \ub85c\uceec\uc5d0 \uc800\uc7a5\ud558\uc138\uc694.',

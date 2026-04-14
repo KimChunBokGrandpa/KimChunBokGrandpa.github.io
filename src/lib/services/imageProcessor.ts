@@ -282,7 +282,8 @@ class ImageProcessorService {
               height: procHeight,
               pixel_size: settings.pixelSize,
               palette: paletteColors,
-              dither_type: settings.ditherType || 'none'
+              dither_type: settings.ditherType || 'none',
+              use_oklab: settings.useOklab ?? false,
             }
           });
 

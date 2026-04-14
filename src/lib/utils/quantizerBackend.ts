@@ -1,6 +1,6 @@
 import type { DitherType, QuantizationBackend } from '$lib/types';
 import { applyPixelationAndPalette } from './colorQuantizer';
-import type { RGB } from './palettes';
+import { PALETTES, normalizePaletteId, type RGB } from './palettes';
 import { quantizeWithWasm } from './wasmQuantizer';
 
 export interface QuantizationRequest {
@@ -18,10 +18,11 @@ export function resolveQuantizationBackend(backend?: QuantizationBackend): Quant
 }
 
 export function applyQuantization(request: QuantizationRequest): ImageData {
+  const normalizedPalette = normalizePaletteId(request.palette);
   return applyPixelationAndPalette(
     request.imageData,
     request.pixelSize,
-    request.palette,
+    normalizedPalette,
     request.ditherType ?? 'none',
     request.customPaletteColors,
     request.useOklab,
@@ -30,18 +31,25 @@ export function applyQuantization(request: QuantizationRequest): ImageData {
 
 export async function applyQuantizationAsync(request: QuantizationRequest): Promise<ImageData> {
   const backend = resolveQuantizationBackend(request.backend);
+  const normalizedPalette = normalizePaletteId(request.palette);
+  const resolvedPaletteColors = request.customPaletteColors
+    ?? (normalizedPalette !== 'original' ? PALETTES[normalizedPalette] : undefined);
 
   if (backend === 'wasm') {
     const wasmResult = await quantizeWithWasm({
       imageData: request.imageData,
       pixelSize: request.pixelSize,
       ditherType: request.ditherType,
-      customPaletteColors: request.customPaletteColors,
+      customPaletteColors: resolvedPaletteColors,
       useOklab: request.useOklab,
     });
 
     if (wasmResult) return wasmResult;
   }
 
-  return applyQuantization(request);
+  return applyQuantization({
+    ...request,
+    palette: normalizedPalette,
+    customPaletteColors: request.customPaletteColors ?? resolvedPaletteColors,
+  });
 }

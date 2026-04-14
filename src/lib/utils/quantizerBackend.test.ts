@@ -57,6 +57,11 @@ describe('quantizerBackend', () => {
 
     expect(output).toBe(wasmOutput);
     expect(quantizeWithWasm).toHaveBeenCalledOnce();
+    expect(quantizeWithWasm).toHaveBeenCalledWith(expect.objectContaining({
+      customPaletteColors: expect.arrayContaining([
+        expect.objectContaining({ r: 15, g: 56, b: 15 }),
+      ]),
+    }));
   });
 
   it('falls back to js result when wasm path returns null', async () => {
@@ -80,5 +85,24 @@ describe('quantizerBackend', () => {
     expect(output.width).toBe(2);
     expect(output.height).toBe(1);
     expect(Array.from(output.data)).not.toEqual(Array.from(input.data));
+  });
+
+  it('normalizes legacy palette ids before resolving wasm palette colors', async () => {
+    const input = new ImageData(new Uint8ClampedArray([1, 2, 3, 255]), 1, 1);
+    const wasmOutput = new ImageData(new Uint8ClampedArray([9, 8, 7, 255]), 1, 1);
+    quantizeWithWasm.mockResolvedValueOnce(wasmOutput);
+
+    await applyQuantizationAsync({
+      imageData: input,
+      pixelSize: 1,
+      palette: 'gameboy',
+      backend: 'wasm',
+    });
+
+    expect(quantizeWithWasm).toHaveBeenCalledWith(expect.objectContaining({
+      customPaletteColors: expect.arrayContaining([
+        expect.objectContaining({ r: 15, g: 56, b: 15 }),
+      ]),
+    }));
   });
 });

@@ -47,11 +47,15 @@ describe('RetroCam', () => {
       getUserMedia: vi.fn().mockResolvedValue({
         getTracks: () => [{ stop: vi.fn() }],
       } as unknown as MediaStream),
+      enumerateDevices: vi.fn().mockResolvedValue([
+        { kind: 'videoinput', deviceId: 'front-cam', label: 'Front Camera' },
+      ] as MediaDeviceInfo[]),
     });
 
     render(RetroCam, { props: {} });
 
     expect(await screen.findByTestId('retrocam-video')).toBeTruthy();
+    expect(screen.getByTestId('retrocam-device-select')).toBeTruthy();
     expect(screen.getByText('retrocam_preset_clean_pixel')).toBeTruthy();
     expect(screen.getByText('retrocam_preset_crt_pop')).toBeTruthy();
     expect(screen.getByText('retrocam_preset_game_boy')).toBeTruthy();
@@ -104,5 +108,33 @@ describe('RetroCam', () => {
     const [file, presetId] = onOpenInPixelLab.mock.calls[0] as [File, string];
     expect(file.name).toMatch(/^retrocam_snapshot_/);
     expect(presetId).toBe('clean_pixel');
+  });
+
+  it('switches camera devices through the selector', async () => {
+    const getUserMedia = vi.fn().mockResolvedValue({
+      getTracks: () => [{ stop: vi.fn() }],
+    } as unknown as MediaStream);
+
+    resetRetroCamStore({
+      getUserMedia,
+      enumerateDevices: vi.fn().mockResolvedValue([
+        { kind: 'videoinput', deviceId: 'front-cam', label: 'Front Camera' },
+        { kind: 'videoinput', deviceId: 'rear-cam', label: 'Rear Camera' },
+      ] as MediaDeviceInfo[]),
+    });
+
+    render(RetroCam, { props: {} });
+
+    const select = await screen.findByTestId('retrocam-device-select') as HTMLSelectElement;
+    await waitFor(() => expect(select.options.length).toBe(3));
+    select.value = 'rear-cam';
+    await fireEvent.change(select);
+
+    await waitFor(() => {
+      expect(getUserMedia).toHaveBeenLastCalledWith({
+        video: { deviceId: { exact: 'rear-cam' } },
+        audio: false,
+      });
+    });
   });
 });

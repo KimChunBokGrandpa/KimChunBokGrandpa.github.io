@@ -1,6 +1,6 @@
 # PLAN_TASK — Retro Pixel Converter
 
-> v1.6.36 기준 상태 반영 완료 (2026-04-13). 전체 구현 이력은 `REVISION_HISTORY.md` 참조.
+> v1.6.38 기준 상태 반영 완료 (2026-04-14). 전체 구현 이력은 `REVISION_HISTORY.md` 참조.
 > 추천 UI interaction 회귀 보강 반영 (2026-04-09).
 > QA 전체 리뷰 수행 (2026-03-25). P0~P2 수정 완료.
 > 제품 backlog 및 기능 우선순위는 `docs/vnext/` 문서 세트를 우선 기준으로 운영하며, `_workspace/plan_04_roadmap.md`는 레거시 계획 참고 문서로 유지한다.
@@ -89,12 +89,21 @@
   - `gameboy -> dmg` canonical palette normalization 추가
   - settings / preset import / processing 경계에서 legacy palette id를 정규화
   - `Pixel Lab` 팔레트 적용 회귀 테스트 보강
+- `Pixel Lab palette application` — ✅ WASM palette apply gap 수정 완료
+  - built-in palette 선택/프리셋 적용 시 palette RGB가 WASM backend로 실제 전달되도록 수정
+  - JS fallback과 WASM path가 같은 normalized palette / resolved palette colors 기준을 사용하도록 정리
+  - `quantizerBackend` 회귀 테스트와 bug note 추가
+- `Pixel Lab Tauri native payload` — ✅ `use_oklab` contract mismatch 수정 완료
+  - `process_image_rs` invoke payload에 `use_oklab` snake_case 필드 추가
+  - 웹 경로와 Tauri Rust 경로의 요청 형식 차이로 생기던 native-only failure 제거
+  - `imageProcessor` Tauri invoke 회귀 테스트와 bug note 추가
 - `vNext / WP-05` RetroCam MVP — 🚧 handoff slice 진행 중
   - `RetroCam` desktop app/window/icon shell 연결
   - `retroCamStore`로 webcam permission 상태(`requesting/ready/denied/unavailable/busy/unsupported/error`) 관리 추가
   - live preset strip + still snapshot capture/save UI 추가
   - `Open in Pixel Lab` 버튼, capture asset/project wiring, `edit_capture` handoff 소비 연결
   - desktop icon launch -> capture -> `Pixel Lab` load integration harness 추가
+  - camera device switch 최소 UX 및 회귀 테스트 추가
   - `RetroCam` / `retroCamStore` / handoff / shell icon/window 회귀 테스트 보강
 - `Interaction Coverage` — ✅ 추가 보강 완료
   - `CompareView` onion slider interaction 테스트 추가
@@ -108,7 +117,8 @@
 - `vNext / WP-05` RetroCam MVP 착수
   - scope freeze 완료: `webcam-only + still snapshot + RetroCam -> Pixel Lab`
   - shell/window + permission/live preview + snapshot save + `Pixel Lab` handoff + desktop integration coverage 완료
-  - 다음 구현: camera device switch 최소 UX 검토
+  - camera device switch 최소 UX 완료
+  - 다음 구현 후보: camera permission/device edge-case UX polish 또는 durable project storage 한계 문서화 보강
   - 선택 follow-up: durable project storage 전환 전 handoff persistence 한계 문서화 보강
 - `P3-005` 추천 품질 개선
   - 남은 휴리스틱 edge case를 더 찾고 설명 문구 선택 기준을 다듬기
@@ -177,10 +187,12 @@
 
 ## Known Issues
 
-- svelte-check 결과: **0 에러, 0 경고** (2026-04-13 확인)
-- npm test: **targeted palette regression 59 tests 통과**
+- svelte-check 결과: **0 에러, 0 경고** (2026-04-14 확인)
+- npm test: **full verify 기준 544 tests 통과**
 - `RetroCam` webcam flow와 `Open in Pixel Lab` handoff는 자동 테스트 green이지만 실제 브라우저 권한 프롬프트/디바이스별 수동 확인은 아직 필요
 - `.agents/results/bugs/bug-20260413-pixel-lab-palette-legacy-alias.md`에 이번 palette issue 조사/수정 내역을 기록
+- `.agents/results/bugs/bug-20260414-pixel-lab-wasm-palette-apply.md`에 WASM palette apply gap 조사/수정 내역을 기록
+- `.agents/results/bugs/bug-20260414-tauri-use-oklab-missing.md`에 Tauri invoke payload mismatch 조사/수정 내역을 기록
 - npm run lint: **0 errors, 0 warnings**
 - `verify:client`: **lint + check + test 전체 통과**
 - 프로젝트 runtime storage는 현재 in-memory adapter 기반이라 새로고침/재시작 간 durable persistence는 아직 미구현
@@ -203,7 +215,7 @@ npm run dev          # 개발 서버 (port 1420)
 npm run verify:client # lint + 타입 체크 + 테스트 일괄 검증
 npm run lint         # ESLint (현재 0 errors / 0 warnings)
 npm run check        # 타입 체크
-npm test             # 테스트 실행 (현재 529개, 69 files)
+npm test             # 테스트 실행 (현재 544개, 73 files)
 npm run test:e2e     # Playwright E2E (4개 시나리오)
 npm run benchmark:quantizer:runtime  # 브라우저 quantizer runtime snapshot
 npm run build-storybook  # Storybook 정적 빌드
