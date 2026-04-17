@@ -17,36 +17,36 @@ export interface PosterStickerStyleOption {
   labelKey: 'poster_sticker_none' | 'poster_sticker_pixel_lab' | 'poster_sticker_new_burst';
 }
 
-export const DEFAULT_POSTER_FRAME_STYLE_ID: PosterFrameStyleId = 'classic';
-export const DEFAULT_POSTER_OVERLAY_STYLE_ID: PosterOverlayStyleId = 'sunset';
-export const DEFAULT_POSTER_STICKER_STYLE_ID: PosterStickerStyleId = 'pixel_lab';
+export const defaultPosterFrameStyleId: PosterFrameStyleId = 'classic';
+export const defaultPosterOverlayStyleId: PosterOverlayStyleId = 'sunset';
+export const defaultPosterStickerStyleId: PosterStickerStyleId = 'pixel_lab';
 
-export const POSTER_FRAME_STYLES: PosterFrameStyleOption[] = [
+export const posterFrameStyles: PosterFrameStyleOption[] = [
   { id: 'none', labelKey: 'poster_frame_none' },
   { id: 'classic', labelKey: 'poster_frame_classic' },
   { id: 'marquee', labelKey: 'poster_frame_marquee' },
 ];
 
-export const POSTER_OVERLAY_STYLES: PosterOverlayStyleOption[] = [
+export const posterOverlayStyles: PosterOverlayStyleOption[] = [
   { id: 'none', labelKey: 'poster_overlay_none' },
   { id: 'sunset', labelKey: 'poster_overlay_sunset' },
   { id: 'cool', labelKey: 'poster_overlay_cool' },
 ];
 
-export const POSTER_STICKER_STYLES: PosterStickerStyleOption[] = [
+export const posterStickerStyles: PosterStickerStyleOption[] = [
   { id: 'none', labelKey: 'poster_sticker_none' },
   { id: 'pixel_lab', labelKey: 'poster_sticker_pixel_lab' },
   { id: 'new_burst', labelKey: 'poster_sticker_new_burst' },
 ];
 
 export function isPosterFrameStyleId(value: string): value is PosterFrameStyleId {
-  return POSTER_FRAME_STYLES.some((option) => option.id === value);
+  return posterFrameStyles.some((option) => option.id === value);
 }
 
 export function isPosterOverlayStyleId(value: string): value is PosterOverlayStyleId {
-  return POSTER_OVERLAY_STYLES.some((option) => option.id === value);
+  return posterOverlayStyles.some((option) => option.id === value);
 }
 
 export function isPosterStickerStyleId(value: string): value is PosterStickerStyleId {
-  return POSTER_STICKER_STYLES.some((option) => option.id === value);
+  return posterStickerStyles.some((option) => option.id === value);
 }

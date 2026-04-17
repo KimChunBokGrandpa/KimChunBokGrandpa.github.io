@@ -22,20 +22,20 @@ export interface ImageExportInput {
   filename?: string;
 }
 
-const MIME_MAP: Record<SaveFormat, string> = {
+const mimeMap: Record<SaveFormat, string> = {
   png: "image/png",
   jpeg: "image/jpeg",
   webp: "image/webp",
 };
 
-const EXT_MAP: Record<SaveFormat, string> = {
+const extMap: Record<SaveFormat, string> = {
   png: "png",
   jpeg: "jpg",
   webp: "webp",
 };
 
 /** Timeout for image loading in imageSrcToBlob to prevent indefinite hangs */
-const IMAGE_LOAD_TIMEOUT_MS = 30_000;
+const imageLoadTimeoutMs = 30_000;
 
 /**
  * Load an image src into a canvas and export as Blob.
@@ -52,7 +52,7 @@ async function imageSrcToBlob(
     const timer = setTimeout(() => {
       img.src = "";
       reject(new Error("Image load timed out"));
-    }, IMAGE_LOAD_TIMEOUT_MS);
+    }, imageLoadTimeoutMs);
 
     img.onload = () => {
       clearTimeout(timer);
@@ -82,8 +82,8 @@ async function imageSrcToBlob(
 /**
  * Convert a canvas directly to Blob (avoids re-decoding from URL).
  */
-const BLOB_TIMEOUT_MS = 10_000;
-const DOWNLOAD_URL_REVOKE_DELAY_MS = 1_000;
+const blobTimeoutMs = 10_000;
+const downloadUrlRevokeDelayMs = 1_000;
 
 function canvasToBlob(
   canvas: HTMLCanvasElement,
@@ -93,8 +93,8 @@ function canvasToBlob(
   return new Promise<Blob>((resolve, reject) => {
     const timer = setTimeout(() => {
       reject(new Error("toBlob timed out"));
-    }, BLOB_TIMEOUT_MS);
-    const mime = MIME_MAP[format];
+    }, blobTimeoutMs);
+    const mime = mimeMap[format];
     const q = format === "png" ? undefined : quality;
     canvas.toBlob(
       (blob) => {
@@ -109,7 +109,7 @@ function canvasToBlob(
 }
 
 function resolveFilename(options: SaveOptions): string {
-  const ext = EXT_MAP[options.format];
+  const ext = extMap[options.format];
   return options.filename
     ? `${options.filename}.${ext}`
     : `retro_pixel_${Date.now()}.${ext}`;
@@ -146,7 +146,7 @@ async function buildExportFile(
   cssFilter?: string,
 ): Promise<File> {
   const blobData = await buildBlobData(processedImageSrc, options, sourceCanvas, cssFilter);
-  const mime = MIME_MAP[options.format];
+  const mime = mimeMap[options.format];
   return new File([blobData], resolveFilename(options), { type: mime });
 }
 
@@ -169,7 +169,7 @@ function triggerBrowserDownload(file: File): string {
   document.body.removeChild(a);
   setTimeout(() => {
     URL.revokeObjectURL(url);
-  }, DOWNLOAD_URL_REVOKE_DELAY_MS);
+  }, downloadUrlRevokeDelayMs);
   return i18n.t('image_downloaded');
 }
 
@@ -204,7 +204,7 @@ export async function saveImage(
   cssFilter?: string,
 ): Promise<string> {
   const blobData = await buildBlobData(processedImageSrc, options, sourceCanvas, cssFilter);
-  const ext = EXT_MAP[options.format];
+  const ext = extMap[options.format];
   const filename = resolveFilename(options);
 
   if (isTauri) {
@@ -227,7 +227,7 @@ export async function saveImage(
     return ""; // User cancelled
   }
 
-  const mime = MIME_MAP[options.format];
+  const mime = mimeMap[options.format];
   const file = new File([blobData], filename, { type: mime });
   return triggerBrowserDownload(file);
 }

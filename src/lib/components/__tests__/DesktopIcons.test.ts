@@ -2,6 +2,20 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, cleanup } from '@testing-library/svelte';
 import { fireEvent } from '@testing-library/svelte';
+
+vi.mock('$lib/i18n/index.svelte', () => ({
+  i18n: {
+    t: vi.fn((key: string, ...args: (string | number)[]) => {
+      if (key === 'desktop_shortcuts') return 'Desktop Programs';
+      if (key === 'desktop_open_program') return `Open ${args[0]}`;
+      if (key === 'win_preview') return 'Pixel Lab';
+      if (key === 'win_poster_maker') return 'Poster Maker';
+      if (key === 'win_retrocam') return 'RetroCam';
+      return key;
+    }),
+  },
+}));
+
 import DesktopIcons from '../window/DesktopIcons.svelte';
 import type { WindowId } from '$lib/types';
 
@@ -61,6 +75,12 @@ describe('DesktopIcons', () => {
     buttons.forEach((btn) => {
       expect(btn.getAttribute('aria-label')).toBeTruthy();
     });
+  });
+
+  it('uses localized open-program wording for desktop icon aria-labels', () => {
+    const { container } = render(DesktopIcons, { props: defaultProps() });
+    const firstButton = container.querySelectorAll('.desktop-icon')[0];
+    expect(firstButton?.getAttribute('aria-label')).toBe('Open Pixel Lab');
   });
 
   it('calls onIconDblClick on Enter keydown', async () => {

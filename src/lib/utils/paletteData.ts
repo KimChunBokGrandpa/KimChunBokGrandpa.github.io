@@ -68,18 +68,18 @@ function generateFromSeeds(seeds: string[], count: number, lightRange: [number, 
 }
 
 // ─── Theme Seed Colors (hand-crafted base colors per theme) ───
-const EARTH_SEEDS = ["#1A0E00", "#4A2800", "#8B5E3C", "#C8A882", "#2D4A1E", "#5C8A3C", "#7BA0C8", "#F0E8D8"];
-const NEON_SEEDS = ["#FF0055", "#00FF88", "#00BBFF", "#FF8800", "#AA00FF", "#FFFF00"];
-const OCEAN_SEEDS = [
+const earthSeeds = ["#1A0E00", "#4A2800", "#8B5E3C", "#C8A882", "#2D4A1E", "#5C8A3C", "#7BA0C8", "#F0E8D8"];
+const neonSeeds = ["#FF0055", "#00FF88", "#00BBFF", "#FF8800", "#AA00FF", "#FFFF00"];
+const oceanSeeds = [
   "#001020", "#002040", "#003870", "#0058A0", "#0080D0", "#20A8E8", "#60C8F0", "#A0E0F8",
   "#004040", "#007060", "#00A088", "#40D0B0", "#D0F0F0", "#F8F8FF", "#182830", "#304858",
 ];
-const SUNSET_SEEDS = ["#2D0A31", "#C62E46", "#F58A07", "#F9DC5C"];
-const VINTAGE_SEEDS = ["#2B2018", "#6B4830", "#A87850", "#D8B888", "#384828", "#607848", "#889078", "#E8E0D0"];
-const FOREST_SEEDS = ["#0A1A08", "#1A3A10", "#2D6020", "#50A038", "#80D060", "#B8F090", "#4A3020", "#F0E8C0"];
-const PASTEL_SEEDS = ["#F8B4C8", "#B8D4E8", "#C8E8B0", "#F8E8A0", "#E0C0F0", "#F0D0B0", "#C0E8E0"];
+const sunsetSeeds = ["#2D0A31", "#C62E46", "#F58A07", "#F9DC5C"];
+const vintageSeeds = ["#2B2018", "#6B4830", "#A87850", "#D8B888", "#384828", "#607848", "#889078", "#E8E0D0"];
+const forestSeeds = ["#0A1A08", "#1A3A10", "#2D6020", "#50A038", "#80D060", "#B8F090", "#4A3020", "#F0E8C0"];
+const pastelSeeds = ["#F8B4C8", "#B8D4E8", "#C8E8B0", "#F8E8A0", "#E0C0F0", "#F0D0B0", "#C0E8E0"];
 
-export const PALETTE_HEX_DATA: Record<string, string[]> = {
+export const paletteHexData: Record<string, string[]> = {
   // ─── 2-Color Palettes ───
   monochrome: ["#000000", "#FFFFFF"],
   sepia2: ["#2B1B0E", "#D4A96A"],
@@ -514,79 +514,79 @@ export const PALETTE_HEX_DATA: Record<string, string[]> = {
   // Extracts H/S from hand-crafted seed colors to preserve the theme's native color feel.
 
   // ─── Earth Tone Series ───
-  earth2:   generateFromSeeds(EARTH_SEEDS, 2),
-  earth4:   generateFromSeeds(EARTH_SEEDS, 4),
-  earth8:   generateFromSeeds(EARTH_SEEDS, 8),
-  earth16:  generateFromSeeds(EARTH_SEEDS, 16),
-  earth32:  generateFromSeeds(EARTH_SEEDS, 32),
-  earth48:  generateFromSeeds(EARTH_SEEDS, 48),
-  earth64:  generateFromSeeds(EARTH_SEEDS, 64),
-  earth128: generateFromSeeds(EARTH_SEEDS, 128),
-  earth256: generateFromSeeds(EARTH_SEEDS, 256),
+  earth2:   generateFromSeeds(earthSeeds, 2),
+  earth4:   generateFromSeeds(earthSeeds, 4),
+  earth8:   generateFromSeeds(earthSeeds, 8),
+  earth16:  generateFromSeeds(earthSeeds, 16),
+  earth32:  generateFromSeeds(earthSeeds, 32),
+  earth48:  generateFromSeeds(earthSeeds, 48),
+  earth64:  generateFromSeeds(earthSeeds, 64),
+  earth128: generateFromSeeds(earthSeeds, 128),
+  earth256: generateFromSeeds(earthSeeds, 256),
 
   // ─── Neon Glow Series ───
-  neon2:   generateFromSeeds(NEON_SEEDS, 2),
-  neon4:   generateFromSeeds(NEON_SEEDS, 4),
-  neon8:   generateFromSeeds(NEON_SEEDS, 8),
-  neon16:  generateFromSeeds(NEON_SEEDS, 16),
-  neon32:  generateFromSeeds(NEON_SEEDS, 32),
-  neon48:  generateFromSeeds(NEON_SEEDS, 48),
-  neon64:  generateFromSeeds(NEON_SEEDS, 64),
-  neon128: generateFromSeeds(NEON_SEEDS, 128),
-  neon256: generateFromSeeds(NEON_SEEDS, 256),
+  neon2:   generateFromSeeds(neonSeeds, 2),
+  neon4:   generateFromSeeds(neonSeeds, 4),
+  neon8:   generateFromSeeds(neonSeeds, 8),
+  neon16:  generateFromSeeds(neonSeeds, 16),
+  neon32:  generateFromSeeds(neonSeeds, 32),
+  neon48:  generateFromSeeds(neonSeeds, 48),
+  neon64:  generateFromSeeds(neonSeeds, 64),
+  neon128: generateFromSeeds(neonSeeds, 128),
+  neon256: generateFromSeeds(neonSeeds, 256),
 
   // ─── Ocean Series ───
-  ocean2:   generateFromSeeds(OCEAN_SEEDS, 2),
-  ocean4:   generateFromSeeds(OCEAN_SEEDS, 4),
-  ocean8:   generateFromSeeds(OCEAN_SEEDS, 8),
-  ocean16:  generateFromSeeds(OCEAN_SEEDS, 16),
-  ocean32:  generateFromSeeds(OCEAN_SEEDS, 32),
-  ocean48:  generateFromSeeds(OCEAN_SEEDS, 48),
-  ocean64:  generateFromSeeds(OCEAN_SEEDS, 64),
-  ocean128: generateFromSeeds(OCEAN_SEEDS, 128),
-  ocean256: generateFromSeeds(OCEAN_SEEDS, 256),
+  ocean2:   generateFromSeeds(oceanSeeds, 2),
+  ocean4:   generateFromSeeds(oceanSeeds, 4),
+  ocean8:   generateFromSeeds(oceanSeeds, 8),
+  ocean16:  generateFromSeeds(oceanSeeds, 16),
+  ocean32:  generateFromSeeds(oceanSeeds, 32),
+  ocean48:  generateFromSeeds(oceanSeeds, 48),
+  ocean64:  generateFromSeeds(oceanSeeds, 64),
+  ocean128: generateFromSeeds(oceanSeeds, 128),
+  ocean256: generateFromSeeds(oceanSeeds, 256),
 
   // ─── Sunset Series ───
-  sunset2:   generateFromSeeds(SUNSET_SEEDS, 2),
-  sunset4:   generateFromSeeds(SUNSET_SEEDS, 4),
-  sunset8:   generateFromSeeds(SUNSET_SEEDS, 8),
-  sunset16:  generateFromSeeds(SUNSET_SEEDS, 16),
-  sunset32:  generateFromSeeds(SUNSET_SEEDS, 32),
-  sunset48:  generateFromSeeds(SUNSET_SEEDS, 48),
-  sunset64:  generateFromSeeds(SUNSET_SEEDS, 64),
-  sunset128: generateFromSeeds(SUNSET_SEEDS, 128),
-  sunset256: generateFromSeeds(SUNSET_SEEDS, 256),
+  sunset2:   generateFromSeeds(sunsetSeeds, 2),
+  sunset4:   generateFromSeeds(sunsetSeeds, 4),
+  sunset8:   generateFromSeeds(sunsetSeeds, 8),
+  sunset16:  generateFromSeeds(sunsetSeeds, 16),
+  sunset32:  generateFromSeeds(sunsetSeeds, 32),
+  sunset48:  generateFromSeeds(sunsetSeeds, 48),
+  sunset64:  generateFromSeeds(sunsetSeeds, 64),
+  sunset128: generateFromSeeds(sunsetSeeds, 128),
+  sunset256: generateFromSeeds(sunsetSeeds, 256),
 
   // ─── Vintage Film Series ───
-  vintage2:   generateFromSeeds(VINTAGE_SEEDS, 2),
-  vintage4:   generateFromSeeds(VINTAGE_SEEDS, 4),
-  vintage8:   generateFromSeeds(VINTAGE_SEEDS, 8),
-  vintage16:  generateFromSeeds(VINTAGE_SEEDS, 16),
-  vintage32:  generateFromSeeds(VINTAGE_SEEDS, 32),
-  vintage48:  generateFromSeeds(VINTAGE_SEEDS, 48),
-  vintage64:  generateFromSeeds(VINTAGE_SEEDS, 64),
-  vintage128: generateFromSeeds(VINTAGE_SEEDS, 128),
-  vintage256: generateFromSeeds(VINTAGE_SEEDS, 256),
+  vintage2:   generateFromSeeds(vintageSeeds, 2),
+  vintage4:   generateFromSeeds(vintageSeeds, 4),
+  vintage8:   generateFromSeeds(vintageSeeds, 8),
+  vintage16:  generateFromSeeds(vintageSeeds, 16),
+  vintage32:  generateFromSeeds(vintageSeeds, 32),
+  vintage48:  generateFromSeeds(vintageSeeds, 48),
+  vintage64:  generateFromSeeds(vintageSeeds, 64),
+  vintage128: generateFromSeeds(vintageSeeds, 128),
+  vintage256: generateFromSeeds(vintageSeeds, 256),
 
   // ─── Forest Canopy Series ───
-  forest2:   generateFromSeeds(FOREST_SEEDS, 2),
-  forest4:   generateFromSeeds(FOREST_SEEDS, 4),
-  forest8:   generateFromSeeds(FOREST_SEEDS, 8),
-  forest16:  generateFromSeeds(FOREST_SEEDS, 16),
-  forest32:  generateFromSeeds(FOREST_SEEDS, 32),
-  forest48:  generateFromSeeds(FOREST_SEEDS, 48),
-  forest64:  generateFromSeeds(FOREST_SEEDS, 64),
-  forest128: generateFromSeeds(FOREST_SEEDS, 128),
-  forest256: generateFromSeeds(FOREST_SEEDS, 256),
+  forest2:   generateFromSeeds(forestSeeds, 2),
+  forest4:   generateFromSeeds(forestSeeds, 4),
+  forest8:   generateFromSeeds(forestSeeds, 8),
+  forest16:  generateFromSeeds(forestSeeds, 16),
+  forest32:  generateFromSeeds(forestSeeds, 32),
+  forest48:  generateFromSeeds(forestSeeds, 48),
+  forest64:  generateFromSeeds(forestSeeds, 64),
+  forest128: generateFromSeeds(forestSeeds, 128),
+  forest256: generateFromSeeds(forestSeeds, 256),
 
   // ─── Pastel Dream Series ───
-  pastel2:   generateFromSeeds(PASTEL_SEEDS, 2, [0.55, 0.93]),
-  pastel4:   generateFromSeeds(PASTEL_SEEDS, 4, [0.55, 0.93]),
-  pastel8:   generateFromSeeds(PASTEL_SEEDS, 8, [0.50, 0.93]),
-  pastel16:  generateFromSeeds(PASTEL_SEEDS, 16, [0.50, 0.93]),
-  pastel32:  generateFromSeeds(PASTEL_SEEDS, 32, [0.45, 0.93]),
-  pastel48:  generateFromSeeds(PASTEL_SEEDS, 48, [0.45, 0.93]),
-  pastel64:  generateFromSeeds(PASTEL_SEEDS, 64, [0.40, 0.93]),
-  pastel128: generateFromSeeds(PASTEL_SEEDS, 128, [0.40, 0.93]),
-  pastel256: generateFromSeeds(PASTEL_SEEDS, 256, [0.35, 0.93]),
+  pastel2:   generateFromSeeds(pastelSeeds, 2, [0.55, 0.93]),
+  pastel4:   generateFromSeeds(pastelSeeds, 4, [0.55, 0.93]),
+  pastel8:   generateFromSeeds(pastelSeeds, 8, [0.50, 0.93]),
+  pastel16:  generateFromSeeds(pastelSeeds, 16, [0.50, 0.93]),
+  pastel32:  generateFromSeeds(pastelSeeds, 32, [0.45, 0.93]),
+  pastel48:  generateFromSeeds(pastelSeeds, 48, [0.45, 0.93]),
+  pastel64:  generateFromSeeds(pastelSeeds, 64, [0.40, 0.93]),
+  pastel128: generateFromSeeds(pastelSeeds, 128, [0.40, 0.93]),
+  pastel256: generateFromSeeds(pastelSeeds, 256, [0.35, 0.93]),
 };

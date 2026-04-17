@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { DESKTOP_WINDOW_CONFIGS, getWindowTitle } from '$lib/stores/windowStore.svelte';
+  import { desktopWindowConfigs, getWindowTitle } from '$lib/stores/windowStore.svelte';
   import type { WindowId } from '$lib/types';
   import { i18n } from '$lib/i18n/index.svelte';
 
@@ -15,7 +15,7 @@
 </script>
 
 <div class="desktop-icons" role="toolbar" aria-label={i18n.t('desktop_shortcuts')}>
-  {#each DESKTOP_WINDOW_CONFIGS as cfg}
+  {#each desktopWindowConfigs as cfg}
     <button
       class="desktop-icon"
       class:icon-selected={selectedIcon === cfg.id}
@@ -31,7 +31,7 @@
           if (prev) { prev.focus(); e.preventDefault(); }
         }
       }}
-      aria-label="Open {getWindowTitle(cfg.id)}"
+      aria-label={i18n.t('desktop_open_program', getWindowTitle(cfg.id))}
       title={getWindowTitle(cfg.id)}
     >
       <span class="icon-img" aria-hidden="true">{cfg.icon}</span>

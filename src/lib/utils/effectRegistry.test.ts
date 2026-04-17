@@ -5,7 +5,7 @@ import {
   getRegisteredEffectIds,
   resetEffectRegistryForTests,
 } from './effectRegistry';
-import { BUILT_IN_EFFECTS, ensureBuiltInEffectsRegistered } from './effects';
+import { builtInEffects, ensureBuiltInEffectsRegistered } from './effects';
 
 describe('effectRegistry', () => {
   beforeEach(() => {
@@ -14,13 +14,13 @@ describe('effectRegistry', () => {
 
   it('registers built-in effects through the initializer', () => {
     ensureBuiltInEffectsRegistered();
-    expect(getRegisteredEffectIds()).toEqual(BUILT_IN_EFFECTS.map((effect) => effect.id));
+    expect(getRegisteredEffectIds()).toEqual(builtInEffects.map((effect) => effect.id));
   });
 
   it('is safe to initialize multiple times', () => {
     ensureBuiltInEffectsRegistered();
     ensureBuiltInEffectsRegistered();
-    expect(getAllEffects()).toHaveLength(BUILT_IN_EFFECTS.length);
+    expect(getAllEffects()).toHaveLength(builtInEffects.length);
   });
 
   it('keeps category metadata for registry-driven menus', () => {

@@ -1,9 +1,17 @@
 import {
+  createIndexedDbProjectStorageAdapter,
   createInMemoryProjectStorageAdapter,
   type ProjectStorageAdapter,
 } from '$lib/projects/storageAdapter';
 
-let projectStorageAdapter: ProjectStorageAdapter = createInMemoryProjectStorageAdapter();
+function createDefaultProjectStorageAdapter(): ProjectStorageAdapter {
+  if (typeof indexedDB !== 'undefined') {
+    return createIndexedDbProjectStorageAdapter(indexedDB);
+  }
+  return createInMemoryProjectStorageAdapter();
+}
+
+let projectStorageAdapter: ProjectStorageAdapter = createDefaultProjectStorageAdapter();
 
 export function getProjectStorageAdapter(): ProjectStorageAdapter {
   return projectStorageAdapter;
@@ -14,6 +22,5 @@ export function setProjectStorageAdapter(nextAdapter: ProjectStorageAdapter) {
 }
 
 export function resetProjectStorageAdapter() {
-  projectStorageAdapter = createInMemoryProjectStorageAdapter();
+  projectStorageAdapter = createDefaultProjectStorageAdapter();
 }
-

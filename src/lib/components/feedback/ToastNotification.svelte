@@ -4,15 +4,15 @@
 
   export type ToastVariant = 'success' | 'error' | 'warning';
 
-  const VARIANT_ICONS: Record<ToastVariant, string> = {
+  const variantIcons: Record<ToastVariant, string> = {
     success: '\u2705',
     error: '\u274C',
     warning: '\u26A0\uFE0F',
   };
 
-  const SHORT_MSG_THRESHOLD = 50;
-  const SHORT_DURATION = 3000;
-  const LONG_DURATION = 5000;
+  const shortMessageThreshold = 50;
+  const shortDurationMs = 3000;
+  const longDurationMs = 5000;
 
   let {
     message,
@@ -29,7 +29,7 @@
   } = $props();
 
   const effectiveDuration = $derived(
-    duration ?? (message.length >= SHORT_MSG_THRESHOLD ? LONG_DURATION : SHORT_DURATION)
+    duration ?? (message.length >= shortMessageThreshold ? longDurationMs : shortDurationMs)
   );
 
   let visible = $state(true);
@@ -47,7 +47,7 @@
 
 {#if visible}
   <div class="toast toast-{variant}" role="status" aria-live="polite">
-    <span class="toast-icon">{VARIANT_ICONS[variant]}</span>
+    <span class="toast-icon">{variantIcons[variant]}</span>
     <span class="toast-msg">{message}</span>
     {#if action}
       <button class="toast-action" onclick={(e) => { e.stopPropagation(); action.onclick(); dismiss(); }}>{action.label}</button>

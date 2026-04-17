@@ -13,7 +13,7 @@ export interface Preset {
   ditherType: DitherType;
 }
 
-export const PRESETS: Preset[] = [
+export const presets: Preset[] = [
   { id: 'retro_crt',  icon: '📺', labelKey: 'preset_retro_crt',  pixelSize: 3, palette: 'win256',      crtEffect: 'horizontal', glitchFilters: [],                                                                   renderMode: 'pixel_perfect', ditherType: 'none' },
   { id: 'gameboy',    icon: '🎮', labelKey: 'preset_gameboy',    pixelSize: 4, palette: 'dmg',          crtEffect: 'none',       glitchFilters: [],                                                                   renderMode: 'pixel_perfect', ditherType: 'none' },
   { id: 'nes',        icon: '🕹️', labelKey: 'preset_nes',        pixelSize: 3, palette: 'nes',          crtEffect: 'none',       glitchFilters: [],                                                                   renderMode: 'pixel_perfect', ditherType: 'none' },

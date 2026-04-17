@@ -8,11 +8,11 @@ export interface CustomPalette {
   createdAt: number;
 }
 
-const STORAGE_KEY = 'imageToPixel_customPalettes';
+const storageKey = 'imageToPixel_customPalettes';
 
 function loadFromStorage(): CustomPalette[] {
   if (!browser) return [];
-  const stored = localStorage.getItem(STORAGE_KEY);
+  const stored = localStorage.getItem(storageKey);
   if (!stored) return [];
   try {
     return JSON.parse(stored);
@@ -25,7 +25,7 @@ function loadFromStorage(): CustomPalette[] {
 function saveToStorage(palettes: CustomPalette[]) {
   if (!browser) return;
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(palettes));
+    localStorage.setItem(storageKey, JSON.stringify(palettes));
   } catch (err) {
     console.error('Failed to save custom palettes to localStorage:', err);
   }

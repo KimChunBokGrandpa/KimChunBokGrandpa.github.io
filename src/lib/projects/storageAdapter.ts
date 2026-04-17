@@ -95,3 +95,4 @@ export function createInMemoryProjectStorageAdapter(): ProjectStorageAdapter {
   return new InMemoryProjectStorageAdapter();
 }
 
+export { createIndexedDbProjectStorageAdapter } from '$lib/projects/persistentStorageAdapter';

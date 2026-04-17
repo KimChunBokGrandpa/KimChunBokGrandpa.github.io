@@ -1,6 +1,6 @@
 import type { AppId } from '$lib/projects/schema';
 
-export const CROSS_APP_HANDOFF_VERSION = 1 as const;
+export const crossAppHandoffVersion = 1 as const;
 
 export type HandoffIntent =
   | 'place_processed_asset'
@@ -14,7 +14,7 @@ export type HandoffOpenMode =
   | 'focus_existing_project';
 
 export interface CrossAppHandoffEnvelopeV1 {
-  handoffVersion: typeof CROSS_APP_HANDOFF_VERSION;
+  handoffVersion: typeof crossAppHandoffVersion;
   handoffId: string;
   createdAt: string;
   fromAppId: AppId;
@@ -66,7 +66,7 @@ export function createHandoffEnvelope(
   input: CreateHandoffEnvelopeInput,
 ): CrossAppHandoffEnvelopeV1 {
   return {
-    handoffVersion: CROSS_APP_HANDOFF_VERSION,
+    handoffVersion: crossAppHandoffVersion,
     handoffId: input.handoffId ?? createHandoffId(),
     createdAt: input.createdAt ?? new Date().toISOString(),
     fromAppId: input.fromAppId,

@@ -58,6 +58,8 @@ describe('posterMakerStore', () => {
     expect(store.importedAssetId).toBe(assetId);
     expect(store.importedFilename).toBe('sample-art.png');
     expect(store.titleText).toBe('SAMPLE-ART');
+    expect(store.sourceContext?.sourceAppId).toBe('pixel-lab');
+    expect(store.sourceContext?.sourceLabel).toBe('Pixel Lab Transfer');
   });
 
   it('persists and restores decor layer selections', async () => {
@@ -78,6 +80,23 @@ describe('posterMakerStore', () => {
     expect(restored.stickerStyleId).toBe('new_burst');
     expect(restored.titleText).toBe('Poster Draft');
     expect(restored.subtitleText).toBe('Testing restore');
+  });
+
+  it('tracks recent poster projects in descending reopen order', async () => {
+    const store = createPosterMakerStore(adapter);
+    await store.ensureInitialized();
+    const firstProjectId = store.projectId;
+    await store.setTitle('First Draft');
+
+    await store.createNewDocument();
+    const secondProjectId = store.projectId;
+    await store.setTitle('Second Draft');
+
+    expect(store.recentProjects.map((entry) => entry.projectId)).toEqual([secondProjectId, firstProjectId]);
+
+    await store.loadProject(firstProjectId);
+
+    expect(store.recentProjects.map((entry) => entry.projectId)).toEqual([firstProjectId, secondProjectId]);
   });
 
   it('resets the current document while keeping the imported asset', async () => {

@@ -12,7 +12,7 @@ import { customPaletteStore } from '$lib/stores/customPaletteStore.svelte';
 /**
  * Cached GIF encode worker — reused across exports, auto-terminated after idle.
  */
-const WORKER_IDLE_MS = 30_000;
+const workerIdleMs = 30_000;
 let cachedGifWorker: Worker | null = null;
 let workerIdleTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -33,7 +33,7 @@ function scheduleWorkerCleanup() {
     cachedGifWorker?.terminate();
     cachedGifWorker = null;
     workerIdleTimer = null;
-  }, WORKER_IDLE_MS);
+  }, workerIdleMs);
 }
 
 function encodeGifInWorker(
@@ -99,7 +99,7 @@ export function createGifPlaybackManager(deps: GifManagerDeps) {
   let exportAbortController: AbortController | null = null;
 
   // ─── GIF Frame Cache (LRU, max 30 entries) ───
-  const MAX_FRAME_CACHE = 30;
+  const maxFrameCache = 30;
   let gifFrameCache = new Map<string, string>();
   let gifCacheSettingsHash = '';
 
@@ -178,7 +178,7 @@ export function createGifPlaybackManager(deps: GifManagerDeps) {
         deps.setColorCount(processorService.getLastColorCount());
         gifFrameCache.set(cacheKey, result);
         // LRU eviction: remove oldest entries when cache exceeds limit
-        if (gifFrameCache.size > MAX_FRAME_CACHE) {
+        if (gifFrameCache.size > maxFrameCache) {
           const oldest = gifFrameCache.keys().next().value!;
           const oldUrl = gifFrameCache.get(oldest)!;
           if (oldUrl !== activeFrameUrl) URL.revokeObjectURL(oldUrl);
@@ -253,13 +253,13 @@ export function createGifPlaybackManager(deps: GifManagerDeps) {
               ?.map(c => ({ r: c.r, g: c.g, b: c.b }))
           : undefined;
 
-        const MAX_DIM = settings.renderMode === 'hqx' ? 1024 : 2048;
+        const maxDimension = settings.renderMode === 'hqx' ? 1024 : 2048;
         const frameW = frames[0].width;
         const frameH = frames[0].height;
         let procW = frameW;
         let procH = frameH;
-        if (procW > MAX_DIM || procH > MAX_DIM) {
-          const scale = MAX_DIM / Math.max(procW, procH);
+        if (procW > maxDimension || procH > maxDimension) {
+          const scale = maxDimension / Math.max(procW, procH);
           procW = Math.round(procW * scale);
           procH = Math.round(procH * scale);
         }

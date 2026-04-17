@@ -25,6 +25,12 @@ describe('MessageDialog', () => {
     expect(screen.getByText('Custom Title')).toBeTruthy();
   });
 
+  it('uses the shared desktop notice title by default', () => {
+    const onClose = vi.fn();
+    render(MessageDialog, { props: { message: 'msg', onClose } });
+    expect(screen.getByText('Desktop Notice')).toBeTruthy();
+  });
+
   it('calls onClose when OK button is clicked', async () => {
     const onClose = vi.fn();
     render(MessageDialog, { props: { message: 'msg', onClose } });

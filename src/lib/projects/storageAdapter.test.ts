@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { DEFAULT_POST_FILTERS } from '$lib/types';
-import { DEFAULT_PROCESSING_SETTINGS } from '$lib/stores/settingsStore.svelte';
+import { defaultPostFilters } from '$lib/types';
+import { defaultProcessingSettings } from '$lib/stores/settingsStore.svelte';
 import {
   createAssetId,
   createProjectManifest,
@@ -14,11 +14,11 @@ function makePixelLabState(): PixelLabProjectStateV1 {
   return {
     kind: 'pixel-lab',
     processingSettings: {
-      ...DEFAULT_PROCESSING_SETTINGS,
+      ...defaultProcessingSettings,
       glitchFilters: [],
       effectLayers: [],
     },
-    postFilters: { ...DEFAULT_POST_FILTERS },
+    postFilters: { ...defaultPostFilters },
     transformState: {
       rotation: 0,
       cropRect: null,

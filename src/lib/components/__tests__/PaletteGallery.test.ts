@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
-import { render, cleanup, waitFor } from '@testing-library/svelte';
+import { render, cleanup, waitFor, screen } from '@testing-library/svelte';
 import { fireEvent } from '@testing-library/svelte';
 
 vi.mock('$app/environment', () => ({ browser: true }));
@@ -11,7 +11,7 @@ vi.mock('$lib/i18n/index.svelte', () => ({
 
 const { customPaletteStore } = vi.hoisted(() => ({
   customPaletteStore: {
-    palettes: [],
+    palettes: [] as Array<{ id: string; name: string; colors: Array<{ r: number; g: number; b: number }> }>,
     addPalette: vi.fn(() => ({ id: 'custom_blend' })),
     updatePalette: vi.fn(),
     deletePalette: vi.fn(),
@@ -21,6 +21,16 @@ const { customPaletteStore } = vi.hoisted(() => ({
 
 vi.mock('$lib/stores/customPaletteStore.svelte', () => ({
   customPaletteStore,
+}));
+
+const { dialogStore } = vi.hoisted(() => ({
+  dialogStore: {
+    requestConfirm: vi.fn().mockResolvedValue(true),
+  },
+}));
+
+vi.mock('$lib/stores/dialogStore.svelte', () => ({
+  dialogStore,
 }));
 
 vi.mock('$lib/utils/paletteIO', () => ({
@@ -51,6 +61,7 @@ beforeEach(() => {
   customPaletteStore.palettes = [];
   customPaletteStore.addPalette.mockReturnValue({ id: 'custom_blend' });
   customPaletteStore.getPaletteById.mockReturnValue(null);
+  dialogStore.requestConfirm.mockResolvedValue(true);
 });
 
 describe('PaletteGallery', () => {
@@ -179,5 +190,34 @@ describe('PaletteGallery', () => {
     expect(colors.length).toBeGreaterThan(0);
     expect(onSelect).toHaveBeenCalledWith('custom_blend');
     expect(container.querySelector('.blend-panel')).toBeNull();
+  });
+
+  it('uses shell confirm before deleting a custom palette', async () => {
+    customPaletteStore.palettes = [
+      {
+        id: 'custom_1',
+        name: 'Custom One',
+        colors: [{ r: 0, g: 0, b: 0 }, { r: 255, g: 255, b: 255 }],
+      },
+    ];
+
+    const { container } = render(PaletteGallery, {
+      props: { ...defaultProps(), selectedPaletteId: 'custom_1' },
+    });
+
+    await fireEvent.click(screen.getByText('✏️ gallery_custom'));
+
+    const deleteButton = container.querySelector('.pg-del-btn');
+    expect(deleteButton).toBeTruthy();
+
+    await fireEvent.click(deleteButton!);
+
+    expect(dialogStore.requestConfirm).toHaveBeenCalledWith({
+      title: 'dialog_delete_palette_title',
+      message: 'confirm_delete_palette',
+      confirmLabel: 'delete_palette',
+      cancelLabel: 'cancel',
+    });
+    expect(customPaletteStore.deletePalette).toHaveBeenCalledWith('custom_1');
   });
 });

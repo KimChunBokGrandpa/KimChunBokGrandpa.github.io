@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/svelte';
 
 vi.mock('$lib/i18n/index.svelte', () => ({
@@ -10,12 +10,14 @@ vi.mock('$lib/services/saveService', () => ({
   saveImage: vi.fn().mockResolvedValue('image_downloaded'),
 }));
 
+import { saveImage } from '$lib/services/saveService';
 import { resetRetroCamStore } from '$lib/stores/retroCamStore.svelte';
 import RetroCam from '../retrocam/RetroCam.svelte';
 
 const OriginalPlay = HTMLMediaElement.prototype.play;
 const OriginalGetContext = HTMLCanvasElement.prototype.getContext;
 const OriginalToBlob = HTMLCanvasElement.prototype.toBlob;
+const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
 beforeEach(() => {
   Object.defineProperty(HTMLMediaElement.prototype, 'srcObject', {
@@ -39,6 +41,11 @@ afterEach(() => {
   HTMLMediaElement.prototype.play = OriginalPlay;
   HTMLCanvasElement.prototype.getContext = OriginalGetContext;
   HTMLCanvasElement.prototype.toBlob = OriginalToBlob;
+  consoleErrorSpy.mockClear();
+});
+
+afterAll(() => {
+  consoleErrorSpy.mockRestore();
 });
 
 describe('RetroCam', () => {
@@ -110,6 +117,105 @@ describe('RetroCam', () => {
     expect(presetId).toBe('clean_pixel');
   });
 
+  it('shows shell copy instead of raw handoff errors when Pixel Lab routing fails', async () => {
+    const onError = vi.fn();
+    const onOpenInPixelLab = vi.fn().mockRejectedValue(new Error('disk exploded'));
+    resetRetroCamStore({
+      getUserMedia: vi.fn().mockResolvedValue({
+        getTracks: () => [{ stop: vi.fn() }],
+      } as unknown as MediaStream),
+    });
+
+    render(RetroCam, { props: { onError, onOpenInPixelLab } });
+
+    await screen.findByTestId('retrocam-video');
+    await fireEvent.click(screen.getByText('retrocam_capture_snapshot'));
+    await fireEvent.click(screen.getByTestId('retrocam-open-in-pixel-lab-button'));
+
+    await waitFor(() => expect(onError).toHaveBeenCalledWith('retrocam_open_in_pixel_lab_failed'));
+  });
+
+  it('preserves the snapshot preset for pixel lab handoff even after live preset changes', async () => {
+    const onOpenInPixelLab = vi.fn();
+    resetRetroCamStore({
+      getUserMedia: vi.fn().mockResolvedValue({
+        getTracks: () => [{ stop: vi.fn() }],
+      } as unknown as MediaStream),
+    });
+
+    render(RetroCam, { props: { onOpenInPixelLab } });
+
+    await screen.findByTestId('retrocam-video');
+    await fireEvent.click(screen.getByText('retrocam_capture_snapshot'));
+    await fireEvent.click(screen.getByText('retrocam_preset_game_boy'));
+    await fireEvent.click(screen.getByTestId('retrocam-open-in-pixel-lab-button'));
+
+    await waitFor(() => expect(onOpenInPixelLab).toHaveBeenCalledTimes(1));
+    const [, presetId] = onOpenInPixelLab.mock.calls[0] as [File, string];
+    expect(presetId).toBe('clean_pixel');
+  });
+
+  it('calls the poster maker handoff callback with the latest snapshot', async () => {
+    const onUseInPosterMaker = vi.fn();
+    resetRetroCamStore({
+      getUserMedia: vi.fn().mockResolvedValue({
+        getTracks: () => [{ stop: vi.fn() }],
+      } as unknown as MediaStream),
+    });
+
+    render(RetroCam, { props: { onUseInPosterMaker } });
+
+    await screen.findByTestId('retrocam-video');
+    await fireEvent.click(screen.getByText('retrocam_capture_snapshot'));
+    await fireEvent.click(screen.getByTestId('retrocam-use-in-poster-maker-button'));
+
+    await waitFor(() => expect(onUseInPosterMaker).toHaveBeenCalledTimes(1));
+    const [file, presetId] = onUseInPosterMaker.mock.calls[0] as [File, string];
+    expect(file.name).toMatch(/^retrocam_snapshot_/);
+    expect(presetId).toBe('clean_pixel');
+  });
+
+  it('shows shell copy instead of raw save errors when snapshot saving fails', async () => {
+    const onError = vi.fn();
+    vi.mocked(saveImage).mockRejectedValueOnce(new Error('native path panic'));
+    resetRetroCamStore({
+      getUserMedia: vi.fn().mockResolvedValue({
+        getTracks: () => [{ stop: vi.fn() }],
+      } as unknown as MediaStream),
+    });
+
+    render(RetroCam, { props: { onError } });
+
+    await screen.findByTestId('retrocam-video');
+    await fireEvent.click(screen.getByText('retrocam_capture_snapshot'));
+    await fireEvent.click(screen.getByText('retrocam_save_snapshot'));
+
+    await waitFor(() => expect(onError).toHaveBeenCalledWith('retrocam_snapshot_failed'));
+  });
+
+  it('shows a shell-style open-with context menu for the latest snapshot', async () => {
+    const onOpenInPixelLab = vi.fn();
+    const onUseInPosterMaker = vi.fn();
+    resetRetroCamStore({
+      getUserMedia: vi.fn().mockResolvedValue({
+        getTracks: () => [{ stop: vi.fn() }],
+      } as unknown as MediaStream),
+    });
+
+    render(RetroCam, { props: { onOpenInPixelLab, onUseInPosterMaker } });
+
+    await screen.findByTestId('retrocam-video');
+    await fireEvent.click(screen.getByText('retrocam_capture_snapshot'));
+    await fireEvent.contextMenu(screen.getByTestId('retrocam-snapshot-image'));
+
+    expect(screen.getByText('open_with')).toBeTruthy();
+    expect(screen.getByText('🖼️ retrocam_open_in_pixel_lab')).toBeTruthy();
+    expect(screen.getByText('📰 retrocam_use_in_poster_maker')).toBeTruthy();
+
+    await fireEvent.click(screen.getByText('🖼️ retrocam_open_in_pixel_lab'));
+    await waitFor(() => expect(onOpenInPixelLab).toHaveBeenCalledTimes(1));
+  });
+
   it('switches camera devices through the selector', async () => {
     const getUserMedia = vi.fn().mockResolvedValue({
       getTracks: () => [{ stop: vi.fn() }],
@@ -136,5 +242,32 @@ describe('RetroCam', () => {
         audio: false,
       });
     });
+  });
+
+  it('keeps the previous preview visible and surfaces an error when device switching fails', async () => {
+    const onError = vi.fn();
+    const getUserMedia = vi.fn()
+      .mockResolvedValueOnce({
+        getTracks: () => [{ stop: vi.fn() }],
+      } as unknown as MediaStream)
+      .mockRejectedValueOnce(new DOMException('missing', 'NotFoundError'));
+
+    resetRetroCamStore({
+      getUserMedia,
+      enumerateDevices: vi.fn().mockResolvedValue([
+        { kind: 'videoinput', deviceId: 'front-cam', label: 'Front Camera' },
+        { kind: 'videoinput', deviceId: 'rear-cam', label: 'Rear Camera' },
+      ] as MediaDeviceInfo[]),
+    });
+
+    render(RetroCam, { props: { onError } });
+
+    const select = await screen.findByTestId('retrocam-device-select') as HTMLSelectElement;
+    await waitFor(() => expect(screen.getByTestId('retrocam-video')).toBeTruthy());
+    select.value = 'rear-cam';
+    await fireEvent.change(select);
+
+    await waitFor(() => expect(onError).toHaveBeenCalledWith('retrocam_status_unavailable'));
+    expect(screen.getByTestId('retrocam-video')).toBeTruthy();
   });
 });

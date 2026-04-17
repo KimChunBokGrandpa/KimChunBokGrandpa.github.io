@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { PALETTE_THEMES, PALETTE_GROUPS, PALETTES, getPaletteName } from '$lib/utils/palettes';
+  import { paletteThemes, paletteGroups, palettes, getPaletteName } from '$lib/utils/palettes';
   import type { RGB } from '$lib/utils/palettes';
   import { customPaletteStore } from '$lib/stores/customPaletteStore.svelte';
   import CustomPaletteEditor from './CustomPaletteEditor.svelte';
@@ -12,6 +12,7 @@
   import PaletteToolbar from './PaletteToolbar.svelte';
   import PaletteList from './PaletteList.svelte';
   import PaletteDetail from './PaletteDetail.svelte';
+  import { dialogStore } from '$lib/stores/dialogStore.svelte';
 
   let {
     selectedPaletteId = 'original',
@@ -107,9 +108,15 @@
     showEditor = false;
   }
 
-  function handleDeletePalette(id: string, e: MouseEvent) {
+  async function handleDeletePalette(id: string, e: MouseEvent) {
     e.stopPropagation();
-    if (!confirm(i18n.t('confirm_delete_palette'))) return;
+    const shouldDelete = await dialogStore.requestConfirm({
+      title: i18n.t('dialog_delete_palette_title'),
+      message: i18n.t('confirm_delete_palette'),
+      confirmLabel: i18n.t('delete_palette'),
+      cancelLabel: i18n.t('cancel'),
+    });
+    if (!shouldDelete) return;
     customPaletteStore.deletePalette(id);
     if (selectedPaletteId === id) onSelect('original');
   }
@@ -130,11 +137,11 @@
     isImporting = true;
     let pending = files.length;
 
-    const BINARY_EXTS = ['act', 'ase', 'pal'];
+    const binaryExtensions = ['act', 'ase', 'pal'];
 
     for (const file of files) {
       const ext = file.name.split('.').pop()?.toLowerCase() ?? '';
-      const isBinary = BINARY_EXTS.includes(ext);
+      const isBinary = binaryExtensions.includes(ext);
 
       if (isBinary) {
         // Read both text and binary for formats that may be either
@@ -196,12 +203,12 @@
   }
 
   // ─── Favorites ───
-  const FAV_STORAGE_KEY = 'retro-pixel-favorites';
+  const favoritesStorageKey = 'retro-pixel-favorites';
   let favorites = $state<Set<string>>(loadFavorites());
 
   function loadFavorites(): Set<string> {
     try {
-      const raw = localStorage.getItem(FAV_STORAGE_KEY);
+      const raw = localStorage.getItem(favoritesStorageKey);
       if (!raw) return new Set();
       const parsed = JSON.parse(raw);
       if (!Array.isArray(parsed)) return new Set();
@@ -213,7 +220,7 @@
 
   function saveFavorites() {
     try {
-      localStorage.setItem(FAV_STORAGE_KEY, JSON.stringify([...favorites]));
+      localStorage.setItem(favoritesStorageKey, JSON.stringify([...favorites]));
     } catch {
       /* ignore */
     }
@@ -257,7 +264,7 @@
     if (id.startsWith('custom_')) {
       return customPaletteStore.getPaletteById(id)?.colors ?? [];
     }
-    return PALETTES[id] ?? [];
+    return palettes[id] ?? [];
   }
 
   let blendedColors = $derived.by(() => {
@@ -287,9 +294,9 @@
       { id: '_core', label: `📁 ${i18n.t('gallery_core')}` },
     ];
     if (groupMode === 'theme') {
-      return [...special, ...PALETTE_THEMES.map((t) => ({ id: t.themeId, label: t.themeName }))];
+      return [...special, ...paletteThemes.map((t) => ({ id: t.themeId, label: t.themeName }))];
     } else {
-      return [...special, ...PALETTE_GROUPS.map((g) => ({ id: `g_${g.groupId}`, label: g.groupName }))];
+      return [...special, ...paletteGroups.map((g) => ({ id: `g_${g.groupId}`, label: g.groupName }))];
     }
   });
 
@@ -321,13 +328,13 @@
     colorCount: 0,
     colors: null,
   });
-  for (const t of PALETTE_THEMES) {
+  for (const t of paletteThemes) {
     for (const v of t.variants) {
       builtinPaletteLookup.set(v.id, {
         id: v.id,
         name: getPaletteName(v.id),
         colorCount: v.colorCount,
-        colors: PALETTES[v.id] || null,
+        colors: palettes[v.id] || null,
       });
     }
   }
@@ -370,21 +377,21 @@
 
     if (groupMode === 'theme') {
       // Theme mode: show variants of selected theme
-      const theme = PALETTE_THEMES.find((t) => t.themeId === tabId);
+      const theme = paletteThemes.find((t) => t.themeId === tabId);
       if (!theme) return [];
       return theme.variants.map((v) => ({
         id: v.id,
         name: i18n.t('gallery_n_colors').replace('{0}', String(v.colorCount)),
         colorCount: v.colorCount,
-        colors: PALETTES[v.id] || null,
+        colors: palettes[v.id] || null,
       }));
     } else {
       // Color count mode: show all palettes in the selected color-count group
       const gid = activeGroupId;
-      const group = PALETTE_GROUPS.find((g) => g.groupId === gid);
+      const group = paletteGroups.find((g) => g.groupId === gid);
       if (!group) return [];
       return group.palettes.map((p) => {
-        const colors = PALETTES[p.id] || null;
+        const colors = palettes[p.id] || null;
         return {
           id: p.id,
           name: getPaletteName(p.id),
@@ -402,9 +409,9 @@
     if (tabId === '_custom') return i18n.t('palette_tab_custom');
     if (tabId === '_core') return i18n.t('palette_tab_core');
     if (groupMode === 'theme') {
-      return PALETTE_THEMES.find((t) => t.themeId === tabId)?.themeName ?? '';
+      return paletteThemes.find((t) => t.themeId === tabId)?.themeName ?? '';
     } else {
-      return PALETTE_GROUPS.find((g) => g.groupId === activeGroupId)?.groupName ?? '';
+      return paletteGroups.find((g) => g.groupId === activeGroupId)?.groupName ?? '';
     }
   });
 

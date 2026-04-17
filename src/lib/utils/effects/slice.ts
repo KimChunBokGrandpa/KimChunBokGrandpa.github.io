@@ -1,15 +1,15 @@
 import type { EffectDefinition } from '../effectRegistry';
 import { createPrng } from './shared';
 
-const SLICES_PER_LEVEL = 4;
-const SLICE_SHIFT_RATIO = 0.05;
+const slicesPerLevel = 4;
+const sliceShiftRatio = 0.05;
 
 function applySlice(imageData: ImageData, intensity: number, seed: number): ImageData {
   const { width, height, data } = imageData;
   const resultData = new Uint8ClampedArray(data);
   const randomValue = createPrng(seed);
-  const numSlices = intensity * SLICES_PER_LEVEL;
-  const maxShift = intensity * Math.max(10, Math.floor(width * SLICE_SHIFT_RATIO));
+  const numSlices = intensity * slicesPerLevel;
+  const maxShift = intensity * Math.max(10, Math.floor(width * sliceShiftRatio));
 
   for (let i = 0; i < numSlices; i++) {
     const sliceY = Math.floor(randomValue(i * 3) * height);

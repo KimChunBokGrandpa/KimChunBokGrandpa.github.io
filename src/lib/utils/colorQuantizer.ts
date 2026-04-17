@@ -1,4 +1,4 @@
-import { PALETTES } from "./palettes";
+import { palettes } from "./palettes";
 import type { DitherType } from "../types";
 import type { RGB } from "./palettes";
 import { oklabDistanceSq } from "./colorUtils";
@@ -8,10 +8,10 @@ import { oklabDistanceSq } from "./colorUtils";
 // ─── 5-bit Quantized Lookup Table (LUT) ───
 // Quantize each RGB channel to 5 bits (32 levels) → 32×32×32 = 32,768 entries
 // Built once per palette; all lookups O(1), ~130KB per palette
-const BITS = 5;
-const LEVELS = 1 << BITS;          // 32
-const SHIFT = 8 - BITS;            // 3 (maps 256 → 32)
-const LUT_SIZE = LEVELS ** 3;      // 32,768
+const bits = 5;
+const levels = 1 << bits;          // 32
+const shift = 8 - bits;            // 3 (maps 256 → 32)
+const lutSize = levels ** 3;      // 32,768
 
 // Per-palette LUT cache: Uint32Array (packed RGBA)
 const lutCache = new Map<string, Uint32Array>();
@@ -20,7 +20,7 @@ const lutCache = new Map<string, Uint32Array>();
 const lutRgbCache = new Map<string, Uint8Array>();
 
 // Endianness check for Uint32Array color packing (computed once at module load)
-const IS_LITTLE_ENDIAN =
+const isLittleEndian =
   new Uint8Array(new Uint32Array([0x11223344]).buffer)[0] === 0x44;
 
 /**
@@ -40,17 +40,17 @@ function buildBothLuts(paletteName: string, customColors?: RGB[], useOklab?: boo
   const cacheKey = useOklab ? `${paletteName}__oklab` : paletteName;
   if (lutCache.has(cacheKey) && lutRgbCache.has(cacheKey)) return;
 
-  const palette = customColors || PALETTES[paletteName] || PALETTES["win256"];
-  const packed = new Uint32Array(LUT_SIZE);
-  const rgbLut = new Uint8Array(LUT_SIZE * 3);
+  const palette = customColors || palettes[paletteName] || palettes["win256"];
+  const packed = new Uint32Array(lutSize);
+  const rgbLut = new Uint8Array(lutSize * 3);
 
-  for (let ri = 0; ri < LEVELS; ri++) {
-    const r = (ri << SHIFT) | ((1 << (SHIFT - 1)) - 1);
-    for (let gi = 0; gi < LEVELS; gi++) {
-      const g = (gi << SHIFT) | ((1 << (SHIFT - 1)) - 1);
-      for (let bi = 0; bi < LEVELS; bi++) {
-        const b = (bi << SHIFT) | ((1 << (SHIFT - 1)) - 1);
-        const idx = (ri << (BITS * 2)) | (gi << BITS) | bi;
+  for (let ri = 0; ri < levels; ri++) {
+    const r = (ri << shift) | ((1 << (shift - 1)) - 1);
+    for (let gi = 0; gi < levels; gi++) {
+      const g = (gi << shift) | ((1 << (shift - 1)) - 1);
+      for (let bi = 0; bi < levels; bi++) {
+        const b = (bi << shift) | ((1 << (shift - 1)) - 1);
+        const idx = (ri << (bits * 2)) | (gi << bits) | bi;
 
         let minDist = Infinity;
         let nearestIdx = 0;
@@ -64,7 +64,7 @@ function buildBothLuts(paletteName: string, customColors?: RGB[], useOklab?: boo
         }
 
         const c = palette[nearestIdx];
-        packed[idx] = IS_LITTLE_ENDIAN
+        packed[idx] = isLittleEndian
           ? (255 << 24) | (c.b << 16) | (c.g << 8) | c.r
           : (c.r << 24) | (c.g << 16) | (c.b << 8) | 255;
         const off = idx * 3;
@@ -95,13 +95,13 @@ function buildLutRgb(paletteName: string, customColors?: RGB[], useOklab?: boole
 
 /** LUT lookup returning unpacked RGB */
 function lutLookupRgb(rgbLut: Uint8Array, r: number, g: number, b: number): [number, number, number] {
-  const idx = ((r >> SHIFT) << (BITS * 2)) | ((g >> SHIFT) << BITS) | (b >> SHIFT);
+  const idx = ((r >> shift) << (bits * 2)) | ((g >> shift) << bits) | (b >> shift);
   const off = idx * 3;
   return [rgbLut[off], rgbLut[off + 1], rgbLut[off + 2]];
 }
 
 /** Maximum number of cached LUTs to keep (each ~130KB packed + ~98KB RGB) */
-const MAX_LUT_CACHE_SIZE = 6;
+const maxLutCacheSize = 6;
 
 /** Clear oldest cached LUTs when exceeding max size (called from Worker).
  *  Map iteration order is insertion order — oldest entries are evicted first. */
@@ -114,7 +114,7 @@ export function clearPaletteCachesExcept(activePalette: string) {
 }
 
 function evictOldest<T>(cache: Map<string, T>, keep: string) {
-  while (cache.size > MAX_LUT_CACHE_SIZE) {
+  while (cache.size > maxLutCacheSize) {
     for (const key of cache.keys()) {
       if (key !== keep) { cache.delete(key); break; }
     }
@@ -127,7 +127,7 @@ function refreshEntry<T>(cache: Map<string, T>, key: string) {
 }
 
 // ─── Bayer 8×8 Ordered Dithering Matrix ───
-const BAYER_8X8 = [
+const bayer8x8 = [
    0, 48, 12, 60,  3, 51, 15, 63,
   32, 16, 44, 28, 35, 19, 47, 31,
    8, 56,  4, 52, 11, 59,  7, 55,
@@ -207,10 +207,10 @@ export function applyPixelationAndPalette(
       if (a < 128) {
         packedColor = 0;
       } else if (packed) {
-        const lutIdx = ((r >> SHIFT) << (BITS * 2)) | ((g >> SHIFT) << BITS) | (b >> SHIFT);
+        const lutIdx = ((r >> shift) << (bits * 2)) | ((g >> shift) << bits) | (b >> shift);
         packedColor = packed[lutIdx];
       } else {
-        packedColor = IS_LITTLE_ENDIAN
+        packedColor = isLittleEndian
           ? (255 << 24) | (b << 16) | (g << 8) | r
           : (r << 24) | (g << 16) | (b << 8) | 255;
       }
@@ -324,7 +324,7 @@ function applyFloydSteinberg(
       }
 
       // 3. Fill block with quantized color
-      const lutIdx = ((nr >> SHIFT) << (BITS * 2)) | ((ng >> SHIFT) << BITS) | (nb >> SHIFT);
+      const lutIdx = ((nr >> shift) << (bits * 2)) | ((ng >> shift) << bits) | (nb >> shift);
       const packedColor = packed[lutIdx];
 
       const sx = rx * pixelSize;
@@ -426,7 +426,7 @@ function applyAtkinson(
       }
 
       // Fill block
-      const lutIdx = ((nr >> SHIFT) << (BITS * 2)) | ((ng >> SHIFT) << BITS) | (nb >> SHIFT);
+      const lutIdx = ((nr >> shift) << (bits * 2)) | ((ng >> shift) << bits) | (nb >> shift);
       const packedColor = packed[lutIdx];
 
       const sx = rx * pixelSize;
@@ -459,7 +459,7 @@ function applyOrderedDither(
 
   // Spread factor: controls dithering strength.
   // Scale by approximate palette step size for natural results.
-  const palette = customColors || PALETTES[paletteName] || PALETTES["win256"];
+  const palette = customColors || palettes[paletteName] || palettes["win256"];
   const spread = Math.max(8, Math.round(384 / Math.max(2, palette.length)));
   const odStride = pixelSize >= 5 ? 2 : 1;
 
@@ -498,13 +498,13 @@ function applyOrderedDither(
       // Block index in reduced grid for Bayer matrix
       const bx = Math.floor(x / pixelSize);
       const by = Math.floor(y / pixelSize);
-      const threshold = (BAYER_8X8[(by & 7) * 8 + (bx & 7)] / 64 - 0.5) * spread;
+      const threshold = (bayer8x8[(by & 7) * 8 + (bx & 7)] / 64 - 0.5) * spread;
 
       const dr = Math.max(0, Math.min(255, Math.round(r + threshold)));
       const dg = Math.max(0, Math.min(255, Math.round(g + threshold)));
       const db = Math.max(0, Math.min(255, Math.round(b + threshold)));
 
-      const lutIdx = ((dr >> SHIFT) << (BITS * 2)) | ((dg >> SHIFT) << BITS) | (db >> SHIFT);
+      const lutIdx = ((dr >> shift) << (bits * 2)) | ((dg >> shift) << bits) | (db >> shift);
       const packedColor = packed[lutIdx];
 
       for (let by2 = 0; by2 < blockH; by2++) {

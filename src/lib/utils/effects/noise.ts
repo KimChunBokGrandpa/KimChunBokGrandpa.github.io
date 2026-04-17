@@ -1,13 +1,13 @@
 import type { EffectDefinition } from '../effectRegistry';
 import { createPrng } from './shared';
 
-const NOISE_DENSITY = 0.001;
+const noiseDensity = 0.001;
 
 function applyNoise(imageData: ImageData, intensity: number, seed: number): ImageData {
   const { width, height, data } = imageData;
   const resultData = new Uint8ClampedArray(data);
   const randomValue = createPrng(seed);
-  const numBlocks = Math.floor(width * height * (intensity * NOISE_DENSITY));
+  const numBlocks = Math.floor(width * height * (intensity * noiseDensity));
   const maxShift = intensity * 5;
 
   for (let b = 0; b < numBlocks; b++) {

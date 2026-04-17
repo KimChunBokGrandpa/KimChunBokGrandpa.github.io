@@ -4,7 +4,7 @@
  */
 import type { ProcessingSettings } from '$lib/types';
 
-const MAX_HISTORY = 20;
+const maxHistory = 20;
 
 function cloneSettings(s: ProcessingSettings): ProcessingSettings {
   return {
@@ -20,7 +20,7 @@ export function createHistoryStore() {
 
   function push(s: ProcessingSettings) {
     undoStack.push(cloneSettings(s));
-    if (undoStack.length > MAX_HISTORY) undoStack.shift();
+    if (undoStack.length > maxHistory) undoStack.shift();
     redoStack.length = 0;
   }
 
@@ -36,12 +36,18 @@ export function createHistoryStore() {
     return redoStack.pop()!;
   }
 
+  function reset() {
+    undoStack.length = 0;
+    redoStack.length = 0;
+  }
+
   return {
     get undoStack() { return undoStack; },
     get redoStack() { return redoStack; },
     push,
     undo,
     redo,
+    reset,
     clone: cloneSettings,
   };
 }

@@ -3,7 +3,7 @@
   import Taskbar, { type TaskbarWindowInfo } from '../window/Taskbar.svelte';
   import Win98Window from '../window/Win98Window.svelte';
   import RetroCam from '../retrocam/RetroCam.svelte';
-  import { createWindowStore, WINDOW_CONFIGS, getWindowTitle } from '$lib/stores/windowStore.svelte';
+  import { createWindowStore, windowConfigs, getWindowTitle } from '$lib/stores/windowStore.svelte';
   import { createInMemoryProjectStorageAdapter } from '$lib/projects/storageAdapter';
   import { createHandoffBus } from '$lib/handoffs/handoffBus.svelte';
   import { consumePixelLabCaptureHandoff } from '$lib/handoffs/consumePixelLabCaptureHandoff';
@@ -62,7 +62,7 @@
   });
 
   let taskbarWindows = $derived<TaskbarWindowInfo[]>(
-    WINDOW_CONFIGS.map((config) => ({
+    windowConfigs.map((config) => ({
       id: config.id,
       title: getWindowTitle(config.id),
       icon: config.icon,

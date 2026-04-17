@@ -1,11 +1,11 @@
 import type { EffectDefinition } from '../effectRegistry';
 
-const RGB_SHIFT_PERCENT: Record<number, number> = { 1: 0.005, 2: 0.015, 3: 0.03 };
+const rgbShiftPercent: Record<number, number> = { 1: 0.005, 2: 0.015, 3: 0.03 };
 
 function applyRgbSplit(imageData: ImageData, intensity: number, _seed: number): ImageData {
   const { width, height, data } = imageData;
   const resultData = new Uint8ClampedArray(data);
-  const shiftPercent = RGB_SHIFT_PERCENT[intensity] ?? RGB_SHIFT_PERCENT[1];
+  const shiftPercent = rgbShiftPercent[intensity] ?? rgbShiftPercent[1];
   const shiftAmount = Math.max(1, Math.floor(width * shiftPercent));
 
   for (let y = 0; y < height; y++) {

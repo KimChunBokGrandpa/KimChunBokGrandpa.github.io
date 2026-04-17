@@ -2,7 +2,7 @@ import type { WindowState, WindowConfig, WindowId } from "$lib/types";
 import { i18n } from "$lib/i18n/index.svelte";
 import type { TranslationKey } from "$lib/i18n/en";
 
-const TITLE_KEYS: Record<WindowId, TranslationKey> = {
+const titleKeys: Record<WindowId, TranslationKey> = {
   preview: 'win_preview',
   settings: 'win_settings',
   gallery: 'win_gallery',
@@ -12,12 +12,30 @@ const TITLE_KEYS: Record<WindowId, TranslationKey> = {
   retrocam: 'win_retrocam',
 };
 
+const shellProgramSummaryKeys: Partial<Record<WindowId, TranslationKey>> = {
+  preview: 'desktop_summary_preview',
+  poster_maker: 'desktop_summary_poster_maker',
+  retrocam: 'desktop_summary_retrocam',
+};
+
 export function getWindowTitle(id: WindowId): string {
-  return i18n.t(TITLE_KEYS[id]);
+  return i18n.t(titleKeys[id]);
+}
+
+export function getShellProgramSummary(id: WindowId): string {
+  return i18n.t(shellProgramSummaryKeys[id] ?? titleKeys[id]);
+}
+
+export function getShellProgramLaunchLabel(id: WindowId): string {
+  return `${getWindowTitle(id)} — ${getShellProgramSummary(id)}`;
+}
+
+export function getDesktopWindowSummary(id: WindowId): string {
+  return getShellProgramSummary(id);
 }
 
 /** Desktop window definitions */
-export const WINDOW_CONFIGS: WindowConfig[] = [
+export const windowConfigs: WindowConfig[] = [
   { id: "preview", icon: "🖼️", desktop: true },
   { id: "poster_maker", icon: "📰", desktop: true },
   { id: "retrocam", icon: "📷", desktop: true },
@@ -27,10 +45,10 @@ export const WINDOW_CONFIGS: WindowConfig[] = [
   { id: "history", icon: "⏱️", desktop: false },
 ];
 
-export const DESKTOP_WINDOW_CONFIGS = WINDOW_CONFIGS.filter((config) => config.desktop);
+export const desktopWindowConfigs = windowConfigs.filter((config) => config.desktop);
 
-const WINDOW_IDS = WINDOW_CONFIGS.map((c) => c.id) as WindowId[];
-const STORAGE_KEY = "retro-pixel-window-layout";
+const windowIds = windowConfigs.map((config) => config.id) as WindowId[];
+const storageKey = "retro-pixel-window-layout";
 
 interface SavedLayout {
   x: number; y: number; w: number; h: number;
@@ -42,7 +60,7 @@ function isFiniteNumber(v: unknown): v is number {
 
 function loadSavedLayout(): Record<string, SavedLayout> | null {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(storageKey);
     if (!raw) return null;
     const parsed = JSON.parse(raw);
     if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) return null;
@@ -60,11 +78,22 @@ function loadSavedLayout(): Record<string, SavedLayout> | null {
 function saveLayout(wins: Record<WindowId, WindowState>) {
   try {
     const data: Record<string, SavedLayout> = {};
-    for (const id of WINDOW_IDS) {
+    for (const id of windowIds) {
       data[id] = { x: wins[id].x, y: wins[id].y, w: wins[id].w, h: wins[id].h };
     }
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    localStorage.setItem(storageKey, JSON.stringify(data));
   } catch (err) { console.error('Failed to save window layout:', err); }
+}
+
+function findTopVisibleWindow(
+  wins: Record<WindowId, WindowState>,
+  excludeId?: WindowId,
+): WindowId | null {
+  const candidates = windowIds
+    .filter((id) => id !== excludeId)
+    .filter((id) => wins[id].mode !== 'closed' && wins[id].mode !== 'minimized')
+    .sort((a, b) => wins[b].z - wins[a].z);
+  return candidates[0] ?? null;
 }
 
 /**
@@ -143,13 +172,20 @@ export function createWindowStore() {
   let focusedWindow = $state<WindowId>("preview");
 
   function focusWindow(id: WindowId) {
-    const sorted = WINDOW_IDS.slice().sort((a, b) => wins[a].z - wins[b].z);
+    const sorted = windowIds.slice().sort((a, b) => wins[a].z - wins[b].z);
     const rest = sorted.filter((w) => w !== id);
     const final = [...rest, id];
     final.forEach((w, i) => {
       wins[w].z = 10 + i;
     });
     focusedWindow = id;
+  }
+
+  function focusTopVisibleWindow(excludeId?: WindowId) {
+    const next = findTopVisibleWindow(wins, excludeId);
+    if (next) {
+      focusWindow(next);
+    }
   }
 
   function openWindow(id: WindowId) {
@@ -168,11 +204,17 @@ export function createWindowStore() {
     wins[id].y = def.y;
     wins[id].w = def.w;
     wins[id].h = def.h;
+    if (focusedWindow === id) {
+      focusTopVisibleWindow(id);
+    }
   }
 
   /** Title-bar X button: close only, keep position/size */
   function close(id: WindowId) {
     wins[id].mode = "closed";
+    if (focusedWindow === id) {
+      focusTopVisibleWindow(id);
+    }
     saveLayout(wins);
   }
 
@@ -182,6 +224,7 @@ export function createWindowStore() {
       openWindow(id);
     } else if (focusedWindow === id) {
       wins[id].mode = "minimized";
+      focusTopVisibleWindow(id);
     } else {
       focusWindow(id);
     }

@@ -9,7 +9,7 @@ vi.mock('$lib/i18n/index.svelte', () => ({
     locale: 'en',
     setLocale: vi.fn(),
   },
-  LOCALE_LABELS: { en: 'English', ko: '한국어', ja: '日本語' },
+  localeLabels: { en: 'English', ko: '한국어', ja: '日本語' },
 }));
 
 import Taskbar from '../window/Taskbar.svelte';
@@ -76,5 +76,39 @@ describe('Taskbar', () => {
     const props = { ...defaultProps(), onShowShortcuts: vi.fn() };
     const { container } = render(Taskbar, { props });
     expect(container.innerHTML).toBeTruthy();
+  });
+
+  it('calls onStartClick when start button is clicked', async () => {
+    const onStartClick = vi.fn();
+    const { container } = render(Taskbar, { props: { ...defaultProps(), onStartClick } });
+    const startButton = container.querySelector('.start-btn');
+    expect(startButton).toBeTruthy();
+    expect(startButton?.getAttribute('title')).toBe('start_open_launcher');
+    await fireEvent.click(startButton!);
+    expect(onStartClick).toHaveBeenCalled();
+  });
+
+  it('uses restore/minimize/switch wording in taskbar window labels', () => {
+    const { getByRole, rerender } = render(Taskbar, { props: defaultProps() });
+
+    expect(getByRole('button', { name: /taskbar_minimize_window: Preview/i })).toBeTruthy();
+
+    rerender({
+      ...defaultProps(),
+      windows: [
+        { id: 'preview' as WindowId, title: 'Preview', icon: '🖼', mode: 'minimized' as const, focused: true },
+        { id: 'settings' as WindowId, title: 'Settings', icon: '⚙', mode: 'windowed' as const, focused: false },
+      ],
+    });
+    expect(getByRole('button', { name: /taskbar_restore_window: Preview/i })).toBeTruthy();
+
+    rerender({
+      ...defaultProps(),
+      windows: [
+        { id: 'preview' as WindowId, title: 'Preview', icon: '🖼', mode: 'windowed' as const, focused: false },
+        { id: 'settings' as WindowId, title: 'Settings', icon: '⚙', mode: 'windowed' as const, focused: true },
+      ],
+    });
+    expect(getByRole('button', { name: /taskbar_switch_to_window: Preview/i })).toBeTruthy();
   });
 });

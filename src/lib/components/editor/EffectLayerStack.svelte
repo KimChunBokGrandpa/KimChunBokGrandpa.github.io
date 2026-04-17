@@ -8,13 +8,13 @@
   ensureBuiltInEffectsRegistered();
 
   // CSS render mode options (HQx moved to effect layers)
-  const CSS_RENDER_OPTIONS = [
+  const cssRenderOptions = [
     { id: 'pixel_perfect', labelKey: 'pixel_perfect' as const, titleKey: 'pixel_perfect_desc' as const },
     { id: 'bilinear', labelKey: 'bilinear_blur' as const, titleKey: 'bilinear_desc' as const },
   ] as const;
 
   type EffectOption = { type: EffectLayer['type']; glitchType?: GlitchType; icon: string; labelKey: TranslationKey };
-  const EFFECT_OPTIONS: EffectOption[] = [
+  const effectOptions: EffectOption[] = [
     ...getAllEffects().map((effect) => ({
       type: 'glitch' as const,
       glitchType: effect.id,
@@ -33,7 +33,7 @@
   } = $props();
 
   // ─── Effect Layer Management ───
-  function addEffectLayer(opt: typeof EFFECT_OPTIONS[number]) {
+  function addEffectLayer(opt: typeof effectOptions[number]) {
     const layer: EffectLayer = {
       id: crypto.randomUUID(),
       type: opt.type,
@@ -81,7 +81,7 @@
   }
 
   function getEffectLabel(layer: EffectLayer): string {
-    const opt = EFFECT_OPTIONS.find(o =>
+    const opt = effectOptions.find(o =>
       o.type === layer.type && (layer.type === 'hqx' || o.glitchType === layer.glitchType)
     );
     return opt ? `${opt.icon} ${i18n.t(opt.labelKey)}` : layer.type;
@@ -175,7 +175,7 @@
 
 <div class="section-label">{i18n.t('css_render_mode')}:</div>
 <div class="field-row render-row">
-  {#each CSS_RENDER_OPTIONS as opt}
+  {#each cssRenderOptions as opt}
     <button
       class:preset-active={settings.renderMode === opt.id}
       class="render-btn"
@@ -296,7 +296,7 @@
     </button>
     {#if showAddMenu}
       <div class="add-effect-menu">
-        {#each EFFECT_OPTIONS as opt}
+        {#each effectOptions as opt}
           <button
             class="add-effect-option"
             onclick={() => { addEffectLayer(opt); showAddMenu = false; }}

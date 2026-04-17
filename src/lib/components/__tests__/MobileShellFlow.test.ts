@@ -8,7 +8,7 @@ vi.mock('$lib/i18n/index.svelte', () => ({
     locale: 'en',
     setLocale: vi.fn(),
   },
-  LOCALE_LABELS: { en: 'English', ko: '한국어', ja: '日本語' },
+  localeLabels: { en: 'English', ko: '한국어', ja: '日本語' },
 }));
 
 const mockStorage = new Map<string, string>();
@@ -54,7 +54,7 @@ describe('Mobile shell flow', () => {
     const posterWindow = screen.getByRole('dialog', { name: 'win_poster_maker' });
     const historyWindow = screen.getByRole('dialog', { name: 'win_history' });
 
-    await fireEvent.click(screen.getByRole('button', { name: /win_poster_maker window/i }));
+    await fireEvent.click(screen.getByRole('button', { name: /taskbar_switch_to_window: win_poster_maker/i }));
 
     expect(previewWindow.getAttribute('style')).toContain('--mobile-h: 34px');
     expect(posterWindow.getAttribute('style')).toContain('--mobile-t: 34px');

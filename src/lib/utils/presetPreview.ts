@@ -12,10 +12,10 @@ export interface PresetPreviewInput {
   settings: ProcessingSettings;
 }
 
-const PREVIEW_W = 84;
-const PREVIEW_H = 60;
-const SOURCE_W = 56;
-const SOURCE_H = 40;
+const previewWidth = 84;
+const previewHeight = 60;
+const sourceWidth = 56;
+const sourceHeight = 40;
 
 const previewCache = new Map<string, Promise<string>>();
 
@@ -58,35 +58,35 @@ function normalizeLayers(settings: ProcessingSettings): EffectLayer[] {
 
 function createSampleCanvas(): HTMLCanvasElement {
   const canvas = document.createElement('canvas');
-  canvas.width = SOURCE_W;
-  canvas.height = SOURCE_H;
+  canvas.width = sourceWidth;
+  canvas.height = sourceHeight;
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('Failed to get 2d context for preset preview');
 
-  const sky = ctx.createLinearGradient(0, 0, 0, SOURCE_H);
+  const sky = ctx.createLinearGradient(0, 0, 0, sourceHeight);
   sky.addColorStop(0, '#10203b');
   sky.addColorStop(0.55, '#e57a4f');
   sky.addColorStop(1, '#f0d285');
   ctx.fillStyle = sky;
-  ctx.fillRect(0, 0, SOURCE_W, SOURCE_H);
+  ctx.fillRect(0, 0, sourceWidth, sourceHeight);
 
   ctx.fillStyle = '#2d5a2b';
-  ctx.fillRect(0, SOURCE_H * 0.62, SOURCE_W, SOURCE_H * 0.38);
+  ctx.fillRect(0, sourceHeight * 0.62, sourceWidth, sourceHeight * 0.38);
 
   ctx.fillStyle = '#fee28a';
   ctx.beginPath();
-  ctx.arc(SOURCE_W * 0.72, SOURCE_H * 0.26, 5, 0, Math.PI * 2);
+  ctx.arc(sourceWidth * 0.72, sourceHeight * 0.26, 5, 0, Math.PI * 2);
   ctx.fill();
 
   ctx.fillStyle = '#33456e';
   ctx.beginPath();
-  ctx.moveTo(0, SOURCE_H * 0.62);
-  ctx.lineTo(10, SOURCE_H * 0.34);
-  ctx.lineTo(22, SOURCE_H * 0.58);
-  ctx.lineTo(34, SOURCE_H * 0.28);
-  ctx.lineTo(46, SOURCE_H * 0.55);
-  ctx.lineTo(SOURCE_W, SOURCE_H * 0.4);
-  ctx.lineTo(SOURCE_W, SOURCE_H * 0.62);
+  ctx.moveTo(0, sourceHeight * 0.62);
+  ctx.lineTo(10, sourceHeight * 0.34);
+  ctx.lineTo(22, sourceHeight * 0.58);
+  ctx.lineTo(34, sourceHeight * 0.28);
+  ctx.lineTo(46, sourceHeight * 0.55);
+  ctx.lineTo(sourceWidth, sourceHeight * 0.4);
+  ctx.lineTo(sourceWidth, sourceHeight * 0.62);
   ctx.closePath();
   ctx.fill();
 
@@ -148,19 +148,19 @@ function renderPresetPreview(input: PresetPreviewInput): string {
   const crtCanvas = applyCrtEffect(processedCanvas, input.settings.crtEffect);
 
   const previewCanvas = document.createElement('canvas');
-  previewCanvas.width = PREVIEW_W;
-  previewCanvas.height = PREVIEW_H;
+  previewCanvas.width = previewWidth;
+  previewCanvas.height = previewHeight;
   const previewCtx = previewCanvas.getContext('2d');
   if (!previewCtx) throw new Error('Failed to get 2d context for final preview');
   previewCtx.imageSmoothingEnabled = false;
   previewCtx.fillStyle = '#000';
-  previewCtx.fillRect(0, 0, PREVIEW_W, PREVIEW_H);
+  previewCtx.fillRect(0, 0, previewWidth, previewHeight);
 
-  const scale = Math.min(PREVIEW_W / crtCanvas.width, PREVIEW_H / crtCanvas.height);
+  const scale = Math.min(previewWidth / crtCanvas.width, previewHeight / crtCanvas.height);
   const drawW = Math.max(1, Math.floor(crtCanvas.width * scale));
   const drawH = Math.max(1, Math.floor(crtCanvas.height * scale));
-  const dx = Math.floor((PREVIEW_W - drawW) / 2);
-  const dy = Math.floor((PREVIEW_H - drawH) / 2);
+  const dx = Math.floor((previewWidth - drawW) / 2);
+  const dy = Math.floor((previewHeight - drawH) / 2);
   previewCtx.drawImage(crtCanvas, dx, dy, drawW, drawH);
 
   return previewCanvas.toDataURL('image/png');

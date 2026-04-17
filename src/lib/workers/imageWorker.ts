@@ -84,9 +84,9 @@ onmessage = async (e: MessageEvent<ImageWorkerMessage>) => {
     }
 
     // Apply effect layers with progress tracking (weights from registry)
-    const HQX_WEIGHT = 4;
+    const hqxWeight = 4;
     const totalWeight = layers.reduce((sum, l) => {
-      if (l.type === 'hqx') return sum + HQX_WEIGHT;
+      if (l.type === 'hqx') return sum + hqxWeight;
       const key = l.type === 'glitch' ? (l.glitchType || 'noise') : l.type;
       return sum + getEffectWeight(key);
     }, 0);
@@ -104,7 +104,7 @@ onmessage = async (e: MessageEvent<ImageWorkerMessage>) => {
         processedData = applyScaling(processedData, 'hqx');
       }
       const key = layer.type === 'glitch' ? (layer.glitchType || 'noise') : layer.type;
-      completedWeight += layer.type === 'hqx' ? HQX_WEIGHT : getEffectWeight(key);
+      completedWeight += layer.type === 'hqx' ? hqxWeight : getEffectWeight(key);
       const layerProgress = totalWeight > 0 ? completedWeight / totalWeight : 1;
       postMessage({ id, type: 'progress', progress: 0.4 + 0.5 * layerProgress } as ImageWorkerResponse);
     }
@@ -115,8 +115,8 @@ onmessage = async (e: MessageEvent<ImageWorkerMessage>) => {
     const colorSet = new Set<number>();
     const pd = processedData.data;
     const totalPixels = pd.length / 4;
-    const SAMPLE_THRESHOLD = 500_000;
-    const step = totalPixels > SAMPLE_THRESHOLD ? Math.ceil(totalPixels / SAMPLE_THRESHOLD) * 4 : 4;
+    const sampleThreshold = 500_000;
+    const step = totalPixels > sampleThreshold ? Math.ceil(totalPixels / sampleThreshold) * 4 : 4;
     for (let i = 0; i < pd.length; i += step) {
       if (pd[i + 3] < 128) continue; // skip transparent
       colorSet.add((pd[i] << 16) | (pd[i + 1] << 8) | pd[i + 2]);

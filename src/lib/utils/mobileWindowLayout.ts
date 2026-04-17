@@ -7,8 +7,8 @@ export interface MobileWindowSlot {
   width?: string;
 }
 
-const MOBILE_COMPACT_H = 34;
-const LANDSCAPE_SETTINGS_WIDTH = 38;
+const mobileCompactHeight = 34;
+const landscapeSettingsWidth = 38;
 
 export function getNextMobileFocusId(
   visibleIds: WindowId[],
@@ -47,7 +47,7 @@ export function getMobileWindowSlot(params: {
       return {
         top: '0px',
         left: '0px',
-        width: `${LANDSCAPE_SETTINGS_WIDTH}vw`,
+        width: `${landscapeSettingsWidth}vw`,
         height: 'calc(100dvh - var(--taskbar-h))',
       };
     }
@@ -55,8 +55,8 @@ export function getMobileWindowSlot(params: {
     if (id === 'preview') {
       return {
         top: '0px',
-        left: `${LANDSCAPE_SETTINGS_WIDTH}vw`,
-        width: `${100 - LANDSCAPE_SETTINGS_WIDTH}vw`,
+        left: `${landscapeSettingsWidth}vw`,
+        width: `${100 - landscapeSettingsWidth}vw`,
         height: 'calc(100dvh - var(--taskbar-h))',
       };
     }
@@ -68,16 +68,16 @@ export function getMobileWindowSlot(params: {
 
     if (isFocused) {
       return {
-        top: `${focusedIdx === 0 ? 0 : MOBILE_COMPACT_H}px`,
-        height: `calc(100dvh - var(--taskbar-h) - ${MOBILE_COMPACT_H}px)`,
+        top: `${focusedIdx === 0 ? 0 : mobileCompactHeight}px`,
+        height: `calc(100dvh - var(--taskbar-h) - ${mobileCompactHeight}px)`,
       };
     }
 
     return idx < focusedIdx
-      ? { top: '0px', height: `${MOBILE_COMPACT_H}px` }
+      ? { top: '0px', height: `${mobileCompactHeight}px` }
       : {
-          top: `calc(100dvh - var(--taskbar-h) - ${MOBILE_COMPACT_H}px)`,
-          height: `${MOBILE_COMPACT_H}px`,
+          top: `calc(100dvh - var(--taskbar-h) - ${mobileCompactHeight}px)`,
+          height: `${mobileCompactHeight}px`,
         };
   }
 
@@ -87,24 +87,24 @@ export function getMobileWindowSlot(params: {
     return { top: slotTop, height: slotHeight };
   }
 
-  const compactTotal = (count - 1) * MOBILE_COMPACT_H;
+  const compactTotal = (count - 1) * mobileCompactHeight;
   const focusedIdx = visibleIds.indexOf(currentFocusedId);
   const isFocused = currentFocusedId === id;
 
   if (isFocused) {
     return {
-      top: `${idx * MOBILE_COMPACT_H}px`,
+      top: `${idx * mobileCompactHeight}px`,
       height: `calc(100dvh - var(--taskbar-h) - ${compactTotal}px)`,
     };
   }
 
   if (idx < focusedIdx) {
-    return { top: `${idx * MOBILE_COMPACT_H}px`, height: `${MOBILE_COMPACT_H}px` };
+    return { top: `${idx * mobileCompactHeight}px`, height: `${mobileCompactHeight}px` };
   }
 
   const bottomOffset = count - 1 - idx;
   return {
-    top: `calc(100dvh - var(--taskbar-h) - ${(bottomOffset + 1) * MOBILE_COMPACT_H}px)`,
-    height: `${MOBILE_COMPACT_H}px`,
+    top: `calc(100dvh - var(--taskbar-h) - ${(bottomOffset + 1) * mobileCompactHeight}px)`,
+    height: `${mobileCompactHeight}px`,
   };
 }

@@ -1,15 +1,15 @@
 import type { EffectDefinition } from '../effectRegistry';
 import { createPrng } from './shared';
 
-const WAVE_AMP_RATIO = 0.01;
-const WAVE_FREQ = 0.05;
+const waveAmplitudeRatio = 0.01;
+const waveFrequency = 0.05;
 
 function applyWave(imageData: ImageData, intensity: number, seed: number): ImageData {
   const { width, height, data } = imageData;
   const resultData = new Uint8ClampedArray(data);
   const randomValue = createPrng(seed);
-  const amplitude = intensity * Math.max(2, Math.floor(width * WAVE_AMP_RATIO));
-  const frequency = intensity * WAVE_FREQ;
+  const amplitude = intensity * Math.max(2, Math.floor(width * waveAmplitudeRatio));
+  const frequency = intensity * waveFrequency;
   const phase = seed * 100;
 
   for (let y = 0; y < height; y++) {

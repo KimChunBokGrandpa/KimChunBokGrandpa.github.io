@@ -9,7 +9,7 @@
  */
 
 /** CRC32 lookup table (built once) */
-const CRC_TABLE = (() => {
+const crcTable = (() => {
   const table = new Uint32Array(256);
   for (let n = 0; n < 256; n++) {
     let c = n;
@@ -24,7 +24,7 @@ const CRC_TABLE = (() => {
 function crc32(buf: Uint8Array, start: number, len: number): number {
   let c = 0xFFFFFFFF;
   for (let i = start; i < start + len; i++) {
-    c = CRC_TABLE[(c ^ buf[i]) & 0xFF] ^ (c >>> 8);
+    c = crcTable[(c ^ buf[i]) & 0xFF] ^ (c >>> 8);
   }
   return (c ^ 0xFFFFFFFF) >>> 0;
 }
@@ -45,8 +45,8 @@ function adler32(buf: Uint8Array): number {
  * Produces valid zlib stream that any decoder can read.
  */
 function zlibStore(raw: Uint8Array): Uint8Array {
-  const MAX_BLOCK = 65535;
-  const numBlocks = Math.ceil(raw.length / MAX_BLOCK) || 1;
+  const maxBlock = 65535;
+  const numBlocks = Math.ceil(raw.length / maxBlock) || 1;
   // zlib header (2) + blocks * (5 header each) + raw data + adler32 (4)
   const out = new Uint8Array(2 + numBlocks * 5 + raw.length + 4);
   let pos = 0;
@@ -59,8 +59,8 @@ function zlibStore(raw: Uint8Array): Uint8Array {
   let offset = 0;
 
   while (remaining > 0) {
-    const blockLen = Math.min(remaining, MAX_BLOCK);
-    const isLast = remaining <= MAX_BLOCK;
+    const blockLen = Math.min(remaining, maxBlock);
+    const isLast = remaining <= maxBlock;
     out[pos++] = isLast ? 1 : 0; // BFINAL
     out[pos++] = blockLen & 0xFF;
     out[pos++] = (blockLen >> 8) & 0xFF;

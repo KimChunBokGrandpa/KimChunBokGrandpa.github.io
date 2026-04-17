@@ -1,21 +1,20 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import type { WindowId, WindowMode } from '$lib/types';
-  import { i18n, LOCALE_LABELS, type Locale } from '$lib/i18n/index.svelte';
-  import { getWindowTitle } from '$lib/stores/windowStore.svelte';
+  import { i18n, localeLabels, type Locale } from '$lib/i18n/index.svelte';
   import { tooltip } from '$lib/utils/tooltip';
 
-  const LOCALES: Locale[] = ['ja', 'en', 'ko'];
+  const locales: Locale[] = ['ja', 'en', 'ko'];
 
   function cycleLocale() {
-    const idx = LOCALES.indexOf(i18n.locale);
-    i18n.locale = LOCALES[(idx + 1) % LOCALES.length];
+    const idx = locales.indexOf(i18n.locale);
+    i18n.locale = locales[(idx + 1) % locales.length];
   }
 
   function getNextLocaleLabel(): string {
-    const idx = LOCALES.indexOf(i18n.locale);
-    const next = LOCALES[(idx + 1) % LOCALES.length];
-    return LOCALE_LABELS[next];
+    const idx = locales.indexOf(i18n.locale);
+    const next = locales[(idx + 1) % locales.length];
+    return localeLabels[next];
   }
 
   export interface TaskbarWindowInfo {
@@ -31,14 +30,26 @@
     onWindowClick,
     onWindowClose,
     onShowShortcuts,
+    onStartClick,
   }: {
     windows: TaskbarWindowInfo[];
     onWindowClick: (id: WindowId) => void;
     onWindowClose: (id: WindowId) => void;
     onShowShortcuts?: () => void;
+    onStartClick?: (event: MouseEvent) => void;
   } = $props();
 
   let timeString = $state('');
+
+  function getWindowActionLabel(win: TaskbarWindowInfo): string {
+    if (win.mode === 'minimized') {
+      return i18n.t('taskbar_restore_window');
+    }
+    if (win.focused) {
+      return i18n.t('taskbar_minimize_window');
+    }
+    return i18n.t('taskbar_switch_to_window');
+  }
 
   // 12h for EN, 24h for KO/JA
   function updateTime() {
@@ -80,7 +91,12 @@
 </script>
 
 <nav class="taskbar" aria-label="Taskbar">
-  <button class="start-btn" onclick={() => {}} aria-label={i18n.t('start')}>
+  <button
+    class="start-btn"
+    onclick={(event) => onStartClick?.(event)}
+    aria-label={i18n.t('start')}
+    title={i18n.t('start_open_launcher')}
+  >
     <span class="start-logo">⊞</span>
     <span class="start-text">{i18n.t('start')}</span>
   </button>
@@ -100,18 +116,19 @@
         }}
         role="button"
         tabindex="0"
-        aria-label="{getWindowTitle(win.id)} window"
+        aria-label="{getWindowActionLabel(win)}: {win.title}"
+        title="{getWindowActionLabel(win)}: {win.title}"
       >
         <span class="tb-icon">{win.icon}</span>
-        <span class="tb-label">{getWindowTitle(win.id)}</span>
+        <span class="tb-label">{win.title}</span>
         <button
           class="tb-x"
-          title="{i18n.t('close')} {getWindowTitle(win.id)}"
+          title="{i18n.t('close')} {win.title}"
           onclick={(e) => {
             e.stopPropagation();
             onWindowClose(win.id);
           }}
-          aria-label="{i18n.t('close')} {getWindowTitle(win.id)}"
+          aria-label="{i18n.t('close')} {win.title}"
         ></button>
       </div>
     {/each}
@@ -124,7 +141,7 @@
       {#if onShowShortcuts}
         <button class="tray-help" onclick={onShowShortcuts} title="{i18n.t('keyboard_shortcuts')} (?)" aria-label={i18n.t('keyboard_shortcuts')} use:tooltip>?</button>
       {/if}
-      <button class="tray-lang" onclick={cycleLocale} title="{i18n.t('language')}: {LOCALE_LABELS[i18n.locale]} → {getNextLocaleLabel()}" use:tooltip
+      <button class="tray-lang" onclick={cycleLocale} title="{i18n.t('language')}: {localeLabels[i18n.locale]} → {getNextLocaleLabel()}" use:tooltip
         >{i18n.locale.toUpperCase()}</button
       >
       <span class="tray-clock">{timeString}</span>

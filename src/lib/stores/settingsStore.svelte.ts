@@ -1,9 +1,9 @@
 import type { SaveFormat } from '$lib/services/saveService';
 import type { ProcessingSettings, PostProcessFilters } from '$lib/types';
-import { DEFAULT_POST_FILTERS } from '$lib/types';
+import { defaultPostFilters } from '$lib/types';
 import { normalizePaletteId } from '$lib/utils/palettes';
 
-export const DEFAULT_PROCESSING_SETTINGS: ProcessingSettings = {
+export const defaultProcessingSettings: ProcessingSettings = {
   pixelSize: 1,
   palette: 'original',
   crtEffect: 'none',
@@ -23,11 +23,11 @@ function cloneSettings(settings: ProcessingSettings): ProcessingSettings {
   };
 }
 
-export function createSettingsStore(initialSettings: ProcessingSettings = DEFAULT_PROCESSING_SETTINGS) {
+export function createSettingsStore(initialSettings: ProcessingSettings = defaultProcessingSettings) {
   let settings = $state<ProcessingSettings>(cloneSettings(initialSettings));
   let saveFormat = $state<SaveFormat>('png');
   let saveQuality = $state(0.92);
-  let postFilters = $state<PostProcessFilters>({ ...DEFAULT_POST_FILTERS });
+  let postFilters = $state<PostProcessFilters>({ ...defaultPostFilters });
   let autoProcess = $state(true);
   let hasUnappliedChanges = $state(false);
 

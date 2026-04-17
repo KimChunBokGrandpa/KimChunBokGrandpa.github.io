@@ -10,17 +10,17 @@ export type Locale = 'en' | 'ko' | 'ja';
 
 const translations: Record<Locale, Record<TranslationKey, string>> = { ja, en, ko };
 
-export const LOCALE_LABELS: Record<Locale, string> = {
+export const localeLabels: Record<Locale, string> = {
   en: 'English',
   ko: '한국어',
   ja: '日本語',
 };
 
-const STORAGE_KEY = 'retro-pixel-locale';
+const storageKey = 'retro-pixel-locale';
 
 function loadLocale(): Locale {
   try {
-    const saved = localStorage.getItem(STORAGE_KEY);
+    const saved = localStorage.getItem(storageKey);
     if (saved && saved in translations) return saved as Locale;
   } catch { /* ignore */ }
   // Auto-detect from browser
@@ -37,7 +37,7 @@ export const i18n = {
   get locale() { return currentLocale; },
   set locale(v: Locale) {
     currentLocale = v;
-    try { localStorage.setItem(STORAGE_KEY, v); } catch { /* ignore */ }
+    try { localStorage.setItem(storageKey, v); } catch { /* ignore */ }
   },
   /** Translate a key, with optional {0}, {1} parameter substitution */
   t(key: TranslationKey, ...args: (string | number)[]): string {

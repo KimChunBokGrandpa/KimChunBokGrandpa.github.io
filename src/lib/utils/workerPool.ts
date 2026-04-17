@@ -16,7 +16,7 @@ export class ImageWorkerPool {
   private workers: Worker[] = [];
   private busy = new Set<number>();
   private queue: PoolTask[] = [];
-  private static readonly MAX_QUEUE_SIZE = 256;
+  private static readonly maxQueueSize = 256;
 
   constructor(size?: number) {
     const poolSize = Math.max(1, Math.min(
@@ -87,7 +87,7 @@ export class ImageWorkerPool {
         }
       }
       // All busy — queue it (reject if queue is full to prevent OOM)
-      if (this.queue.length >= ImageWorkerPool.MAX_QUEUE_SIZE) {
+      if (this.queue.length >= ImageWorkerPool.maxQueueSize) {
         reject(new Error('Worker pool queue full'));
         return;
       }

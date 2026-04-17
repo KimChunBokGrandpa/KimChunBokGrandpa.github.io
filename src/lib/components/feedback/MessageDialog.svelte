@@ -4,12 +4,16 @@
 
   let {
     message,
-    title = i18n.t('message'),
+    title = i18n.t('dialog_notice_title'),
+    confirmLabel,
+    cancelLabel,
     onClose,
     onConfirm,
   }: {
     message: string;
     title?: string;
+    confirmLabel?: string;
+    cancelLabel?: string;
     onClose: () => void;
     onConfirm?: () => void;
   } = $props();
@@ -97,8 +101,8 @@
       </div>
       <div class="field-row dialog-actions">
         {#if onConfirm}
-          <button class="dialog-ok-btn" bind:this={okBtn} onclick={onConfirm}>{i18n.t('ok')}</button>
-          <button class="dialog-ok-btn" onclick={onClose}>{i18n.t('cancel')}</button>
+          <button class="dialog-ok-btn" bind:this={okBtn} onclick={onConfirm}>{confirmLabel ?? i18n.t('ok')}</button>
+          <button class="dialog-ok-btn" onclick={onClose}>{cancelLabel ?? i18n.t('cancel')}</button>
         {:else}
           <button class="dialog-ok-btn" bind:this={okBtn} onclick={onClose}>{i18n.t('ok')}</button>
         {/if}

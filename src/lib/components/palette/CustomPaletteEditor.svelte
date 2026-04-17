@@ -2,6 +2,7 @@
   import type { RGB } from '$lib/utils/palettes';
   import { rgbToHex, hexToRgb } from '$lib/utils/colorUtils';
   import { i18n } from '$lib/i18n/index.svelte';
+  import { dialogStore } from '$lib/stores/dialogStore.svelte';
 
   let {
     initialName = '',
@@ -29,8 +30,16 @@
     colors.some((c, i) => !initialColors[i] || c.r !== initialColors[i].r || c.g !== initialColors[i].g || c.b !== initialColors[i].b)
   );
 
-  function handleCancel() {
-    if (isDirty && !confirm(i18n.t('unsaved_changes_confirm'))) return;
+  async function handleCancel() {
+    if (isDirty) {
+      const shouldDiscard = await dialogStore.requestConfirm({
+        title: i18n.t('dialog_unsaved_changes_title'),
+        message: i18n.t('unsaved_changes_confirm'),
+        confirmLabel: i18n.t('discard_changes'),
+        cancelLabel: i18n.t('cancel'),
+      });
+      if (!shouldDiscard) return;
+    }
     onCancel();
   }
 

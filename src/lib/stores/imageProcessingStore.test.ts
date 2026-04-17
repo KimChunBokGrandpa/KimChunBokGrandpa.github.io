@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { ProcessingSettings } from '$lib/types';
+import { createProjectManifest } from '$lib/projects/schema';
+import { createInMemoryProjectStorageAdapter } from '$lib/projects/storageAdapter';
 
 // ─── Mocks ───
 
@@ -310,6 +312,119 @@ describe('createImageProcessingStore', () => {
         null,
         undefined,
       );
+    });
+  });
+
+  describe('loadPixelLabProject', () => {
+    it('restores pixel lab settings, post filters, and export defaults from a project manifest', async () => {
+      const manifest = createProjectManifest({
+        appId: 'pixel-lab',
+        name: 'Reopen Session',
+        programState: {
+          kind: 'pixel-lab',
+          activeSourceAssetId: 'asset-source-1',
+          lastProcessedAssetId: 'asset-source-1',
+          processingSettings: makeSettings({
+            pixelSize: 4,
+            palette: 'dmg',
+            renderMode: 'bilinear',
+          }),
+          postFilters: {
+            brightness: 120,
+            contrast: 90,
+            saturation: 80,
+            hueRotate: 12,
+          },
+          transformState: {
+            rotation: 0,
+            cropRect: null,
+          },
+          exportDefaults: {
+            format: 'jpeg',
+            quality: 0.77,
+          },
+        },
+      });
+
+      await store.loadPixelLabProject(
+        manifest,
+        new File(['pixels'], 'reopen-source.png', { type: 'image/png' }),
+      );
+
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(store.originalImageSrc).toMatch(/^blob:mock-/);
+      expect(store.settings.pixelSize).toBe(4);
+      expect(store.settings.palette).toBe('dmg');
+      expect(store.settings.renderMode).toBe('bilinear');
+      expect(store.postFilters.brightness).toBe(120);
+      expect(store.postFilters.hueRotate).toBe(12);
+      expect(store.saveFormat).toBe('jpeg');
+      expect(store.saveQuality).toBe(0.77);
+      expect(mockProcessorService.processImage).toHaveBeenCalled();
+    });
+  });
+
+  describe('pixel lab project persistence', () => {
+    it('creates a recent pixel lab project when a new image is loaded', async () => {
+      const adapter = createInMemoryProjectStorageAdapter();
+      const projectBackedStore = createImageProcessingStore(adapter);
+
+      projectBackedStore.loadImage(new File(['pixels'], 'session.png', { type: 'image/png' }));
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+
+      const recentProjects = await adapter.listRecentProjects();
+      expect(recentProjects[0]?.appId).toBe('pixel-lab');
+      expect(recentProjects[0]?.name).toBe('session');
+      expect(projectBackedStore.currentProjectId).toBeTruthy();
+
+      projectBackedStore.destroy();
+    });
+
+    it('updates the persisted pixel lab project when export and filter state changes', async () => {
+      const adapter = createInMemoryProjectStorageAdapter();
+      const projectBackedStore = createImageProcessingStore(adapter);
+
+      projectBackedStore.loadImage(new File(['pixels'], 'session.png', { type: 'image/png' }));
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+
+      projectBackedStore.setFormat('webp');
+      projectBackedStore.setQuality(0.73);
+      projectBackedStore.postFilters = {
+        brightness: 115,
+        contrast: 92,
+        saturation: 108,
+        hueRotate: 18,
+      };
+      await Promise.resolve();
+      await Promise.resolve();
+
+      const projectId = projectBackedStore.currentProjectId;
+      expect(projectId).toBeTruthy();
+
+      const manifest = await adapter.loadProject(projectId!);
+      expect(manifest?.programState.kind).toBe('pixel-lab');
+      if (manifest?.programState.kind !== 'pixel-lab') {
+        throw new Error('Expected pixel-lab manifest');
+      }
+
+      expect(manifest.programState.exportDefaults).toEqual({
+        format: 'webp',
+        quality: 0.73,
+      });
+      expect(manifest.programState.postFilters).toEqual({
+        brightness: 115,
+        contrast: 92,
+        saturation: 108,
+        hueRotate: 18,
+      });
+
+      projectBackedStore.destroy();
     });
   });
 

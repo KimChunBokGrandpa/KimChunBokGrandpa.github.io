@@ -58,8 +58,8 @@
   let savedPos = { x: 0, y: 0, w: 0, h: 0 };
 
   // Layout constants
-  const TASKBAR_HEIGHT = 30;
-  const SNAP_THRESHOLD = 20;
+  const taskbarHeight = 30;
+  const snapThreshold = 20;
   let snapPreview = $state<'left' | 'right' | null>(null);
   let preSnapPos: { x: number; y: number; w: number; h: number } | null = null;
   let swipeStartX = 0;
@@ -68,16 +68,16 @@
   // Drag listeners
   $effect(() => {
     if (!isDragging) return;
-    const desktopH = window.innerHeight - TASKBAR_HEIGHT;
+    const desktopH = window.innerHeight - taskbarHeight;
     const onMove = (e: MouseEvent | TouchEvent) => {
       const clientX = 'touches' in e ? e.touches[0].clientX : (e as MouseEvent).clientX;
       const clientY = 'touches' in e ? e.touches[0].clientY : (e as MouseEvent).clientY;
       x = Math.max(-50, clientX - dragOffsetX);
       y = Math.max(0, clientY - dragOffsetY);
       // Snap preview detection
-      if (clientX <= SNAP_THRESHOLD) {
+      if (clientX <= snapThreshold) {
         snapPreview = 'left';
-      } else if (clientX >= window.innerWidth - SNAP_THRESHOLD) {
+      } else if (clientX >= window.innerWidth - snapThreshold) {
         snapPreview = 'right';
       } else {
         snapPreview = null;
@@ -394,7 +394,7 @@
     class="snap-preview"
     style="left:{snapPreview === 'left'
       ? '0'
-      : '50%'}; top:0; width:50vw; height:calc(100vh - {TASKBAR_HEIGHT}px);"
+      : '50%'}; top:0; width:50vw; height:calc(100vh - {taskbarHeight}px);"
   ></div>
 {/if}
 

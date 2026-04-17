@@ -2,7 +2,7 @@ import { browser } from '$app/environment';
 import type { ProcessingSettings } from '$lib/types';
 import { normalizePresetShareInput } from '$lib/utils/presetShare';
 
-const STORAGE_KEY = 'retro-pixel-shared-presets';
+const storageKey = 'retro-pixel-shared-presets';
 
 export interface SharedPresetRecord {
   id: string;
@@ -24,7 +24,7 @@ function cloneSettings(settings: ProcessingSettings): ProcessingSettings {
 function loadFromStorage(): SharedPresetRecord[] {
   if (!browser) return [];
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(storageKey);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
@@ -37,7 +37,7 @@ function loadFromStorage(): SharedPresetRecord[] {
 function saveToStorage(presets: SharedPresetRecord[]) {
   if (!browser) return;
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(presets));
+    localStorage.setItem(storageKey, JSON.stringify(presets));
   } catch {
     console.error('Failed to save shared presets to localStorage');
   }

@@ -17,13 +17,10 @@ This document follows the `oma-coordination` rule set:
 
 ## Current Priority Order
 
-1. PM contract freeze
-2. shell reframing and Pixel Lab packaging
-3. shared project model skeleton
-4. Poster Maker MVP
-5. QA gate for shell + Poster Maker
-6. RetroCam MVP
-7. suite polish
+1. suite polish acceptance and continuity pruning
+2. RetroCam residual follow-up
+3. recommendation quality follow-up
+4. deferred manual QA / release-gate checks
 
 ---
 
@@ -39,212 +36,103 @@ Frontend, shared-engine, and QA work should reference these directly rather than
 
 ---
 
-## Priority Tier 1
+## Completed Tier Summary
+
+- completed and removed from active execution detail:
+  - Tier 1 shell reframing and Pixel Lab packaging setup
+  - Tier 2 shared local project foundation
+  - Tier 3 Poster Maker MVP delivery
+  - Tier 4 shell + Poster Maker QA gate
+- those tiers are now historical context and should be read through:
+  - `REVISION_HISTORY.md`
+  - `docs/vnext/11_status_review.md`
+
+---
+
+## Active Focus A — Suite Polish Acceptance
 
 ### Goal
 
-Make the current product read as `Pixel Lab` inside a desktop suite.
+Keep the suite cohesive without reopening already-finished shell slices.
 
 ### Frontend Ownership
 
-Suggested file surface:
-
-- `src/lib/stores/windowStore.svelte.ts`
-- `src/lib/components/window/*`
-- `src/lib/components/editor/*`
-- `src/lib/i18n/*`
-- `src/routes/+page.svelte`
-
-Deliverables:
-
-- top-level desktop icon policy updated to `Pixel Lab`
-- taskbar and window title language updated
-- internal utility windows stop reading like peer apps
+- validate that launcher, taskbar, dialog, and open-with surfaces still read as one desktop family
+- only do additional shell wording or continuity work when real UX drift appears
 
 ### Shared-Engine Ownership
 
-Suggested file surface:
-
-- `src/lib/projects/*` new
-- `src/lib/handoffs/*` new
-- `src/lib/services/*` where shared adapters belong
-
-Deliverables:
-
-- project manifest types drafted in code
-- local asset reference types drafted in code
-- no UI-dependent persistence yet required beyond safe scaffolding
+- keep reopen/open-with expansion constrained to new asset types or genuinely new first-party destinations
+- avoid reopening already-stable project persistence contracts without a new suite-level need
 
 ### Mobile Ownership
 
-Deliverables:
-
-- define how app identity survives in narrow layout
-- ensure utility windows do not become impossible to understand on mobile
+- keep narrow-layout identity checks alive as shell polish changes land
 
 ### QA Ownership
 
-Wait until Tier 1 frontend changes land, then verify:
-
-- shell naming regression
-- desktop launch behavior
-- taskbar clarity
+- verify that app switching remains understandable
+- verify that shell complexity stays below the point where the suite feels cluttered
+- preserve browser-first usability and Win98 identity as release guardrails
 
 ---
 
-## Priority Tier 2
+## Active Focus B — RetroCam Residual Follow-Up
 
 ### Goal
 
-Stabilize the shared local project foundation before Poster Maker handoff work expands.
-
-### Shared-Engine Ownership
-
-Deliverables:
-
-- `projectStorageAdapter` interface
-- manifest serialization rules
-- asset registry contract
-- recent-project index contract
-
-### Frontend Ownership
-
-Deliverables:
-
-- Pixel Lab uses the new naming and ownership model consistently
-- save/export/share copy remains correct after reframing
-
-### QA Ownership
-
-Deliverables:
-
-- regression coverage for current Pixel Lab save/export/share flow
-- regression coverage for relabeled windows and launch flows
-
----
-
-## Priority Tier 3
-
-### Goal
-
-Ship `Poster Maker` as the second true program.
-
-### Frontend Ownership
-
-Suggested file surface:
-
-- `src/lib/components/poster-maker/*` new
-- `src/routes/*` or shell launch points for new program
-- desktop icon / launcher surfaces
-
-Deliverables:
-
-- Poster Maker primary window
-- document preset chooser
-- canvas/document workspace
-- image placement and text workflow
-
-### Shared-Engine Ownership
-
-Deliverables:
-
-- Poster Maker project-state type
-- Pixel Lab -> Poster Maker handoff resolver
-- shared asset lookup for imported image layers
-
-### Mobile Ownership
-
-Deliverables:
-
-- document workspace behavior in narrow view
-- readable canvas controls without breaking the desktop metaphor
-
-### QA Ownership
-
-Deliverables:
-
-- launch tests for Poster Maker
-- handoff tests from Pixel Lab
-- poster export regression coverage
-
----
-
-## Priority Tier 4
-
-### Goal
-
-Run a dedicated shell-and-Poster-Maker QA gate before RetroCam expands scope.
-
-### Current Status
-
-- handoff helper contracts are covered
-- route-side Pixel Lab -> Poster Maker launch flow is covered through orchestration helpers
-- Poster Maker document actions and persistence are covered
-- Pixel Lab save/share/transfer regression is covered
-- shell launch/focus/minimize/restore UI integration is covered through desktop harness tests
-- mobile DOM-level shell/program sanity is covered through dedicated shell harness tests
-- Tier 4 QA gate is complete; next active tier is `RetroCam MVP`
-
-### QA Ownership
-
-Must verify:
-
-- app launch and focus behavior
-- taskbar labels
-- Pixel Lab -> Poster Maker handoff
-- project persistence restore
-- save/share/export regression
-- narrow/mobile layout sanity
-
-### Frontend and Shared-Engine Response
-
-- fix critical regressions before RetroCam starts
-- do not stack RetroCam scope onto an unstable shell
-
----
-
-## Priority Tier 5
-
-### Goal
-
-Add `RetroCam` as the third program after the shell and handoff model are proven.
+Close the remaining RetroCam gaps after the core still-capture MVP shipped.
 
 ### Scope Freeze
 
 - first input mode: `webcam-only`
 - first required output: still snapshot
 - first required handoff: `RetroCam -> Pixel Lab`
-- defer `RetroCam -> Poster Maker` and short-loop export until the first capture slice is stable
+- defer `short-loop export` until the still-capture slice has a stronger product reason to expand
 
 ### Current Status
 
-- `RetroCam` shell/window identity is implemented
-- webcam permission-state handling is implemented
-- fast preset switching and still snapshot save flow are implemented
-- next critical slice is `RetroCam -> Pixel Lab` handoff plus shared project/asset wiring
+- remaining RetroCam work is now mostly:
+  - real-device permission/device QA
+  - tall-phone capture behavior confirmation
+  - whether short-loop export should exist at all in the next slice
+  - whether the current output already feels distinct enough from the other programs
 
 ### Frontend Ownership
 
-- RetroCam primary window
-- permission UX
-- capture-ready state
-- quick preset application UI
+- only reopen RetroCam UI work for proven gaps in output distinctiveness or capture-loop closure
 
 ### Shared-Engine Ownership
 
-- RetroCam project-state type
-- RetroCam -> Pixel Lab handoff
-- optional RetroCam -> Poster Maker handoff
+- preserve current handoff and persistence behavior; do not expand scope without a new product reason
 
 ### Mobile Ownership
 
-- permission and capture flow behavior on small screens
+- confirm permission and capture flow behavior on small screens in manual/device validation
 
 ### QA Ownership
 
-- capture permission failure cases
-- snapshot export flow
-- handoff regression
+- validate permission failure cases in real runtime
+- validate snapshot export/save behavior in real runtime
+- keep handoff regression green while follow-up work stays small
+
+---
+
+## Active Focus C — Recommendation Quality Follow-Up
+
+### Goal
+
+Keep `P3-005` focused on narrow heuristic wins, not endless recommendation churn.
+
+### Frontend Ownership
+
+- review whether another recommendation edge case is real enough to target
+- keep explanation copy aligned with actual recommendation reasons
+
+### QA Ownership
+
+- use targeted recommendation regressions for any new edge-case changes
+- avoid reopening broader preset UX unless a specific failure mode is reproduced
 
 ---
 
@@ -254,15 +142,15 @@ Work may run in parallel only when file ownership and contracts are already clea
 
 Good parallel examples:
 
-- shell copy and title updates while shared-engine drafts manifest types
-- Poster Maker UI while shared-engine implements handoff adapter
-- mobile layout review while desktop UI implementation is already scoped
+- suite-polish copy review while QA verifies current acceptance guardrails
+- recommendation heuristics review while manual-QA checklist work is documented
+- mobile layout review while shell-wide expansion is intentionally deferred
 
 Bad parallel examples:
 
-- implementing handoff UI before the envelope contract exists
-- building Poster Maker persistence before the project schema is frozen
-- starting RetroCam before Poster Maker QA gate closes
+- reopening shared contracts without a new product need
+- broadening open-with destinations before a new asset type exists
+- expanding RetroCam scope before current MVP residuals are resolved
 
 ---
 
@@ -270,40 +158,21 @@ Bad parallel examples:
 
 | Area | Primary Role | Notes |
 |---|---|---|
-| shell naming, icons, taskbar, desktop launch | frontend | driven by taxonomy spec |
-| project schema types and adapters | shared-engine | driven by schema spec |
-| handoff store/bus and resolver contracts | shared-engine | driven by handoff spec |
-| program-specific UI composition | frontend | per app ownership |
-| narrow/mobile behavior | mobile/frontend | validate after each tier |
-| regression matrix and sign-off | QA | final gate per tier |
+| shell naming, taskbar, desktop launch, dialogs | frontend | protect suite cohesion |
+| project schema types and adapters | shared-engine | stable unless a new asset flow needs change |
+| handoff store/bus and resolver contracts | shared-engine | expand only with new product reason |
+| program-specific UI composition | frontend | reopen sparingly |
+| narrow/mobile behavior | mobile/frontend | validate after each shell-polish change |
+| regression matrix and sign-off | QA | final gate per slice |
 
 ---
 
-## Exit Criteria by Tier
+## Current Exit Criteria
 
-### Tier 1 Exit
-
-- current shell clearly exposes `Pixel Lab`
-- generic peer-window language is removed from top-level shell
-
-### Tier 2 Exit
-
-- local project and asset contracts exist in code
-- no ambiguity remains around persistence ownership
-
-### Tier 3 Exit
-
-- Poster Maker launches independently
-- Pixel Lab -> Poster Maker handoff works
-
-### Tier 4 Exit
-
-- shell plus Poster Maker regression gate is green
-
-### Tier 5 Exit
-
-- RetroCam launches independently
-- at least one RetroCam handoff works
+- suite polish remains cohesive without reopening completed scope
+- RetroCam residual follow-up stays limited to real remaining gaps
+- recommendation quality only expands when a concrete new edge case is proven
+- deferred manual QA stays documented without blocking automated coding progress
 
 ---
 
@@ -314,5 +183,5 @@ Do not treat this document as a replacement for the roadmap.
 Use:
 
 - `03_execution_roadmap.md` for phase sequencing
-- `06_work_packages.md` for delivery slices
-- this document for role order, ownership, and safe parallelism
+- `06_work_packages.md` for active delivery slices
+- this document for ownership, current execution focus, and safe parallelism

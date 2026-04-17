@@ -4,8 +4,8 @@
  */
 import type { CrtMode } from '../types';
 
-const SCANLINE_OPACITY = 0.25;
-const CHROMATIC_OFFSET = 1;
+const scanlineOpacity = 0.25;
+const chromaticOffset = 1;
 
 /**
  * Apply CRT scanline effect to a canvas.
@@ -39,9 +39,9 @@ export function applyCrtEffect(
         const rowStart = y * w * 4;
         for (let x = 0; x < w; x++) {
           const idx = rowStart + x * 4;
-          data[idx] = Math.round(data[idx] * (1 - SCANLINE_OPACITY));
-          data[idx + 1] = Math.round(data[idx + 1] * (1 - SCANLINE_OPACITY));
-          data[idx + 2] = Math.round(data[idx + 2] * (1 - SCANLINE_OPACITY));
+          data[idx] = Math.round(data[idx] * (1 - scanlineOpacity));
+          data[idx + 1] = Math.round(data[idx + 1] * (1 - scanlineOpacity));
+          data[idx + 2] = Math.round(data[idx + 2] * (1 - scanlineOpacity));
         }
       }
     }
@@ -51,9 +51,9 @@ export function applyCrtEffect(
       if (x % 4 >= 2) {
         for (let y = 0; y < h; y++) {
           const idx = (y * w + x) * 4;
-          data[idx] = Math.round(data[idx] * (1 - SCANLINE_OPACITY));
-          data[idx + 1] = Math.round(data[idx + 1] * (1 - SCANLINE_OPACITY));
-          data[idx + 2] = Math.round(data[idx + 2] * (1 - SCANLINE_OPACITY));
+          data[idx] = Math.round(data[idx] * (1 - scanlineOpacity));
+          data[idx + 1] = Math.round(data[idx + 1] * (1 - scanlineOpacity));
+          data[idx + 2] = Math.round(data[idx + 2] * (1 - scanlineOpacity));
         }
       }
     }
@@ -73,7 +73,7 @@ function drawChromaticAberration(
   w: number,
   h: number,
 ): void {
-  // Direct pixel manipulation: shift R channel right, B channel left by CHROMATIC_OFFSET
+  // Direct pixel manipulation: shift R channel right, B channel left by chromaticOffset
   const srcCtx = source.getContext('2d');
   if (!srcCtx) return;
   const srcData = srcCtx.getImageData(0, 0, w, h).data;
@@ -85,10 +85,10 @@ function drawChromaticAberration(
     for (let x = 0; x < w; x++) {
       const idx = (rowBase + x) * 4;
       // Red from pixel shifted left (source x - offset)
-      const rSrcX = Math.max(0, Math.min(w - 1, x - CHROMATIC_OFFSET));
+      const rSrcX = Math.max(0, Math.min(w - 1, x - chromaticOffset));
       const rIdx = (rowBase + rSrcX) * 4;
       // Blue from pixel shifted right (source x + offset)
-      const bSrcX = Math.max(0, Math.min(w - 1, x + CHROMATIC_OFFSET));
+      const bSrcX = Math.max(0, Math.min(w - 1, x + chromaticOffset));
       const bIdx = (rowBase + bSrcX) * 4;
 
       out[idx] = srcData[rIdx];         // R from shifted source

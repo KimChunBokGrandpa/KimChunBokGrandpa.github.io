@@ -9,21 +9,21 @@
   let isDragging = $state(false);
 
   // Onboarding: show quick start guide for first-time users
-  const ONBOARDING_KEY = 'retropixel_onboarding_dismissed';
+  const onboardingKey = 'retropixel_onboarding_dismissed';
   let onboardingDismissed = $state((() => {
     try {
-      return typeof localStorage !== 'undefined' && localStorage.getItem(ONBOARDING_KEY) === '1';
+      return typeof localStorage !== 'undefined' && localStorage.getItem(onboardingKey) === '1';
     } catch { return false; }
   })());
 
   function dismissOnboarding() {
     onboardingDismissed = true;
-    try { localStorage.setItem(ONBOARDING_KEY, '1'); }
+    try { localStorage.setItem(onboardingKey, '1'); }
     catch { /* localStorage unavailable or full */ }
   }
 
-  const ACCEPTED_TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/bmp', 'image/webp'];
-  const MAX_IMAGE_SIZE = 50 * 1024 * 1024; // 50MB
+  const acceptedTypes = ['image/png', 'image/jpeg', 'image/gif', 'image/bmp', 'image/webp'];
+  const maxImageSize = 50 * 1024 * 1024; // 50MB
 
   function handleDragEnter(e: DragEvent) {
     e.preventDefault();
@@ -45,9 +45,9 @@
 
     if (e.dataTransfer?.files && e.dataTransfer.files.length > 0) {
       const file = e.dataTransfer.files[0];
-      if (!ACCEPTED_TYPES.includes(file.type)) {
+      if (!acceptedTypes.includes(file.type)) {
         onError?.(i18n.t('drop_image_error'));
-      } else if (file.size > MAX_IMAGE_SIZE) {
+      } else if (file.size > maxImageSize) {
         onError?.(i18n.t('image_too_large'));
       } else {
         onImageSelected(file);
@@ -112,7 +112,7 @@
       if (item.type.startsWith('image/')) {
         const file = item.getAsFile();
         if (file) {
-          if (file.size > MAX_IMAGE_SIZE) {
+          if (file.size > maxImageSize) {
             onError?.(i18n.t('image_too_large'));
           } else {
             onImageSelected(file);
@@ -151,7 +151,7 @@
       <p class="drop-subtitle">{i18n.t('pixel_lab_subtitle')}</p>
       <p class="drop-or">{i18n.t('or')}</p>
       <div class="field-row" style="gap: 6px;">
-        <input type="file" accept={ACCEPTED_TYPES.join(',')} id="file-upload" onchange={handleFileInput} style="display: none;" />
+        <input type="file" accept={acceptedTypes.join(',')} id="file-upload" onchange={handleFileInput} style="display: none;" />
         <button class="browse-btn" data-testid="browse-image-button" onclick={() => document.getElementById('file-upload')?.click()}>📂 {i18n.t('open_image')}</button>
         <button class="browse-btn sample-btn" data-testid="try-sample-button" onclick={loadSampleImage}>🌄 {i18n.t('try_sample')}</button>
       </div>

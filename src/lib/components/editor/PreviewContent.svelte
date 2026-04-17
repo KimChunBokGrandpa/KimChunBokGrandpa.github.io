@@ -105,12 +105,12 @@
   let eyedropperOverlay = $state<EyedropperOverlay>();
 
   // ─── Compare Mode ───
-  const COMPARE_VARIANTS: CompareVariant[] = ['slider', 'side-by-side', 'onion'];
+  const compareVariants: CompareVariant[] = ['slider', 'side-by-side', 'onion'];
   let compareVariant = $state<CompareVariant>('slider');
 
   function cycleCompareVariant() {
-    const idx = COMPARE_VARIANTS.indexOf(compareVariant);
-    compareVariant = COMPARE_VARIANTS[(idx + 1) % COMPARE_VARIANTS.length];
+    const idx = compareVariants.indexOf(compareVariant);
+    compareVariant = compareVariants[(idx + 1) % compareVariants.length];
   }
 
   let compareVariantIcon = $derived(

@@ -15,7 +15,13 @@ const localStorageMock = {
 };
 Object.defineProperty(globalThis, 'localStorage', { value: localStorageMock, writable: true });
 
-import { createWindowStore, getWindowTitle, WINDOW_CONFIGS } from './windowStore.svelte';
+import {
+  createWindowStore,
+  getShellProgramLaunchLabel,
+  getShellProgramSummary,
+  getWindowTitle,
+  windowConfigs,
+} from './windowStore.svelte';
 
 describe('windowStore', () => {
   beforeEach(() => {
@@ -100,6 +106,13 @@ describe('windowStore', () => {
       expect(store.wins.settings.mode).toBe('closed');
       expect(store.wins.settings.x).toBe(origX);
     });
+
+    it('should move focus to the next visible window when closing the focused window', () => {
+      const store = createWindowStore();
+      store.focusWindow('settings');
+      store.close('settings');
+      expect(store.focusedWindow).toBe('preview');
+    });
   });
 
   describe('closeAndReset', () => {
@@ -111,6 +124,13 @@ describe('windowStore', () => {
       expect(store.wins.gallery.mode).toBe('closed');
       expect(store.wins.gallery.x).toBe(store.wins.gallery.defaults.x);
       expect(store.wins.gallery.y).toBe(store.wins.gallery.defaults.y);
+    });
+
+    it('should move focus to the next visible window when closing and resetting the focused window', () => {
+      const store = createWindowStore();
+      store.openWindow('poster_maker');
+      store.closeAndReset('poster_maker');
+      expect(store.focusedWindow).toBe('preview');
     });
   });
 
@@ -127,6 +147,7 @@ describe('windowStore', () => {
       store.focusWindow('settings');
       store.handleTaskbarClick('settings');
       expect(store.wins.settings.mode).toBe('minimized');
+      expect(store.focusedWindow).toBe('preview');
     });
 
     it('should focus an unfocused windowed window', () => {
@@ -144,18 +165,30 @@ describe('windowStore', () => {
     });
   });
 
-  describe('WINDOW_CONFIGS', () => {
+  describe('shell program copy helpers', () => {
+    it('should return the shell summary key for desktop programs', () => {
+      expect(getShellProgramSummary('preview')).toBe('desktop_summary_preview');
+      expect(getShellProgramSummary('poster_maker')).toBe('desktop_summary_poster_maker');
+    });
+
+    it('should build the Start menu launch label from title and summary copy', () => {
+      expect(getShellProgramLaunchLabel('preview')).toBe('win_preview — desktop_summary_preview');
+      expect(getShellProgramLaunchLabel('retrocam')).toBe('win_retrocam — desktop_summary_retrocam');
+    });
+  });
+
+  describe('windowConfigs', () => {
     it('should define 6 windows', () => {
-      expect(WINDOW_CONFIGS).toHaveLength(7);
+      expect(windowConfigs).toHaveLength(7);
     });
 
     it('should have unique ids', () => {
-      const ids = WINDOW_CONFIGS.map(c => c.id);
+      const ids = windowConfigs.map(c => c.id);
       expect(new Set(ids).size).toBe(ids.length);
     });
 
     it('should expose only preview as a desktop shortcut', () => {
-      const desktopIds = WINDOW_CONFIGS.filter((config) => config.desktop).map((config) => config.id);
+      const desktopIds = windowConfigs.filter((config) => config.desktop).map((config) => config.id);
       expect(desktopIds).toEqual(['preview', 'poster_maker', 'retrocam']);
     });
   });

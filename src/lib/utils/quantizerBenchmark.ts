@@ -1,6 +1,6 @@
 import type { DitherType, QuantizationBackend } from '$lib/types';
 import { applyQuantization } from './quantizerBackend';
-import { PALETTES } from './palettes';
+import { palettes } from './palettes';
 import { getWasmQuantizationSupport, quantizeWithWasm, type WasmQuantizationFallbackReason } from './wasmQuantizer';
 
 export interface QuantizerBenchmarkOptions {
@@ -66,7 +66,7 @@ export function benchmarkQuantization(options: QuantizerBenchmarkOptions = {}): 
   } = options;
 
   const input = createBenchmarkImageData(width, height);
-  const customPaletteColors = PALETTES[palette];
+  const customPaletteColors = palettes[palette];
 
   applyQuantization({
     imageData: input,
@@ -121,7 +121,7 @@ export async function benchmarkQuantizationScenario(
   } = scenario;
 
   const input = createBenchmarkImageData(width, height);
-  const customPaletteColors = PALETTES[palette];
+  const customPaletteColors = palettes[palette];
   const request = {
     imageData: input,
     pixelSize,

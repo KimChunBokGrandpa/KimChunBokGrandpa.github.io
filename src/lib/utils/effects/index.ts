@@ -6,7 +6,7 @@ import { sliceEffect } from './slice';
 import { vhsTrackingEffect } from './vhsTracking';
 import { waveEffect } from './wave';
 
-export const BUILT_IN_EFFECTS: EffectDefinition[] = [
+export const builtInEffects: EffectDefinition[] = [
   rgbSplitEffect,
   waveEffect,
   noiseEffect,
@@ -18,8 +18,8 @@ export const BUILT_IN_EFFECTS: EffectDefinition[] = [
 let builtInEffectsRegistered = false;
 
 export function ensureBuiltInEffectsRegistered(): void {
-  if (builtInEffectsRegistered && getRegisteredEffectIds().length >= BUILT_IN_EFFECTS.length) return;
-  for (const effect of BUILT_IN_EFFECTS) {
+  if (builtInEffectsRegistered && getRegisteredEffectIds().length >= builtInEffects.length) return;
+  for (const effect of builtInEffects) {
     registerEffect(effect);
   }
   builtInEffectsRegistered = true;

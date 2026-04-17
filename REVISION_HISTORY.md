@@ -2,6 +2,897 @@
 
 ---
 
+## v1.6.68 (2026-04-16)
+
+> Active task/flow docs now track only remaining work, and the local validation baseline is green again after aligning the last stale test expectations with current taskbar accessibility wording.
+
+### Docs Sync + Green Baseline
+
+- **Validation baseline refresh — lint/test expectation drift 정리**
+  - `src/lib/components/window/Taskbar.svelte`
+  - `src/lib/components/poster/PosterMaker.svelte`
+  - `src/lib/components/__tests__/MobileShellFlow.test.ts`
+  - `src/lib/components/__tests__/RetroCamPixelLabFlow.test.ts`
+  - unused import 제거, `PosterMaker` useless mustache lint 정리, taskbar accessibility wording 기준으로 stale regression expectation 갱신
+- **Active-doc pruning — 완료된 세부 작업을 active 문서에서 제거**
+  - `PLAN_TASK.md`
+  - `docs/vnext/06_work_packages.md`
+  - `docs/vnext/10_role_execution_plan.md`
+  - `docs/vnext/11_status_review.md`
+  - 완료된 implementation detail은 `REVISION_HISTORY.md`에 남기고, active 문서들은 남은 작업/리스크/수동 QA 추적 중심으로 재정리
+
+### Verification
+
+- `npm run lint`
+  - `0 errors / 0 warnings`
+- `npm run check`
+  - `0 errors / 0 warnings`
+- `npm run verify:client`
+  - `599 tests / 83 files` green
+
+### Notes
+
+- current active implementation focus is now `WP-06 Shell Polish` acceptance plus `P3-005` recommendation-quality follow-up
+- `WP-05 RetroCam MVP`는 core slice보다 residual manual-QA / loop-export 판단 문맥으로 추적하는 편이 정확하다
+
+## v1.6.67 (2026-04-16)
+
+> Style recommendations now back off the flashy presets when the image is clearly smooth and grayscale, which makes the suggestions feel less arbitrary on muted inputs.
+
+### P3-005 Recommendation Quality Edge-Case Pass
+
+- **Mismatch penalty tuning — smooth grayscale over-recommendation 완화**
+  - `src/lib/utils/styleRecommender.ts`
+  - low-saturation / smooth / flat signals을 활용해 `cyberpunk`, `chaos`, `pico8`, `broken_vhs` 같은 vivid-heavy or noisy presets에 mismatch penalty를 추가
+  - muted grayscale 장면에서 neon-heavy 추천이 끼어드는 edge case를 줄임
+- **Regression coverage — grayscale edge case 고정**
+  - `src/lib/utils/styleRecommender.test.ts`
+  - smooth grayscale 이미지에서 `smooth_hqx`가 살아 있고 `cyberpunk` / `chaos`가 상위 추천에 들어오지 않는지 검증
+- **Planning/status refresh — next automatic priority 재정렬**
+  - `PLAN_TASK.md`
+  - `docs/vnext/11_status_review.md`
+
+### Verification
+
+- `npm run test -- src/lib/utils/styleRecommender.test.ts`
+  - `6 passed`
+- `npm run check`
+  - `0 errors / 0 warnings`
+
+### Notes
+
+- next automatic priority is now `remaining case-by-case test noise 판단`
+
+## v1.6.66 (2026-04-16)
+
+> The shell copy now lines up a little better across Start, desktop launch surfaces, and first-run guidance, so the suite reads more like one desktop product instead of several nearby features.
+
+### Shared Shell Copy Cohesion Pass
+
+- **Launcher wording — Start / desktop terminology 정리**
+  - `src/lib/i18n/en.ts`
+  - `src/lib/i18n/ko.ts`
+  - `src/lib/i18n/ja.ts`
+  - `Programs` / `Desktop shortcuts` / first-run intro / launch hint copy를 같은 desktop-program vocabulary로 정리
+- **Start button affordance — launcher intent 가시화**
+  - `src/lib/components/window/Taskbar.svelte`에 Start 버튼 `title`로 launcher purpose 문구 추가
+  - Start 버튼이 단순 label보다 `desktop programs + recent projects` 진입점처럼 읽히도록 보강
+- **Regression coverage — taskbar launcher title 회귀 확인**
+  - `src/lib/components/__tests__/Taskbar.test.ts`
+- **Planning/status refresh — next automatic priority 갱신**
+  - `PLAN_TASK.md`
+  - `docs/vnext/11_status_review.md`
+
+### Verification
+
+- `npm run test -- src/lib/components/__tests__/Taskbar.test.ts`
+  - `9 passed`
+- `npm run check`
+  - `0 errors / 0 warnings`
+
+### Notes
+
+- next automatic priority is now `P3-005 추천 품질 edge-case 추가 점검 판단`
+
+## v1.6.65 (2026-04-16)
+
+> Poster Maker now treats destructive document actions more like a desktop program, asking for confirmation only when there is actually something worth protecting.
+
+### Additional Shell-Owned Confirm Migration
+
+- **Poster Maker confirm flow — dirty document actions 보호**
+  - `src/lib/components/poster/PosterMaker.svelte`에서 `New Document`와 `Reset Layout`가 dirty state일 때 shared shell dialog confirm을 거치도록 확장
+  - blank/default state에서는 불필요한 confirm 없이 바로 진행되도록 조건 분기 추가
+- **Dialog copy — poster document confirm 문구 추가**
+  - `src/lib/i18n/en.ts`
+  - `src/lib/i18n/ko.ts`
+  - `src/lib/i18n/ja.ts`
+  - 새 포스터 시작 / 레이아웃 초기화 확인 타이틀과 메시지를 shell voice에 맞게 추가
+- **Regression coverage — confirm accept / decline 경로 보강**
+  - `src/lib/components/__tests__/PosterMaker.test.ts`
+  - reset / new document가 shell confirm을 호출하는지, decline 시 현재 문서를 유지하는지 확인
+- **Planning/status refresh — next automatic priority 갱신**
+  - `PLAN_TASK.md`
+  - `docs/vnext/11_status_review.md`
+
+### Verification
+
+- `npm run test -- src/lib/components/__tests__/PosterMaker.test.ts`
+  - `7 passed`
+- `npm run check`
+  - `0 errors / 0 warnings`
+
+### Notes
+
+- `PosterMaker` targeted tests에서는 jsdom canvas `getContext()` stderr가 여전히 남아 있어 case-by-case test noise 후보로 기록한다.
+- next automatic priority is now `shared shell copy cohesion 소규모 pass 판단`.
+
+## v1.6.64 (2026-04-16)
+
+> The test suite is a little quieter again, which makes real regressions easier to spot and keeps the known-noise list from turning into a blanket excuse.
+
+### Accepted Test Noise Cleanup Decision
+
+- **custom palette parse-path noise — stderr suppression in test only**
+  - `src/lib/stores/customPaletteStore.test.ts` now spies on `console.error` for corrupted-localStorage coverage
+  - parse failure is still asserted explicitly, but the test no longer sprays known stderr into the run
+- **CRT renderer canvas fallback noise — jsdom canvas path mocked cleanly**
+  - `src/lib/utils/crtRenderer.test.ts` now mocks both unavailable-context and available-context canvas branches without relying on jsdom's not-implemented `getContext()` stderr
+  - targeted CRT fallback coverage stays intact while test output gets cleaner
+- **Planning/status refresh — major known-noise note downgraded**
+  - `PLAN_TASK.md`
+  - `docs/vnext/11_status_review.md`
+
+### Verification
+
+- `npm run test -- src/lib/stores/customPaletteStore.test.ts src/lib/utils/crtRenderer.test.ts`
+  - `16 passed`
+- `npm run check`
+  - `0 errors / 0 warnings`
+
+### Notes
+
+- next automatic priority is now `additional shell-owned confirm migration 판단`
+
+## v1.6.63 (2026-04-16)
+
+> RetroCam now reports failures in the same shell voice as the rest of the suite, and the open-with roadmap is clearer about what is intentionally implemented versus intentionally deferred.
+
+### RetroCam Error Copy Polish
+
+- **Shell-owned fallback copy — raw action errors 숨김**
+  - `src/lib/components/retrocam/RetroCam.svelte`에서 snapshot save / `Open in Pixel Lab` / `Use in Poster Maker` 실패 시 raw thrown error 대신 curated shell copy를 표시하도록 정리
+  - 내부 예외는 `console.error`로 남기고 사용자-facing message는 `retrocam_*_failed` i18n key로 고정
+- **Camera/status tone pass — RetroCam 상태 문구 정리**
+  - `src/lib/i18n/en.ts`
+  - `src/lib/i18n/ko.ts`
+  - `src/lib/i18n/ja.ts`
+  - camera ready / snapshot / handoff / permission-state copy를 shell voice 기준으로 다듬음
+- **Regression coverage — raw error leakage 방지 회귀 추가**
+  - `src/lib/components/__tests__/RetroCam.test.ts`
+  - handoff reject, save reject 시 raw error 문자열 대신 shell fallback copy가 표시되는지 확인
+- **Planning/status refresh — open-with 판단과 다음 우선순위 동기화**
+  - `PLAN_TASK.md`
+  - `docs/vnext/06_work_packages.md`
+  - `docs/vnext/11_status_review.md`
+
+### Verification
+
+- `npm run test -- src/lib/components/__tests__/RetroCam.test.ts`
+  - `11 passed`
+- `npm run check`
+  - `0 errors / 0 warnings`
+
+### Notes
+
+- 현재 open-with graph는 first-party meaningful routes 기준으로 충분하다고 판단했고, broader shell-wide destination expansion은 deferred 상태로 문서화했다.
+- 다음 자동 진행 우선순위는 `accepted test noise cleanup 판단`이다.
+
+## v1.6.62 (2026-04-16)
+
+> Key confirm flows now stay inside shell voice, which removes leftover browser-native prompts from important editing paths and makes suite behavior feel more consistent.
+
+### Shell Dialog / Confirm Affordance Follow-Up
+
+- **Shared dialog store — shell-owned dialog state 추가**
+  - `src/lib/stores/dialogStore.svelte.ts`에 notice / error / confirm request flow 추가
+  - route-level `MessageDialog` 렌더링이 shared dialog store를 사용하도록 정리
+- **Confirm affordances — raw browser confirm 제거**
+  - `src/routes/+page.svelte`의 `load new image` confirm이 shell dialog confirm으로 이동
+  - `src/lib/components/palette/PaletteGallery.svelte`의 palette delete confirm이 shell dialog confirm으로 이동
+  - `src/lib/components/palette/CustomPaletteEditor.svelte`의 dirty cancel confirm이 shell dialog confirm으로 이동
+- **Dialog copy — confirm label/title 확장**
+  - `src/lib/components/feedback/MessageDialog.svelte`에 `confirmLabel` / `cancelLabel` 지원 추가
+  - `src/lib/i18n/en.ts`
+  - `src/lib/i18n/ko.ts`
+  - `src/lib/i18n/ja.ts`
+- **Regression coverage — store / palette / dialog 회귀 보강**
+  - `src/lib/stores/dialogStore.test.ts`
+  - `src/lib/components/__tests__/MessageDialog.test.ts`
+  - `src/lib/components/__tests__/PaletteGallery.test.ts`
+  - `src/lib/components/__tests__/CustomPaletteEditor.test.ts`
+- **Planning/status refresh — shell confirm 상태 동기화**
+  - `PLAN_TASK.md`
+  - `docs/vnext/06_work_packages.md`
+  - `docs/vnext/11_status_review.md`
+
+### Verification
+
+- `npm run test -- src/lib/stores/dialogStore.test.ts src/lib/components/__tests__/MessageDialog.test.ts src/lib/components/__tests__/PaletteGallery.test.ts src/lib/components/__tests__/CustomPaletteEditor.test.ts`
+  - `29 passed`
+- `npm run check`
+  - `0 errors / 0 warnings`
+
+### Notes
+
+- 다음 자동 진행 우선순위는 `shell-level open-with destination expansion 판단`이다.
+
+## v1.6.61 (2026-04-16)
+
+> The desktop now teaches the suite before the user opens anything, which makes the Win98 shell feel more intentional and gives first-time users a clearer place to begin.
+
+### First-Run Desktop Arrangement Review
+
+- **Desktop guide — first-run quick guide 카드 추가**
+  - `src/lib/components/window/DesktopWorkspace.svelte`에 dismissible desktop guide card 추가
+  - 세 프로그램 설명, desktop drop tip, `Open Pixel Lab` CTA를 같은 shell voice로 표시
+  - guide dismissal은 localStorage에 저장해 재진입 시 반복 노출을 줄임
+- **i18n copy — desktop first-run guide 문구 추가**
+  - `src/lib/i18n/en.ts`
+  - `src/lib/i18n/ko.ts`
+  - `src/lib/i18n/ja.ts`
+- **Regression coverage — desktop guide launch/dismiss persistence 회귀 추가**
+  - `src/lib/components/__tests__/DesktopShellFlow.test.ts`
+- **Planning/status refresh — shell onboarding 진행 상태 동기화**
+  - `PLAN_TASK.md`
+  - `docs/vnext/06_work_packages.md`
+  - `docs/vnext/11_status_review.md`
+
+### Verification
+
+- `npm run test -- src/lib/components/__tests__/DesktopShellFlow.test.ts`
+  - `5 passed`
+- `npm run check`
+  - `0 errors / 0 warnings`
+
+### Notes
+
+- 다음 자동 진행 우선순위는 `shell-level dialog/confirm affordance follow-up`이다.
+
+## v1.6.60 (2026-04-16)
+
+> Open With is now visible in more than one place in the suite, which makes app-to-app routing feel more like a shared shell pattern and less like a Pixel Lab-only trick.
+
+### Open-With Generalization Follow-Up
+
+- **Shared helper — reusable open-with menu section builder 추가**
+  - `src/lib/shell/openWithMenu.ts`에 shell-style `Open With` heading + destination item builder 추가
+  - `src/lib/shell/previewContextMenu.ts`가 이를 재사용하도록 정리
+- **RetroCam snapshot routing — 마지막 스냅샷 우클릭 메뉴 추가**
+  - `src/lib/components/retrocam/RetroCam.svelte`에서 latest snapshot preview 우클릭 시 `Open With` 컨텍스트 메뉴를 표시
+  - 같은 메뉴에서 `Open in Pixel Lab`과 `Use in Poster Maker`를 제공
+- **Regression coverage — helper / component 회귀 보강**
+  - `src/lib/shell/openWithMenu.test.ts`
+  - `src/lib/components/__tests__/RetroCam.test.ts`
+- **Planning/status refresh — shell continuity 진행 상태 동기화**
+  - `PLAN_TASK.md`
+  - `docs/vnext/06_work_packages.md`
+  - `docs/vnext/11_status_review.md`
+
+### Verification
+
+- `npm run test -- src/lib/shell/openWithMenu.test.ts src/lib/components/__tests__/RetroCam.test.ts`
+  - `11 passed`
+- `npm run check`
+  - `0 errors / 0 warnings`
+
+### Notes
+
+- 다음 자동 진행 우선순위는 `first-run desktop arrangement review`다.
+
+## v1.6.59 (2026-04-16)
+
+> Shared system dialogs now speak in the same desktop voice as the rest of the suite, which makes shell-level notices and errors feel less like leftover single-app strings.
+
+### Shared System Dialogs Wording Pass
+
+- **Dialog titles — 공통 desktop notice / alert 제목 도입**
+  - `src/lib/components/feedback/MessageDialog.svelte` 기본 제목을 shared desktop notice title로 변경
+  - `src/routes/+page.svelte`에 route-level error dialog helper를 추가해 hardcoded `Error` 제목을 공통 desktop alert title로 정리
+- **i18n copy — shared dialog title 키 추가**
+  - `src/lib/i18n/en.ts`
+  - `src/lib/i18n/ko.ts`
+  - `src/lib/i18n/ja.ts`
+- **Regression coverage — MessageDialog 기본 제목 회귀 추가**
+  - `src/lib/components/__tests__/MessageDialog.test.ts`
+- **Planning/status refresh — WP-06 shell polish 진행 상태 동기화**
+  - `PLAN_TASK.md`
+  - `docs/vnext/06_work_packages.md`
+  - `docs/vnext/11_status_review.md`
+
+### Verification
+
+- `npm run test -- src/lib/components/__tests__/MessageDialog.test.ts`
+  - `10 passed`
+- `npm run check`
+  - `0 errors / 0 warnings`
+
+### Notes
+
+- 다음 자동 진행 우선순위는 `shell-level open-with affordance generalization follow-up`이다.
+
+## v1.6.58 (2026-04-16)
+
+> The desktop and Start menu now describe Pixel Lab, Poster Maker, and RetroCam in the same voice, which makes the suite feel more like one family of Win98 programs instead of separate launch surfaces.
+
+### Desktop / Start Copy Cohesion Pass
+
+- **Shared shell copy — Start 메뉴가 desktop launch summary를 재사용**
+  - `src/lib/stores/windowStore.svelte.ts`에 shell program summary / launch label helper 추가
+  - `src/routes/+page.svelte`의 Start 메뉴 launch 항목이 `Pixel Lab`, `Poster Maker`, `RetroCam` 설명 문구를 desktop launch strip과 같은 기준으로 표시하도록 정리
+- **Start section heading — launch group 구분 문구 추가**
+  - `src/lib/i18n/en.ts`
+  - `src/lib/i18n/ko.ts`
+  - `src/lib/i18n/ja.ts`
+- **Regression coverage — shell copy helper 회귀 추가**
+  - `src/lib/stores/windowStore.test.ts`
+- **Planning/status refresh — WP-06 shell polish 진행 상태 동기화**
+  - `PLAN_TASK.md`
+  - `docs/vnext/06_work_packages.md`
+  - `docs/vnext/11_status_review.md`
+
+### Verification
+
+- `npm run test -- src/lib/stores/windowStore.test.ts`
+  - `24 passed`
+- `npm run check`
+  - `0 errors / 0 warnings`
+
+### Notes
+
+- 다음 자동 진행 우선순위는 `shared system dialogs wording pass`다.
+
+## v1.6.57 (2026-04-15)
+
+> Pixel Lab can now route into Poster Maker from a shell-like preview context menu, which makes cross-program continuity easier to discover without relying only on dedicated app buttons.
+
+### Shell-Level Open-With Affordance
+
+- **Preview context menu — `Open With -> Poster Maker` 진입점 추가**
+  - `src/lib/shell/previewContextMenu.ts`에 preview context menu builder를 분리
+  - `src/routes/+page.svelte`에서 `Pixel Lab` preview 우클릭 메뉴가 shell-style `Open With` 섹션을 통해 `Poster Maker` handoff를 노출하도록 연결
+- **i18n copy — shell routing 문구 추가**
+  - `src/lib/i18n/en.ts`
+  - `src/lib/i18n/ko.ts`
+  - `src/lib/i18n/ja.ts`
+- **Regression coverage — preview context menu helper 테스트 추가**
+  - `src/lib/shell/previewContextMenu.test.ts`
+- **Planning/status refresh — WP-06 shell polish 진행 상태 동기화**
+  - `PLAN_TASK.md`
+  - `docs/vnext/06_work_packages.md`
+  - `docs/vnext/11_status_review.md`
+
+### Verification
+
+- `npm run test -- src/lib/shell/previewContextMenu.test.ts`
+  - `2 passed`
+- `npm run check`
+  - `0 errors / 0 warnings`
+
+### Notes
+
+- 다음 자동 진행 우선순위는 `desktop / Start launch copy cohesion pass`다.
+
+## v1.6.56 (2026-04-15)
+
+> The shell now communicates taskbar actions more clearly and restores focus more predictably, which makes window-state changes feel closer to a real desktop OS and less like ambiguous toggles.
+
+### Shell Wording And Restore Polish
+
+- **Taskbar action wording — restore / minimize / switch 문구 정리**
+  - `src/lib/components/window/Taskbar.svelte`에서 taskbar item `aria-label` / `title`을 현재 상태에 맞춰 `Restore window`, `Minimize window`, `Switch to window`로 분기
+  - label text는 prop title을 직접 사용하도록 정리해 shell copy 일관성 보강
+- **Window focus fallback — focused window 닫기/최소화 후 다음 visible window로 이동**
+  - `src/lib/stores/windowStore.svelte.ts`에 visible-window fallback helper 추가
+  - focused window가 minimized/closed 될 때 가능한 경우 다음 visible window로 focus가 자연스럽게 넘어가도록 보강
+- **Regression coverage — window/taskbar shell 회귀 보강**
+  - `src/lib/stores/windowStore.test.ts`
+  - `src/lib/components/__tests__/Taskbar.test.ts`
+  - `src/lib/components/__tests__/DesktopShellFlow.test.ts`
+- **Planning/status refresh — shell polish 진행 상태 동기화**
+  - `PLAN_TASK.md`
+  - `docs/vnext/06_work_packages.md`
+  - `docs/vnext/11_status_review.md`
+
+### Verification
+
+- `npm run test -- src/lib/stores/windowStore.test.ts src/lib/components/__tests__/Taskbar.test.ts src/lib/components/__tests__/DesktopShellFlow.test.ts`
+  - `34 passed`
+- `npm run check`
+  - `0 errors / 0 warnings`
+
+### Notes
+
+- 다음 자동 진행 우선순위는 `shell-level open-with affordance generalization`이다.
+
+## v1.6.55 (2026-04-15)
+
+> The desktop now explains selected programs more clearly before launch, which makes the Win98 suite feel more approachable without flattening it into a generic modern app launcher.
+
+### Desktop Launch Affordance Pass
+
+- **Launch strip — selected desktop shortcut summary 추가**
+  - `src/lib/components/window/DesktopWorkspace.svelte`에 선택된 desktop shortcut용 launch strip 추가
+  - app icon, program summary, launch hint, explicit open button을 함께 표시
+- **Desktop metadata reuse — shell summary copy helper 추가**
+  - `src/lib/stores/windowStore.svelte.ts`에 desktop summary helper 추가
+  - `Pixel Lab`, `Poster Maker`, `RetroCam` shortcut 설명을 shell 기준으로 정리
+- **i18n copy — desktop launch 문구 추가**
+  - `src/lib/i18n/en.ts`
+  - `src/lib/i18n/ko.ts`
+  - `src/lib/i18n/ja.ts`
+- **Regression coverage — desktop shell launch strip 테스트 추가**
+  - `src/lib/components/__tests__/DesktopShellFlow.test.ts`
+  - `src/lib/components/__tests__/DesktopIcons.test.ts`
+- **Planning/status refresh — shell polish 현재 단계 반영**
+  - `PLAN_TASK.md`
+  - `docs/vnext/06_work_packages.md`
+  - `docs/vnext/11_status_review.md`
+
+### Verification
+
+- `npm run test -- src/lib/components/__tests__/DesktopShellFlow.test.ts src/lib/components/__tests__/DesktopIcons.test.ts`
+  - `11 passed`
+- `npm run check`
+  - `0 errors / 0 warnings`
+
+### Notes
+
+- 다음 자동 진행 우선순위는 `shared shell wording / window restore polish`다.
+
+## v1.6.54 (2026-04-15)
+
+> RetroCam snapshots can now jump directly into Poster Maker, which broadens cross-program continuity from simple reopen plumbing into a second explicit open-with path inside the creative suite.
+
+### RetroCam To Poster Maker Handoff
+
+- **Direct route — `Use in Poster Maker` action 추가**
+  - `src/lib/components/retrocam/RetroCam.svelte`에 latest snapshot용 `Use in Poster Maker` 버튼 추가
+  - `src/routes/+page.svelte`에서 `RetroCam -> Poster Maker` flow를 shell window open + toast까지 연결
+- **Handoff helpers — RetroCam capture를 poster-maker envelope로 발행**
+  - `src/lib/handoffs/retroCamToPosterMaker.ts`
+  - `src/lib/handoffs/retroCamToPosterMakerFlow.ts`
+  - capture asset 저장, `retrocam` source project manifest 저장, `place_capture_on_canvas` envelope 발행을 분리
+- **Poster Maker receive path — RetroCam provenance 수용 회귀 추가**
+  - `Poster Maker`는 기존 generic handoff 수신 경로로 `retrocam` sourceContext를 저장
+  - `pixel-lab` source가 아닐 때 return action이 노출되지 않는 회귀 추가
+- **Regression coverage — component/helper 회귀 보강**
+  - `src/lib/handoffs/retroCamToPosterMaker.test.ts`
+  - `src/lib/handoffs/retroCamToPosterMakerFlow.test.ts`
+  - `src/lib/components/__tests__/RetroCam.test.ts`
+  - `src/lib/components/__tests__/PosterMaker.test.ts`
+- **Planning/status refresh — continuity 우선순위 문서 동기화**
+  - `PLAN_TASK.md`
+  - `docs/vnext/06_work_packages.md`
+  - `docs/vnext/11_status_review.md`
+
+### Verification
+
+- `npm run test -- src/lib/handoffs/retroCamToPosterMaker.test.ts src/lib/handoffs/retroCamToPosterMakerFlow.test.ts src/lib/components/__tests__/RetroCam.test.ts src/lib/components/__tests__/PosterMaker.test.ts`
+  - `18 passed`
+- `npm run check`
+  - `0 errors / 0 warnings`
+
+### Notes
+
+- 다음 자동 진행 우선순위는 `better desktop launch affordances`와 `shared shell wording / window restore polish`다.
+
+## v1.6.53 (2026-04-15)
+
+> Pixel Lab now treats normal editing sessions as durable local projects, which makes shell recent-project reopen meaningful beyond handoff-generated manifests and gives continuity work a stronger base for the next shell polish slice.
+
+### Pixel Lab Session Persistence
+
+- **Auto project creation — 일반 편집 세션이 local project로 저장**
+  - `src/lib/stores/imageProcessingStore.svelte.ts`에서 새 이미지를 열면 `pixel-lab` project manifest와 source asset을 자동 생성하도록 연결
+  - `currentProjectId` / source asset tracking을 store state로 유지해 이후 설정 변경이 같은 project로 저장되도록 보강
+- **State persistence follow-through — export/filter 변경도 project state에 반영**
+  - export format / quality 변경과 `postFilters` 변경이 현재 `Pixel Lab` project manifest에 지속 반영되도록 정리
+  - shell recent reopen이 handoff-generated manifest뿐 아니라 일반 편집 세션에서도 실제 상태 복원 가치가 있도록 확장
+- **Regression coverage — Pixel Lab session persistence 회귀 추가**
+  - `src/lib/stores/imageProcessingStore.test.ts`
+  - 새 이미지 load 시 recent project 생성 확인
+  - export defaults / post filters 변경이 persisted manifest에 반영되는지 확인
+- **Planning/status refresh — continuity 우선순위 문서 동기화**
+  - `PLAN_TASK.md`
+  - `docs/vnext/06_work_packages.md`
+  - `docs/vnext/11_status_review.md`
+
+### Verification
+
+- `npm run test -- src/lib/stores/imageProcessingStore.test.ts src/lib/projects/openRecentProject.test.ts src/lib/stores/retroCamStore.test.ts src/lib/stores/posterMakerStore.test.ts src/lib/components/__tests__/PosterMaker.test.ts`
+  - `62 passed`
+- `npm run check`
+  - `0 errors / 0 warnings`
+
+### Notes
+
+- 다음 자동 진행 우선순위는 `broader open-with / cross-program reopen polish`다.
+
+## v1.6.52 (2026-04-15)
+
+> RetroCam now participates in shell-level recent project reopen, so all three current first-party programs have at least a basic reopen path before deeper open-with polish.
+
+### RetroCam Reopen Foundation
+
+- **RetroCam restore API — saved capture project reopen 추가**
+  - `src/lib/stores/retroCamStore.svelte.ts`에 `loadProject()` 추가
+  - saved capture asset을 다시 snapshot state로 복원하고 preset까지 함께 restore
+- **Shell helper expansion — Start recent reopen이 RetroCam까지 확장**
+  - `src/lib/projects/openRecentProject.ts`가 `retrocam` recent project reopen을 지원하도록 확장
+  - `src/routes/+page.svelte`에서 shell recent list 범위를 `pixel-lab + poster-maker + retrocam`으로 확장
+- **Regression coverage — RetroCam reopen 테스트 추가**
+  - `src/lib/stores/retroCamStore.test.ts`
+  - `src/lib/projects/openRecentProject.test.ts`
+- **Planning policy note — manual QA는 문서상 추적만 유지**
+  - `PLAN_TASK.md`, `docs/vnext/11_status_review.md`에 current Codex environment에서는 manual QA를 deferred checklist item으로만 유지한다는 운영 노트 반영
+
+### Verification
+
+- `npm run test -- src/lib/stores/retroCamStore.test.ts src/lib/projects/openRecentProject.test.ts src/lib/stores/imageProcessingStore.test.ts src/lib/stores/posterMakerStore.test.ts src/lib/components/__tests__/PosterMaker.test.ts`
+  - `60 passed`
+- `npm run check`
+  - `0 errors / 0 warnings`
+
+### Notes
+
+- 다음 자동 진행 우선순위는 `open-with / broader project reopen polish`다.
+
+## v1.6.51 (2026-04-15)
+
+> Pixel Lab now has a real project-restore path, which broadens continuity beyond Poster Maker-only reopen and lets return-to-source flows target an actual saved project instead of only refocusing windows.
+
+### Pixel Lab Project Reopen Foundation
+
+- **Pixel Lab restore API — project manifest 기반 상태 복원 추가**
+  - `src/lib/stores/imageProcessingStore.svelte.ts`에 `loadPixelLabProject()` 추가
+  - saved source asset + processing settings + post filters + export defaults를 다시 editor state로 복원하도록 연결
+  - `src/lib/stores/historyStore.svelte.ts`, `src/lib/stores/transformStore.svelte.ts`에 restore/reset 보조 메서드 추가
+- **Shell helper expansion — recent project reopen이 Pixel Lab까지 확장**
+  - `src/lib/projects/openRecentProject.ts`가 `pixel-lab` recent project reopen을 지원하도록 확장
+  - `src/routes/+page.svelte`에서 shell recent list를 `poster-maker` + `pixel-lab` 범위로 확장
+- **Return-to-source improvement — Poster Maker가 source project reopen 우선 시도**
+  - `Poster Maker -> Pixel Lab` 복귀 시 source project id가 있으면 실제 project reopen을 먼저 시도하도록 보강
+- **Regression coverage — restore/reopen 테스트 추가**
+  - `src/lib/stores/imageProcessingStore.test.ts`
+  - `src/lib/projects/openRecentProject.test.ts`
+- **Doc cleanup — continuity watchlist 정리**
+  - `PLAN_TASK.md`, `docs/vnext/06_work_packages.md`, `docs/vnext/11_status_review.md`
+
+### Verification
+
+- `npm run test -- src/lib/stores/imageProcessingStore.test.ts src/lib/projects/openRecentProject.test.ts src/lib/stores/posterMakerStore.test.ts src/lib/components/__tests__/PosterMaker.test.ts`
+  - `51 passed`
+- `npm run check`
+  - `0 errors / 0 warnings`
+
+### Notes
+
+- 다음 우선순위는 tall-phone/device 실환경 manual QA, broader open-with/reopen polish, native save 실환경 manual QA 순서로 본다.
+
+## v1.6.50 (2026-04-15)
+
+> Poster Maker now keeps source-program context visible after a Pixel Lab handoff, making the suite feel more connected instead of treating imported work as a disconnected image drop.
+
+### Poster Maker Continuity Polish
+
+- **Source context persistence — handoff provenance project state에 보존**
+  - `src/lib/projects/schema.ts`에 `ProjectSourceContextV1` 추가
+  - `src/lib/stores/posterMakerStore.svelte.ts`가 `Pixel Lab -> Poster Maker` handoff의 source app / project / label을 poster project state에 저장하고 restore하도록 보강
+- **Return-to-source UI — Poster Maker에서 source context 노출**
+  - `src/lib/components/poster/PosterMaker.svelte`에 source context panel과 `Switch to Pixel Lab` 액션 추가
+  - `src/routes/+page.svelte`에서 `Poster Maker -> Pixel Lab` 복귀 동선을 window focus + toast로 연결
+- **Targeted regression — provenance/continuity 회귀 추가**
+  - `src/lib/stores/posterMakerStore.test.ts`
+  - `src/lib/components/__tests__/PosterMaker.test.ts`
+- **i18n/status refresh — continuity 문구와 상태 문서 반영**
+  - `src/lib/i18n/en.ts`, `src/lib/i18n/ko.ts`, `src/lib/i18n/ja.ts`
+  - `PLAN_TASK.md`, `docs/vnext/06_work_packages.md`, `docs/vnext/11_status_review.md`
+
+### Verification
+
+- `npm run test -- src/lib/stores/posterMakerStore.test.ts src/lib/components/__tests__/PosterMaker.test.ts`
+  - `10 passed`
+- `npm run check`
+  - `0 errors / 0 warnings`
+
+### Notes
+
+- 다음 우선순위는 tall-phone/device 실환경 manual QA, cross-program reopen/open-with polish, native save 실환경 manual QA 순서로 본다.
+
+## v1.6.49 (2026-04-15)
+
+> The shell now has a real Start-menu launch surface with recent Poster Maker reopen shortcuts, which makes the desktop suite feel more like software and less like a set of floating windows.
+
+### Shell Recent Project Surfacing
+
+- **Start menu launch surface — taskbar Start 버튼 실사용 진입점 추가**
+  - `src/routes/+page.svelte`에서 Start click 시 `Pixel Lab`, `Poster Maker`, `RetroCam` launch menu를 열도록 연결
+  - `src/lib/components/window/Taskbar.svelte`에 Start click callback 연결
+- **Shell reopen helper — recent project reopen 로직 분리**
+  - `src/lib/projects/openRecentProject.ts` 추가
+  - 현재는 `Poster Maker` recent project reopen을 지원하고, unsupported app types는 명시적으로 거부
+- **Start menu recent projects — shell-level recent Poster Maker reopen 추가**
+  - Start menu에서 recent `Poster Maker` project를 바로 reopen 가능하게 연결
+  - `src/lib/i18n/en.ts`, `src/lib/i18n/ko.ts`, `src/lib/i18n/ja.ts`에 Start menu recent project 문구 추가
+- **Regression coverage — helper + taskbar 회귀 추가**
+  - `src/lib/projects/openRecentProject.test.ts`
+  - `src/lib/components/__tests__/Taskbar.test.ts`
+- **Task/status doc refresh — suite polish 현재 상태 반영**
+  - `PLAN_TASK.md`, `docs/vnext/05_master_checklists.md`, `docs/vnext/06_work_packages.md`, `docs/vnext/10_role_execution_plan.md`, `docs/vnext/11_status_review.md`
+
+### Verification
+
+- `npm run test -- src/lib/projects/openRecentProject.test.ts src/lib/components/__tests__/Taskbar.test.ts`
+  - `11 passed`
+- `npm run check`
+  - `0 errors / 0 warnings`
+
+### Notes
+
+- 다음 우선순위는 tall-phone/device 실환경 manual QA, multi-program continuity polish, native save 실환경 manual QA 순서로 유지한다.
+
+## v1.6.48 (2026-04-14)
+
+> Poster Maker now surfaces recent local drafts directly in-program, so durable persistence is no longer just an engine capability and can be reopened through a visible UI flow.
+
+### Poster Maker Reopen UX
+
+- **Recent projects panel — in-program reopen affordance 추가**
+  - `src/lib/components/poster/PosterMaker.svelte`에 recent-project list / reopen action / current-project 표시 추가
+  - missing project와 reopen success에 대한 message path 정리
+- **Store refresh + stable reopen ordering — recent list 상태/정렬 보강**
+  - `src/lib/stores/posterMakerStore.svelte.ts`에 `recentProjects` state와 `refreshRecentProjects()` 추가
+  - save/load 시 recent-project list를 갱신하고, reopen timestamp를 단조 증가로 맞춰 same-tick ordering 흔들림을 줄임
+- **Regression coverage — reopen flow targeted 테스트 추가**
+  - `src/lib/stores/posterMakerStore.test.ts`
+  - `src/lib/components/__tests__/PosterMaker.test.ts`
+- **i18n + task docs — 최근 프로젝트 문구와 상태 문서 반영**
+  - `src/lib/i18n/en.ts`, `src/lib/i18n/ko.ts`, `src/lib/i18n/ja.ts`
+  - `PLAN_TASK.md`, `docs/vnext/06_work_packages.md`, `docs/vnext/11_status_review.md`
+
+### Verification
+
+- `npm run test -- src/lib/stores/posterMakerStore.test.ts src/lib/components/__tests__/PosterMaker.test.ts`
+  - `9 passed`
+- `npm run check`
+  - `0 errors / 0 warnings`
+
+### Notes
+
+- 다음 우선순위는 tall-phone/device 실환경 manual QA, multi-program continuity polish, native save 실환경 manual QA 순서로 본다.
+
+## v1.6.47 (2026-04-14)
+
+> Tauri/native save behavior now has dedicated automated regression coverage, closing the biggest QA gap on the non-browser save path before final real-runtime manual validation.
+
+### Tauri Native Save QA
+
+- **Native save regression coverage — non-browser save path 회귀 추가**
+  - `src/lib/services/saveService.tauri.test.ts` 추가
+  - native save dialog cancel path, write failure wrapping, and defaultPath / extension contract 검증 추가
+- **Status/watchlist refresh — native save 우선순위 재정렬**
+  - `PLAN_TASK.md`, `docs/vnext/11_status_review.md`, `docs/vnext/05_master_checklists.md`에 automated coverage 완료 상태와 남은 manual QA 성격 반영
+
+### Verification
+
+- `npm run test -- src/lib/services/saveService.test.ts src/lib/services/saveService.tauri.test.ts`
+  - `15 passed`
+- `npm run check`
+  - `0 errors / 0 warnings`
+
+### Notes
+
+- 다음 우선순위는 tall-phone/device 실환경 manual QA와 recent-project / reopen UX surfacing 쪽이다.
+
+## v1.6.46 (2026-04-14)
+
+> Local project storage now defaults to a durable IndexedDB-backed adapter in browser/Tauri-local runtime, moving persistence from scaffold-only status into real client-side storage.
+
+### Durable Project Persistence
+
+- **IndexedDB adapter — durable local project storage 추가**
+  - `src/lib/projects/persistentStorageAdapter.ts` 추가
+  - project manifest / asset blob save-load-delete를 `IndexedDB` object stores로 처리
+- **Runtime default selection — persistent-first runtime 연결**
+  - `src/lib/projects/runtime.ts`가 `IndexedDB` available 환경에서는 persistent adapter를 기본 사용하고, unsupported/test 환경에서는 in-memory fallback을 유지하도록 변경
+- **Regression coverage — persistent/runtime selection 테스트 추가**
+  - `src/lib/projects/persistentStorageAdapter.test.ts`
+  - `src/lib/projects/runtime.test.ts`
+
+### Verification
+
+- `npm run test -- src/lib/projects/storageAdapter.test.ts src/lib/projects/persistentStorageAdapter.test.ts src/lib/components/__tests__/PosterMaker.test.ts src/lib/handoffs/consumePixelLabCaptureHandoff.test.ts`
+  - `11 passed`
+- `npm run check`
+  - `0 errors / 0 warnings`
+
+### Notes
+
+- 다음 persistence follow-up은 raw storage 자체보다 recent-project surfacing / reopen UX 쪽이 중심이 된다.
+
+## v1.6.45 (2026-04-14)
+
+> RetroCam edge-case polish now keeps the active preview alive when a device switch fails, while surfacing the failure state instead of dropping straight into a dead camera view.
+
+### RetroCam Device Edge-Case Polish
+
+- **Preview continuity — failing device switch에서도 기존 preview 유지**
+  - `src/lib/stores/retroCamStore.svelte.ts`에서 새 camera request 성공 전에는 기존 stream을 유지하도록 정리
+  - 성공 후에만 이전 stream track을 stop 하도록 순서 보강
+- **Failure feedback — retry/device change 실패 상태 surface**
+  - `src/lib/components/retrocam/RetroCam.svelte`에서 retry/device change 실패 시 현재 permission status를 `onError`로 surface
+  - request 중 retry 버튼 비활성화, capture 버튼은 active stream 기준으로 유지
+  - preview 표시는 `ready` 상태가 아니라 실제 active stream 존재 여부를 기준으로 유지
+- **Regression coverage — failing switch continuity 회귀 추가**
+  - `src/lib/stores/retroCamStore.test.ts`에 failing device switch 시 previous stream 유지 검증 추가
+  - `src/lib/components/__tests__/RetroCam.test.ts`에 failing switch 후 preview 유지 + error surface 검증 추가
+
+### Verification
+
+- `npm run test -- src/lib/stores/retroCamStore.test.ts src/lib/components/__tests__/RetroCam.test.ts`
+  - `13 passed`
+- `npm run check`
+  - `0 errors / 0 warnings`
+
+### Notes
+
+- `WP-05 RetroCam MVP`의 다음 우선순위는 durable local project persistence follow-up, Tauri/native save QA, 그리고 실환경 permission/device manual QA다.
+
+## v1.6.44 (2026-04-14)
+
+> Documentation sync pass updated the active status, checklists, and work-package tracking so the docs now reflect the completed RetroCam provenance fix and the real remaining priorities.
+
+### Documentation Sync
+
+- **Status review refresh — 최신 검증/진행 상태 반영**
+  - `docs/vnext/11_status_review.md`의 review date, full verify baseline, and current `WP-05` limits를 최신 상태로 갱신
+- **Work package refresh — `WP-05` 체크 상태 정리**
+  - `docs/vnext/06_work_packages.md`에서 RetroCam shared-engine / QA 진행 상태와 current snapshot을 최신화
+- **Checklist refresh — active suite snapshot 정리**
+  - `docs/vnext/05_master_checklists.md`에 current `WP-05` snapshot 추가
+- **Task ledger refresh — 현재/다음 작업 문구 정리**
+  - `PLAN_TASK.md`에 provenance fix 완료와 latest targeted regression 상태 반영
+
+### Verification
+
+- `npm audit --omit=dev`
+  - `0 vulnerabilities`
+
+### Notes
+
+- 현재 남은 우선순위는 여전히 `RetroCam` permission/device edge-case polish, durable local project persistence, Tauri/native save QA 순서다.
+
+## v1.6.43 (2026-04-14)
+
+> RetroCam now preserves capture-time preset provenance so sending a snapshot into Pixel Lab cannot silently inherit a later live-preset change.
+
+### RetroCam Snapshot Provenance Fix
+
+- **Capture metadata stability — snapshot preset provenance 고정**
+  - `src/lib/stores/retroCamStore.svelte.ts`에 `lastSnapshotPresetId` 추가
+  - snapshot 생성 시 capture 시점 preset id를 같이 저장하도록 정리
+- **Handoff correctness — Open in Pixel Lab 시점 preset mismatch 방지**
+  - `src/lib/components/retrocam/RetroCam.svelte`가 현재 live preset이 아니라 snapshot에 묶인 preset id를 `onOpenInPixelLab`로 전달하도록 수정
+- **Regression coverage — preset change after capture 회귀 추가**
+  - `src/lib/components/__tests__/RetroCam.test.ts`에 캡처 후 preset 변경 뒤 handoff해도 원래 snapshot preset이 유지되는지 검증 추가
+
+### Verification
+
+- `npm run test -- src/lib/components/__tests__/RetroCam.test.ts src/lib/handoffs/retroCamToPixelLab.test.ts src/lib/handoffs/retroCamToPixelLabFlow.test.ts`
+  - `10 passed`
+- `npm run check`
+  - `0 errors / 0 warnings`
+
+### Notes
+
+- `WP-05 RetroCam MVP`의 다음 우선순위는 여전히 camera permission/device edge-case polish와 durable local project persistence follow-up이다.
+
+## v1.6.42 (2026-04-14)
+
+> Status-review cleanup aligned the active vNext execution docs with the implemented RetroCam handoff state so the remaining priorities now match the real codebase.
+
+### Status Sync Cleanup
+
+- **Execution plan refresh — Tier 5 현재 상태 최신화**
+  - `docs/vnext/10_role_execution_plan.md`에서 `RetroCam -> Pixel Lab` handoff를 future slice가 아니라 implemented state로 갱신
+  - 다음 우선순위를 camera edge-case polish / durable persistence follow-up으로 재정렬
+- **Status review refresh — watchlist 우선순위 재정렬**
+  - `docs/vnext/11_status_review.md`의 남은 이슈를 durable persistence, native save/Tauri QA, Win98/mobile guardrail drift, multi-program continuity 중심으로 갱신
+- **Task ledger sync — 상단 버전/상태 최신화**
+  - `PLAN_TASK.md` 버전을 `v1.6.42`로 올리고 문서 싱크 상태를 맞춤
+
+### Verification
+
+- `npm audit --omit=dev`
+  - `0 vulnerabilities`
+- `npm run check`
+  - `0 errors / 0 warnings`
+
+### Notes
+
+- 현재 active implementation priority는 계속 `WP-05 RetroCam MVP` 후속 polish이며, `RetroCam -> Pixel Lab` first handoff 자체는 이미 구현/회귀 확보 상태다.
+
+## v1.6.41 (2026-04-14)
+
+> Naming review follow-up tightened the native boundary type exposure and added a dedicated identifier hierarchy document so window ids, app ids, and string keys are no longer described in a single bucket.
+
+### Naming Review Follow-Up
+
+- **Boundary tightening — native payload type export 축소**
+  - `src/lib/bridges/tauriQuantizer.ts`에서 Rust `snake_case` payload shape를 file-local로 제한
+  - 일반 TS 코드가 boundary request 타입을 직접 재사용할 여지를 더 줄임
+- **Identifier hierarchy doc — 식별자 계층 문서 추가**
+  - `docs/conventions/identifier-hierarchy.md` 추가
+  - `windowId`, `appId`, effect/preset/i18n key, native payload field의 역할과 casing 규칙을 분리 문서화
+- **Convention doc refresh — naming 문서 최신화**
+  - `docs/conventions/naming.md`의 남은 작업 목록을 현재 상태 기준으로 갱신
+
+### Verification
+
+- `npm run test -- src/lib/bridges/tauriQuantizer.test.ts src/lib/services/imageProcessor.test.ts`
+- `npm run check`
+
+### Notes
+
+- 남은 naming follow-up은 실제 코드 레벨에서 `windowId` / `appId` 혼용이 없는지 점진 확인하는 쪽이 우선이다.
+
+## v1.6.40 (2026-04-14)
+
+> The second naming migration pass removed most remaining UPPER_SNAKE_CASE local constants in TS/Svelte code and extracted a dedicated Tauri quantizer mapper so snake_case payload fields stay at the native boundary.
+
+### Naming Migration Pass 2
+
+- **Local constant cleanup — 남은 대문자 상수 2차 정리**
+  - service worker, route shell, save/export, media, stores, palette, preview, worker, effect, window 영역의 다수 local constant를 `camelCase`로 정리
+- **Boundary mapper extraction — Tauri quantizer mapper 분리**
+  - `src/lib/bridges/tauriQuantizer.ts` 추가
+  - `imageProcessor`는 내부 `camelCase` 입력을 유지하고, Rust `snake_case` payload는 mapper에서만 생성하도록 정리
+- **Regression coverage — mapper 테스트 추가**
+  - `src/lib/bridges/tauriQuantizer.test.ts` 추가
+
+### Verification
+
+- `npm run verify:client`
+  - `74 files passed / 546 tests passed`
+
+### Notes
+
+- 외부 문자열 id와 Rust field naming은 호환성 때문에 유지하되, boundary file에서만 다루는 방향으로 정리 중이다.
+
+## v1.6.39 (2026-04-14)
+
+> Naming convention was documented for future work, and the first migration pass started by normalizing core TS/Svelte exported constants toward camelCase while keeping Rust/native boundary exceptions explicit.
+
+### Naming Convention Baseline
+
+- **Convention doc — 내부 식별자 기준 문서화**
+  - `docs/conventions/naming.md` 추가
+  - TS/Svelte 내부 식별자는 `PascalCase(type)` / `camelCase(variable)` 기준으로 유지
+  - Rust `snake_case`, i18n key `snake_case`, public app id `kebab-case`는 boundary 예외로 명시
+
+### First Migration Pass
+
+- **Shared exports — 핵심 exported constant camelCase 전환 시작**
+  - palettes / presets / poster / window / i18n / settings / schema / handoff / effects 영역의 핵심 exported constant 이름 정리 시작
+- **Local constants — 주요 UI 파일의 대문자 상수 1차 정리**
+  - `Taskbar.svelte`, `ControlPanel.svelte`, `windowStore.svelte.ts`, `i18n/index.svelte.ts`, `palettes.ts` 일부 local constant를 camelCase로 이동
+
+### Notes
+
+- 외부 계약 문자열(`poster_maker`, `rgb_split`, `use_oklab`)은 호환성 때문에 이번 턴에 강제 변경하지 않았다.
+- 네이밍 migration은 점진적으로 이어가며, 새 코드부터는 문서 기준을 우선 적용한다.
+
 ## v1.6.38 (2026-04-14)
 
 > Tauri Rust processing no longer fails on palette application because the missing `use_oklab` field is now included in the native invoke payload.

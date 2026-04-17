@@ -8,7 +8,7 @@ vi.mock('$lib/i18n/index.svelte', () => ({
     locale: 'en',
     setLocale: vi.fn(),
   },
-  LOCALE_LABELS: { en: 'English', ko: '한국어', ja: '日本語' },
+  localeLabels: { en: 'English', ko: '한국어', ja: '日本語' },
 }));
 
 const mockStorage = new Map<string, string>();
@@ -70,7 +70,7 @@ describe('RetroCam to Pixel Lab desktop flow', () => {
     render(RetroCamPixelLabFlowWrapper);
 
     await fireEvent.dblClick(screen.getByRole('button', { name: /open win_retrocam/i }));
-    expect(screen.getByRole('button', { name: /win_retrocam window/i }).className).toContain('tb-active');
+    expect(screen.getByRole('button', { name: /taskbar_minimize_window: win_retrocam/i }).className).toContain('tb-active');
 
     await screen.findByTestId('retrocam-video');
     await fireEvent.click(screen.getByText('retrocam_capture_snapshot'));
@@ -81,7 +81,7 @@ describe('RetroCam to Pixel Lab desktop flow', () => {
     });
 
     expect(screen.getByText('Settings Surface')).toBeTruthy();
-    const previewTaskbar = screen.getByRole('button', { name: /win_preview window/i });
+    const previewTaskbar = screen.getByRole('button', { name: /taskbar_minimize_window: win_preview/i });
     expect(previewTaskbar.className).toContain('tb-active');
   }, 15000);
 });

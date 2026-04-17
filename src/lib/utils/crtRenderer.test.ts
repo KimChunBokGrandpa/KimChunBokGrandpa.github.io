@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi } from 'vitest';
+import { afterEach, describe, it, expect, vi } from 'vitest';
 import { applyCrtEffect } from './crtRenderer';
 
 // jsdom doesn't have a real canvas implementation, so getContext returns null.
@@ -12,6 +12,10 @@ function createMockCanvas(w: number, h: number) {
   return canvas;
 }
 
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
 describe('applyCrtEffect', () => {
   it('returns source canvas unchanged for mode "none"', () => {
     const source = createMockCanvas(10, 10);
@@ -20,14 +24,14 @@ describe('applyCrtEffect', () => {
   });
 
   it('returns source canvas when context is unavailable (jsdom)', () => {
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null);
     const source = createMockCanvas(10, 10);
-    // In jsdom, getContext('2d') returns null, so applyCrtEffect should
-    // return the source canvas as a fallback
     const result = applyCrtEffect(source, 'horizontal');
     expect(result).toBe(source);
   });
 
   it('returns source canvas for vertical mode when context is unavailable', () => {
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null);
     const source = createMockCanvas(8, 8);
     const result = applyCrtEffect(source, 'vertical');
     expect(result).toBe(source);
@@ -45,17 +49,24 @@ describe('applyCrtEffect', () => {
       height: h,
     };
 
+    const fakeSourceCtx = {
+      getImageData: vi.fn(() => fakeImageData),
+    };
+
     const fakeCtx = {
       drawImage: vi.fn(),
       fillRect: vi.fn(),
       putImageData: vi.fn(),
       getImageData: vi.fn(() => fakeImageData),
+      createImageData: vi.fn(() => fakeImageData),
       createRadialGradient: vi.fn(() => ({
         addColorStop: vi.fn(),
       })),
       globalCompositeOperation: 'source-over',
       fillStyle: '',
     };
+
+    vi.spyOn(source, 'getContext').mockReturnValue(fakeSourceCtx as unknown as CanvasRenderingContext2D);
 
     // Override createElement to return canvas with working getContext
     const origCreate = document.createElement.bind(document);
@@ -78,7 +89,5 @@ describe('applyCrtEffect', () => {
     // Verify scanline processing happened
     expect(fakeCtx.getImageData).toHaveBeenCalledWith(0, 0, w, h);
     expect(fakeCtx.putImageData).toHaveBeenCalled();
-
-    vi.restoreAllMocks();
   });
 });

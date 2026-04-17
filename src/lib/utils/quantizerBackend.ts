@@ -1,6 +1,6 @@
 import type { DitherType, QuantizationBackend } from '$lib/types';
 import { applyPixelationAndPalette } from './colorQuantizer';
-import { PALETTES, normalizePaletteId, type RGB } from './palettes';
+import { palettes, normalizePaletteId, type RGB } from './palettes';
 import { quantizeWithWasm } from './wasmQuantizer';
 
 export interface QuantizationRequest {
@@ -33,7 +33,7 @@ export async function applyQuantizationAsync(request: QuantizationRequest): Prom
   const backend = resolveQuantizationBackend(request.backend);
   const normalizedPalette = normalizePaletteId(request.palette);
   const resolvedPaletteColors = request.customPaletteColors
-    ?? (normalizedPalette !== 'original' ? PALETTES[normalizedPalette] : undefined);
+    ?? (normalizedPalette !== 'original' ? palettes[normalizedPalette] : undefined);
 
   if (backend === 'wasm') {
     const wasmResult = await quantizeWithWasm({

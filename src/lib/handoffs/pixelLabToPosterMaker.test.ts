@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { DEFAULT_POST_FILTERS } from '$lib/types';
-import { DEFAULT_PROCESSING_SETTINGS } from '$lib/stores/settingsStore.svelte';
+import { defaultPostFilters } from '$lib/types';
+import { defaultProcessingSettings } from '$lib/stores/settingsStore.svelte';
 import { createHandoffBus } from '$lib/handoffs/handoffBus.svelte';
 import { sendPixelLabToPosterMaker } from '$lib/handoffs/pixelLabToPosterMaker';
 import { createInMemoryProjectStorageAdapter } from '$lib/projects/storageAdapter';
@@ -17,11 +17,11 @@ describe('sendPixelLabToPosterMaker', () => {
       handoffBus: bus,
       snapshot: {
         settings: {
-          ...DEFAULT_PROCESSING_SETTINGS,
+          ...defaultProcessingSettings,
           glitchFilters: [],
           effectLayers: [],
         },
-        postFilters: { ...DEFAULT_POST_FILTERS },
+        postFilters: { ...defaultPostFilters },
         rotation: 0,
         cropRect: null,
         saveFormat: 'png',
@@ -44,13 +44,13 @@ describe('sendPixelLabToPosterMaker', () => {
       handoffBus: bus,
       snapshot: {
         settings: {
-          ...DEFAULT_PROCESSING_SETTINGS,
+          ...defaultProcessingSettings,
           palette: 'gameboy',
           glitchFilters: [],
           effectLayers: [],
         },
         postFilters: {
-          ...DEFAULT_POST_FILTERS,
+          ...defaultPostFilters,
           brightness: 120,
         },
         rotation: 90,

@@ -5,7 +5,7 @@
 import type { RGB } from './palettes';
 
 /** Sampling limit — skip pixels to keep clustering fast on large images */
-const MAX_SAMPLE_PIXELS = 10000;
+const maxSamplePixels = 10000;
 
 /** K-means++ initialization: pick initial centroids with weighted probability */
 function initCentroids(pixels: RGB[], k: number): RGB[] {
@@ -142,7 +142,7 @@ export function extractPaletteFromImageData(
   const k = Math.max(2, Math.min(64, colorCount));
 
   // Sample pixels (skip transparent and subsample large images)
-  const step = Math.max(1, Math.floor(totalPixels / MAX_SAMPLE_PIXELS));
+  const step = Math.max(1, Math.floor(totalPixels / maxSamplePixels));
   const samples: RGB[] = [];
 
   for (let i = 0; i < totalPixels; i += step) {

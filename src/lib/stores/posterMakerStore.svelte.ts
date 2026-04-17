@@ -8,21 +8,23 @@ import {
   type LocalAssetRefV1,
   type PosterMakerLayerV1,
   type PosterMakerProjectStateV1,
+  type ProjectSourceContextV1,
+  type RecentProjectEntryV1,
 } from '$lib/projects/schema';
 import { getProjectStorageAdapter } from '$lib/projects/runtime';
 import type { ProjectStorageAdapter } from '$lib/projects/storageAdapter';
 import {
-  DEFAULT_POSTER_PRESET_ID,
-  DEFAULT_POSTER_SUBTITLE,
-  DEFAULT_POSTER_TITLE,
+  defaultPosterPresetId,
+  defaultPosterSubtitle,
+  defaultPosterTitle,
   getPosterPreset,
   isPosterPresetId,
   type PosterPresetId,
 } from '$lib/poster/presets';
 import {
-  DEFAULT_POSTER_FRAME_STYLE_ID,
-  DEFAULT_POSTER_OVERLAY_STYLE_ID,
-  DEFAULT_POSTER_STICKER_STYLE_ID,
+  defaultPosterFrameStyleId,
+  defaultPosterOverlayStyleId,
+  defaultPosterStickerStyleId,
   isPosterFrameStyleId,
   isPosterOverlayStyleId,
   isPosterStickerStyleId,
@@ -52,7 +54,7 @@ function getFrameStyleId(layers: PosterMakerLayerV1[]): PosterFrameStyleId {
   if (layer?.type === 'frame' && isPosterFrameStyleId(layer.frameStyleId)) {
     return layer.frameStyleId;
   }
-  return DEFAULT_POSTER_FRAME_STYLE_ID;
+  return defaultPosterFrameStyleId;
 }
 
 function getOverlayStyleId(layers: PosterMakerLayerV1[]): PosterOverlayStyleId {
@@ -60,7 +62,7 @@ function getOverlayStyleId(layers: PosterMakerLayerV1[]): PosterOverlayStyleId {
   if (layer?.type === 'overlay' && isPosterOverlayStyleId(layer.overlayStyleId)) {
     return layer.overlayStyleId;
   }
-  return DEFAULT_POSTER_OVERLAY_STYLE_ID;
+  return defaultPosterOverlayStyleId;
 }
 
 function getStickerStyleId(layers: PosterMakerLayerV1[]): PosterStickerStyleId {
@@ -68,7 +70,7 @@ function getStickerStyleId(layers: PosterMakerLayerV1[]): PosterStickerStyleId {
   if (layer?.type === 'sticker' && isPosterStickerStyleId(layer.stickerId)) {
     return layer.stickerId;
   }
-  return DEFAULT_POSTER_STICKER_STYLE_ID;
+  return defaultPosterStickerStyleId;
 }
 
 interface ImportStoredAssetOptions {
@@ -79,24 +81,26 @@ export function createPosterMakerStore(
   storageAdapter: ProjectStorageAdapter = getProjectStorageAdapter(),
 ) {
   let projectId = $state(createProjectId());
-  let activePresetId = $state<PosterPresetId>(DEFAULT_POSTER_PRESET_ID);
-  let titleText = $state(DEFAULT_POSTER_TITLE);
-  let subtitleText = $state(DEFAULT_POSTER_SUBTITLE);
+  let activePresetId = $state<PosterPresetId>(defaultPosterPresetId);
+  let titleText = $state(defaultPosterTitle);
+  let subtitleText = $state(defaultPosterSubtitle);
   let importedAssetId = $state<string | null>(null);
   let importedFilename = $state<string | null>(null);
-  let frameStyleId = $state<PosterFrameStyleId>(DEFAULT_POSTER_FRAME_STYLE_ID);
-  let overlayStyleId = $state<PosterOverlayStyleId>(DEFAULT_POSTER_OVERLAY_STYLE_ID);
-  let stickerStyleId = $state<PosterStickerStyleId>(DEFAULT_POSTER_STICKER_STYLE_ID);
+  let frameStyleId = $state<PosterFrameStyleId>(defaultPosterFrameStyleId);
+  let overlayStyleId = $state<PosterOverlayStyleId>(defaultPosterOverlayStyleId);
+  let stickerStyleId = $state<PosterStickerStyleId>(defaultPosterStickerStyleId);
+  let sourceContext = $state<ProjectSourceContextV1 | null>(null);
   let initialized = $state(false);
+  let recentProjects = $state<RecentProjectEntryV1[]>([]);
 
   function isBlankDocument(): boolean {
     return !importedAssetId
-      && activePresetId === DEFAULT_POSTER_PRESET_ID
-      && titleText === DEFAULT_POSTER_TITLE
-      && subtitleText === DEFAULT_POSTER_SUBTITLE
-      && frameStyleId === DEFAULT_POSTER_FRAME_STYLE_ID
-      && overlayStyleId === DEFAULT_POSTER_OVERLAY_STYLE_ID
-      && stickerStyleId === DEFAULT_POSTER_STICKER_STYLE_ID;
+      && activePresetId === defaultPosterPresetId
+      && titleText === defaultPosterTitle
+      && subtitleText === defaultPosterSubtitle
+      && frameStyleId === defaultPosterFrameStyleId
+      && overlayStyleId === defaultPosterOverlayStyleId
+      && stickerStyleId === defaultPosterStickerStyleId;
   }
 
   function currentProjectName(): string {
@@ -188,6 +192,7 @@ export function createPosterMakerStore(
         backgroundStyleId: activePresetId,
       },
       layers,
+      sourceContext: sourceContext ?? undefined,
       activeLayerId: importedAssetId ? 'image-layer' : 'title-layer',
       exportDefaults: {
         format: 'png',
@@ -196,9 +201,26 @@ export function createPosterMakerStore(
     };
   }
 
+  async function nextOpenedTimestamp(baselineTimestamps: Array<string | undefined> = []) {
+    const latestRecentProject = (await storageAdapter.listRecentProjects({ limit: 1 }))[0];
+    const candidates = [
+      Date.now(),
+      ...baselineTimestamps
+        .filter((value): value is string => Boolean(value))
+        .map((value) => Date.parse(value)),
+      latestRecentProject ? Date.parse(latestRecentProject.lastOpenedAt) + 1 : Number.NaN,
+    ].filter((value) => Number.isFinite(value));
+
+    const nextValue = candidates.length > 0 ? Math.max(...candidates) : Date.now();
+    return new Date(nextValue).toISOString();
+  }
+
   async function persist() {
     const existingManifest = await storageAdapter.loadProject(projectId);
-    const now = timestampNow();
+    const now = await nextOpenedTimestamp([
+      existingManifest?.updatedAt,
+      existingManifest?.lastOpenedAt,
+    ]);
     const manifest = createProjectManifest({
       projectId,
       appId: 'poster-maker',
@@ -215,19 +237,22 @@ export function createPosterMakerStore(
     });
     projectId = manifest.projectId;
     initialized = true;
-    return storageAdapter.saveProject(manifest);
+    const saved = await storageAdapter.saveProject(manifest);
+    await refreshRecentProjects();
+    return saved;
   }
 
   function resetDocument() {
     projectId = createProjectId();
-    activePresetId = DEFAULT_POSTER_PRESET_ID;
-    titleText = DEFAULT_POSTER_TITLE;
-    subtitleText = DEFAULT_POSTER_SUBTITLE;
+    activePresetId = defaultPosterPresetId;
+    titleText = defaultPosterTitle;
+    subtitleText = defaultPosterSubtitle;
     importedAssetId = null;
     importedFilename = null;
-    frameStyleId = DEFAULT_POSTER_FRAME_STYLE_ID;
-    overlayStyleId = DEFAULT_POSTER_OVERLAY_STYLE_ID;
-    stickerStyleId = DEFAULT_POSTER_STICKER_STYLE_ID;
+    frameStyleId = defaultPosterFrameStyleId;
+    overlayStyleId = defaultPosterOverlayStyleId;
+    stickerStyleId = defaultPosterStickerStyleId;
+    sourceContext = null;
     initialized = true;
   }
 
@@ -237,16 +262,37 @@ export function createPosterMakerStore(
       return null;
     }
 
-    projectId = manifest.projectId;
-    activePresetId = isPosterPresetId(manifest.programState.documentPresetId)
-      ? manifest.programState.documentPresetId
-      : DEFAULT_POSTER_PRESET_ID;
-    titleText = getTextLayer(manifest.programState.layers, 'title-layer') ?? DEFAULT_POSTER_TITLE;
-    subtitleText = getTextLayer(manifest.programState.layers, 'subtitle-layer') ?? DEFAULT_POSTER_SUBTITLE;
-    importedAssetId = getImportedAssetId(manifest.programState.layers);
-    frameStyleId = getFrameStyleId(manifest.programState.layers);
-    overlayStyleId = getOverlayStyleId(manifest.programState.layers);
-    stickerStyleId = getStickerStyleId(manifest.programState.layers);
+    const reopenedAt = await nextOpenedTimestamp([
+      manifest.updatedAt,
+      manifest.lastOpenedAt,
+    ]);
+
+    const reopenedManifest = createProjectManifest({
+      ...manifest,
+      createdAt: manifest.createdAt,
+      updatedAt: reopenedAt,
+      lastOpenedAt: reopenedAt,
+      exportHistory: manifest.exportHistory,
+      programState: manifest.programState,
+    });
+    await storageAdapter.saveProject(reopenedManifest);
+
+    const programState = reopenedManifest.programState;
+    if (programState.kind !== 'poster-maker') {
+      return null;
+    }
+
+    projectId = reopenedManifest.projectId;
+    activePresetId = isPosterPresetId(programState.documentPresetId)
+      ? programState.documentPresetId
+      : defaultPosterPresetId;
+    titleText = getTextLayer(programState.layers, 'title-layer') ?? defaultPosterTitle;
+    subtitleText = getTextLayer(programState.layers, 'subtitle-layer') ?? defaultPosterSubtitle;
+    importedAssetId = getImportedAssetId(programState.layers);
+    frameStyleId = getFrameStyleId(programState.layers);
+    overlayStyleId = getOverlayStyleId(programState.layers);
+    stickerStyleId = getStickerStyleId(programState.layers);
+    sourceContext = programState.sourceContext ?? null;
 
     if (importedAssetId) {
       const resolved = await storageAdapter.resolveAsset(importedAssetId);
@@ -256,14 +302,21 @@ export function createPosterMakerStore(
     }
 
     initialized = true;
-    return manifest;
+    await refreshRecentProjects();
+    return reopenedManifest;
+  }
+
+  async function refreshRecentProjects() {
+    const nextRecentProjects = await storageAdapter.listRecentProjects({ limit: 20 });
+    recentProjects = nextRecentProjects.filter((entry) => entry.appId === 'poster-maker');
+    return recentProjects;
   }
 
   async function ensureInitialized() {
     if (initialized) return;
 
-    const recentProjects = await storageAdapter.listRecentProjects({ limit: 20 });
-    const recentPosterProject = recentProjects.find((entry) => entry.appId === 'poster-maker');
+    const nextRecentProjects = await refreshRecentProjects();
+    const recentPosterProject = nextRecentProjects[0];
     if (recentPosterProject) {
       const loaded = await loadProject(recentPosterProject.projectId);
       if (loaded) return loaded;
@@ -314,7 +367,7 @@ export function createPosterMakerStore(
     importedFilename = asset.filename ?? null;
 
     const derivedTitle = deriveTitleFromFilename(asset.filename);
-    if (derivedTitle && (options.resetProject || isBlankDocument() || titleText === DEFAULT_POSTER_TITLE)) {
+    if (derivedTitle && (options.resetProject || isBlankDocument() || titleText === defaultPosterTitle)) {
       titleText = derivedTitle;
     }
 
@@ -322,6 +375,10 @@ export function createPosterMakerStore(
   }
 
   async function importFile(file: File, originAppId: AppId) {
+    if (originAppId === 'poster-maker') {
+      sourceContext = null;
+    }
+
     const assetId = createAssetId();
     const asset: LocalAssetRefV1 = {
       assetId,
@@ -351,12 +408,12 @@ export function createPosterMakerStore(
   }
 
   async function resetCurrentDocument() {
-    activePresetId = DEFAULT_POSTER_PRESET_ID;
-    frameStyleId = DEFAULT_POSTER_FRAME_STYLE_ID;
-    overlayStyleId = DEFAULT_POSTER_OVERLAY_STYLE_ID;
-    stickerStyleId = DEFAULT_POSTER_STICKER_STYLE_ID;
-    titleText = deriveTitleFromFilename(importedFilename) ?? DEFAULT_POSTER_TITLE;
-    subtitleText = DEFAULT_POSTER_SUBTITLE;
+    activePresetId = defaultPosterPresetId;
+    frameStyleId = defaultPosterFrameStyleId;
+    overlayStyleId = defaultPosterOverlayStyleId;
+    stickerStyleId = defaultPosterStickerStyleId;
+    titleText = deriveTitleFromFilename(importedFilename) ?? defaultPosterTitle;
+    subtitleText = defaultPosterSubtitle;
     await persist();
   }
 
@@ -367,6 +424,14 @@ export function createPosterMakerStore(
     await importStoredAsset(resolved.asset, {
       resetProject: envelope.openMode === 'create_project',
     });
+
+    sourceContext = {
+      sourceAppId: envelope.fromAppId,
+      sourceProjectId: envelope.sourceProjectId,
+      sourceLabel: envelope.sourceLabel,
+      importedAt: envelope.createdAt,
+    };
+    await persist();
     return true;
   }
 
@@ -398,8 +463,14 @@ export function createPosterMakerStore(
     get stickerStyleId() {
       return stickerStyleId;
     },
+    get sourceContext() {
+      return sourceContext;
+    },
     get initialized() {
       return initialized;
+    },
+    get recentProjects() {
+      return recentProjects;
     },
     isBlankDocument,
     currentProjectName,
@@ -407,6 +478,7 @@ export function createPosterMakerStore(
     persist,
     resetDocument,
     loadProject,
+    refreshRecentProjects,
     ensureInitialized,
     setPreset,
     setTitle,

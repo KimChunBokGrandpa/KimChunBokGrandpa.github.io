@@ -1,9 +1,9 @@
 <script lang="ts">
   import { i18n } from '$lib/i18n/index.svelte';
-  import { DEFAULT_POST_FILTERS, type PostProcessFilters } from '$lib/types';
+  import { defaultPostFilters, type PostProcessFilters } from '$lib/types';
 
   let {
-    postFilters = $bindable({ ...DEFAULT_POST_FILTERS }),
+    postFilters = $bindable({ ...defaultPostFilters }),
   }: {
     postFilters?: PostProcessFilters;
   } = $props();
@@ -32,7 +32,7 @@
     <input id="pf-hue" type="range" min="0" max="360" step="5" bind:value={postFilters.hueRotate} class="slider-input" aria-label={i18n.t('hue_rotate')} />
   </div>
   {#if hasChanges}
-    <button class="pf-reset" onclick={() => { postFilters = { ...DEFAULT_POST_FILTERS }; }}>{i18n.t('reset_filters')}</button>
+    <button class="pf-reset" onclick={() => { postFilters = { ...defaultPostFilters }; }}>{i18n.t('reset_filters')}</button>
   {/if}
 </div>
 

@@ -2,7 +2,7 @@ import type { SaveFormat } from '$lib/services/saveService';
 import type { PostProcessFilters, ProcessingSettings } from '$lib/types';
 import type { CropRect } from '$lib/stores/transformStore.svelte';
 
-export const RETRO_PROJECT_SCHEMA_VERSION = 1 as const;
+export const retroProjectSchemaVersion = 1 as const;
 
 export type AppId = 'pixel-lab' | 'poster-maker' | 'retrocam';
 
@@ -73,6 +73,13 @@ export interface PosterMakerCanvasStateV1 {
   backgroundStyleId?: string;
 }
 
+export interface ProjectSourceContextV1 {
+  sourceAppId: AppId;
+  sourceProjectId?: string;
+  sourceLabel?: string;
+  importedAt: string;
+}
+
 export interface BasePosterLayerV1 {
   layerId: string;
   x: number;
@@ -121,6 +128,7 @@ export interface PosterMakerProjectStateV1 {
   documentPresetId: string;
   canvas: PosterMakerCanvasStateV1;
   layers: PosterMakerLayerV1[];
+  sourceContext?: ProjectSourceContextV1;
   activeLayerId?: string;
   exportDefaults?: {
     format: SaveFormat;
@@ -146,7 +154,7 @@ export type ProgramStateV1 =
   | RetroCamProjectStateV1;
 
 export interface RetroProjectManifestV1 {
-  schemaVersion: typeof RETRO_PROJECT_SCHEMA_VERSION;
+  schemaVersion: typeof retroProjectSchemaVersion;
   projectId: string;
   appId: AppId;
   name: string;
@@ -264,6 +272,7 @@ function clonePosterMakerState(state: PosterMakerProjectStateV1): PosterMakerPro
     ...state,
     canvas: { ...state.canvas },
     layers: state.layers.map(clonePosterLayer),
+    sourceContext: state.sourceContext ? { ...state.sourceContext } : undefined,
     exportDefaults: state.exportDefaults ? { ...state.exportDefaults } : undefined,
   };
 }
@@ -312,7 +321,7 @@ export function createProjectManifest(input: CreateProjectManifestInput): RetroP
   const lastOpenedAt = input.lastOpenedAt ?? updatedAt;
 
   return {
-    schemaVersion: RETRO_PROJECT_SCHEMA_VERSION,
+    schemaVersion: retroProjectSchemaVersion,
     projectId: input.projectId ?? createProjectId(),
     appId: input.appId,
     name: normalizeProjectName(input.name, input.appId),

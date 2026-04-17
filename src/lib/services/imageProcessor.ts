@@ -4,8 +4,9 @@ import type {
   ImageWorkerResponse,
 } from "../types";
 import { customPaletteStore } from "../stores/customPaletteStore.svelte";
-import { PALETTES, normalizePaletteId } from "../utils/palettes";
+import { palettes, normalizePaletteId } from "../utils/palettes";
 import { invoke } from "@tauri-apps/api/core";
+import { createTauriQuantizeRequest } from '$lib/bridges/tauriQuantizer';
 
 /**
  * Singleton-based image processing service.
@@ -18,7 +19,7 @@ class ImageProcessorService {
   private worker: Worker | null = null;
   private currentRequestId: string | null = null;
   private workerErrorCount = 0;
-  private static readonly MAX_WORKER_RETRIES = 3;
+  private static readonly maxWorkerRetries = 3;
   private pendingResolvers = new Map<
     string,
     {
@@ -28,13 +29,13 @@ class ImageProcessorService {
     }
   >();
   private imageCache = new Map<string, HTMLImageElement>();
-  private static readonly MAX_IMAGE_CACHE = 10;
+  private static readonly maxImageCache = 10;
   private lastBlobUrl: string | null = null;
 
   /** Maximum processing dimension to prevent OOM on large images */
-  private readonly MAX_DIMENSION = 2048;
+  private readonly maxDimension = 2048;
   /** HQx doubles resolution, so use stricter limit */
-  private readonly MAX_DIMENSION_HQX = 1024;
+  private readonly maxDimensionHqx = 1024;
 
   /** Cached last-rendered canvas for save without re-decode */
   private lastCanvas: HTMLCanvasElement | null = null;
@@ -43,7 +44,7 @@ class ImageProcessorService {
   private _lastColorCount = 0;
 
   /** toBlob with a timeout to prevent indefinitely pending promises */
-  private static readonly BLOB_TIMEOUT_MS = 10_000;
+  private static readonly blobTimeoutMs = 10_000;
   private toBlobWithTimeout(
     canvas: HTMLCanvasElement,
     type: string = "image/png",
@@ -51,7 +52,7 @@ class ImageProcessorService {
     return new Promise<Blob>((resolve, reject) => {
       const timer = setTimeout(() => {
         reject(new Error("toBlob timed out"));
-      }, ImageProcessorService.BLOB_TIMEOUT_MS);
+      }, ImageProcessorService.blobTimeoutMs);
       canvas.toBlob((blob) => {
         clearTimeout(timer);
         if (blob) {
@@ -73,7 +74,7 @@ class ImageProcessorService {
   }
 
   private ensureWorker(): Worker {
-    if (this.workerErrorCount >= ImageProcessorService.MAX_WORKER_RETRIES) {
+    if (this.workerErrorCount >= ImageProcessorService.maxWorkerRetries) {
       throw new Error('Worker crashed: max retries exceeded');
     }
     if (!this.worker) {
@@ -137,7 +138,7 @@ class ImageProcessorService {
         this.worker?.terminate();
         this.worker = null;
         this.lastCanvas = null;
-        if (this.workerErrorCount >= ImageProcessorService.MAX_WORKER_RETRIES) {
+        if (this.workerErrorCount >= ImageProcessorService.maxWorkerRetries) {
           console.error(`Worker failed ${this.workerErrorCount} times, stopping retries`);
         }
       };
@@ -173,7 +174,7 @@ class ImageProcessorService {
         img.onload = null;
         img.onerror = null;
         // Evict oldest entries until under limit
-        while (this.imageCache.size >= ImageProcessorService.MAX_IMAGE_CACHE) {
+        while (this.imageCache.size >= ImageProcessorService.maxImageCache) {
           this.evictLRU();
         }
         this.imageCache.set(src, img);
@@ -242,9 +243,9 @@ class ImageProcessorService {
     const img = await this.loadImage(imageSrc);
     if (this.currentRequestId !== requestId) return null;
 
-    // Constrain to MAX_DIMENSION for performance
+    // Constrain to maxDimension for performance
     // HQx doubles resolution, so use stricter limit
-    const maxDim = settings.renderMode === 'hqx' ? this.MAX_DIMENSION_HQX : this.MAX_DIMENSION;
+    const maxDim = settings.renderMode === 'hqx' ? this.maxDimensionHqx : this.maxDimension;
     let procWidth = img.width;
     let procHeight = img.height;
     if (procWidth > maxDim || procHeight > maxDim) {
@@ -273,18 +274,18 @@ class ImageProcessorService {
 
           const paletteColors = normalizedPalette.startsWith('custom_')
             ? customPaletteStore.getPaletteById(normalizedPalette)?.colors?.map(c => ({ r: c.r, g: c.g, b: c.b })) ?? []
-            : PALETTES[normalizedPalette] ?? [];
+            : palettes[normalizedPalette] ?? [];
 
           const processedBytes = await invoke<Uint8Array>('process_image_rs', {
             data: Array.from(imageData.data),
-            req: {
+            req: createTauriQuantizeRequest({
               width: procWidth,
               height: procHeight,
-              pixel_size: settings.pixelSize,
-              palette: paletteColors,
-              dither_type: settings.ditherType || 'none',
-              use_oklab: settings.useOklab ?? false,
-            }
+              pixelSize: settings.pixelSize,
+              paletteColors,
+              ditherType: settings.ditherType,
+              useOklab: settings.useOklab,
+            }),
           });
 
           // Reconstruct

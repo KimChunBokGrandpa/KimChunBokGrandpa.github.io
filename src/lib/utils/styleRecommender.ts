@@ -1,5 +1,5 @@
 import type { TranslationKey } from '$lib/i18n/en';
-import { PRESETS } from '$lib/utils/presets';
+import { presets } from '$lib/utils/presets';
 import { recommendPalettes, type PaletteRecommendation } from './paletteRecommender';
 
 export interface StyleRecommendation {
@@ -162,6 +162,8 @@ function scorePreset(presetId: string, profile: ImageStyleProfile): { score: num
   const contrasty = smoothstep(0.08, 0.28, profile.contrast);
   const edgy = smoothstep(0.03, 0.15, profile.edgeDensity);
   const smooth = 1 - edgy;
+  const muted = 1 - smoothstep(0.08, 0.28, profile.saturation);
+  const flat = 1 - contrasty;
 
   switch (presetId) {
     case 'gameboy':
@@ -176,7 +178,7 @@ function scorePreset(presetId: string, profile: ImageStyleProfile): { score: num
       };
     case 'pico8':
       return {
-        score: 0.8 * saturated + 0.45 * contrasty + 0.2 * smooth,
+        score: 0.8 * saturated + 0.45 * contrasty + 0.2 * smooth - 0.22 * muted,
         reasonKey: 'style_reason_bold_colors',
       };
     case 'retro_crt':
@@ -186,13 +188,19 @@ function scorePreset(presetId: string, profile: ImageStyleProfile): { score: num
       };
     case 'broken_vhs':
       return {
-        score: 0.55 * edgy + 0.35 * darkScene + 0.1 * contrasty,
+        score: 0.55 * edgy + 0.35 * darkScene + 0.1 * contrasty - 0.18 * smooth,
         reasonKey: 'style_reason_vhs',
       };
     case 'cyberpunk':
       return {
         // Neon presets should win more decisively for dark, vivid scenes.
-        score: 1.35 * vivid + 0.95 * darkScene + 0.35 * contrasty + 0.1 * saturated,
+        score:
+          1.35 * vivid
+          + 0.95 * darkScene
+          + 0.35 * contrasty
+          + 0.1 * saturated
+          - 0.45 * muted
+          - 0.12 * flat,
         reasonKey: 'style_reason_neon',
       };
     case 'glitch_art':
@@ -202,7 +210,7 @@ function scorePreset(presetId: string, profile: ImageStyleProfile): { score: num
       };
     case 'chaos':
       return {
-        score: 0.45 * edgy + 0.45 * vivid + 0.05 * contrasty,
+        score: 0.45 * edgy + 0.45 * vivid + 0.05 * contrasty - 0.35 * muted - 0.18 * smooth,
         reasonKey: 'style_reason_chaos',
       };
     case 'smooth_hqx':
@@ -279,7 +287,7 @@ export function recommendStyles(imageData: ImageData, topN: number = 3): StyleRe
   const paletteStats = buildPaletteRecommendationStats(paletteRecommendations);
   const profile = analyzeImageStyle(imageData);
 
-  const candidates = PRESETS
+  const candidates = presets
     .filter((preset) => preset.id !== 'original')
     .map((preset) => {
       const heuristic = scorePreset(preset.id, profile);

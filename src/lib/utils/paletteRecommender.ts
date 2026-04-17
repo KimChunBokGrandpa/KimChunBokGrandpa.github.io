@@ -4,7 +4,7 @@
  * minimum perceptual distance.
  */
 import type { RGB } from './palettes';
-import { PALETTES } from './palettes';
+import { palettes } from './palettes';
 import { extractPaletteFromImageData } from './paletteExtractor';
 
 /** Weighted Euclidean distance (matches colorQuantizer) */
@@ -57,7 +57,7 @@ export function recommendPalettes(
 
   const scores: PaletteRecommendation[] = [];
 
-  for (const [id, colors] of Object.entries(PALETTES)) {
+  for (const [id, colors] of Object.entries(palettes)) {
     if (id === 'original') continue;
     scores.push({ id, score: scorePalette(imageColors, colors) });
   }

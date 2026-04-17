@@ -2,7 +2,7 @@
   import DesktopWorkspace from '../window/DesktopWorkspace.svelte';
   import Taskbar, { type TaskbarWindowInfo } from '../window/Taskbar.svelte';
   import Win98Window from '../window/Win98Window.svelte';
-  import { createWindowStore, WINDOW_CONFIGS, getWindowTitle } from '$lib/stores/windowStore.svelte';
+  import { createWindowStore, windowConfigs, getWindowTitle } from '$lib/stores/windowStore.svelte';
   import type { WindowId } from '$lib/types';
 
   const wm = createWindowStore();
@@ -23,7 +23,7 @@
   }
 
   let taskbarWindows = $derived<TaskbarWindowInfo[]>(
-    WINDOW_CONFIGS.map((config) => ({
+    windowConfigs.map((config) => ({
       id: config.id,
       title: getWindowTitle(config.id),
       icon: config.icon,

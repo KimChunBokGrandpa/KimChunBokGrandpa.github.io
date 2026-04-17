@@ -1,9 +1,11 @@
 <script lang="ts">
   import { onDestroy, onMount } from 'svelte';
   import { i18n } from '$lib/i18n/index.svelte';
+  import ContextMenu, { type ContextMenuEntry } from '$lib/components/feedback/ContextMenu.svelte';
   import { saveImage } from '$lib/services/saveService';
+  import { buildOpenWithSection } from '$lib/shell/openWithMenu';
   import {
-    RETROCAM_PRESETS,
+    retroCamPresets,
     retroCamStore,
     type RetroCamDeviceId,
     type RetroCamPresetId,
@@ -13,17 +15,33 @@
     onMessage,
     onError,
     onOpenInPixelLab,
+    onUseInPosterMaker,
   }: {
     onMessage?: (message: string) => void;
     onError?: (message: string) => void;
     onOpenInPixelLab?: (file: File, presetId: RetroCamPresetId) => void | Promise<void>;
+    onUseInPosterMaker?: (file: File, presetId: RetroCamPresetId) => void | Promise<void>;
   } = $props();
 
   let videoEl = $state<HTMLVideoElement | null>(null);
   let captureCanvas = $state<HTMLCanvasElement | null>(null);
+  let ctxMenu = $state<{ x: number; y: number; items: ContextMenuEntry[] } | null>(null);
 
   function currentPreset() {
-    return RETROCAM_PRESETS.find((preset) => preset.id === retroCamStore.activePresetId) ?? RETROCAM_PRESETS[0];
+    return retroCamPresets.find((preset) => preset.id === retroCamStore.activePresetId) ?? retroCamPresets[0];
+  }
+
+  function reportRetroCamError(
+    fallbackKey:
+      | 'retrocam_snapshot_failed'
+      | 'retrocam_open_in_pixel_lab_failed'
+      | 'retrocam_use_in_poster_maker_failed',
+    error?: unknown,
+  ) {
+    if (error) {
+      console.error(`[RetroCam] ${fallbackKey}`, error);
+    }
+    onError?.(i18n.t(fallbackKey));
   }
 
   function permissionMessageKey() {
@@ -47,12 +65,20 @@
 
   async function retryCamera() {
     const stream = await retroCamStore.requestCamera();
-    if (stream) onMessage?.(i18n.t('retrocam_camera_ready'));
+    if (stream) {
+      onMessage?.(i18n.t('retrocam_camera_ready'));
+    } else {
+      onError?.(i18n.t(permissionMessageKey()));
+    }
   }
 
   async function handleDeviceChange(nextDeviceId: RetroCamDeviceId) {
     const stream = await retroCamStore.selectDevice(nextDeviceId);
-    if (stream) onMessage?.(i18n.t('retrocam_camera_ready'));
+    if (stream) {
+      onMessage?.(i18n.t('retrocam_camera_ready'));
+    } else {
+      onError?.(i18n.t(permissionMessageKey()));
+    }
   }
 
   async function captureSnapshot() {
@@ -65,7 +91,7 @@
 
     const ctx = captureCanvas.getContext('2d');
     if (!ctx) {
-      onError?.(i18n.t('retrocam_snapshot_failed'));
+      reportRetroCamError('retrocam_snapshot_failed');
       return;
     }
 
@@ -74,12 +100,12 @@
 
     captureCanvas.toBlob((blob) => {
       if (!blob) {
-        onError?.(i18n.t('retrocam_snapshot_failed'));
+        reportRetroCamError('retrocam_snapshot_failed');
         return;
       }
       const file = new File([blob], `retrocam_snapshot_${Date.now()}.png`, { type: 'image/png' });
       const objectUrl = URL.createObjectURL(blob);
-      retroCamStore.setSnapshot(file, objectUrl);
+      retroCamStore.setSnapshot(file, objectUrl, preset.id);
       onMessage?.(i18n.t('retrocam_snapshot_captured'));
     }, 'image/png');
   }
@@ -94,17 +120,75 @@
       );
       if (message) onMessage?.(message);
     } catch (error) {
-      onError?.(error instanceof Error ? error.message : i18n.t('retrocam_snapshot_failed'));
+      reportRetroCamError('retrocam_snapshot_failed', error);
     }
   }
 
   async function openSnapshotInPixelLab() {
     if (!retroCamStore.lastSnapshotFile || !onOpenInPixelLab) return;
     try {
-      await onOpenInPixelLab(retroCamStore.lastSnapshotFile, retroCamStore.activePresetId);
+      await onOpenInPixelLab(
+        retroCamStore.lastSnapshotFile,
+        retroCamStore.lastSnapshotPresetId ?? retroCamStore.activePresetId,
+      );
     } catch (error) {
-      onError?.(error instanceof Error ? error.message : i18n.t('retrocam_open_in_pixel_lab_failed'));
+      reportRetroCamError('retrocam_open_in_pixel_lab_failed', error);
     }
+  }
+
+  async function useSnapshotInPosterMaker() {
+    if (!retroCamStore.lastSnapshotFile || !onUseInPosterMaker) return;
+    try {
+      await onUseInPosterMaker(
+        retroCamStore.lastSnapshotFile,
+        retroCamStore.lastSnapshotPresetId ?? retroCamStore.activePresetId,
+      );
+    } catch (error) {
+      reportRetroCamError('retrocam_use_in_poster_maker_failed', error);
+    }
+  }
+
+  function handleSnapshotContextMenu(event: MouseEvent) {
+    if (!retroCamStore.lastSnapshotFile) return;
+    event.preventDefault();
+
+    const items: ContextMenuEntry[] = [
+      {
+        label: `💾 ${i18n.t('retrocam_save_snapshot')}`,
+        icon: '',
+        action: () => {
+          void saveSnapshot();
+        },
+      },
+      ...buildOpenWithSection(i18n.t('open_with'), [
+        {
+          label: i18n.t('retrocam_open_in_pixel_lab'),
+          icon: '🖼️',
+          action: () => {
+            void openSnapshotInPixelLab();
+          },
+        },
+        {
+          label: i18n.t('retrocam_use_in_poster_maker'),
+          icon: '📰',
+          action: () => {
+            void useSnapshotInPosterMaker();
+          },
+        },
+      ]),
+      { separator: true },
+      {
+        label: `🗑 ${i18n.t('retrocam_clear_snapshot')}`,
+        icon: '',
+        action: () => retroCamStore.clearSnapshot(),
+      },
+    ];
+
+    ctxMenu = {
+      x: event.clientX,
+      y: event.clientY,
+      items,
+    };
   }
 
   $effect(() => {
@@ -149,10 +233,10 @@
           {/each}
         </select>
       </label>
-      <button class="toolbar-btn" onclick={retryCamera}>
+      <button class="toolbar-btn" onclick={retryCamera} disabled={retroCamStore.permissionState === 'requesting'}>
         {i18n.t(retroCamStore.permissionState === 'ready' ? 'retrocam_retry_camera' : 'retrocam_start_camera')}
       </button>
-      <button class="toolbar-btn" onclick={captureSnapshot} disabled={retroCamStore.permissionState !== 'ready'}>
+      <button class="toolbar-btn" onclick={captureSnapshot} disabled={!retroCamStore.stream}>
         {i18n.t('retrocam_capture_snapshot')}
       </button>
       <button class="toolbar-btn" onclick={saveSnapshot} disabled={!retroCamStore.lastSnapshotFile}>
@@ -166,6 +250,14 @@
       >
         {i18n.t('retrocam_open_in_pixel_lab')}
       </button>
+      <button
+        class="toolbar-btn"
+        data-testid="retrocam-use-in-poster-maker-button"
+        onclick={useSnapshotInPosterMaker}
+        disabled={!retroCamStore.lastSnapshotFile}
+      >
+        {i18n.t('retrocam_use_in_poster_maker')}
+      </button>
       <button class="toolbar-btn" onclick={() => retroCamStore.clearSnapshot()} disabled={!retroCamStore.lastSnapshotFile}>
         {i18n.t('retrocam_clear_snapshot')}
       </button>
@@ -175,7 +267,7 @@
   <div class="retrocam-layout">
     <div class="retrocam-preview-shell">
       <div class="retrocam-preview-label">{i18n.t('retrocam_live_preview')}</div>
-      {#if retroCamStore.permissionState === 'ready'}
+      {#if retroCamStore.stream}
         <video
           bind:this={videoEl}
           class="retrocam-video"
@@ -196,7 +288,7 @@
 
     <div class="retrocam-sidebar">
       <div class="retrocam-preset-strip">
-        {#each RETROCAM_PRESETS as preset}
+        {#each retroCamPresets as preset}
           <button
             class="preset-btn"
             class:preset-btn-active={retroCamStore.activePresetId === preset.id}
@@ -214,6 +306,8 @@
             src={retroCamStore.lastSnapshotUrl}
             alt={i18n.t('retrocam_last_snapshot')}
             class="retrocam-snapshot-image"
+            data-testid="retrocam-snapshot-image"
+            oncontextmenu={handleSnapshotContextMenu}
           />
         {:else}
           <div class="retrocam-snapshot-placeholder">{i18n.t('retrocam_no_snapshot')}</div>
@@ -222,6 +316,17 @@
     </div>
   </div>
 </div>
+
+{#if ctxMenu}
+  <ContextMenu
+    items={ctxMenu.items}
+    x={ctxMenu.x}
+    y={ctxMenu.y}
+    onClose={() => {
+      ctxMenu = null;
+    }}
+  />
+{/if}
 
 <style>
   .retrocam-root {

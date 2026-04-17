@@ -15,7 +15,7 @@
   import ToastNotification from '$lib/components/feedback/ToastNotification.svelte';
   import KeyboardShortcuts from '$lib/components/feedback/KeyboardShortcuts.svelte';
   import ContextMenu, { type ContextMenuEntry } from '$lib/components/feedback/ContextMenu.svelte';
-  import { createWindowStore, WINDOW_CONFIGS } from '$lib/stores/windowStore.svelte';
+  import { createWindowStore, windowConfigs } from '$lib/stores/windowStore.svelte';
   import { createZoomPan } from '$lib/stores/zoomPanStore.svelte';
   import { createImageProcessingStore } from '$lib/stores/imageProcessingStore.svelte';
   import { registerPaletteTranslator } from '$lib/utils/palettes';
@@ -24,7 +24,7 @@
   import type { TaskbarWindowInfo } from '$lib/components/window/Taskbar.svelte';
   import type { ProcessingSettings, WindowId } from '$lib/types';
   import { i18n } from '$lib/i18n/index.svelte';
-  import { getWindowTitle } from '$lib/stores/windowStore.svelte';
+  import { getWindowTitle, getShellProgramLaunchLabel } from '$lib/stores/windowStore.svelte';
   import { getMobileWindowSlot, getNextMobileFocusId } from '$lib/utils/mobileWindowLayout';
   import { applyCloudPresetByShortId } from '$lib/services/cloudPresetService';
   import { importSharedPreset } from '$lib/stores/sharedPresetStore.svelte';
@@ -32,8 +32,14 @@
   import { getHandoffBus } from '$lib/handoffs/runtime';
   import { launchPosterMakerFromPixelLab } from '$lib/handoffs/pixelLabToPosterMakerFlow';
   import { launchPixelLabFromRetroCam } from '$lib/handoffs/retroCamToPixelLabFlow';
+  import { launchPosterMakerFromRetroCam } from '$lib/handoffs/retroCamToPosterMakerFlow';
   import { consumePixelLabCaptureHandoff } from '$lib/handoffs/consumePixelLabCaptureHandoff';
-  import type { RetroCamPresetId } from '$lib/stores/retroCamStore.svelte';
+  import { openRecentProjectFromShell } from '$lib/projects/openRecentProject';
+  import type { RecentProjectEntryV1 } from '$lib/projects/schema';
+  import { retroCamStore, type RetroCamPresetId } from '$lib/stores/retroCamStore.svelte';
+  import { posterMakerStore } from '$lib/stores/posterMakerStore.svelte';
+  import { buildPreviewContextMenu } from '$lib/shell/previewContextMenu';
+  import { dialogStore } from '$lib/stores/dialogStore.svelte';
 
   // Register i18n translator for palette names
   registerPaletteTranslator((key) => i18n.t(key));
@@ -45,13 +51,8 @@
   const projectStorage = getProjectStorageAdapter();
   const handoffBus = getHandoffBus();
 
-  // ─── Dialog & Toast State ───
-  let dialogMessage: string | null = $state(null);
-  let dialogTitle = $state('Message');
-  let dialogConfirmCallback: (() => void) | undefined = $state(undefined);
-
   // Toast queue: max 3 items, drop oldest if exceeded
-  const TOAST_QUEUE_MAX = 3;
+  const toastQueueMax = 3;
   type ToastItem = { message: string; variant: 'success' | 'error' | 'warning'; action?: { label: string; onclick: () => void } };
   let toastQueue: ToastItem[] = $state([]);
   let activeToast: ToastItem | null = $state(null);
@@ -63,7 +64,7 @@
     } else {
       toastQueue.push(item);
       // Drop oldest queued items if exceeding max
-      while (toastQueue.length > TOAST_QUEUE_MAX) {
+      while (toastQueue.length > toastQueueMax) {
         toastQueue.shift();
       }
     }
@@ -81,6 +82,7 @@
   let compareMode = $state(false);
   let tileMode = $state(false);
   let showShortcuts = $state(false);
+  let shellRecentProjects = $state<RecentProjectEntryV1[]>([]);
 
   // ─── Context Menu ───
   let ctxMenu = $state<{ x: number; y: number; items: ContextMenuEntry[] } | null>(null);
@@ -88,23 +90,46 @@
   function handlePreviewContextMenu(e: MouseEvent) {
     if (!ip.processedImageSrc) return;
     e.preventDefault();
-    const menuItems: ContextMenuEntry[] = [
-      { label: `💾 ${i18n.t('save')}`, icon: '', action: () => { document.dispatchEvent(new KeyboardEvent('keydown', { key: 's', ctrlKey: true })); } },
-      { label: `📋 ${i18n.t('copy')}`, icon: '', action: async () => {
-        try {
-          const resp = await fetch(ip.processedImageSrc!);
-          const blob = await resp.blob();
-          await navigator.clipboard.write([new ClipboardItem({ [blob.type]: blob })]);
-          enqueueToast(i18n.t('copied_to_clipboard'), 'success');
-        } catch { enqueueToast(i18n.t('copy_failed'), 'error'); }
-      }},
-      { separator: true },
-      { label: `↔ ${i18n.t('compare')}`, icon: '', action: () => { compareMode = !compareMode; } },
-      { label: `🔲 ${i18n.t('tile_mode')}`, icon: '', action: () => { tileMode = !tileMode; } },
-      { separator: true },
-      { label: `↩ ${i18n.t('undo')}`, icon: '', action: () => ip.undo(), disabled: ip.settingsHistory.length === 0 },
-      { label: `↪ ${i18n.t('redo')}`, icon: '', action: () => ip.redo(), disabled: ip.redoHistory.length === 0 },
-    ];
+    const menuItems: ContextMenuEntry[] = buildPreviewContextMenu({
+      strings: {
+        save: i18n.t('save'),
+        copy: i18n.t('copy'),
+        compare: i18n.t('compare'),
+        tileMode: i18n.t('tile_mode'),
+        undo: i18n.t('undo'),
+        redo: i18n.t('redo'),
+        openWith: i18n.t('open_with'),
+        sendToPosterMaker: i18n.t('send_to_poster_maker'),
+      },
+      actions: {
+        onSave: () => {
+          document.dispatchEvent(new KeyboardEvent('keydown', { key: 's', ctrlKey: true }));
+        },
+        onCopy: async () => {
+          try {
+            const resp = await fetch(ip.processedImageSrc!);
+            const blob = await resp.blob();
+            await navigator.clipboard.write([new ClipboardItem({ [blob.type]: blob })]);
+            enqueueToast(i18n.t('copied_to_clipboard'), 'success');
+          } catch {
+            enqueueToast(i18n.t('copy_failed'), 'error');
+          }
+        },
+        onToggleCompare: () => {
+          compareMode = !compareMode;
+        },
+        onToggleTileMode: () => {
+          tileMode = !tileMode;
+        },
+        onUndo: () => ip.undo(),
+        onRedo: () => ip.redo(),
+        onSendToPosterMaker: () => {
+          void handleSendToPosterMaker();
+        },
+      },
+      canUndo: ip.settingsHistory.length > 0,
+      canRedo: ip.redoHistory.length > 0,
+    });
     ctxMenu = { x: e.clientX, y: e.clientY, items: menuItems };
   }
 
@@ -130,8 +155,8 @@
 
   // ─── Mobile / narrow viewport detection ───
   // Match the CSS @media (max-width: 550px) breakpoint for JS layout switching
-  const MOBILE_BREAKPOINT = 550;
-  const mql = typeof window !== 'undefined' ? window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT}px)`) : null;
+  const mobileBreakpoint = 550;
+  const mql = typeof window !== 'undefined' ? window.matchMedia(`(max-width: ${mobileBreakpoint}px)`) : null;
   let isMobile = $state(mql?.matches ?? false);
   const mqlLandscape = typeof window !== 'undefined'
     ? window.matchMedia(`(max-width: 900px) and (orientation: landscape)`)
@@ -160,9 +185,9 @@
   });
 
   // ─── Mobile split layout ───
-  const WINDOW_ORDER = ['preview', 'poster_maker', 'retrocam', 'settings', 'gallery', 'batch', 'history'] as const;
+  const windowOrder = ['preview', 'poster_maker', 'retrocam', 'settings', 'gallery', 'batch', 'history'] as const;
   let mobileVisibleIds = $derived(
-    WINDOW_ORDER.filter(id => wm.wins[id].mode !== 'closed' && wm.wins[id].mode !== 'minimized')
+    windowOrder.filter(id => wm.wins[id].mode !== 'closed' && wm.wins[id].mode !== 'minimized')
   );
 
   function getMobileSlot(id: string): { top: string; height: string } | null {
@@ -186,11 +211,30 @@
 
   // ─── Taskbar window info ───
   let taskbarWindows = $derived<TaskbarWindowInfo[]>(
-    WINDOW_CONFIGS.map(c => ({
+    windowConfigs.map(c => ({
       id: c.id, title: getWindowTitle(c.id), icon: c.icon,
       mode: wm.wins[c.id].mode, focused: wm.focusedWindow === c.id,
     }))
   );
+
+  async function refreshShellRecentProjects() {
+    const recentProjects = await projectStorage.listRecentProjects({ limit: 6 });
+    shellRecentProjects = recentProjects.filter((entry) => (
+      entry.appId === 'poster-maker' || entry.appId === 'pixel-lab' || entry.appId === 'retrocam'
+    ));
+  }
+
+  $effect(() => {
+    if (!browser) return;
+    void refreshShellRecentProjects();
+  });
+
+  $effect(() => {
+    const posterRecentProjects = posterMakerStore.recentProjects;
+    void posterRecentProjects;
+    if (!browser) return;
+    void refreshShellRecentProjects();
+  });
 
   // ─── Convenience aliases for template ───
   let originalImageSrc = $derived(ip.originalImageSrc);
@@ -293,9 +337,12 @@
     wm.openWindow('preview');
   }
 
-  function showDialog(message: string, title = 'Retro Pixel Converter') {
-    dialogMessage = message;
-    dialogTitle = title;
+  function showDialog(message: string, title = i18n.t('dialog_notice_title')) {
+    dialogStore.showNotice(message, title);
+  }
+
+  function showErrorDialog(message: string) {
+    dialogStore.showError(message, i18n.t('dialog_error_title'));
   }
 
   async function handleSave() {
@@ -304,7 +351,7 @@
       if (message) enqueueToast(message);
     } catch (err) {
       console.error('Failed to save file:', err);
-      showDialog(i18n.t('save_error'), i18n.t('error'));
+      showErrorDialog(i18n.t('save_error'));
     }
   }
 
@@ -314,7 +361,7 @@
       if (message) enqueueToast(message);
     } catch (err) {
       console.error('Failed to share file:', err);
-      showDialog(err instanceof Error ? err.message : i18n.t('save_error'), i18n.t('error'));
+      showErrorDialog(err instanceof Error ? err.message : i18n.t('save_error'));
     }
   }
 
@@ -352,6 +399,18 @@
     });
   }
 
+  async function handleUseRetroCamSnapshotInPosterMaker(file: File, presetId: RetroCamPresetId) {
+    await launchPosterMakerFromRetroCam({
+      snapshotFile: file,
+      activePresetId: presetId,
+      projectStorage,
+      handoffBus,
+      openPosterMaker: () => wm.openWindow('poster_maker'),
+      notify: (message) => enqueueToast(message),
+      successMessage: i18n.t('retrocam_sent_to_poster_maker'),
+    });
+  }
+
   async function handleExportSvg() {
     if (!ip.processedImageSrc) return;
     try {
@@ -359,7 +418,7 @@
       enqueueToast(i18n.t('svg_exported'));
     } catch (err) {
       console.error('SVG export error:', err);
-      showDialog(i18n.t('save_error'), i18n.t('error'));
+      showErrorDialog(i18n.t('save_error'));
     }
   }
 
@@ -370,22 +429,24 @@
       enqueueToast(i18n.t('spritesheet_exported'));
     } catch (err) {
       console.error('Spritesheet export error:', err);
-      showDialog(i18n.t('save_error'), i18n.t('error'));
+      showErrorDialog(i18n.t('save_error'));
     }
   }
 
   function handleFormatChange(format: SaveFormat) { ip.setFormat(format); }
   function handleQualityChange(quality: number) { ip.setQuality(quality); }
 
-  function handleLoadNewImage() {
+  async function handleLoadNewImage() {
     if (originalImageSrc) {
-      dialogTitle = i18n.t('confirm_load_new_title');
-      dialogMessage = i18n.t('confirm_load_new_image');
-      dialogConfirmCallback = () => {
-        dialogMessage = null;
-        dialogConfirmCallback = undefined;
+      const shouldLoad = await dialogStore.requestConfirm({
+        title: i18n.t('confirm_load_new_title'),
+        message: i18n.t('confirm_load_new_image'),
+        confirmLabel: i18n.t('load_new_image'),
+        cancelLabel: i18n.t('cancel'),
+      });
+      if (shouldLoad) {
         ip.loadNewImage();
-      };
+      }
     } else {
       ip.loadNewImage();
     }
@@ -403,12 +464,12 @@
   function handleDesktopClick() { selectedIcon = null; }
 
   // ─── Desktop-wide Drop Zone ───
-  const ACCEPTED_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/bmp', 'image/webp'];
+  const acceptedImageTypes = ['image/png', 'image/jpeg', 'image/gif', 'image/bmp', 'image/webp'];
   function handleDesktopDrop(file: File) {
-    if (ACCEPTED_IMAGE_TYPES.includes(file.type)) {
+    if (acceptedImageTypes.includes(file.type)) {
       handleImageSelected(file);
     } else {
-      showDialog(i18n.t('unsupported_format'), i18n.t('error'));
+      showErrorDialog(i18n.t('unsupported_format'));
     }
   }
 
@@ -428,6 +489,118 @@
       if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement || target.isContentEditable) return;
       showShortcuts = !showShortcuts;
     }
+  }
+
+  function getRecentProjectIcon(entry: RecentProjectEntryV1): string {
+    switch (entry.appId) {
+      case 'poster-maker':
+        return '📰';
+      case 'pixel-lab':
+        return '🖼️';
+      case 'retrocam':
+        return '📷';
+    }
+  }
+
+  async function handleOpenRecentProject(entry: RecentProjectEntryV1) {
+    await openRecentProjectFromShell({
+      entry,
+      loadPixelLabProject: async (projectId) => {
+        const manifest = await projectStorage.loadProject(projectId);
+        if (!manifest || manifest.appId !== 'pixel-lab' || manifest.programState.kind !== 'pixel-lab') {
+          return null;
+        }
+
+        const assetId = manifest.primaryAssetId
+          ?? manifest.previewAssetId
+          ?? manifest.programState.activeSourceAssetId
+          ?? manifest.programState.lastProcessedAssetId;
+        if (!assetId) return null;
+
+        const resolved = await projectStorage.resolveAsset(assetId);
+        if (!resolved) return null;
+
+        const restoredFile = new File(
+          [resolved.blob],
+          resolved.asset.filename ?? 'pixel-lab-project.png',
+          { type: resolved.asset.mimeType || resolved.blob.type || 'image/png' },
+        );
+        await ip.loadPixelLabProject(manifest, restoredFile);
+        return manifest;
+      },
+      loadPosterProject: (projectId) => posterMakerStore.loadProject(projectId),
+      loadRetroCamProject: (projectId) => retroCamStore.loadProject(projectId),
+      openWindow: (id) => wm.openWindow(id),
+      notifySuccess: (message) => enqueueToast(message),
+      notifyError: (message) => enqueueToast(message, 'error'),
+      messages: {
+        pixelLabProjectReopened: i18n.t('pixel_lab_project_reopened'),
+        pixelLabProjectMissing: i18n.t('pixel_lab_project_missing'),
+        posterProjectReopened: i18n.t('poster_project_reopened'),
+        posterProjectMissing: i18n.t('poster_project_missing'),
+        retroCamProjectReopened: i18n.t('retrocam_project_reopened'),
+        retroCamProjectMissing: i18n.t('retrocam_project_missing'),
+        projectUnsupported: i18n.t('start_recent_projects_unsupported'),
+      },
+    });
+  }
+
+  function handleStartClick(event: MouseEvent) {
+    const button = event.currentTarget as HTMLElement | null;
+    const rect = button?.getBoundingClientRect();
+    const launchItems: ContextMenuEntry[] = [
+      {
+        label: i18n.t('start_programs'),
+        icon: '⊞',
+        action: () => {},
+        disabled: true,
+      },
+      {
+        label: getShellProgramLaunchLabel('preview'),
+        icon: '🖼️',
+        action: () => wm.openWindow('preview'),
+      },
+      {
+        label: getShellProgramLaunchLabel('poster_maker'),
+        icon: '📰',
+        action: () => wm.openWindow('poster_maker'),
+      },
+      {
+        label: getShellProgramLaunchLabel('retrocam'),
+        icon: '📷',
+        action: () => wm.openWindow('retrocam'),
+      },
+      { separator: true },
+      {
+        label: i18n.t('start_recent_projects'),
+        icon: '🗂️',
+        action: () => {},
+        disabled: true,
+      },
+    ];
+
+    const recentItems: ContextMenuEntry[] = shellRecentProjects.length > 0
+      ? shellRecentProjects.map((entry) => ({
+          label: entry.name,
+          icon: getRecentProjectIcon(entry),
+          action: () => {
+            void handleOpenRecentProject(entry);
+          },
+        }))
+      : [{
+          label: i18n.t('start_recent_projects_empty'),
+          icon: '·',
+          action: () => {},
+          disabled: true,
+        }];
+
+    const menuItems = [...launchItems, ...recentItems];
+    const estimatedHeight = menuItems.length * 28 + 12;
+    ctxMenu = {
+      x: rect?.left ?? 4,
+      y: Math.max(8, (rect?.top ?? window.innerHeight) - estimatedHeight),
+      items: menuItems,
+    };
   }
 
   onDestroy(() => { ip.destroy(); });
@@ -558,7 +731,7 @@
         colorCount={ip.colorCount}
         postFilterCss={ip.postFilterCss}
         onImageSelected={handleImageSelected}
-        onError={(msg) => showDialog(msg, 'Error')}
+        onError={(msg) => showErrorDialog(msg)}
         onOpenSettings={() => wm.openWindow('settings')}
         isGif={ip.isGif}
         gifCurrentFrame={ip.gifCurrentFrame}
@@ -676,7 +849,23 @@
     >
       <PosterMaker
         onMessage={(msg) => enqueueToast(msg)}
-        onError={(msg) => showDialog(msg, 'Error')}
+        onError={(msg) => showErrorDialog(msg)}
+        onSwitchToPixelLab={async () => {
+          const sourceProjectId = posterMakerStore.sourceContext?.sourceProjectId;
+          if (sourceProjectId) {
+            await handleOpenRecentProject({
+              projectId: sourceProjectId,
+              appId: 'pixel-lab',
+              name: posterMakerStore.sourceContext?.sourceLabel ?? 'Pixel Lab Transfer',
+              lastOpenedAt: new Date().toISOString(),
+            });
+            return;
+          }
+
+          wm.openWindow('settings');
+          wm.openWindow('preview');
+          enqueueToast(i18n.t('poster_switch_to_pixel_lab_done'));
+        }}
       />
     </Win98Window>
   {/if}
@@ -703,8 +892,9 @@
     >
       <RetroCam
         onMessage={(msg) => enqueueToast(msg)}
-        onError={(msg) => showDialog(msg, 'Error')}
+        onError={(msg) => showErrorDialog(msg)}
         onOpenInPixelLab={handleOpenRetroCamSnapshotInPixelLab}
+        onUseInPosterMaker={handleUseRetroCamSnapshotInPosterMaker}
       />
     </Win98Window>
   {/if}
@@ -732,7 +922,7 @@
         settings={processingSettings}
         saveFormat={saveFormat}
         saveQuality={saveQuality}
-        onError={(msg) => showDialog(msg, 'Error')}
+        onError={(msg) => showErrorDialog(msg)}
         onMessage={(msg) => enqueueToast(msg)}
         onItemClick={(file) => {
           handleImageSelected(file);
@@ -779,15 +969,18 @@
   onWindowClick={wm.handleTaskbarClick}
   onWindowClose={wm.closeAndReset}
   onShowShortcuts={() => { showShortcuts = !showShortcuts; }}
+  onStartClick={handleStartClick}
 />
 
 <!-- ═══ Dialog ═══ -->
-{#if dialogMessage}
+{#if dialogStore.currentDialog}
   <MessageDialog
-    message={dialogMessage}
-    title={dialogTitle}
-    onConfirm={dialogConfirmCallback}
-    onClose={() => { dialogMessage = null; dialogConfirmCallback = undefined; }}
+    message={dialogStore.currentDialog.message}
+    title={dialogStore.currentDialog.title}
+    confirmLabel={dialogStore.currentDialog.confirmLabel}
+    cancelLabel={dialogStore.currentDialog.cancelLabel}
+    onConfirm={dialogStore.currentDialog.isConfirm ? () => dialogStore.confirmDialog() : undefined}
+    onClose={() => dialogStore.closeDialog()}
   />
 {/if}
 

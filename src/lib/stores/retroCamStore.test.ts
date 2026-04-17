@@ -1,4 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { createProjectManifest, createAssetId } from '$lib/projects/schema';
+import { createInMemoryProjectStorageAdapter } from '$lib/projects/storageAdapter';
 import { createRetroCamStore } from './retroCamStore.svelte';
 
 describe('retroCamStore', () => {
@@ -79,5 +81,75 @@ describe('retroCamStore', () => {
       audio: false,
     });
     expect(store.selectedDeviceId).toBe('front-cam');
+  });
+
+  it('keeps the previous stream alive when switching to a failing device', async () => {
+    const stop = vi.fn();
+    const readyStream = {
+      getTracks: () => [{ stop }],
+    } as unknown as MediaStream;
+    const getUserMedia = vi.fn()
+      .mockResolvedValueOnce(readyStream)
+      .mockRejectedValueOnce(new DOMException('missing', 'NotFoundError'));
+
+    const store = createRetroCamStore({
+      getUserMedia,
+      enumerateDevices: vi.fn().mockResolvedValue([
+        { kind: 'videoinput', deviceId: 'front-cam', label: 'Front Camera' },
+        { kind: 'videoinput', deviceId: 'rear-cam', label: 'Rear Camera' },
+      ] as MediaDeviceInfo[]),
+    });
+
+    await store.requestCamera();
+    const streamBeforeFailure = store.stream;
+
+    await store.selectDevice('rear-cam');
+
+    expect(store.permissionState).toBe('unavailable');
+    expect(store.stream).toBe(streamBeforeFailure);
+    expect(stop).not.toHaveBeenCalled();
+  });
+
+  it('restores the last snapshot from a saved retrocam project', async () => {
+    const adapter = createInMemoryProjectStorageAdapter();
+    const assetId = createAssetId();
+    await adapter.saveAsset({
+      asset: {
+        assetId,
+        role: 'capture',
+        mimeType: 'image/png',
+        storageKey: `retrocam-captures/${assetId}.png`,
+        originAppId: 'retrocam',
+        createdAt: new Date().toISOString(),
+        filename: 'saved-capture.png',
+      },
+      blob: new Blob(['capture'], { type: 'image/png' }),
+    });
+    const manifest = createProjectManifest({
+      appId: 'retrocam',
+      name: 'Saved RetroCam Capture',
+      primaryAssetId: assetId,
+      previewAssetId: assetId,
+      sourceAssetIds: [assetId],
+      derivedAssetIds: [assetId],
+      programState: {
+        kind: 'retrocam',
+        inputMode: 'webcam',
+        fastPresetId: 'warm_poster',
+        lastCaptureAssetId: assetId,
+        captureSettings: {
+          mirrored: true,
+        },
+      },
+    });
+    await adapter.saveProject(manifest);
+
+    const store = createRetroCamStore(null, adapter);
+    const loaded = await store.loadProject(manifest.projectId);
+
+    expect(loaded?.projectId).toBe(manifest.projectId);
+    expect(store.lastSnapshotFile?.name).toBe('saved-capture.png');
+    expect(store.activePresetId).toBe('warm_poster');
+    expect(store.lastSnapshotPresetId).toBe('warm_poster');
   });
 });

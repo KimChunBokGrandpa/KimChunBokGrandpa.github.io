@@ -2,7 +2,7 @@
   import DesktopWorkspace from '../window/DesktopWorkspace.svelte';
   import Taskbar, { type TaskbarWindowInfo } from '../window/Taskbar.svelte';
   import Win98Window from '../window/Win98Window.svelte';
-  import { createWindowStore, WINDOW_CONFIGS, getWindowTitle } from '$lib/stores/windowStore.svelte';
+  import { createWindowStore, windowConfigs, getWindowTitle } from '$lib/stores/windowStore.svelte';
   import { getMobileWindowSlot } from '$lib/utils/mobileWindowLayout';
   import type { WindowId } from '$lib/types';
 
@@ -12,9 +12,9 @@
   wm.openWindow('history');
   wm.focusWindow('preview');
 
-  const WINDOW_ORDER: WindowId[] = ['preview', 'poster_maker', 'settings', 'gallery', 'batch', 'history'];
+  const windowOrder: WindowId[] = ['preview', 'poster_maker', 'settings', 'gallery', 'batch', 'history'];
   let visibleIds = $derived(
-    WINDOW_ORDER.filter((id) => wm.wins[id].mode !== 'closed' && wm.wins[id].mode !== 'minimized')
+    windowOrder.filter((id) => wm.wins[id].mode !== 'closed' && wm.wins[id].mode !== 'minimized')
   );
 
   function getSlot(id: WindowId) {
@@ -28,7 +28,7 @@
   }
 
   let taskbarWindows = $derived<TaskbarWindowInfo[]>(
-    WINDOW_CONFIGS.map((config) => ({
+    windowConfigs.map((config) => ({
       id: config.id,
       title: getWindowTitle(config.id),
       icon: config.icon,

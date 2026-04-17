@@ -8,7 +8,7 @@ vi.mock('$lib/i18n/index.svelte', () => ({
     locale: 'en',
     setLocale: vi.fn(),
   },
-  LOCALE_LABELS: { en: 'English', ko: '한국어', ja: '日本語' },
+  localeLabels: { en: 'English', ko: '한국어', ja: '日本語' },
 }));
 
 const mockStorage = new Map<string, string>();
@@ -40,7 +40,7 @@ describe('Desktop shell flow', () => {
 
     await fireEvent.dblClick(screen.getByRole('button', { name: /open win_preview/i }));
 
-    const previewTaskbar = screen.getByRole('button', { name: /win_preview window/i });
+    const previewTaskbar = screen.getByRole('button', { name: /taskbar_.*win_preview/i });
     expect(previewTaskbar.className).toContain('tb-active');
   }, 15000);
 
@@ -49,11 +49,11 @@ describe('Desktop shell flow', () => {
 
     await fireEvent.dblClick(screen.getByRole('button', { name: /open win_poster_maker/i }));
 
-    const posterTaskbar = screen.getByRole('button', { name: /win_poster_maker window/i });
+    const posterTaskbar = screen.getByRole('button', { name: /taskbar_.*win_poster_maker/i });
     expect(posterTaskbar.className).toContain('tb-active');
     expect(screen.getByText('Poster Content')).toBeTruthy();
 
-    const previewTaskbar = screen.getByRole('button', { name: /win_preview window/i });
+    const previewTaskbar = screen.getByRole('button', { name: /taskbar_.*win_preview/i });
     await fireEvent.click(previewTaskbar);
     expect(previewTaskbar.className).toContain('tb-active');
     expect(posterTaskbar.className).not.toContain('tb-active');
@@ -65,5 +65,46 @@ describe('Desktop shell flow', () => {
     await fireEvent.click(previewTaskbar);
     expect(previewTaskbar.className).toContain('tb-active');
     expect(previewTaskbar.className).not.toContain('tb-dim');
+  }, 15000);
+
+  it('shows a launch strip for the selected desktop shortcut and opens from its button', async () => {
+    render(DesktopShellFlowWrapper);
+
+    await fireEvent.click(screen.getByRole('button', { name: /open win_retrocam/i }));
+
+    expect(screen.getByTestId('desktop-launch-strip')).toBeTruthy();
+    expect(screen.getByText('desktop_summary_retrocam')).toBeTruthy();
+
+    await fireEvent.click(screen.getByTestId('desktop-launch-open-button'));
+
+    const retroCamTaskbar = screen.getByRole('button', { name: /taskbar_.*win_retrocam/i });
+    expect(retroCamTaskbar.className).toContain('tb-active');
+  }, 15000);
+
+  it('shows a first-run desktop guide that can relaunch Pixel Lab and then hides itself', async () => {
+    render(DesktopShellFlowWrapper);
+
+    expect(screen.getByTestId('desktop-first-run-guide')).toBeTruthy();
+
+    await fireEvent.click(screen.getByRole('button', { name: /close win_preview/i }));
+    expect(screen.queryByRole('button', { name: /taskbar_.*win_preview/i })).toBeNull();
+
+    await fireEvent.click(screen.getByTestId('desktop-first-run-open-preview'));
+
+    const previewTaskbar = screen.getByRole('button', { name: /taskbar_.*win_preview/i });
+    expect(previewTaskbar.className).toContain('tb-active');
+    expect(screen.queryByTestId('desktop-first-run-guide')).toBeNull();
+  }, 15000);
+
+  it('persists dismissal of the first-run desktop guide', async () => {
+    render(DesktopShellFlowWrapper);
+
+    await fireEvent.click(screen.getByTestId('desktop-first-run-dismiss'));
+    expect(screen.queryByTestId('desktop-first-run-guide')).toBeNull();
+
+    cleanup();
+    render(DesktopShellFlowWrapper);
+
+    expect(screen.queryByTestId('desktop-first-run-guide')).toBeNull();
   }, 15000);
 });

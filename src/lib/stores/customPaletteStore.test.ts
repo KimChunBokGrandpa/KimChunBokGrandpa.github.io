@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Must set up localStorage BEFORE module import — use vi.hoisted
 const mockStorage = vi.hoisted(() => new Map<string, string>());
@@ -24,9 +24,20 @@ vi.stubGlobal('crypto', {
 import { createCustomPaletteStore } from './customPaletteStore.svelte';
 
 describe('customPaletteStore', () => {
+  const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
   beforeEach(() => {
     mockStorage.clear();
     uuidCounter.value = 0;
+    consoleErrorSpy.mockClear();
+  });
+
+  afterEach(() => {
+    consoleErrorSpy.mockClear();
+  });
+
+  afterAll(() => {
+    consoleErrorSpy.mockRestore();
   });
 
   describe('initial state', () => {
@@ -49,6 +60,10 @@ describe('customPaletteStore', () => {
       mockStorage.set('imageToPixel_customPalettes', '{not-valid');
       const store = createCustomPaletteStore();
       expect(store.palettes).toEqual([]);
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        'Failed to parse custom palettes from localStorage',
+        expect.anything(),
+      );
     });
   });
 

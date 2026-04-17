@@ -157,6 +157,25 @@ Current `WP-07` snapshot:
 - [x] Mobile stacked shell/program DOM slot rendering is covered
 - [x] Full `verify:client` is currently green
 
+Current `WP-05` snapshot:
+
+- [x] RetroCam launches from desktop
+- [x] Capture input works locally
+- [x] Fast preset switching works
+- [x] Snapshot save and `Open in Pixel Lab` handoff work
+- [x] Permission/input failure states are handled at MVP level
+- [x] RetroCam -> Pixel Lab regression coverage exists
+- [x] Snapshot provenance is preserved across later live preset changes
+- [x] Durable local project persistence exists
+- [x] Targeted Tauri native save regression coverage exists
+- [ ] Real-device manual QA for tall-phone mobile and Tauri native save remains desirable
+
+Current `WP-06` snapshot:
+
+- [x] Start menu is now a real launch surface for first-party programs
+- [x] Start menu exposes recent `Poster Maker` projects as a shell-level reopen path
+- [ ] Cross-program reopen/open-with continuity still remains follow-up work
+
 Current mobile confidence note:
 
 - [x] mobile layout math and DOM slot rendering are covered

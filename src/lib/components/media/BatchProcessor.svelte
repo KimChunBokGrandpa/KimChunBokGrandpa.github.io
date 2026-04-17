@@ -44,11 +44,11 @@
   let isSharingAll = $state(false);
   let isPaused = $state(false);
 
-  const ACCEPTED_TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/bmp', 'image/webp'];
+  const acceptedTypes = ['image/png', 'image/jpeg', 'image/gif', 'image/bmp', 'image/webp'];
 
   function addFiles(files: FileList | File[]) {
     for (const file of files) {
-      if (!ACCEPTED_TYPES.includes(file.type)) continue;
+      if (!acceptedTypes.includes(file.type)) continue;
       const item: BatchItem = {
         id: crypto.randomUUID(),
         file,
@@ -162,7 +162,7 @@
 
   // ─── Save All ───
   /** Delay between downloads to prevent browser throttling of rapid a.click() */
-  const DOWNLOAD_DELAY_MS = 500;
+  const downloadDelayMs = 500;
 
   function createBatchFilenameBuilder() {
     const seen = new Map<string, number>();
@@ -192,7 +192,7 @@
         });
         // Delay between downloads so the browser processes each one
         if (i < doneItems.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, DOWNLOAD_DELAY_MS));
+          await new Promise(resolve => setTimeout(resolve, downloadDelayMs));
         }
       } catch (err) {
         console.error(`Failed to save ${item.name}:`, err);
@@ -279,7 +279,7 @@
         <p>{i18n.t('drag_drop_multiple')}</p>
         <p class="batch-hint">{i18n.t('batch_empty_hint')}</p>
         <p class="batch-hint">{i18n.t('or')}</p>
-        <input type="file" accept={ACCEPTED_TYPES.join(',')} multiple id="batch-upload" onchange={handleFileInput} style="display: none;" />
+        <input type="file" accept={acceptedTypes.join(',')} multiple id="batch-upload" onchange={handleFileInput} style="display: none;" />
         <button class="batch-browse-btn" onclick={() => document.getElementById('batch-upload')?.click()}>📂 {i18n.t('browse')}</button>
       </div>
     {:else}

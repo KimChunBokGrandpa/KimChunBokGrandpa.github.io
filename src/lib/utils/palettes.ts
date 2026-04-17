@@ -1,4 +1,4 @@
-import { PALETTE_HEX_DATA } from "./paletteData";
+import { paletteHexData } from "./paletteData";
 import type { TranslationKey } from '../i18n/en';
 import { hexToRgb } from './colorUtils';
 
@@ -10,7 +10,7 @@ export interface PaletteGroup {
   palettes: { id: string; theme: string }[];
 }
 
-export const PALETTE_GROUPS: PaletteGroup[] = [
+export const paletteGroups: PaletteGroup[] = [
   {
     groupId: "2",
     groupName: "2 Colors",
@@ -174,7 +174,7 @@ export const PALETTE_GROUPS: PaletteGroup[] = [
 
 // ─── Convert hex data to RGB palettes at module load ───
 const hexPalettes: Record<string, RGB[]> = {};
-for (const [id, hexArr] of Object.entries(PALETTE_HEX_DATA)) {
+for (const [id, hexArr] of Object.entries(paletteHexData)) {
   hexPalettes[id] = hexArr.map(h => hexToRgb(h)!).filter(Boolean);
 }
 
@@ -225,18 +225,18 @@ function generateWebSafePalette(): RGB[] {
   return palette;
 }
 
-export const PALETTES: Record<string, RGB[]> = {
+export const palettes: Record<string, RGB[]> = {
   ...hexPalettes,
   win256: generateWebSafePalette(),
 };
 
-export const PALETTE_ID_ALIASES: Record<string, string> = {
+export const paletteIdAliases: Record<string, string> = {
   gameboy: 'dmg',
 };
 
 // ─── Palette Display Name Lookup ───
 // Each palette has a nameKey (i18n TranslationKey) and a fallback English name.
-const DISPLAY_NAMES: Record<string, { name: string; nameKey: TranslationKey }> = {
+const displayNames: Record<string, { name: string; nameKey: TranslationKey }> = {
   original: { name: "Full Color (Original)", nameKey: "palette_original" },
   win256: { name: "8-bit Windows 256", nameKey: "palette_win256" },
   // Monochrome
@@ -356,11 +356,11 @@ const DISPLAY_NAMES: Record<string, { name: string; nameKey: TranslationKey }> =
 
 // Reverse lookup: palette id → { theme, colorCount } (built once)
 const _paletteIdLookup = new Map<string, { theme: string; colorCount: number }>();
-for (const group of PALETTE_GROUPS) {
+for (const group of paletteGroups) {
   for (const p of group.palettes) {
     _paletteIdLookup.set(p.id, {
       theme: p.theme,
-      colorCount: (PALETTES[p.id] || []).length,
+      colorCount: (palettes[p.id] || []).length,
     });
   }
 }
@@ -375,12 +375,12 @@ export function registerPaletteTranslator(fn: (key: TranslationKey) => string): 
 }
 
 export function normalizePaletteId(id: string): string {
-  return PALETTE_ID_ALIASES[id] ?? id;
+  return paletteIdAliases[id] ?? id;
 }
 
 export function getPaletteName(id: string): string {
   const normalizedId = normalizePaletteId(id);
-  const entry = DISPLAY_NAMES[normalizedId];
+  const entry = displayNames[normalizedId];
   if (entry) {
     if (_translate) return _translate(entry.nameKey);
     return entry.name;
@@ -390,23 +390,23 @@ export function getPaletteName(id: string): string {
   return normalizedId;
 }
 
-// ─── Theme-based palette grouping (auto-built from PALETTE_GROUPS) ───
+// ─── Theme-based palette grouping (auto-built from paletteGroups) ───
 export interface PaletteTheme {
   themeId: string;
   themeName: string;
   variants: { id: string; colorCount: number; groupName: string }[];
 }
 
-export const PALETTE_THEMES: PaletteTheme[] = (() => {
+export const paletteThemes: PaletteTheme[] = (() => {
   // Collect all palettes with their group info
   const themeMap = new Map<string, { id: string; colorCount: number; groupName: string }[]>();
 
-  for (const group of PALETTE_GROUPS) {
+  for (const group of paletteGroups) {
     for (const p of group.palettes) {
       // Extract base theme name (remove color count suffixes like "(48)")
       const themeName = p.theme.replace(/\s*\(\d+\)\s*$/, '').trim();
       if (!themeMap.has(themeName)) themeMap.set(themeName, []);
-      const colorCount = (PALETTES[p.id] || []).length;
+      const colorCount = (palettes[p.id] || []).length;
       themeMap.get(themeName)!.push({ id: p.id, colorCount, groupName: group.groupName });
     }
   }

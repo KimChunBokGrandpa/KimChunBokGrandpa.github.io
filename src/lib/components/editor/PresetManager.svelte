@@ -1,6 +1,6 @@
 <script lang="ts">
   import { getPaletteName } from '$lib/utils/palettes';
-  import { PRESETS, type Preset } from '$lib/utils/presets';
+  import { presets, type Preset } from '$lib/utils/presets';
   import type { EffectLayer, ProcessingSettings } from '$lib/types';
   import { i18n } from '$lib/i18n/index.svelte';
   import { getCustomPresets, addCustomPreset, removeCustomPreset, type CustomPreset } from '$lib/stores/customPresetStore.svelte';
@@ -123,7 +123,7 @@
   }
 
   $effect(() => {
-    PRESETS.forEach((preset) => {
+    presets.forEach((preset) => {
       void loadPreview(
         preset.id,
         {
@@ -353,13 +353,13 @@
     }
   }
 
-  const MAX_PRESET_FILE_SIZE = 1024 * 1024; // 1MB
+  const maxPresetFileSize = 1024 * 1024; // 1MB
 
   async function handlePresetFile(e: Event) {
     const input = e.target as HTMLInputElement;
     if (!input.files?.length) return;
     try {
-      if (input.files[0].size > MAX_PRESET_FILE_SIZE) {
+      if (input.files[0].size > maxPresetFileSize) {
         throw new Error('File too large');
       }
       const text = await input.files[0].text();
@@ -393,7 +393,7 @@
     {#if styleRecommendations.length > 0}
       <div class="field-row preset-grid style-grid" data-testid="style-recommendations">
         {#each styleRecommendations as recommendation}
-          {@const preset = PRESETS.find((item) => item.id === recommendation.id)}
+          {@const preset = presets.find((item) => item.id === recommendation.id)}
           {#if preset}
             <button
               class:preset-active={matchesPreset(preset)}
@@ -420,7 +420,7 @@
     {/if}
   {/if}
   <div class="field-row preset-grid">
-    {#each PRESETS as preset}
+    {#each presets as preset}
       <button
         class:preset-active={matchesPreset(preset)}
         class="preset-btn preset-card"

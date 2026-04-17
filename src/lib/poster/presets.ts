@@ -10,11 +10,11 @@ export interface PosterPreset {
   textColor: string;
 }
 
-export const DEFAULT_POSTER_PRESET_ID: PosterPresetId = 'poster';
-export const DEFAULT_POSTER_TITLE = 'RETRO STUDIO';
-export const DEFAULT_POSTER_SUBTITLE = 'Client-only poster layout';
+export const defaultPosterPresetId: PosterPresetId = 'poster';
+export const defaultPosterTitle = 'RETRO STUDIO';
+export const defaultPosterSubtitle = 'Client-only poster layout';
 
-export const POSTER_PRESETS: PosterPreset[] = [
+export const posterPresets: PosterPreset[] = [
   {
     id: 'poster',
     labelKey: 'poster_preset_poster',
@@ -45,9 +45,9 @@ export const POSTER_PRESETS: PosterPreset[] = [
 ];
 
 export function isPosterPresetId(value: string): value is PosterPresetId {
-  return POSTER_PRESETS.some((preset) => preset.id === value);
+  return posterPresets.some((preset) => preset.id === value);
 }
 
 export function getPosterPreset(id: PosterPresetId): PosterPreset {
-  return POSTER_PRESETS.find((preset) => preset.id === id) ?? POSTER_PRESETS[0];
+  return posterPresets.find((preset) => preset.id === id) ?? posterPresets[0];
 }

@@ -61,7 +61,7 @@ export interface PostProcessFilters {
   hueRotate: number;  // 0 = normal, degrees
 }
 
-export const DEFAULT_POST_FILTERS: PostProcessFilters = {
+export const defaultPostFilters: PostProcessFilters = {
   brightness: 100,
   contrast: 100,
   saturation: 100,

@@ -31,6 +31,8 @@
    Current implementation audit, issue watchlist, and documentation caveats after the Tier 4 QA gate.
 12. [12_retrocam_mvp_spec.md](12_retrocam_mvp_spec.md)
    Scope freeze for the first RetroCam deliverable: webcam-only input, still snapshot flow, and Pixel Lab handoff priority.
+13. [13_document_status_report_2026-04-16.md](13_document_status_report_2026-04-16.md)
+   Cross-document status summary: completed work, active work, next work, and documentation consistency notes.
 
 ---
 

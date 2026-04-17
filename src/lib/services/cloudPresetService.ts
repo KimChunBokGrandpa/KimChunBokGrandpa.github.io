@@ -1,7 +1,7 @@
 import { browser } from '$app/environment';
 import type { ProcessingSettings } from '$lib/types';
 
-const STORAGE_KEY = 'retro-pixel-cloud-presets';
+const storageKey = 'retro-pixel-cloud-presets';
 
 export type CloudPresetVisibility = 'public' | 'unlisted';
 
@@ -57,7 +57,7 @@ class LocalCloudPresetRepository implements CloudPresetRepository {
   private async listAll(): Promise<CloudPresetRecord[]> {
     if (!browser) return [];
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
+      const raw = localStorage.getItem(storageKey);
       if (!raw) return [];
       const parsed = JSON.parse(raw);
       return Array.isArray(parsed) ? parsed : [];
@@ -68,7 +68,7 @@ class LocalCloudPresetRepository implements CloudPresetRepository {
 
   private async saveAll(records: CloudPresetRecord[]): Promise<void> {
     if (!browser) return;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+    localStorage.setItem(storageKey, JSON.stringify(records));
   }
 
   async publish(input: PublishCloudPresetInput): Promise<CloudPresetRecord> {

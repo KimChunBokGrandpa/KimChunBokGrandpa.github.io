@@ -1,6 +1,6 @@
 # RetroCam MVP Specification
 
-> Status: active scope contract for `WP-05 RetroCam MVP`
+> Status: historical MVP scope contract for `WP-05 RetroCam MVP`, with current implementation notes synced on 2026-04-16
 > Decision date: 2026-04-13
 
 ---
@@ -183,6 +183,11 @@ Reason:
 - `Pixel Lab` is the clearer first destination for capture refinement
 - avoids splitting early QA and UX attention between editor and composition targets
 
+Current implementation note:
+
+- `RetroCam -> Poster Maker` direct handoff is now implemented as a post-MVP continuity slice
+- MVP-required first handoff priority still remains `RetroCam -> Pixel Lab`
+
 ---
 
 ## 9. Permission and Failure States
@@ -223,8 +228,9 @@ Rules:
 
 Note:
 
-- current runtime persistence is still in-memory
-- MVP implementation may use that contract first, but durable local persistence remains a follow-up concern
+- current browser/Tauri local runtime now defaults to durable local persistence when `IndexedDB` is available
+- unsupported/test environments still fall back to in-memory storage
+- this means the original MVP concern about pure in-memory-only runtime no longer reflects current implementation status
 
 ---
 
@@ -247,7 +253,10 @@ Note:
 Candidates after first stable slice:
 
 - short loop export
-- `RetroCam -> Poster Maker`
 - image-upload input mode
 - screen capture mode
 - recent captures strip
+
+Already completed after first MVP:
+
+- `RetroCam -> Poster Maker` direct handoff continuity slice

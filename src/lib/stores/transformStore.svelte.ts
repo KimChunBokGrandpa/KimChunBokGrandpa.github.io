@@ -103,6 +103,12 @@ export function createTransformStore() {
     return applyTransform(originalImageSrc);
   }
 
+  async function restore(originalImageSrc: string | null, nextRotation: number, nextCropRect: CropRect | null) {
+    rotation = ((nextRotation % 360) + 360) % 360;
+    cropRect = nextCropRect ? { ...nextCropRect } : null;
+    return applyTransform(originalImageSrc);
+  }
+
   function reset() {
     rotation = 0;
     cropRect = null;
@@ -121,6 +127,7 @@ export function createTransformStore() {
     applyTransform,
     rotate,
     setCrop,
+    restore,
     reset,
     destroy,
   };

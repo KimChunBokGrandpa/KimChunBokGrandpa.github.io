@@ -1,16 +1,16 @@
 <script lang="ts">
   import { getPaletteName } from '$lib/utils/palettes';
-  import { PRESETS, type Preset } from '$lib/utils/presets';
+  import { presets, type Preset } from '$lib/utils/presets';
   import type { DitherType, GlitchFilter, ProcessingSettings, PostProcessFilters } from '$lib/types';
   import EffectLayerStack from './EffectLayerStack.svelte';
-  import { DEFAULT_POST_FILTERS } from '$lib/types';
+  import { defaultPostFilters } from '$lib/types';
   import type { SaveFormat } from '$lib/services/saveService';
   import { i18n } from '$lib/i18n/index.svelte';
   import PresetManager from './PresetManager.svelte';
   import PostProcessFiltersComponent from './PostProcessFilters.svelte';
 
   // Dithering options
-  const DITHER_OPTIONS = [
+  const ditherOptions = [
     { id: 'none', labelKey: 'dither_none' as const, titleKey: 'dither_none_desc' as const },
     { id: 'floyd_steinberg', labelKey: 'dither_fs' as const, titleKey: 'dither_fs_desc' as const },
     { id: 'ordered', labelKey: 'dither_ordered' as const, titleKey: 'dither_ordered_desc' as const },
@@ -18,7 +18,7 @@
   ] as const;
 
   // Save format options
-  const FORMAT_OPTIONS = [
+  const formatOptions = [
     { id: 'png', label: 'PNG' },
     { id: 'jpeg', label: 'JPEG' },
     { id: 'webp', label: 'WebP' },
@@ -40,7 +40,7 @@
     onQualityChange,
     hasImage = true,
     hasProcessedImage = false,
-    postFilters = $bindable({ ...DEFAULT_POST_FILTERS }),
+    postFilters = $bindable({ ...defaultPostFilters }),
     autoProcess = $bindable(true),
     hasUnappliedChanges = false,
     onApplyNow,
@@ -68,7 +68,7 @@
   } = $props();
 
   // Popular palettes for quick selection
-  const QUICK_PALETTES = [
+  const quickPalettes = [
     { id: 'original', shortName: 'Full', preview: ['#ff0000', '#00ff00', '#0000ff', '#ffff00'] },
     { id: 'dmg', shortName: 'DMG', preview: ['#0f380f', '#306230', '#8bac0f', '#9bbc0f'] },
     { id: 'nes', shortName: 'NES', preview: ['#d82800', '#0058f8', '#00a800', '#f8d878'] },
@@ -107,7 +107,7 @@
   }
 
   // True when current settings don't match any preset
-  let isCustom = $derived(!PRESETS.some(p => matchesPreset(p)));
+  let isCustom = $derived(!presets.some(p => matchesPreset(p)));
 
   // ─── Derived: active effect count for section header badge ───
   let activeEffectCount = $derived(
@@ -122,7 +122,7 @@
   type TabId = 'basic' | 'effects' | 'adjust' | 'presets';
   let activeTab = $state<TabId>('basic');
 
-  const TABS: { id: TabId; labelKey: 'tab_basic' | 'tab_effects' | 'tab_adjust' | 'tab_presets'; icon: string }[] = [
+  const tabs: { id: TabId; labelKey: 'tab_basic' | 'tab_effects' | 'tab_adjust' | 'tab_presets'; icon: string }[] = [
     { id: 'basic', labelKey: 'tab_basic', icon: '🎨' },
     { id: 'effects', labelKey: 'tab_effects', icon: '✨' },
     { id: 'adjust', labelKey: 'tab_adjust', icon: '🔧' },
@@ -159,7 +159,7 @@
 
   <!-- ═══ Tab Bar ═══ -->
   <div class="cp-tab-bar" role="tablist">
-    {#each TABS as tab}
+    {#each tabs as tab}
       <button
         class="cp-tab"
         class:cp-tab-active={activeTab === tab.id}
@@ -225,7 +225,7 @@
             </button>
           </div>
           <div class="quick-palette-row">
-            {#each QUICK_PALETTES as qp}
+            {#each quickPalettes as qp}
               <button
                 class="quick-palette-chip"
                 data-testid={"quick-palette-" + qp.id}
@@ -245,7 +245,7 @@
 
           <div class="section-label">{i18n.t('dithering')}:</div>
           <div class="field-row render-row">
-            {#each DITHER_OPTIONS as opt}
+            {#each ditherOptions as opt}
               <button
                 class:preset-active={settings.ditherType === opt.id}
                 class="render-btn"
@@ -291,7 +291,7 @@
   <!-- ═══ Sticky Save Bar ═══ -->
   <div class="cp-save-bar">
     <div class="field-row format-row">
-      {#each FORMAT_OPTIONS as opt}
+          {#each formatOptions as opt}
         <button
           class:preset-active={saveFormat === opt.id}
           class="format-btn"

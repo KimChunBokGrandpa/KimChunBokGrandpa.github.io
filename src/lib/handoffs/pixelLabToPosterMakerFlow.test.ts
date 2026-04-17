@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { DEFAULT_POST_FILTERS } from '$lib/types';
-import { DEFAULT_PROCESSING_SETTINGS } from '$lib/stores/settingsStore.svelte';
+import { defaultPostFilters } from '$lib/types';
+import { defaultProcessingSettings } from '$lib/stores/settingsStore.svelte';
 import { createHandoffBus } from '$lib/handoffs/handoffBus.svelte';
 import { launchPosterMakerFromPixelLab } from '$lib/handoffs/pixelLabToPosterMakerFlow';
 import { createInMemoryProjectStorageAdapter } from '$lib/projects/storageAdapter';
@@ -9,11 +9,11 @@ import { createInMemoryProjectStorageAdapter } from '$lib/projects/storageAdapte
 function makeSnapshot() {
   return {
     settings: {
-      ...DEFAULT_PROCESSING_SETTINGS,
+      ...defaultProcessingSettings,
       glitchFilters: [],
       effectLayers: [],
     },
-    postFilters: { ...DEFAULT_POST_FILTERS },
+    postFilters: { ...defaultPostFilters },
     rotation: 0,
     cropRect: null,
     saveFormat: 'png' as const,

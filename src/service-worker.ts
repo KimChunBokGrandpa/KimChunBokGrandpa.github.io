@@ -8,12 +8,12 @@ import { build, files, prerendered, version } from '$service-worker';
 const sw = self as unknown as ServiceWorkerGlobalScope;
 
 // Cache name with version for cache busting on deploy
-const CACHE_NAME = `retro-pixel-${version}`;
-const BASE_PATH = sw.location.pathname.replace(/\/service-worker\.js$/, '');
-const APP_SHELL_URL = `${BASE_PATH || ''}/index.html`;
+const cacheName = `retro-pixel-${version}`;
+const basePath = sw.location.pathname.replace(/\/service-worker\.js$/, '');
+const appShellUrl = `${basePath || ''}/index.html`;
 
 // Assets to precache: built JS/CSS + static files + prerendered shell
-const PRECACHE_ASSETS = [
+const precacheAssets = [
   ...build,
   ...files,
   ...prerendered,
@@ -22,7 +22,7 @@ const PRECACHE_ASSETS = [
 // Install: precache all app assets
 sw.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll([...new Set(PRECACHE_ASSETS)]))
+    caches.open(cacheName).then((cache) => cache.addAll([...new Set(precacheAssets)]))
   );
   // Activate immediately without waiting for old SW to finish
   sw.skipWaiting();
@@ -34,7 +34,7 @@ sw.addEventListener('activate', (event) => {
     caches.keys().then((keys) =>
       Promise.all(
         keys
-          .filter((key) => key !== CACHE_NAME)
+          .filter((key) => key !== cacheName)
           .map((key) => caches.delete(key))
       )
     )
@@ -58,14 +58,14 @@ sw.addEventListener('fetch', (event) => {
         .then((response) => {
           if (response.ok && response.type === 'basic') {
             const clone = response.clone();
-            void caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+            void caches.open(cacheName).then((cache) => cache.put(request, clone));
           }
           return response;
         })
         .catch(async () => {
           return (
             (await caches.match(request)) ??
-            (await caches.match(APP_SHELL_URL)) ??
+            (await caches.match(appShellUrl)) ??
             new Response('Offline', { status: 503 })
           );
         })
@@ -80,7 +80,7 @@ sw.addEventListener('fetch', (event) => {
       return fetch(request).then((response) => {
         if (response.ok && response.type === 'basic') {
           const clone = response.clone();
-          void caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+          void caches.open(cacheName).then((cache) => cache.put(request, clone));
         }
         return response;
       });

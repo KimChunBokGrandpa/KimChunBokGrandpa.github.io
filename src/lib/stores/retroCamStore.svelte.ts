@@ -1,3 +1,8 @@
+import {
+  getProjectStorageAdapter,
+} from '$lib/projects/runtime';
+import type { ProjectStorageAdapter } from '$lib/projects/storageAdapter';
+
 export type RetroCamPermissionState =
   | 'idle'
   | 'requesting'
@@ -27,7 +32,7 @@ export interface MediaDevicesLike {
   enumerateDevices?(): Promise<MediaDeviceInfo[]>;
 }
 
-export const RETROCAM_PRESETS: RetroCamPreset[] = [
+export const retroCamPresets: RetroCamPreset[] = [
   { id: 'clean_pixel', labelKey: 'retrocam_preset_clean_pixel', filter: 'contrast(1.08) saturate(1.05)' },
   { id: 'crt_pop', labelKey: 'retrocam_preset_crt_pop', filter: 'contrast(1.18) saturate(1.15) hue-rotate(-6deg)' },
   { id: 'game_boy', labelKey: 'retrocam_preset_game_boy', filter: 'grayscale(1) sepia(0.45) hue-rotate(40deg) saturate(2.4)' },
@@ -45,7 +50,14 @@ function revokeObjectUrl(url: string | null) {
   if (url) URL.revokeObjectURL(url);
 }
 
-export function createRetroCamStore(mediaDevicesOverride?: MediaDevicesLike | null) {
+function isRetroCamPresetId(value: string | undefined): value is RetroCamPresetId {
+  return retroCamPresets.some((preset) => preset.id === value);
+}
+
+export function createRetroCamStore(
+  mediaDevicesOverride?: MediaDevicesLike | null,
+  storageAdapter: ProjectStorageAdapter = getProjectStorageAdapter(),
+) {
   let permissionState = $state<RetroCamPermissionState>('idle');
   let stream = $state<MediaStream | null>(null);
   let activePresetId = $state<RetroCamPresetId>('clean_pixel');
@@ -53,6 +65,7 @@ export function createRetroCamStore(mediaDevicesOverride?: MediaDevicesLike | nu
   let selectedDeviceId = $state<RetroCamDeviceId>('auto');
   let lastSnapshotUrl = $state<string | null>(null);
   let lastSnapshotFile = $state<File | null>(null);
+  let lastSnapshotPresetId = $state<RetroCamPresetId | null>(null);
 
   function stopCamera() {
     if (stream) {
@@ -93,7 +106,7 @@ export function createRetroCamStore(mediaDevicesOverride?: MediaDevicesLike | nu
   }
 
   async function requestCamera() {
-    stopCamera();
+    const previousStream = stream;
     permissionState = 'requesting';
 
     const mediaDevices = detectMediaDevices(mediaDevicesOverride);
@@ -109,6 +122,11 @@ export function createRetroCamStore(mediaDevicesOverride?: MediaDevicesLike | nu
           : { deviceId: { exact: selectedDeviceId } },
         audio: false,
       });
+      if (previousStream && previousStream.id !== nextStream.id) {
+        for (const track of previousStream.getTracks()) {
+          track.stop();
+        }
+      }
       stream = nextStream;
       permissionState = 'ready';
       await refreshDevices();
@@ -146,16 +164,50 @@ export function createRetroCamStore(mediaDevicesOverride?: MediaDevicesLike | nu
     activePresetId = nextPresetId;
   }
 
-  function setSnapshot(file: File, nextUrl: string) {
+  function setSnapshot(file: File, nextUrl: string, presetId: RetroCamPresetId) {
     revokeObjectUrl(lastSnapshotUrl);
     lastSnapshotFile = file;
     lastSnapshotUrl = nextUrl;
+    lastSnapshotPresetId = presetId;
   }
 
   function clearSnapshot() {
     revokeObjectUrl(lastSnapshotUrl);
     lastSnapshotUrl = null;
     lastSnapshotFile = null;
+    lastSnapshotPresetId = null;
+  }
+
+  async function loadProject(projectIdToLoad: string) {
+    const manifest = await storageAdapter.loadProject(projectIdToLoad);
+    if (!manifest || manifest.appId !== 'retrocam' || manifest.programState.kind !== 'retrocam') {
+      return null;
+    }
+
+    const assetId = manifest.programState.lastCaptureAssetId ?? manifest.primaryAssetId ?? manifest.previewAssetId;
+    if (!assetId) return null;
+
+    const resolved = await storageAdapter.resolveAsset(assetId);
+    if (!resolved) return null;
+
+    const blob = resolved.blob;
+    const file = new File(
+      [blob],
+      resolved.asset.filename ?? `retrocam_snapshot_${Date.now()}.png`,
+      { type: resolved.asset.mimeType || blob.type || 'image/png' },
+    );
+    const objectUrl = URL.createObjectURL(blob);
+
+    clearSnapshot();
+    setSnapshot(
+      file,
+      objectUrl,
+      isRetroCamPresetId(manifest.programState.fastPresetId)
+        ? manifest.programState.fastPresetId
+        : 'clean_pixel',
+    );
+    activePresetId = lastSnapshotPresetId ?? 'clean_pixel';
+    return manifest;
   }
 
   function destroy() {
@@ -186,6 +238,9 @@ export function createRetroCamStore(mediaDevicesOverride?: MediaDevicesLike | nu
     get lastSnapshotFile() {
       return lastSnapshotFile;
     },
+    get lastSnapshotPresetId() {
+      return lastSnapshotPresetId;
+    },
     requestCamera,
     refreshDevices,
     selectDevice,
@@ -193,14 +248,18 @@ export function createRetroCamStore(mediaDevicesOverride?: MediaDevicesLike | nu
     setPreset,
     setSnapshot,
     clearSnapshot,
+    loadProject,
     destroy,
   };
 }
 
 export let retroCamStore = createRetroCamStore();
 
-export function resetRetroCamStore(mediaDevicesOverride?: MediaDevicesLike | null) {
+export function resetRetroCamStore(
+  mediaDevicesOverride?: MediaDevicesLike | null,
+  storageAdapter: ProjectStorageAdapter = getProjectStorageAdapter(),
+) {
   retroCamStore.destroy();
-  retroCamStore = createRetroCamStore(mediaDevicesOverride);
+  retroCamStore = createRetroCamStore(mediaDevicesOverride, storageAdapter);
   return retroCamStore;
 }

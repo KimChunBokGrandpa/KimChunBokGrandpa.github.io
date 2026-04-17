@@ -10,18 +10,39 @@ import type { ProcessingSettings, PostProcessFilters } from '$lib/types';
 import { applyCrtEffect } from '$lib/utils/crtRenderer';
 import { createGifPlaybackManager } from '$lib/stores/gifPlaybackManager.svelte';
 import { createHistoryStore } from '$lib/stores/historyStore.svelte';
-import { createSettingsStore, DEFAULT_PROCESSING_SETTINGS } from '$lib/stores/settingsStore.svelte';
+import { createSettingsStore, defaultProcessingSettings } from '$lib/stores/settingsStore.svelte';
 import { createTransformStore, type CropRect } from '$lib/stores/transformStore.svelte';
+import {
+  createAssetId,
+  createProjectId,
+  createProjectManifest,
+  timestampNow,
+  type RetroProjectManifestV1,
+} from '$lib/projects/schema';
+import { getProjectStorageAdapter } from '$lib/projects/runtime';
+import type { ProjectStorageAdapter } from '$lib/projects/storageAdapter';
 
-const DEBOUNCE_MS = 150;
+const debounceMs = 150;
 
-export function createImageProcessingStore() {
+function derivePixelLabProjectName(filename: string | null): string {
+  const trimmed = filename?.trim();
+  if (!trimmed) return 'Pixel Lab Project';
+  return trimmed.replace(/\.[^.]+$/, '');
+}
+
+export function createImageProcessingStore(
+  projectStorage: ProjectStorageAdapter = getProjectStorageAdapter(),
+) {
   // ─── Reactive State ───
   let originalImageSrc = $state<string | null>(null);
   let processedImageSrc = $state<string | null>(null);
   let isProcessing = $state(false);
   let lastError = $state<string | null>(null);
   let colorCount = $state(0);
+  let currentProjectId = $state<string | null>(null);
+  let currentProjectCreatedAt = $state<string | null>(null);
+  let currentSourceAssetId = $state<string | null>(null);
+  let currentSourceFilename = $state<string | null>(null);
 
   // ─── Internal State ───
   let currentObjectUrl: string | null = null;
@@ -30,7 +51,7 @@ export function createImageProcessingStore() {
   let dimensionCapShown = false;
 
   // ─── Sub-Stores ───
-  const settingsStore = createSettingsStore(DEFAULT_PROCESSING_SETTINGS);
+  const settingsStore = createSettingsStore(defaultProcessingSettings);
   const transformStore = createTransformStore();
 
   // ─── Undo / Redo History ───
@@ -104,10 +125,70 @@ export function createImageProcessingStore() {
     debounceTimer = setTimeout(() => {
       debounceTimer = null;
       runProcessing();
-    }, DEBOUNCE_MS);
+    }, debounceMs);
   }
 
   // ─── Public Actions ───
+  async function persistCurrentProject() {
+    if (!currentProjectId || !currentProjectCreatedAt || !currentSourceAssetId) return null;
+
+    const now = timestampNow();
+    const manifest = createProjectManifest({
+      projectId: currentProjectId,
+      createdAt: currentProjectCreatedAt,
+      updatedAt: now,
+      lastOpenedAt: now,
+      appId: 'pixel-lab',
+      name: derivePixelLabProjectName(currentSourceFilename),
+      sourceAssetIds: [currentSourceAssetId],
+      primaryAssetId: currentSourceAssetId,
+      previewAssetId: currentSourceAssetId,
+      programState: {
+        kind: 'pixel-lab',
+        activeSourceAssetId: currentSourceAssetId,
+        lastProcessedAssetId: currentSourceAssetId,
+        processingSettings: settingsStore.settings,
+        postFilters: settingsStore.postFilters,
+        transformState: {
+          rotation: transformStore.rotation,
+          cropRect: transformStore.cropRect,
+        },
+        exportDefaults: {
+          format: settingsStore.saveFormat,
+          quality: settingsStore.saveQuality,
+        },
+      },
+    });
+    await projectStorage.saveProject(manifest);
+    return manifest;
+  }
+
+  async function startNewPixelLabProject(file: File) {
+    const createdAt = timestampNow();
+    const nextProjectId = createProjectId();
+    const nextAssetId = createAssetId();
+
+    await projectStorage.saveAsset({
+      asset: {
+        assetId: nextAssetId,
+        role: 'source',
+        mimeType: file.type || 'image/png',
+        storageKey: `pixel-lab-sources/${nextAssetId}-${file.name}`,
+        originAppId: 'pixel-lab',
+        createdAt,
+        filename: file.name,
+        byteSize: file.size,
+      },
+      blob: file,
+    });
+
+    currentProjectId = nextProjectId;
+    currentProjectCreatedAt = createdAt;
+    currentSourceAssetId = nextAssetId;
+    currentSourceFilename = file.name;
+    await persistCurrentProject();
+  }
+
   function loadImage(file: File) {
     if (currentObjectUrl) {
       URL.revokeObjectURL(currentObjectUrl);
@@ -142,6 +223,53 @@ export function createImageProcessingStore() {
     currentObjectUrl = URL.createObjectURL(file);
     originalImageSrc = currentObjectUrl;
     dimensionCapShown = false;
+    void startNewPixelLabProject(file);
+    processImmediate();
+  }
+
+  async function loadPixelLabProject(manifest: RetroProjectManifestV1, file: File) {
+    if (manifest.appId !== 'pixel-lab' || manifest.programState.kind !== 'pixel-lab') {
+      throw new Error('Unsupported Pixel Lab project manifest');
+    }
+
+    if (currentObjectUrl) {
+      URL.revokeObjectURL(currentObjectUrl);
+      currentObjectUrl = null;
+      processorService.clearImageCache();
+    }
+    gif.cleanup();
+    transformStore.reset();
+    history.reset();
+
+    currentObjectUrl = URL.createObjectURL(file);
+    originalImageSrc = currentObjectUrl;
+    processedImageSrc = null;
+    lastError = null;
+    colorCount = 0;
+    dimensionCapShown = false;
+    currentProjectId = manifest.projectId;
+    currentProjectCreatedAt = manifest.createdAt;
+    currentSourceAssetId = manifest.programState.activeSourceAssetId
+      ?? manifest.programState.lastProcessedAssetId
+      ?? manifest.primaryAssetId
+      ?? null;
+    currentSourceFilename = file.name;
+
+    settingsStore.setSettings(manifest.programState.processingSettings);
+    settingsStore.setPostFilters(manifest.programState.postFilters);
+    if (manifest.programState.exportDefaults) {
+      settingsStore.setFormat(manifest.programState.exportDefaults.format);
+      settingsStore.setQuality(manifest.programState.exportDefaults.quality);
+    }
+    settingsStore.clearUnappliedChanges();
+
+    await transformStore.restore(
+      originalImageSrc,
+      manifest.programState.transformState.rotation,
+      manifest.programState.transformState.cropRect,
+    );
+    processorService.clearImageCache();
+    await persistCurrentProject();
     processImmediate();
   }
 
@@ -155,11 +283,16 @@ export function createImageProcessingStore() {
     transformStore.reset();
     originalImageSrc = null;
     processedImageSrc = null;
+    currentProjectId = null;
+    currentProjectCreatedAt = null;
+    currentSourceAssetId = null;
+    currentSourceFilename = null;
   }
 
   function updateSettings(newSettings: ProcessingSettings) {
     history.push(settingsStore.settings);
     settingsStore.setSettings(newSettings);
+    void persistCurrentProject();
     if (!settingsStore.autoProcess) {
       settingsStore.markUnappliedChanges();
       return;
@@ -175,6 +308,7 @@ export function createImageProcessingStore() {
   function selectPalette(paletteId: string) {
     history.push(settingsStore.settings);
     settingsStore.selectPalette(paletteId);
+    void persistCurrentProject();
     if (!settingsStore.autoProcess) {
       settingsStore.markUnappliedChanges();
       return;
@@ -191,6 +325,7 @@ export function createImageProcessingStore() {
   function applyNow() {
     if (!originalImageSrc) return;
     settingsStore.clearUnappliedChanges();
+    void persistCurrentProject();
     if (gif.isGif && gif.gifInfo) {
       gif.stopPlayback();
       gif.showFrame(gif.gifCurrentFrame);
@@ -203,6 +338,7 @@ export function createImageProcessingStore() {
     const prev = history.undo(settingsStore.settings);
     if (!prev) return;
     settingsStore.setSettings(prev);
+    void persistCurrentProject();
     if (settingsStore.autoProcess) applyProcessingDebounced();
   }
 
@@ -210,6 +346,7 @@ export function createImageProcessingStore() {
     const next = history.redo(settingsStore.settings);
     if (!next) return;
     settingsStore.setSettings(next);
+    void persistCurrentProject();
     if (settingsStore.autoProcess) applyProcessingDebounced();
   }
 
@@ -276,25 +413,34 @@ export function createImageProcessingStore() {
     );
   }
 
-  function setFormat(format: SaveFormat) { settingsStore.setFormat(format); }
-  function setQuality(quality: number) { settingsStore.setQuality(quality); }
+  function setFormat(format: SaveFormat) {
+    settingsStore.setFormat(format);
+    void persistCurrentProject();
+  }
+  function setQuality(quality: number) {
+    settingsStore.setQuality(quality);
+    void persistCurrentProject();
+  }
 
   // ─── Rotation & Crop ───
   async function rotate(degrees: 90 | -90 | 180) {
     await transformStore.rotate(originalImageSrc, degrees);
     processorService.clearImageCache();
+    void persistCurrentProject();
     processImmediate();
   }
 
   async function setCrop(rect: CropRect | null) {
     await transformStore.setCrop(originalImageSrc, rect);
     processorService.clearImageCache();
+    void persistCurrentProject();
     processImmediate();
   }
 
   function resetTransform() {
     transformStore.reset();
     processorService.clearImageCache();
+    void persistCurrentProject();
     processImmediate();
   }
 
@@ -317,14 +463,20 @@ export function createImageProcessingStore() {
     get isProcessing() { return isProcessing; },
     get lastError() { return lastError; },
     get settings() { return settingsStore.settings; },
-    set settings(v: ProcessingSettings) { settingsStore.setSettings(v); },
+    set settings(v: ProcessingSettings) {
+      settingsStore.setSettings(v);
+      void persistCurrentProject();
+    },
     get settingsHistory() { return history.undoStack; },
     get redoHistory() { return history.redoStack; },
     get saveFormat() { return settingsStore.saveFormat; },
     get saveQuality() { return settingsStore.saveQuality; },
     get colorCount() { return colorCount; },
     get postFilters() { return settingsStore.postFilters; },
-    set postFilters(v: PostProcessFilters) { settingsStore.setPostFilters(v); },
+    set postFilters(v: PostProcessFilters) {
+      settingsStore.setPostFilters(v);
+      void persistCurrentProject();
+    },
     get postFilterCss() { return settingsStore.postFilterCss; },
     get autoProcess() { return settingsStore.autoProcess; },
     set autoProcess(v: boolean) { settingsStore.setAutoProcess(v); },
@@ -335,6 +487,7 @@ export function createImageProcessingStore() {
     // Transform state
     get rotation() { return transformStore.rotation; },
     get cropRect() { return transformStore.cropRect; },
+    get currentProjectId() { return currentProjectId; },
 
     // GIF state (delegated to gifPlaybackManager)
     get isGif() { return gif.isGif; },
@@ -347,6 +500,7 @@ export function createImageProcessingStore() {
 
     // Actions
     loadImage,
+    loadPixelLabProject,
     loadNewImage,
     updateSettings,
     selectPalette,

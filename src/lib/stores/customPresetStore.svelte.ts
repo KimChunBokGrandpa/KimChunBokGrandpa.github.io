@@ -5,7 +5,7 @@
 import { browser } from '$app/environment';
 import type { ProcessingSettings } from '$lib/types';
 
-const STORAGE_KEY = 'retro-pixel-custom-presets';
+const storageKey = 'retro-pixel-custom-presets';
 
 export interface CustomPreset {
   id: string;
@@ -17,7 +17,7 @@ export interface CustomPreset {
 function loadFromStorage(): CustomPreset[] {
   if (!browser) return [];
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(storageKey);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
@@ -30,7 +30,7 @@ function loadFromStorage(): CustomPreset[] {
 function saveToStorage(presets: CustomPreset[]) {
   if (!browser) return;
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(presets));
+    localStorage.setItem(storageKey, JSON.stringify(presets));
   } catch {
     console.error('Failed to save presets to localStorage');
   }
