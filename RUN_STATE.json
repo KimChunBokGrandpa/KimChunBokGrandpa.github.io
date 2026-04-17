@@ -1,0 +1,18 @@
+{
+  "timezone": "Asia/Seoul",
+  "today_date": "2026-04-17",
+  "last_run_at": "2026-04-17T13:42:39+09:00",
+  "last_run_type": "blocked",
+  "last_modified_files": [],
+  "today_handled_issue_groups": [],
+  "cooldown_files": {},
+  "scan_cursor": 0,
+  "needs_full_verify": false,
+  "last_summary_at": null,
+  "last_loaded_docs": {},
+  "last_failure": "DIRTY_WORKTREE: untracked automation prompt docs (hourly_auto_run_daily_report.md, hourly_auto_run_prompt.md)",
+  "consecutive_failures": 0,
+  "dirty_worktree_snapshot": "?? hourly_auto_run_daily_report.md\n?? hourly_auto_run_prompt.md",
+  "dirty_worktree_consecutive_runs": 1,
+  "last_successful_logic_fix_at": null
+}
