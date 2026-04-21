@@ -93,6 +93,7 @@ export const ja: Record<TranslationKey, string> = {
   drop_image_error: '\u753b\u50cf\u30d5\u30a1\u30a4\u30eb\u3092\u30c9\u30ed\u30c3\u30d7\u3057\u3066\u304f\u3060\u3055\u3044 (PNG, JPEG, GIF, BMP, WebP)\u3002',
 
   image_preview: '\u753b\u50cf\u30d7\u30ec\u30d3\u30e5\u30fc',
+  processed_preview_alt: '\u30d4\u30af\u30bb\u30eb\u30a2\u30fc\u30c8\u30d7\u30ec\u30d3\u30e5\u30fc - {0}',
   rendering: '\u30ec\u30f3\u30c0\u30ea\u30f3\u30b0\u4e2d...',
   ready: '\u6e96\u5099\u5b8c\u4e86',
   open_settings: 'Pixel Lab \u30b3\u30f3\u30c8\u30ed\u30fc\u30eb\u3092\u958b\u304f',

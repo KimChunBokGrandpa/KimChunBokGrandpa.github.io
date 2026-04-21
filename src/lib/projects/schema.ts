@@ -1,3 +1,6 @@
+import { en } from '$lib/i18n/en';
+import { ja } from '$lib/i18n/ja';
+import { ko } from '$lib/i18n/ko';
 import type { SaveFormat } from '$lib/services/saveService';
 import type { PostProcessFilters, ProcessingSettings } from '$lib/types';
 import type { CropRect } from '$lib/stores/transformStore.svelte';
@@ -5,6 +8,13 @@ import type { CropRect } from '$lib/stores/transformStore.svelte';
 export const retroProjectSchemaVersion = 1 as const;
 
 export type AppId = 'pixel-lab' | 'poster-maker' | 'retrocam';
+export type ProjectNameLocale = 'en' | 'ko' | 'ja';
+
+const posterProjectDefaults: Record<ProjectNameLocale, string> = {
+  en: en.poster_project_default,
+  ko: ko.poster_project_default,
+  ja: ja.poster_project_default,
+};
 
 export type AssetRole =
   | 'source'
@@ -182,6 +192,7 @@ export interface RecentProjectEntryV1 {
 export interface CreateProjectManifestInput {
   appId: AppId;
   name?: string;
+  locale?: ProjectNameLocale;
   sourceAssetIds?: string[];
   derivedAssetIds?: string[];
   primaryAssetId?: string;
@@ -219,17 +230,25 @@ export function timestampNow(): string {
   return new Date().toISOString();
 }
 
-export function normalizeProjectName(name: string | undefined, appId: AppId): string {
-  const trimmed = name?.trim();
-  if (trimmed) return trimmed;
+export function getDefaultProjectName(appId: AppId, locale: ProjectNameLocale = 'en'): string {
   switch (appId) {
     case 'pixel-lab':
       return 'Pixel Lab Project';
     case 'poster-maker':
-      return 'Poster Maker Project';
+      return posterProjectDefaults[locale];
     case 'retrocam':
       return 'RetroCam Capture';
   }
+}
+
+export function normalizeProjectName(
+  name: string | undefined,
+  appId: AppId,
+  locale: ProjectNameLocale = 'en',
+): string {
+  const trimmed = name?.trim();
+  if (trimmed) return trimmed;
+  return getDefaultProjectName(appId, locale);
 }
 
 function cloneCropRect(rect: CropRect | null | undefined): CropRect | null {
@@ -324,7 +343,7 @@ export function createProjectManifest(input: CreateProjectManifestInput): RetroP
     schemaVersion: retroProjectSchemaVersion,
     projectId: input.projectId ?? createProjectId(),
     appId: input.appId,
-    name: normalizeProjectName(input.name, input.appId),
+    name: normalizeProjectName(input.name, input.appId, input.locale),
     createdAt,
     updatedAt,
     lastOpenedAt,

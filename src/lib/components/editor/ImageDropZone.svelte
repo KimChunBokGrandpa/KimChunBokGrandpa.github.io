@@ -64,6 +64,10 @@
     input.value = '';
   }
 
+  function openFilePicker() {
+    document.getElementById('file-upload')?.click();
+  }
+
   /** Generate a simple gradient sample image for first-time users */
   async function loadSampleImage() {
     const w = 320, h = 240;
@@ -141,18 +145,25 @@
     ondragover={(e) => e.preventDefault()}
     ondragleave={handleDragLeave}
     ondrop={handleDrop}
-    role="button"
-    tabindex="0"
+    role="group"
+    aria-label={i18n.t('drag_drop_image')}
   >
     <div class="drop-content">
-      <span class="drop-icon">{isDragging ? '📥' : '🖼️'}</span>
-      <p class="drop-app-name">{i18n.t('win_preview')}</p>
-      <p class="drop-title">{isDragging ? i18n.t('drop_here') : i18n.t('drag_drop_image')}</p>
-      <p class="drop-subtitle">{i18n.t('pixel_lab_subtitle')}</p>
+      <button
+        class="drop-target-button"
+        data-testid="drop-target-button"
+        onclick={openFilePicker}
+        type="button"
+      >
+        <span class="drop-icon">{isDragging ? '📥' : '🖼️'}</span>
+        <span class="drop-app-name">{i18n.t('win_preview')}</span>
+        <span class="drop-title">{isDragging ? i18n.t('drop_here') : i18n.t('drag_drop_image')}</span>
+        <span class="drop-subtitle">{i18n.t('pixel_lab_subtitle')}</span>
+      </button>
       <p class="drop-or">{i18n.t('or')}</p>
       <div class="field-row" style="gap: 6px;">
         <input type="file" accept={acceptedTypes.join(',')} id="file-upload" onchange={handleFileInput} style="display: none;" />
-        <button class="browse-btn" data-testid="browse-image-button" onclick={() => document.getElementById('file-upload')?.click()}>📂 {i18n.t('open_image')}</button>
+        <button class="browse-btn" data-testid="browse-image-button" onclick={openFilePicker}>📂 {i18n.t('open_image')}</button>
         <button class="browse-btn sample-btn" data-testid="try-sample-button" onclick={loadSampleImage}>🌄 {i18n.t('try_sample')}</button>
       </div>
       <p class="drop-hint">{i18n.t('paste_hint')}</p>
@@ -229,6 +240,26 @@
     flex-direction: column;
     align-items: center;
     gap: 4px;
+  }
+
+  .drop-target-button {
+    all: unset;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    text-align: center;
+    width: min(100%, 360px);
+    border: 2px solid transparent;
+    padding: 8px 12px;
+    box-sizing: border-box;
+  }
+
+  .drop-target-button:focus-visible {
+    border-color: var(--w98-highlight);
+    outline: 1px dotted var(--w98-text);
+    outline-offset: 2px;
   }
 
   .drop-icon {

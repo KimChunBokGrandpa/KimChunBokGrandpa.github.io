@@ -46,6 +46,7 @@
 
   function permissionMessageKey() {
     switch (retroCamStore.permissionState) {
+      case 'idle':
       case 'requesting':
         return 'retrocam_status_requesting';
       case 'ready':

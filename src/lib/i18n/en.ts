@@ -100,6 +100,7 @@ export const en = {
 
   // ─── Preview ───
   image_preview: 'Image preview',
+  processed_preview_alt: 'Pixel art preview - {0}',
   rendering: 'Rendering...',
   ready: 'Ready',
   open_settings: 'Open Pixel Lab Controls',

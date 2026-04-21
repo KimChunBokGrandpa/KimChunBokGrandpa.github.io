@@ -4,7 +4,20 @@ import { render, cleanup, screen } from '@testing-library/svelte';
 
 // Mock all transitive dependencies
 vi.mock('$lib/i18n/index.svelte', () => ({
-  i18n: { t: vi.fn((key: string) => key) },
+  i18n: {
+    t: vi.fn((key: string, ...args: Array<string | number>) => {
+      const translations: Record<string, string> = {
+        image_preview: 'Image preview',
+        processed_preview_alt: 'Pixel art preview - {0}',
+        gallery_n_colors: '{0} colors',
+      };
+      let value = translations[key] ?? key;
+      for (let i = 0; i < args.length; i += 1) {
+        value = value.replace(`{${i}}`, String(args[i]));
+      }
+      return value;
+    }),
+  },
 }));
 
 vi.mock('$lib/utils/palettes', () => ({
@@ -85,6 +98,20 @@ describe('PreviewContent', () => {
     const props = { ...defaultProps(), processedImageSrc: 'blob:test', originalImageSrc: 'blob:orig' };
     const { container } = render(PreviewContent, { props });
     expect(container.innerHTML).toBeTruthy();
+  });
+
+  it('localizes the processed preview alt text and color count badge', () => {
+    const props = {
+      ...defaultProps(),
+      processedImageSrc: 'blob:test',
+      originalImageSrc: 'blob:orig',
+      colorCount: 12,
+    };
+
+    render(PreviewContent, { props });
+
+    expect(screen.getByAltText('Pixel art preview - gameboy')).toBeTruthy();
+    expect(screen.getByText('12 colors')).toBeTruthy();
   });
 
   it('shows processing state', () => {

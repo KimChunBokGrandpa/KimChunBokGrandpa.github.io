@@ -1,8 +1,10 @@
 import type { CrossAppHandoffEnvelopeV1 } from '$lib/handoffs/contracts';
+import { i18n } from '$lib/i18n/index.svelte';
 import {
   createAssetId,
   createProjectId,
   createProjectManifest,
+  getDefaultProjectName,
   timestampNow,
   type AppId,
   type LocalAssetRefV1,
@@ -107,7 +109,7 @@ export function createPosterMakerStore(
     const trimmedTitle = titleText.trim();
     if (trimmedTitle) return trimmedTitle;
     const derivedTitle = deriveTitleFromFilename(importedFilename);
-    return derivedTitle ?? 'Poster Maker Project';
+    return derivedTitle ?? getDefaultProjectName('poster-maker', i18n.locale);
   }
 
   function buildProjectState(): PosterMakerProjectStateV1 {
@@ -224,6 +226,7 @@ export function createPosterMakerStore(
     const manifest = createProjectManifest({
       projectId,
       appId: 'poster-maker',
+      locale: i18n.locale,
       name: currentProjectName(),
       sourceAssetIds: importedAssetId ? [importedAssetId] : [],
       primaryAssetId: importedAssetId ?? undefined,

@@ -49,6 +49,17 @@ afterAll(() => {
 });
 
 describe('RetroCam', () => {
+  it('shows a neutral status while camera access is still being requested', () => {
+    resetRetroCamStore({
+      getUserMedia: vi.fn(() => new Promise<MediaStream>(() => {})),
+    });
+
+    render(RetroCam, { props: {} });
+
+    expect(screen.queryByText('retrocam_status_error')).toBeNull();
+    expect(screen.getAllByText('retrocam_status_requesting').length).toBeGreaterThan(0);
+  });
+
   it('renders live preview and preset buttons when camera becomes ready', async () => {
     resetRetroCamStore({
       getUserMedia: vi.fn().mockResolvedValue({

@@ -103,6 +103,8 @@
   });
 
   let hasImage = $derived(!!processedImageSrc);
+  let previewAltText = $derived(i18n.t('processed_preview_alt', getPaletteName(processingSettings.palette)));
+  let localizedColorCount = $derived(i18n.t('gallery_n_colors', colorCount));
 </script>
 
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
@@ -156,7 +158,7 @@
           <img
             bind:this={previewImgEl}
             src={processedImageSrc}
-            alt="Pixel Art - {getPaletteName(processingSettings.palette)}"
+            alt={previewAltText}
             data-testid="processed-preview-image"
             class="preview-image"
             style:image-rendering={processingSettings.renderMode === 'bilinear'
@@ -213,7 +215,7 @@
           <span class="status-item" title={i18n.t('image_resolution')} use:tooltip>{displayedWidth}x{displayedHeight}</span>
         {/if}
         {#if colorCount > 0}
-          <span class="status-item status-colors" title={i18n.t('unique_colors')} use:tooltip>{colorCount} colors</span>
+          <span class="status-item status-colors" title={i18n.t('unique_colors')} use:tooltip>{localizedColorCount}</span>
         {/if}
         <span class="status-item">{Math.round(zp.zoomLevel * 100)}%</span>
       </div>

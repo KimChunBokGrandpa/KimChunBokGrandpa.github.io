@@ -103,31 +103,24 @@
   <div class="taskbar-grip" aria-hidden="true"><span></span><span></span></div>
   <div class="taskbar-left">
     {#each visibleWindows as win}
-      <div
-        class="tb-item"
-        class:tb-active={win.focused && win.mode !== 'minimized'}
-        class:tb-dim={win.mode === 'minimized'}
-        onclick={() => onWindowClick(win.id)}
-        onkeydown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            onWindowClick(win.id);
-          }
-        }}
-        role="button"
-        tabindex="0"
-        aria-label="{getWindowActionLabel(win)}: {win.title}"
-        title="{getWindowActionLabel(win)}: {win.title}"
-      >
-        <span class="tb-icon">{win.icon}</span>
-        <span class="tb-label">{win.title}</span>
+      <div class="tb-entry">
         <button
+          type="button"
+          class="tb-item"
+          class:tb-active={win.focused && win.mode !== 'minimized'}
+          class:tb-dim={win.mode === 'minimized'}
+          onclick={() => onWindowClick(win.id)}
+          aria-label="{getWindowActionLabel(win)}: {win.title}"
+          title="{getWindowActionLabel(win)}: {win.title}"
+        >
+          <span class="tb-icon">{win.icon}</span>
+          <span class="tb-label">{win.title}</span>
+        </button>
+        <button
+          type="button"
           class="tb-x"
           title="{i18n.t('close')} {win.title}"
-          onclick={(e) => {
-            e.stopPropagation();
-            onWindowClose(win.id);
-          }}
+          onclick={() => onWindowClose(win.id)}
           aria-label="{i18n.t('close')} {win.title}"
         ></button>
       </div>
@@ -236,14 +229,19 @@
   }
 
   /* ── Task Item (Win98 button style) ── */
-  .tb-item {
+  .tb-entry {
     position: relative;
-    display: flex;
-    align-items: center;
-    gap: 4px;
     min-width: 44px;
     max-width: 160px;
     flex: 0 1 140px;
+  }
+
+  .tb-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    width: 100%;
+    min-width: 100%;
     padding: 0 18px 0 4px; /* right padding for X overlay */
     background: var(--w98-surface);
     border: none;
@@ -297,7 +295,8 @@
     box-shadow: var(--w98-outset-thin);
     display: none;
   }
-  .tb-item:hover .tb-x {
+  .tb-entry:hover .tb-x,
+  .tb-entry:focus-within .tb-x {
     display: flex;
   }
   .tb-x::after {
@@ -386,10 +385,12 @@
     .tb-label {
       display: none;
     }
-    .tb-item {
+    .tb-entry {
       min-width: 36px;
       max-width: 50px;
       flex-basis: 40px;
+    }
+    .tb-item {
       padding-right: 4px;
     }
     .tb-x {

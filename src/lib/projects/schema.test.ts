@@ -6,6 +6,7 @@ import {
   createProjectManifest,
   createRecentProjectEntry,
   normalizeProjectName,
+  type PosterMakerProjectStateV1,
   type PixelLabProjectStateV1,
 } from '$lib/projects/schema';
 
@@ -29,11 +30,28 @@ function makePixelLabState(): PixelLabProjectStateV1 {
   };
 }
 
+function makePosterMakerState(): PosterMakerProjectStateV1 {
+  return {
+    kind: 'poster-maker',
+    documentPresetId: 'poster',
+    canvas: {
+      width: 1080,
+      height: 1350,
+    },
+    layers: [],
+  };
+}
+
 describe('project schema', () => {
   it('normalizes default project names by app', () => {
     expect(normalizeProjectName(undefined, 'pixel-lab')).toBe('Pixel Lab Project');
     expect(normalizeProjectName(undefined, 'poster-maker')).toBe('Poster Maker Project');
     expect(normalizeProjectName(undefined, 'retrocam')).toBe('RetroCam Capture');
+  });
+
+  it('localizes poster-maker default names when a locale is provided', () => {
+    expect(normalizeProjectName(undefined, 'poster-maker', 'ko')).toBe('Poster Maker 프로젝트');
+    expect(normalizeProjectName(undefined, 'poster-maker', 'ja')).toBe('Poster Maker プロジェクト');
   });
 
   it('creates a manifest with schema version and cloned state', () => {
@@ -73,5 +91,14 @@ describe('project schema', () => {
       previewAssetId: 'asset-preview',
     });
   });
-});
 
+  it('creates a localized poster manifest when locale is provided', () => {
+    const manifest = createProjectManifest({
+      appId: 'poster-maker',
+      locale: 'ko',
+      programState: makePosterMakerState(),
+    });
+
+    expect(manifest.name).toBe('Poster Maker 프로젝트');
+  });
+});

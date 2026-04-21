@@ -93,6 +93,7 @@ export const ko: Record<TranslationKey, string> = {
   drop_image_error: '\uc774\ubbf8\uc9c0 \ud30c\uc77c\uc744 \ub4dc\ub86d\ud574\uc8fc\uc138\uc694 (PNG, JPEG, GIF, BMP, WebP).',
 
   image_preview: '\uc774\ubbf8\uc9c0 \ubbf8\ub9ac\ubcf4\uae30',
+  processed_preview_alt: '\ud53d\uc140 \uc544\ud2b8 \ubbf8\ub9ac\ubcf4\uae30 - {0}',
   rendering: '\ub80c\ub354\ub9c1 \uc911...',
   ready: '\uc900\ube44 \uc644\ub8cc',
   open_settings: 'Pixel Lab \ucee8\ud2b8\ub864 \uc5f4\uae30',

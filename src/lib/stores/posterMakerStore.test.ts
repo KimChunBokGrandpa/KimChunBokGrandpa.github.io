@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createHandoffEnvelope } from '$lib/handoffs/contracts';
+import { i18n } from '$lib/i18n/index.svelte';
 import { createAssetId } from '$lib/projects/schema';
 import { createInMemoryProjectStorageAdapter } from '$lib/projects/storageAdapter';
 import { createPosterMakerStore } from '$lib/stores/posterMakerStore.svelte';
@@ -9,6 +10,7 @@ describe('posterMakerStore', () => {
 
   beforeEach(() => {
     adapter = createInMemoryProjectStorageAdapter();
+    i18n.locale = 'en';
   });
 
   it('initializes a blank poster-maker project', async () => {
@@ -122,5 +124,18 @@ describe('posterMakerStore', () => {
     expect(store.frameStyleId).toBe('classic');
     expect(store.overlayStyleId).toBe('sunset');
     expect(store.stickerStyleId).toBe('pixel_lab');
+  });
+
+  it('uses the locale-aware fallback name when the title is blank', async () => {
+    const store = createPosterMakerStore(adapter);
+    await store.ensureInitialized();
+
+    i18n.locale = 'ko';
+    await store.setTitle('   ');
+
+    expect(store.currentProjectName()).toBe('Poster Maker 프로젝트');
+
+    const recentProjects = await adapter.listRecentProjects();
+    expect(recentProjects[0]?.name).toBe('Poster Maker 프로젝트');
   });
 });

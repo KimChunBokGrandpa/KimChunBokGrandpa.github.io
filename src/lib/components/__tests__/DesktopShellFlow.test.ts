@@ -4,7 +4,11 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/svelte';
 
 vi.mock('$lib/i18n/index.svelte', () => ({
   i18n: {
-    t: vi.fn((key: string) => key),
+    t: vi.fn((key: string, ...args: (string | number)[]) => {
+      if (key === 'desktop_open_program') return `open ${args[0]}`;
+      if (key.startsWith('taskbar_') && args[0]) return `${key}: ${args[0]}`;
+      return key;
+    }),
     locale: 'en',
     setLocale: vi.fn(),
   },

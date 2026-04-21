@@ -59,16 +59,10 @@ describe('Taskbar', () => {
 
   it('calls onWindowClick when window button is clicked', async () => {
     const props = defaultProps();
-    const { container } = render(Taskbar, { props });
-    // Find the taskbar window buttons (not the close/utility buttons)
-    const taskbarBtns = container.querySelectorAll('.tb-btn, .taskbar-btn');
-    if (taskbarBtns.length > 0) {
-      await fireEvent.click(taskbarBtns[0]);
-      expect(props.onWindowClick).toHaveBeenCalled();
-    } else {
-      // Fallback: verify the callback was provided correctly
-      expect(props.onWindowClick).toBeDefined();
-    }
+    const { getByRole } = render(Taskbar, { props });
+
+    await fireEvent.click(getByRole('button', { name: /taskbar_minimize_window: Preview/i }));
+    expect(props.onWindowClick).toHaveBeenCalledWith('preview');
   });
 
   it('renders with empty windows list', () => {
@@ -115,5 +109,15 @@ describe('Taskbar', () => {
       ],
     });
     expect(getByRole('button', { name: /taskbar_switch_to_window: Preview/i })).toBeTruthy();
+  });
+
+  it('keeps the close button outside the taskbar window button', () => {
+    const { getByRole } = render(Taskbar, { props: defaultProps() });
+
+    const windowButton = getByRole('button', { name: /taskbar_minimize_window: Preview/i });
+    const closeButton = getByRole('button', { name: /close Preview/i });
+
+    expect(windowButton.querySelector('button')).toBeNull();
+    expect(closeButton.closest('.tb-entry')?.querySelectorAll('button')).toHaveLength(2);
   });
 });

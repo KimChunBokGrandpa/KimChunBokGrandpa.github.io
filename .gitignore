@@ -25,3 +25,8 @@ storybook-static/
 _workspace/
 .gemini/
 .agents/
+RUN_STATE.json
+HOURLY_LOG.md
+ACTIVE_ISSUES.md
+./reports/
+$CODEX_HOME

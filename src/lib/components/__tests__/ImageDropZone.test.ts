@@ -14,11 +14,15 @@ describe('ImageDropZone', () => {
     expect(browseBtn).toBeTruthy();
   });
 
-  it('renders drop zone with role=button', () => {
+  it('renders separate drop target button without nesting action buttons', () => {
     const onImageSelected = vi.fn();
     const { container } = render(ImageDropZone, { props: { onImageSelected } });
-    const dropzone = container.querySelector('[role="button"]');
-    expect(dropzone).toBeTruthy();
+    const dropTarget = container.querySelector('[data-testid="drop-target-button"]');
+    const browseButton = container.querySelector('[data-testid="browse-image-button"]');
+    const sampleButton = container.querySelector('[data-testid="try-sample-button"]');
+    expect(dropTarget).toBeTruthy();
+    expect(dropTarget?.contains(browseButton)).toBe(false);
+    expect(dropTarget?.contains(sampleButton)).toBe(false);
   });
 
   it('has hidden file input with correct accept types', () => {
