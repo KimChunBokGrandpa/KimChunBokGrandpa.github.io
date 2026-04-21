@@ -32,6 +32,11 @@ describe('Taskbar', () => {
     expect(container.querySelector('.taskbar, [class*="taskbar"]')).toBeTruthy();
   });
 
+  it('uses a localized landmark label for the taskbar nav', () => {
+    const { getByRole } = render(Taskbar, { props: defaultProps() });
+    expect(getByRole('navigation', { name: 'taskbar_landmark' })).toBeTruthy();
+  });
+
   it('renders window buttons', () => {
     const { container } = render(Taskbar, { props: defaultProps() });
     const buttons = container.querySelectorAll('.taskbar-btn, [class*="taskbar"] button');

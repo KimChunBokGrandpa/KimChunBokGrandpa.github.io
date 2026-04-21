@@ -610,6 +610,7 @@ export const ko: Record<TranslationKey, string> = {
   taskbar_restore_window: '창 복원',
   taskbar_minimize_window: '창 최소화',
   taskbar_switch_to_window: '창으로 전환',
+  taskbar_landmark: '작업 표시줄',
   menu_file: '파일',
   menu_edit: '편집',
   menu_view: '보기',

@@ -610,6 +610,7 @@ export const ja: Record<TranslationKey, string> = {
   taskbar_restore_window: 'ウィンドウを復元',
   taskbar_minimize_window: 'ウィンドウを最小化',
   taskbar_switch_to_window: 'ウィンドウへ切り替え',
+  taskbar_landmark: 'タスクバー',
   menu_file: 'ファイル',
   menu_edit: '編集',
   menu_view: '表示',

@@ -1,0 +1,1 @@
+- 2026-04-21 09:32:51+0900 KST: 최근 72시간 기준 일일 요약 리포트 `reports/DAILY_SUMMARY_2026-04-21.md` 생성. `RUN_STATE.json.last_summary_at`를 같은 시각으로 갱신했고, `HOURLY_LOG.md`에 DAILY_SUMMARY_WRITTEN/RANGE/LAST_SUMMARY_AT 마커를 append함. 핵심 상태는 dirty worktree stall 90회 지속, shell-flow i18n mock 실패 반복, full verify timeout 도구 부재, 수동 QA 필요 항목 5개로 요약됨.

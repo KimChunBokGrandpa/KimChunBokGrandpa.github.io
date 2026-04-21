@@ -634,6 +634,7 @@ export const en = {
   taskbar_restore_window: 'Restore window',
   taskbar_minimize_window: 'Minimize window',
   taskbar_switch_to_window: 'Switch to window',
+  taskbar_landmark: 'Taskbar',
   menu_file: 'File',
   menu_edit: 'Edit',
   menu_view: 'View',

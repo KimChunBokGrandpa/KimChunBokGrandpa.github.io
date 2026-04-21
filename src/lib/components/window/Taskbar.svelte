@@ -90,7 +90,7 @@
   let visibleWindows = $derived(windows.filter((w) => w.mode !== 'closed'));
 </script>
 
-<nav class="taskbar" aria-label="Taskbar">
+<nav class="taskbar" aria-label={i18n.t('taskbar_landmark')}>
   <button
     class="start-btn"
     onclick={(event) => onStartClick?.(event)}
