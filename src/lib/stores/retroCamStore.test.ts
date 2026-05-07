@@ -146,10 +146,13 @@ describe('retroCamStore', () => {
 
     const store = createRetroCamStore(null, adapter);
     const loaded = await store.loadProject(manifest.projectId);
+    const recentProjects = await adapter.listRecentProjects({ limit: 1 });
 
     expect(loaded?.projectId).toBe(manifest.projectId);
     expect(store.lastSnapshotFile?.name).toBe('saved-capture.png');
     expect(store.activePresetId).toBe('warm_poster');
     expect(store.lastSnapshotPresetId).toBe('warm_poster');
+    expect(recentProjects[0]?.projectId).toBe(manifest.projectId);
+    expect(Date.parse(loaded?.lastOpenedAt ?? '')).toBeGreaterThanOrEqual(Date.parse(manifest.lastOpenedAt));
   });
 });

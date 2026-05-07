@@ -126,15 +126,15 @@
 
   <!-- Divider line -->
   <div class="ba-divider" style:left="{sliderPosition}%">
-    <div class="ba-handle" class:dragging={isDragging}>
+    <div class="ba-handle w98-preview-handle" class:dragging={isDragging}>
       <span class="ba-arrow">◀</span>
       <span class="ba-arrow">▶</span>
     </div>
   </div>
 
   <!-- Labels -->
-  <span class="ba-label ba-label-before">{i18n.t('before')}</span>
-  <span class="ba-label ba-label-after">{i18n.t('after')}</span>
+  <span class="ba-label ba-label-before w98-preview-badge">{i18n.t('before')}</span>
+  <span class="ba-label ba-label-after w98-preview-badge">{i18n.t('after')}</span>
 </div>
 
 <style>
@@ -185,7 +185,7 @@
     bottom: 0;
     width: 3px;
     margin-left: -1.5px;
-    background: #fff;
+    background: var(--w98-surface-white);
     z-index: 3;
     box-shadow: var(--w98-outset-thin);
   }
@@ -197,24 +197,21 @@
     transform: translate(-50%, -50%);
     width: 28px;
     height: 28px;
-    background: var(--w98-surface);
-    border: 2px solid;
-    border-color: var(--w98-shadow-light) var(--w98-shadow-808) var(--w98-shadow-808) var(--w98-shadow-light);
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 1px;
-    box-shadow: var(--w98-outset-thin);
+    cursor: ew-resize;
   }
 
   .ba-handle.dragging {
-    transform: translate(-50%, -50%);
-    box-shadow: var(--w98-inset-thin);
+    background: var(--w98-surface-active);
+    box-shadow: var(--w98-inset);
   }
 
   .ba-arrow {
     font-size: var(--w98-font-size-micro);
-    color: #000;
+    color: var(--w98-text);
     line-height: 1;
   }
 
@@ -223,14 +220,6 @@
     position: absolute;
     top: 8px;
     z-index: 4;
-    font-size: var(--w98-font-size-caption);
-    font-weight: bold;
-    padding: 2px 6px;
-    background: var(--w98-surface);
-    color: var(--w98-text);
-    box-shadow: var(--w98-outset-thin);
-    letter-spacing: 1px;
-    pointer-events: none;
   }
   .ba-label-before { left: 8px; }
   .ba-label-after { right: 8px; }

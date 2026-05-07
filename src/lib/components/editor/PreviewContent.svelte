@@ -114,8 +114,9 @@
   }
 
   let compareVariantIcon = $derived(
-    compareVariant === 'slider' ? '↔' : compareVariant === 'side-by-side' ? '⬜⬜' : '🧅'
+    compareVariant === 'slider' ? '↔' : compareVariant === 'side-by-side' ? '▥' : '🧅'
   );
+  let compareVariantUsesEmoji = $derived(compareVariant === 'onion');
 </script>
 
 <ImageCanvas
@@ -143,12 +144,15 @@
       {zp}
       bind:compareMode
       {compareVariantIcon}
+      {compareVariantUsesEmoji}
       bind:cropModeActive
       bind:tileMode
       bind:eyedropperActive
       {eyedropperOverlay}
       {hasCrop}
       {currentRotation}
+      {processingSettings}
+      {colorCount}
       {onRotate}
       {onResetTransform}
       {cycleCompareVariant}

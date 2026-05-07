@@ -22,21 +22,21 @@ describe('ToastNotification', () => {
     const onDone = vi.fn();
     render(ToastNotification, { props: { message: 'OK', onDone } });
     const toast = screen.getByRole('status');
-    expect(toast.textContent).toContain('\u2705'); // ✅
+    expect(toast.textContent).toContain('ℹ️');
   });
 
   it('shows error icon for error variant', () => {
     const onDone = vi.fn();
     render(ToastNotification, { props: { message: 'Fail', variant: 'error', onDone } });
     const toast = screen.getByRole('status');
-    expect(toast.textContent).toContain('\u274C'); // ❌
+    expect(toast.textContent).toContain('⚠️');
   });
 
   it('shows warning icon for warning variant', () => {
     const onDone = vi.fn();
     render(ToastNotification, { props: { message: 'Warn', variant: 'warning', onDone } });
     const toast = screen.getByRole('status');
-    expect(toast.textContent).toContain('\u26A0'); // ⚠
+    expect(toast.textContent).toContain('💡');
   });
 
   it('applies variant CSS class', () => {
@@ -53,7 +53,6 @@ describe('ToastNotification', () => {
 
     expect(onDone).not.toHaveBeenCalled();
     vi.advanceTimersByTime(1000);
-    vi.advanceTimersByTime(300);
     expect(onDone).toHaveBeenCalledOnce();
 
     vi.useRealTimers();

@@ -252,7 +252,14 @@
         { format: 'png', quality: 0.92, filename: posterMakerStore.currentProjectName() },
         previewCanvas,
       );
-      if (message) onMessage?.(message);
+      if (message) {
+        await posterMakerStore.recordExport({
+          format: 'png',
+          width: previewCanvas.width,
+          height: previewCanvas.height,
+        });
+        onMessage?.(message);
+      }
     } catch (error) {
       onError?.(error instanceof Error ? error.message : i18n.t('poster_export_failed'));
     }
@@ -420,12 +427,12 @@
 </script>
 
 <div class="poster-maker-root">
-  <div class="poster-toolbar">
-    <div class="preset-group">
+  <div class="poster-toolbar w98-toolbar">
+    <div class="preset-group w98-toolbar-group">
       {#each posterPresets as preset}
         <button
-          class="toolbar-btn"
-          class:toolbar-btn-active={posterMakerStore.activePresetId === preset.id}
+          class="toolbar-btn w98-inline-button w98-button--thin"
+          class:w98-inline-button--active={posterMakerStore.activePresetId === preset.id}
           onclick={() => handlePresetChange(preset.id)}
         >
           {i18n.t(preset.labelKey)}
@@ -433,45 +440,53 @@
       {/each}
     </div>
 
-    <div class="action-group">
-      <button class="toolbar-btn" data-testid="poster-new-document-button" onclick={createNewDocument}>
-        🗎 {i18n.t('poster_new_document')}
+    <div class="action-group w98-toolbar-group">
+      <button class="toolbar-btn w98-inline-button w98-button--thin" data-testid="poster-new-document-button" onclick={createNewDocument}>
+        <span class="w98-structural-glyph" aria-hidden="true">✎</span>
+        <span>{i18n.t('poster_new_document')}</span>
       </button>
-      <button class="toolbar-btn" data-testid="poster-reset-document-button" onclick={resetCurrentDocument}>
-        ↺ {i18n.t('poster_reset_document')}
+      <button class="toolbar-btn w98-inline-button w98-button--thin" data-testid="poster-reset-document-button" onclick={resetCurrentDocument}>
+        <span class="w98-structural-glyph" aria-hidden="true">↺</span>
+        <span>{i18n.t('poster_reset_document')}</span>
       </button>
-      <label class="toolbar-btn file-btn">
-        📂 {i18n.t('poster_open_image')}
+      <label class="toolbar-btn file-btn w98-inline-button w98-button--thin">
+        <span class="w98-emoji" aria-hidden="true">📂</span>
+        <span>{i18n.t('poster_open_image')}</span>
         <input type="file" accept="image/png,image/jpeg,image/gif,image/bmp,image/webp" onchange={handleFileInput} />
       </label>
-      <button class="toolbar-btn" onclick={clearImportedImage} disabled={!posterMakerStore.importedAssetId}>
-        🗑 {i18n.t('poster_clear_image')}
+      <button class="toolbar-btn w98-inline-button w98-button--thin" onclick={clearImportedImage} disabled={!posterMakerStore.importedAssetId}>
+        <span class="w98-structural-glyph" aria-hidden="true">✕</span>
+        <span>{i18n.t('poster_clear_image')}</span>
       </button>
-      <button class="toolbar-btn export-btn" onclick={exportPoster}>
-        💾 {i18n.t('poster_export')}
+      <button class="toolbar-btn export-btn w98-button w98-button--primary" onclick={exportPoster}>
+        <span class="w98-emoji" aria-hidden="true">💾</span>
+        <span>{i18n.t('poster_export')}</span>
       </button>
     </div>
   </div>
 
   <div class="poster-layout">
     <div class="poster-sidebar">
-      <label class="field">
-        <span>{i18n.t('poster_title_label')}</span>
+      <label class="field w98-form-stack">
+        <span class="w98-form-label">{i18n.t('poster_title_label')}</span>
         <input
+          class="w98-input"
           value={posterMakerStore.titleText}
           oninput={(e) => handleTitleInput((e.currentTarget as HTMLInputElement).value)}
         />
       </label>
-      <label class="field">
-        <span>{i18n.t('poster_subtitle_label')}</span>
+      <label class="field w98-form-stack">
+        <span class="w98-form-label">{i18n.t('poster_subtitle_label')}</span>
         <input
+          class="w98-input"
           value={posterMakerStore.subtitleText}
           oninput={(e) => handleSubtitleInput((e.currentTarget as HTMLInputElement).value)}
         />
       </label>
-      <label class="field">
-        <span>{i18n.t('poster_frame_label')}</span>
+      <label class="field w98-form-stack">
+        <span class="w98-form-label">{i18n.t('poster_frame_label')}</span>
         <select
+          class="w98-select"
           value={posterMakerStore.frameStyleId}
           oninput={(e) => handleFrameStyleChange((e.currentTarget as HTMLSelectElement).value)}
         >
@@ -480,9 +495,10 @@
           {/each}
         </select>
       </label>
-      <label class="field">
-        <span>{i18n.t('poster_overlay_label')}</span>
+      <label class="field w98-form-stack">
+        <span class="w98-form-label">{i18n.t('poster_overlay_label')}</span>
         <select
+          class="w98-select"
           value={posterMakerStore.overlayStyleId}
           oninput={(e) => handleOverlayStyleChange((e.currentTarget as HTMLSelectElement).value)}
         >
@@ -491,9 +507,10 @@
           {/each}
         </select>
       </label>
-      <label class="field">
-        <span>{i18n.t('poster_sticker_label')}</span>
+      <label class="field w98-form-stack">
+        <span class="w98-form-label">{i18n.t('poster_sticker_label')}</span>
         <select
+          class="w98-select"
           value={posterMakerStore.stickerStyleId}
           oninput={(e) => handleStickerStyleChange((e.currentTarget as HTMLSelectElement).value)}
         >
@@ -502,42 +519,43 @@
           {/each}
         </select>
       </label>
-      <div class="meta">
+      <div class="meta w98-status-panel">
         <div><strong>{posterMakerStore.currentProjectName()}</strong></div>
-        <div>{i18n.t('poster_document_status')}: {i18n.t(posterMakerStore.importedAssetId ? 'poster_status_ready' : 'poster_status_waiting')}</div>
-        <div>{posterMakerStore.importedFilename ?? i18n.t('poster_empty_hint')}</div>
+        <div class="w98-quiet-copy">{i18n.t('poster_document_status')}: {i18n.t(posterMakerStore.importedAssetId ? 'poster_status_ready' : 'poster_status_waiting')}</div>
+        <div class="w98-quiet-copy">{posterMakerStore.importedFilename ?? i18n.t('poster_empty_hint')}</div>
       </div>
 
       {#if posterMakerStore.sourceContext}
-        <div class="source-context" data-testid="poster-source-context">
-          <div class="source-context-header">{i18n.t('poster_source_context')}</div>
-          <div class="source-context-line">
+        <div class="source-context w98-status-panel" data-testid="poster-source-context">
+          <div class="source-context-header w98-kicker">{i18n.t('poster_source_context')}</div>
+          <div class="source-context-line w98-quiet-copy">
             <strong>{i18n.t('poster_source_from')} </strong>{posterMakerStore.sourceContext.sourceLabel ?? posterMakerStore.sourceContext.sourceAppId}
           </div>
           {#if posterMakerStore.sourceContext.sourceProjectId}
-            <div class="source-context-line source-context-id">
+            <div class="source-context-line source-context-id w98-mono">
               {posterMakerStore.sourceContext.sourceProjectId}
             </div>
           {/if}
           {#if posterMakerStore.sourceContext.sourceAppId === 'pixel-lab' && onSwitchToPixelLab}
             <button
-              class="toolbar-btn source-context-btn"
+              class="toolbar-btn source-context-btn w98-inline-button w98-button--thin"
               data-testid="poster-switch-to-pixel-lab"
               onclick={onSwitchToPixelLab}
             >
-              🖼️ {i18n.t('poster_switch_to_pixel_lab')}
+              <span class="w98-emoji" aria-hidden="true">🖼️</span>
+              <span>{i18n.t('poster_switch_to_pixel_lab')}</span>
             </button>
           {/if}
         </div>
       {/if}
 
-      <div class="recent-projects">
-        <div class="recent-projects-header">{i18n.t('poster_recent_projects')}</div>
+      <div class="recent-projects w98-status-panel">
+        <div class="recent-projects-header w98-kicker">{i18n.t('poster_recent_projects')}</div>
         {#if posterMakerStore.recentProjects.length > 0}
           <div class="recent-projects-list">
             {#each posterMakerStore.recentProjects as entry}
               <button
-                class="recent-project-btn"
+                class="recent-project-btn w98-button w98-button--thin"
                 data-testid={`poster-recent-project-${entry.projectId}`}
                 onclick={() => reopenProject(entry.projectId)}
                 disabled={entry.projectId === posterMakerStore.projectId}
@@ -557,8 +575,21 @@
       </div>
     </div>
 
-    <div class="poster-preview-shell">
-      <canvas bind:this={previewCanvas} class="poster-canvas"></canvas>
+    <div class="poster-preview-shell w98-frame">
+      <div class="poster-preview-titlebar w98-panel-titlebar">
+        <strong class="w98-panel-title">
+          <span class="w98-emoji" aria-hidden="true">📰</span>
+          <span>{i18n.t('win_poster_maker')}</span>
+        </strong>
+        <span class="poster-preview-status w98-kicker">
+          {i18n.t(posterMakerStore.importedAssetId ? 'poster_status_ready' : 'poster_status_waiting')}
+        </span>
+      </div>
+      <div class="poster-preview-body">
+        <div class="poster-preview-stage w98-inset-panel">
+          <canvas bind:this={previewCanvas} class="poster-canvas"></canvas>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -568,44 +599,24 @@
     height: 100%;
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    padding: 8px;
+    gap: var(--w98-space-8);
+    padding: var(--w98-space-8);
     box-sizing: border-box;
     background: var(--w98-surface);
   }
 
   .poster-toolbar {
-    display: flex;
-    align-items: center;
     justify-content: space-between;
-    gap: 8px;
     flex-wrap: wrap;
   }
 
   .preset-group,
   .action-group {
-    display: flex;
-    gap: 6px;
-    flex-wrap: wrap;
+    gap: var(--w98-space-6);
   }
 
   .toolbar-btn {
-    border: none;
-    box-shadow: var(--w98-outset-thin);
-    background: var(--w98-surface);
-    padding: 4px 10px;
-    cursor: pointer;
-    font: inherit;
-  }
-
-  .toolbar-btn:active {
-    box-shadow: var(--w98-inset-thin);
-  }
-
-  .toolbar-btn-active {
-    box-shadow: var(--w98-inset-thin);
-    background: #dbe5f3;
-    font-weight: bold;
+    white-space: nowrap;
   }
 
   .file-btn input {
@@ -617,68 +628,42 @@
     min-height: 0;
     display: grid;
     grid-template-columns: 260px minmax(0, 1fr);
-    gap: 10px;
+    gap: var(--w98-space-8);
   }
 
   .poster-sidebar {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: var(--w98-space-8);
     min-width: 0;
   }
 
   .field {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
     font-size: var(--w98-font-size-base);
   }
 
-  .field input {
-    border: 2px inset var(--w98-surface);
-    padding: 4px 6px;
-    font: inherit;
-    background: #fff;
-  }
-
-  .field select {
-    border: 2px inset var(--w98-surface);
-    padding: 4px 6px;
-    font: inherit;
-    background: #fff;
-  }
-
   .meta {
-    padding: 8px;
-    background: #fff;
-    border: 2px inset var(--w98-surface);
     font-size: var(--w98-font-size-base);
     line-height: 1.4;
     overflow-wrap: anywhere;
   }
 
   .recent-projects {
-    padding: 8px;
-    background: #fff;
-    border: 2px inset var(--w98-surface);
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: var(--w98-space-6);
     min-height: 0;
   }
 
   .source-context {
-    padding: 8px;
-    background: #fff7d3;
-    border: 2px inset var(--w98-surface);
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: var(--w98-space-6);
     font-size: var(--w98-font-size-base);
   }
 
   .source-context-header {
-    font-weight: bold;
+    color: var(--w98-color-warning);
   }
 
   .source-context-line {
@@ -686,9 +671,8 @@
   }
 
   .source-context-id {
-    font-family: monospace;
-    font-size: 11px;
-    color: #404040;
+    font-size: var(--w98-font-size-base);
+    color: var(--w98-text-hint);
   }
 
   .source-context-btn {
@@ -696,23 +680,17 @@
   }
 
   .recent-projects-header {
-    font-weight: bold;
-    font-size: var(--w98-font-size-base);
+    color: var(--w98-highlight);
   }
 
   .recent-projects-list {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: var(--w98-space-6);
   }
 
   .recent-project-btn {
-    border: none;
-    box-shadow: var(--w98-outset-thin);
-    background: var(--w98-surface);
     padding: 6px 8px;
-    cursor: pointer;
-    font: inherit;
     text-align: left;
     display: flex;
     flex-direction: column;
@@ -720,9 +698,7 @@
   }
 
   .recent-project-btn:disabled {
-    cursor: default;
     color: var(--w98-text-disabled);
-    box-shadow: var(--w98-inset-thin);
   }
 
   .recent-project-name {
@@ -732,33 +708,53 @@
 
   .recent-project-meta,
   .recent-projects-empty {
-    font-size: 12px;
-    color: #3b4d66;
+    font-size: var(--w98-font-size-caption);
+    color: var(--w98-text-hint);
   }
 
   .poster-preview-shell {
     min-width: 0;
     min-height: 0;
     display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .poster-preview-titlebar {
+    flex-shrink: 0;
+  }
+
+  .poster-preview-body {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    padding: var(--w98-space-8);
+    background: var(--w98-surface);
+  }
+
+  .poster-preview-status {
+    color: #fff;
+    opacity: 0.85;
+  }
+
+  .poster-preview-stage {
+    min-height: 0;
+    height: 100%;
+    min-width: 0;
+    display: flex;
     align-items: center;
     justify-content: center;
     overflow: auto;
-    background:
-      linear-gradient(45deg, #d6d6d6 25%, transparent 25%),
-      linear-gradient(-45deg, #d6d6d6 25%, transparent 25%),
-      linear-gradient(45deg, transparent 75%, #d6d6d6 75%),
-      linear-gradient(-45deg, transparent 75%, #d6d6d6 75%);
-    background-size: 16px 16px;
-    background-position: 0 0, 0 8px, 8px -8px, -8px 0;
-    border: 2px inset var(--w98-surface);
-    padding: 16px;
+    padding: var(--w98-space-12);
+    background: var(--w98-surface-dim);
   }
 
   .poster-canvas {
     max-width: 100%;
     max-height: 100%;
-    box-shadow: 0 0 0 2px #111, 8px 8px 0 rgba(0, 0, 0, 0.15);
-    background: #fff;
+    box-shadow: var(--w98-outset);
+    background: var(--w98-surface-white);
   }
 
   @media (max-width: 760px) {
@@ -784,7 +780,7 @@
       grid-template-rows: auto minmax(0, 1fr);
     }
 
-    .poster-preview-shell {
+    .poster-preview-stage {
       padding: 10px;
     }
 
@@ -807,7 +803,7 @@
       gap: 4px;
     }
 
-    .poster-preview-shell {
+    .poster-preview-stage {
       padding: 8px;
     }
   }

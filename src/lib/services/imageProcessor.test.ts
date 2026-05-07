@@ -100,7 +100,10 @@ describe('ImageProcessorService', () => {
       } as unknown as typeof Image;
 
       // Mock canvas for blob creation
-      const mockCtx = { drawImage: vi.fn() };
+      const mockCtx = {
+        drawImage: vi.fn(),
+        getImageData: vi.fn(() => new ImageData(1, 1)),
+      };
       const mockCanvas = {
         width: 0, height: 0,
         getContext: vi.fn(() => mockCtx),
@@ -118,6 +121,112 @@ describe('ImageProcessorService', () => {
 
       expect(result).toBeTruthy();
       expect(typeof result).toBe('string');
+
+      globalThis.Image = origImage;
+      vi.restoreAllMocks();
+    });
+
+    it('updates color count for original-settings fast path', async () => {
+      const origImage = globalThis.Image;
+      globalThis.Image = class extends origImage {
+        constructor() {
+          super();
+          Object.defineProperty(this, 'src', {
+            set: () => { setTimeout(() => this.onload?.(new Event('load')), 0); },
+            get: () => '',
+          });
+          Object.defineProperty(this, 'width', { get: () => 2, configurable: true });
+          Object.defineProperty(this, 'height', { get: () => 1, configurable: true });
+        }
+      } as unknown as typeof Image;
+
+      const mockCtx = {
+        drawImage: vi.fn(),
+        getImageData: vi.fn(() => new ImageData(
+          new Uint8ClampedArray([
+            0, 0, 0, 255,
+            255, 255, 255, 255,
+          ]),
+          2,
+          1,
+        )),
+      };
+      const mockCanvas = {
+        width: 0, height: 0,
+        getContext: vi.fn(() => mockCtx),
+        toBlob: vi.fn((cb: (b: Blob | null) => void) => {
+          cb(new Blob(['png'], { type: 'image/png' }));
+        }),
+      };
+      vi.spyOn(document, 'createElement').mockImplementation((tag: string) => {
+        if (tag === 'canvas') return mockCanvas as unknown as HTMLCanvasElement;
+        return document.createElementNS('http://www.w3.org/1999/xhtml', tag) as HTMLElement;
+      });
+
+      const settings = makeSettings({ pixelSize: 1, palette: 'original' });
+      await processorService.processImage('blob:fast-path-colors', settings);
+
+      expect(processorService.getLastColorCount()).toBe(2);
+
+      globalThis.Image = origImage;
+      vi.restoreAllMocks();
+    });
+
+    it('does not bypass worker processing when HQx is enabled via effect layers', async () => {
+      const origImage = globalThis.Image;
+      globalThis.Image = class extends origImage {
+        constructor() {
+          super();
+          Object.defineProperty(this, 'src', {
+            set: () => { setTimeout(() => this.onload?.(new Event('load')), 0); },
+            get: () => '',
+          });
+          Object.defineProperty(this, 'width', { get: () => 100, configurable: true });
+          Object.defineProperty(this, 'height', { get: () => 100, configurable: true });
+        }
+      } as unknown as typeof Image;
+
+      const mockBitmap = { width: 100, height: 100, close: vi.fn() };
+      vi.stubGlobal('createImageBitmap', vi.fn().mockResolvedValue(mockBitmap));
+
+      const mockCtx = { putImageData: vi.fn() };
+      const mockCanvas = {
+        width: 0,
+        height: 0,
+        getContext: vi.fn(() => mockCtx),
+        toBlob: vi.fn((cb: (b: Blob | null) => void) => {
+          cb(new Blob(['png'], { type: 'image/png' }));
+        }),
+      };
+      vi.spyOn(document, 'createElement').mockImplementation((tag: string) => {
+        if (tag === 'canvas') return mockCanvas as unknown as HTMLCanvasElement;
+        return document.createElementNS('http://www.w3.org/1999/xhtml', tag) as HTMLElement;
+      });
+
+      const settings = makeSettings({
+        pixelSize: 1,
+        palette: 'original',
+        effectLayers: [{ id: 'hqx-1', type: 'hqx', enabled: true }],
+      });
+      const promise = processorService.processImage('blob:hqx-layer', settings);
+
+      await vi.waitFor(() => {
+        const worker = (processorService as unknown as { worker: MockWorker | null }).worker;
+        expect(worker?.postMessage).toHaveBeenCalled();
+      }, { timeout: 2000 });
+
+      const worker = (processorService as unknown as { worker: MockWorker | null }).worker;
+      const [message] = worker!.postMessage.mock.calls[0];
+      worker!.onmessage?.({
+        data: {
+          id: message.id,
+          type: 'complete',
+          processedData: new ImageData(1, 1),
+          colorCount: 1,
+        },
+      } as MessageEvent);
+
+      await expect(promise).resolves.toBeTruthy();
 
       globalThis.Image = origImage;
       vi.restoreAllMocks();
@@ -239,6 +348,45 @@ describe('ImageProcessorService', () => {
       globalThis.Image = origImage;
       vi.restoreAllMocks();
     });
+
+    it('uses stricter limit for an active HQx effect layer', async () => {
+      const origImage = globalThis.Image;
+      globalThis.Image = class extends origImage {
+        constructor() {
+          super();
+          Object.defineProperty(this, 'src', {
+            set: () => { setTimeout(() => this.onload?.(new Event('load')), 0); },
+            get: () => '',
+          });
+          Object.defineProperty(this, 'width', { get: () => 1500, configurable: true });
+          Object.defineProperty(this, 'height', { get: () => 1500, configurable: true });
+        }
+      } as unknown as typeof Image;
+
+      const mockBitmap = { width: 1024, height: 1024, close: vi.fn() };
+      vi.stubGlobal('createImageBitmap', vi.fn().mockResolvedValue(mockBitmap));
+
+      const onCapped = vi.fn();
+      const settings = makeSettings({
+        pixelSize: 4,
+        effectLayers: [{ id: 'hqx-1', type: 'hqx', enabled: true }],
+      });
+
+      const promise = processorService.processImage('blob:hqx-layer-cap', settings, onCapped);
+
+      await vi.waitFor(() => {
+        expect(onCapped).toHaveBeenCalled();
+      }, { timeout: 2000 });
+
+      const [, capped] = onCapped.mock.calls[0];
+      expect(capped.w).toBeLessThanOrEqual(1024);
+
+      processorService.destroy();
+      await promise.catch(() => {});
+
+      globalThis.Image = origImage;
+      vi.restoreAllMocks();
+    });
   });
 
   describe('palette normalization', () => {
@@ -331,6 +479,80 @@ describe('ImageProcessorService', () => {
           dither_type: 'none',
         }),
       }));
+
+      globalThis.Image = origImage;
+      if (originalTauriInternals === undefined) {
+        delete (window as Window & { __TAURI_INTERNALS__?: object }).__TAURI_INTERNALS__;
+      } else {
+        (window as Window & { __TAURI_INTERNALS__?: object }).__TAURI_INTERNALS__ = originalTauriInternals;
+      }
+      vi.restoreAllMocks();
+    });
+
+    it('applies effect layers after Rust quantization, updates color count, and clears pending resolvers', async () => {
+      const origImage = globalThis.Image;
+      const originalTauriInternals = (window as Window & { __TAURI_INTERNALS__?: object }).__TAURI_INTERNALS__;
+
+      globalThis.Image = class extends origImage {
+        constructor() {
+          super();
+          Object.defineProperty(this, 'src', {
+            set: () => { setTimeout(() => this.onload?.(new Event('load')), 0); },
+            get: () => '',
+          });
+          Object.defineProperty(this, 'width', { get: () => 4, configurable: true });
+          Object.defineProperty(this, 'height', { get: () => 4, configurable: true });
+        }
+      } as unknown as typeof Image;
+
+      (window as Window & { __TAURI_INTERNALS__?: object }).__TAURI_INTERNALS__ = {};
+      mockInvoke.mockResolvedValue(new Uint8Array(
+        Array.from({ length: 4 * 4 }, () => [12, 34, 56, 255]).flat(),
+      ));
+
+      const mockCtx = {
+        drawImage: vi.fn(),
+        getImageData: vi.fn(() => ({
+          data: new Uint8ClampedArray(4 * 4 * 4),
+        })),
+        putImageData: vi.fn(),
+      };
+      const mockCanvas = {
+        width: 0,
+        height: 0,
+        getContext: vi.fn(() => mockCtx),
+        toBlob: vi.fn((cb: (b: Blob | null) => void) => {
+          cb(new Blob(['png'], { type: 'image/png' }));
+        }),
+      };
+      vi.spyOn(document, 'createElement').mockImplementation((tag: string) => {
+        if (tag === 'canvas') return mockCanvas as unknown as HTMLCanvasElement;
+        return document.createElementNS('http://www.w3.org/1999/xhtml', tag) as HTMLElement;
+      });
+
+      const onProgress = vi.fn();
+      const result = await processorService.processImage(
+        'blob:tauri-effects',
+        makeSettings({
+          pixelSize: 1,
+          palette: 'dmg',
+          effectLayers: [{ id: 'hqx-1', type: 'hqx', enabled: true }],
+        }),
+        undefined,
+        onProgress,
+      );
+
+      expect(result).toBeTruthy();
+      expect(mockCanvas.width).toBeGreaterThan(4);
+      expect(mockCanvas.height).toBeGreaterThan(4);
+      expect(mockCtx.putImageData).toHaveBeenCalled();
+      expect(processorService.getLastColorCount()).toBe(1);
+      expect(onProgress).toHaveBeenCalledWith(0.1);
+      expect(onProgress).toHaveBeenCalledWith(0.4);
+      expect(onProgress).toHaveBeenCalledWith(0.9);
+      expect(
+        (processorService as unknown as { pendingResolvers: Map<string, unknown> }).pendingResolvers.size,
+      ).toBe(0);
 
       globalThis.Image = origImage;
       if (originalTauriInternals === undefined) {

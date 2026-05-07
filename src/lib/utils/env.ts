@@ -1,3 +1,4 @@
 /** Tauri environment detection utility */
-export const isTauri =
-  typeof window !== "undefined" && "__TAURI__" in window;
+export function isTauriRuntime(): boolean {
+  return typeof window !== 'undefined' && ('__TAURI__' in window || '__TAURI_INTERNALS__' in window);
+}

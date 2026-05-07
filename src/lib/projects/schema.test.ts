@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { defaultPostFilters } from '$lib/types';
 import { defaultProcessingSettings } from '$lib/stores/settingsStore.svelte';
 import {
+  createExportHistoryEntry,
   createProjectManifest,
   createRecentProjectEntry,
   normalizeProjectName,
@@ -90,6 +91,21 @@ describe('project schema', () => {
       lastOpenedAt: '2026-04-09T10:00:00.000Z',
       previewAssetId: 'asset-preview',
     });
+  });
+
+  it('creates export history entries with generated metadata', () => {
+    const entry = createExportHistoryEntry({
+      format: 'png',
+      width: 640,
+      height: 480,
+      createdAt: '2026-04-24T00:00:00.000Z',
+    });
+
+    expect(entry.exportId).toMatch(/^export-/);
+    expect(entry.createdAt).toBe('2026-04-24T00:00:00.000Z');
+    expect(entry.format).toBe('png');
+    expect(entry.width).toBe(640);
+    expect(entry.height).toBe(480);
   });
 
   it('creates a localized poster manifest when locale is provided', () => {

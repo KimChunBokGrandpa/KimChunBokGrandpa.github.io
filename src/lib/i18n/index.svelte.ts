@@ -18,6 +18,11 @@ export const localeLabels: Record<Locale, string> = {
 
 const storageKey = 'retro-pixel-locale';
 
+function syncDocumentLanguage(locale: Locale): void {
+  if (typeof document === 'undefined') return;
+  document.documentElement.lang = locale;
+}
+
 function loadLocale(): Locale {
   try {
     const saved = localStorage.getItem(storageKey);
@@ -30,13 +35,16 @@ function loadLocale(): Locale {
   return 'en';
 }
 
-let currentLocale = $state<Locale>(loadLocale());
+const initialLocale = loadLocale();
+syncDocumentLanguage(initialLocale);
+let currentLocale = $state<Locale>(initialLocale);
 
 /** Module-level singleton for global access */
 export const i18n = {
   get locale() { return currentLocale; },
   set locale(v: Locale) {
     currentLocale = v;
+    syncDocumentLanguage(v);
     try { localStorage.setItem(storageKey, v); } catch { /* ignore */ }
   },
   /** Translate a key, with optional {0}, {1} parameter substitution */

@@ -1,5 +1,6 @@
 import type { ContextMenuEntry } from '$lib/components/feedback/ContextMenu.svelte';
 import { buildOpenWithSection } from '$lib/shell/openWithMenu';
+import { buildShortcutLabel } from '$lib/utils/platformShortcuts';
 
 export interface PreviewContextMenuStrings {
   save: string;
@@ -27,20 +28,21 @@ export interface BuildPreviewContextMenuInput {
   actions: PreviewContextMenuActions;
   canUndo: boolean;
   canRedo: boolean;
+  canCopy: boolean;
 }
 
 export function buildPreviewContextMenu(input: BuildPreviewContextMenuInput): ContextMenuEntry[] {
-  const { strings, actions, canUndo, canRedo } = input;
+  const { strings, actions, canUndo, canRedo, canCopy } = input;
 
   const items: ContextMenuEntry[] = [
-    { label: `💾 ${strings.save}`, icon: '', action: actions.onSave },
-    { label: `📋 ${strings.copy}`, icon: '', action: actions.onCopy },
+    { label: strings.save, icon: '💾', shortcut: buildShortcutLabel(['Primary', 'S']), action: actions.onSave },
+    { label: strings.copy, icon: '📋', shortcut: buildShortcutLabel(['Primary', 'C']), action: actions.onCopy, disabled: !canCopy },
     { separator: true },
-    { label: `↔ ${strings.compare}`, icon: '', action: actions.onToggleCompare },
-    { label: `🔲 ${strings.tileMode}`, icon: '', action: actions.onToggleTileMode },
+    { label: strings.compare, icon: '⚖️', action: actions.onToggleCompare },
+    { label: strings.tileMode, icon: '⊞', action: actions.onToggleTileMode },
     { separator: true },
-    { label: `↩ ${strings.undo}`, icon: '', action: actions.onUndo, disabled: !canUndo },
-    { label: `↪ ${strings.redo}`, icon: '', action: actions.onRedo, disabled: !canRedo },
+    { label: strings.undo, icon: '↺', shortcut: buildShortcutLabel(['Primary', 'Z']), action: actions.onUndo, disabled: !canUndo },
+    { label: strings.redo, icon: '↻', shortcut: buildShortcutLabel(['Primary', 'Shift', 'Z']), action: actions.onRedo, disabled: !canRedo },
   ];
 
   if (actions.onSendToPosterMaker) {

@@ -1,11 +1,11 @@
 import { clearPaletteCachesExcept } from "../utils/colorQuantizer";
-import { applyGlitch } from "../utils/glitchEngine";
 import { applyQuantizationAsync } from "../utils/quantizerBackend";
-import { applyScaling } from "../utils/scaleEngine";
-import { getEffectWeight } from "../utils/effectRegistry";
-import { ensureBuiltInEffectsRegistered } from "../utils/effects";
+import {
+  applyEffectLayers,
+  countVisibleColors,
+  normalizeEffectLayers,
+} from "../utils/effectLayers";
 import type {
-  EffectLayer,
   ImageWorkerMessage,
   ImageWorkerResponse,
 } from "../types";
@@ -36,7 +36,6 @@ onmessage = async (e: MessageEvent<ImageWorkerMessage>) => {
   }
 
   try {
-    ensureBuiltInEffectsRegistered();
     const canvas = new OffscreenCanvas(width, height);
     const ctx = canvas.getContext("2d", {
       willReadFrequently: true,
@@ -63,66 +62,23 @@ onmessage = async (e: MessageEvent<ImageWorkerMessage>) => {
 
     postMessage({ id, type: 'progress', progress: 0.4 } as ImageWorkerResponse);
 
-    // Normalize: convert legacy glitchFilters + renderMode into unified effectLayers
-    let layers: EffectLayer[];
-    if (effectLayers && effectLayers.length > 0) {
-      layers = effectLayers.filter((l: EffectLayer) => l.enabled);
-    } else {
-      // Build layers from legacy fields for backward compatibility
-      layers = [];
-      if (glitchFilters && glitchFilters.length > 0) {
-        for (let fi = 0; fi < glitchFilters.length; fi++) {
-          const filter = glitchFilters[fi];
-          if (filter.type && filter.type !== 'none') {
-            layers.push({ id: `legacy-${fi}`, type: 'glitch', glitchType: filter.type, intensity: filter.intensity || 1, enabled: true });
-          }
-        }
-      }
-      if (renderMode === 'hqx') {
-        layers.push({ id: 'legacy-hqx', type: 'hqx', enabled: true, intensity: 1 });
-      }
-    }
-
-    // Apply effect layers with progress tracking (weights from registry)
-    const hqxWeight = 4;
-    const totalWeight = layers.reduce((sum, l) => {
-      if (l.type === 'hqx') return sum + hqxWeight;
-      const key = l.type === 'glitch' ? (l.glitchType || 'noise') : l.type;
-      return sum + getEffectWeight(key);
-    }, 0);
-    let completedWeight = 0;
-
-    for (const layer of layers) {
-      if (layer.type === 'glitch' && layer.glitchType && layer.glitchType !== 'none') {
-        processedData = applyGlitch(
-          processedData,
-          layer.glitchType,
-          layer.intensity || 1,
-          glitchSeed ?? undefined,
-        );
-      } else if (layer.type === 'hqx') {
-        processedData = applyScaling(processedData, 'hqx');
-      }
-      const key = layer.type === 'glitch' ? (layer.glitchType || 'noise') : layer.type;
-      completedWeight += layer.type === 'hqx' ? hqxWeight : getEffectWeight(key);
-      const layerProgress = totalWeight > 0 ? completedWeight / totalWeight : 1;
-      postMessage({ id, type: 'progress', progress: 0.4 + 0.5 * layerProgress } as ImageWorkerResponse);
-    }
+    const layers = normalizeEffectLayers({ effectLayers, glitchFilters, renderMode });
+    processedData = applyEffectLayers(processedData, {
+      layers,
+      glitchSeed,
+      onProgress: (layerProgress) => {
+        postMessage({ id, type: 'progress', progress: 0.4 + 0.5 * layerProgress } as ImageWorkerResponse);
+      },
+    });
 
     postMessage({ id, type: 'progress', progress: 0.9 } as ImageWorkerResponse);
 
-    // Count unique colors (sample for large images to reduce overhead)
-    const colorSet = new Set<number>();
-    const pd = processedData.data;
-    const totalPixels = pd.length / 4;
-    const sampleThreshold = 500_000;
-    const step = totalPixels > sampleThreshold ? Math.ceil(totalPixels / sampleThreshold) * 4 : 4;
-    for (let i = 0; i < pd.length; i += step) {
-      if (pd[i + 3] < 128) continue; // skip transparent
-      colorSet.add((pd[i] << 16) | (pd[i + 1] << 8) | pd[i + 2]);
-    }
-
-    const response: ImageWorkerResponse = { id, type: 'complete', processedData, colorCount: colorSet.size };
+    const response: ImageWorkerResponse = {
+      id,
+      type: 'complete',
+      processedData,
+      colorCount: countVisibleColors(processedData),
+    };
     postMessage(response, { transfer: [processedData.data.buffer] });
   } catch (error: unknown) {
     const message =

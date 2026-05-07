@@ -79,6 +79,7 @@ describe('createImageProcessingStore', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockProcessorService.getLastCanvas.mockReturnValue(null);
     objectUrlCounter = 0;
     store = createImageProcessingStore();
   });
@@ -278,6 +279,51 @@ describe('createImageProcessingStore', () => {
       );
     });
 
+    it('records successful pixel lab exports in the project manifest', async () => {
+      const adapter = createInMemoryProjectStorageAdapter();
+      const projectBackedStore = createImageProcessingStore(adapter);
+      const canvas = { width: 320, height: 200 } as HTMLCanvasElement;
+      mockProcessorService.getLastCanvas.mockReturnValue(canvas);
+
+      projectBackedStore.loadImage(new File(['pixels'], 'session.png', { type: 'image/png' }));
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+
+      projectBackedStore.setFormat('webp');
+      const result = await projectBackedStore.save();
+
+      expect(result).toBe('saved-file.png');
+      const manifest = await adapter.loadProject(projectBackedStore.currentProjectId!);
+      expect(manifest?.exportHistory).toHaveLength(1);
+      expect(manifest?.exportHistory[0]).toMatchObject({
+        format: 'webp',
+        width: 320,
+        height: 200,
+      });
+
+      projectBackedStore.destroy();
+    });
+
+    it('does not record an export when save is cancelled', async () => {
+      vi.mocked(saveImage).mockResolvedValueOnce('');
+      const adapter = createInMemoryProjectStorageAdapter();
+      const projectBackedStore = createImageProcessingStore(adapter);
+
+      projectBackedStore.loadImage(new File(['pixels'], 'session.png', { type: 'image/png' }));
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+
+      const result = await projectBackedStore.save();
+
+      expect(result).toBe('');
+      const manifest = await adapter.loadProject(projectBackedStore.currentProjectId!);
+      expect(manifest?.exportHistory).toEqual([]);
+
+      projectBackedStore.destroy();
+    });
+
     it('share delegates to shareImage and applies CRT canvas when enabled', async () => {
       const canvas = {} as HTMLCanvasElement;
       mockProcessorService.getLastCanvas.mockReturnValue(canvas);
@@ -423,6 +469,7 @@ describe('createImageProcessingStore', () => {
         saturation: 108,
         hueRotate: 18,
       });
+      expect(manifest.exportHistory).toEqual([]);
 
       projectBackedStore.destroy();
     });

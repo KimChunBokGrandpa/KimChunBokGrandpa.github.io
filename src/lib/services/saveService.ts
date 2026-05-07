@@ -4,7 +4,7 @@
  * Works in both Tauri (native dialog) and web (download) environments.
  */
 
-import { isTauri } from "../utils/env";
+import { isTauriRuntime } from "../utils/env";
 import { i18n } from "$lib/i18n/index.svelte";
 
 export type SaveFormat = "png" | "jpeg" | "webp";
@@ -207,7 +207,7 @@ export async function saveImage(
   const ext = extMap[options.format];
   const filename = resolveFilename(options);
 
-  if (isTauri) {
+  if (isTauriRuntime()) {
     const { save } = await import("@tauri-apps/plugin-dialog");
     const { writeFile } = await import("@tauri-apps/plugin-fs");
     const filePath = await save({

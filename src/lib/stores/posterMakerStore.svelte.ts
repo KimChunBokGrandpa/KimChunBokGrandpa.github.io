@@ -2,11 +2,13 @@ import type { CrossAppHandoffEnvelopeV1 } from '$lib/handoffs/contracts';
 import { i18n } from '$lib/i18n/index.svelte';
 import {
   createAssetId,
+  createExportHistoryEntry,
   createProjectId,
   createProjectManifest,
   getDefaultProjectName,
   timestampNow,
   type AppId,
+  type ExportHistoryEntry,
   type LocalAssetRefV1,
   type PosterMakerLayerV1,
   type PosterMakerProjectStateV1,
@@ -34,6 +36,8 @@ import {
   type PosterOverlayStyleId,
   type PosterStickerStyleId,
 } from '$lib/poster/styles';
+
+const maxExportHistoryEntries = 20;
 
 function deriveTitleFromFilename(filename: string | null | undefined): string | null {
   const trimmed = filename?.trim();
@@ -94,6 +98,7 @@ export function createPosterMakerStore(
   let sourceContext = $state<ProjectSourceContextV1 | null>(null);
   let initialized = $state(false);
   let recentProjects = $state<RecentProjectEntryV1[]>([]);
+  let exportHistory = $state<ExportHistoryEntry[]>([]);
 
   function isBlankDocument(): boolean {
     return !importedAssetId
@@ -196,10 +201,6 @@ export function createPosterMakerStore(
       layers,
       sourceContext: sourceContext ?? undefined,
       activeLayerId: importedAssetId ? 'image-layer' : 'title-layer',
-      exportDefaults: {
-        format: 'png',
-        quality: 0.92,
-      },
     };
   }
 
@@ -234,11 +235,13 @@ export function createPosterMakerStore(
       createdAt: existingManifest?.createdAt,
       updatedAt: now,
       lastOpenedAt: now,
-      exportHistory: existingManifest?.exportHistory ?? [],
-      shellState: existingManifest?.shellState,
+      exportHistory: exportHistory.length > 0
+        ? exportHistory
+        : existingManifest?.exportHistory ?? [],
       programState: buildProjectState(),
     });
     projectId = manifest.projectId;
+    exportHistory = manifest.exportHistory.map((entry) => ({ ...entry }));
     initialized = true;
     const saved = await storageAdapter.saveProject(manifest);
     await refreshRecentProjects();
@@ -256,6 +259,7 @@ export function createPosterMakerStore(
     overlayStyleId = defaultPosterOverlayStyleId;
     stickerStyleId = defaultPosterStickerStyleId;
     sourceContext = null;
+    exportHistory = [];
     initialized = true;
   }
 
@@ -286,6 +290,7 @@ export function createPosterMakerStore(
     }
 
     projectId = reopenedManifest.projectId;
+    exportHistory = reopenedManifest.exportHistory.map((entry) => ({ ...entry }));
     activePresetId = isPosterPresetId(programState.documentPresetId)
       ? programState.documentPresetId
       : defaultPosterPresetId;
@@ -420,6 +425,14 @@ export function createPosterMakerStore(
     await persist();
   }
 
+  async function recordExport(input: { format: ExportHistoryEntry['format']; width?: number; height?: number }) {
+    exportHistory = [
+      createExportHistoryEntry(input),
+      ...exportHistory,
+    ].slice(0, maxExportHistoryEntries);
+    return persist();
+  }
+
   async function applyHandoff(envelope: CrossAppHandoffEnvelopeV1) {
     const resolved = await storageAdapter.resolveAsset(envelope.assetId);
     if (!resolved) return false;
@@ -475,6 +488,9 @@ export function createPosterMakerStore(
     get recentProjects() {
       return recentProjects;
     },
+    get exportHistory() {
+      return exportHistory;
+    },
     isBlankDocument,
     currentProjectName,
     buildProjectState,
@@ -494,6 +510,7 @@ export function createPosterMakerStore(
     clearImportedImage,
     createNewDocument,
     resetCurrentDocument,
+    recordExport,
     applyHandoff,
   };
 }

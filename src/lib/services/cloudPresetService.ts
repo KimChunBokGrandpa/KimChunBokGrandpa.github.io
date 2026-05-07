@@ -26,7 +26,6 @@ export interface CloudPresetRepository {
   publish(input: PublishCloudPresetInput): Promise<CloudPresetRecord>;
   listOwn(): Promise<CloudPresetRecord[]>;
   listPublic(): Promise<CloudPresetRecord[]>;
-  getByShortId(shortId: string): Promise<CloudPresetRecord | null>;
   applyByShortId(shortId: string): Promise<CloudPresetRecord | null>;
 }
 
@@ -114,11 +113,6 @@ class LocalCloudPresetRepository implements CloudPresetRepository {
       .sort((a, b) => (b.applyCount - a.applyCount) || (b.updatedAt - a.updatedAt));
   }
 
-  async getByShortId(shortId: string): Promise<CloudPresetRecord | null> {
-    const records = await this.listAll();
-    return records.find((record) => record.shortId === shortId) ?? null;
-  }
-
   async applyByShortId(shortId: string): Promise<CloudPresetRecord | null> {
     const records = await this.listAll();
     const match = records.find((record) => record.shortId === shortId);
@@ -165,10 +159,6 @@ export async function listPublicCloudPresets(): Promise<CloudPresetRecord[]> {
 
 export async function listOwnCloudPresets(): Promise<CloudPresetRecord[]> {
   return getCloudPresetRepository().listOwn();
-}
-
-export async function getCloudPresetByShortId(shortId: string): Promise<CloudPresetRecord | null> {
-  return getCloudPresetRepository().getByShortId(shortId);
 }
 
 export async function applyCloudPresetByShortId(shortId: string): Promise<CloudPresetRecord | null> {

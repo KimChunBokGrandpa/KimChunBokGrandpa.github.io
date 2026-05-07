@@ -1,6 +1,6 @@
-import type { WindowState, WindowConfig, WindowId } from "$lib/types";
-import { i18n } from "$lib/i18n/index.svelte";
-import type { TranslationKey } from "$lib/i18n/en";
+import type { WindowState, WindowConfig, WindowId } from '$lib/types';
+import { i18n } from '$lib/i18n/index.svelte';
+import type { TranslationKey } from '$lib/i18n/en';
 
 const titleKeys: Record<WindowId, TranslationKey> = {
   preview: 'win_preview',
@@ -26,29 +26,26 @@ export function getShellProgramSummary(id: WindowId): string {
   return i18n.t(shellProgramSummaryKeys[id] ?? titleKeys[id]);
 }
 
-export function getShellProgramLaunchLabel(id: WindowId): string {
-  return `${getWindowTitle(id)} — ${getShellProgramSummary(id)}`;
-}
-
 export function getDesktopWindowSummary(id: WindowId): string {
   return getShellProgramSummary(id);
 }
 
 /** Desktop window definitions */
 export const windowConfigs: WindowConfig[] = [
-  { id: "preview", icon: "🖼️", desktop: true },
-  { id: "poster_maker", icon: "📰", desktop: true },
-  { id: "retrocam", icon: "📷", desktop: true },
-  { id: "settings", icon: "⚙️", desktop: false },
-  { id: "gallery", icon: "🎨", desktop: false },
-  { id: "batch", icon: "📦", desktop: false },
-  { id: "history", icon: "⏱️", desktop: false },
+  { id: 'preview', icon: '🖼️', desktop: true },
+  { id: 'poster_maker', icon: '📰', desktop: true },
+  { id: 'retrocam', icon: '📷', desktop: true },
+  { id: 'settings', icon: '⚙️', desktop: false },
+  { id: 'gallery', icon: '🎨', desktop: false },
+  { id: 'batch', icon: '📦', desktop: false },
+  { id: 'history', icon: '⏱️', desktop: false },
 ];
 
 export const desktopWindowConfigs = windowConfigs.filter((config) => config.desktop);
+export const mobileWindowOrder = windowConfigs.map((config) => config.id) as WindowId[];
 
-const windowIds = windowConfigs.map((config) => config.id) as WindowId[];
-const storageKey = "retro-pixel-window-layout";
+const windowIds = mobileWindowOrder;
+const storageKey = 'retro-pixel-window-layout';
 
 interface SavedLayout {
   x: number; y: number; w: number; h: number;
@@ -105,7 +102,7 @@ export function createWindowStore() {
 
   let wins = $state<Record<WindowId, WindowState>>({
     settings: {
-      mode: "windowed",
+      mode: 'windowed',
       x: saved?.settings?.x ?? 30,
       y: saved?.settings?.y ?? 30,
       w: saved?.settings?.w ?? 340,
@@ -114,7 +111,7 @@ export function createWindowStore() {
       defaults: { x: 30, y: 30, w: 340, h: 480 },
     },
     preview: {
-      mode: "windowed",
+      mode: 'windowed',
       x: saved?.preview?.x ?? 400,
       y: saved?.preview?.y ?? 30,
       w: saved?.preview?.w ?? 600,
@@ -123,7 +120,7 @@ export function createWindowStore() {
       defaults: { x: 400, y: 30, w: 600, h: 500 },
     },
     poster_maker: {
-      mode: "closed",
+      mode: 'closed',
       x: saved?.poster_maker?.x ?? 160,
       y: saved?.poster_maker?.y ?? 70,
       w: saved?.poster_maker?.w ?? 760,
@@ -132,7 +129,7 @@ export function createWindowStore() {
       defaults: { x: 160, y: 70, w: 760, h: 560 },
     },
     retrocam: {
-      mode: "closed",
+      mode: 'closed',
       x: saved?.retrocam?.x ?? 220,
       y: saved?.retrocam?.y ?? 90,
       w: saved?.retrocam?.w ?? 760,
@@ -141,7 +138,7 @@ export function createWindowStore() {
       defaults: { x: 220, y: 90, w: 760, h: 520 },
     },
     gallery: {
-      mode: "closed",
+      mode: 'closed',
       x: saved?.gallery?.x ?? 100,
       y: saved?.gallery?.y ?? 60,
       w: saved?.gallery?.w ?? 480,
@@ -150,7 +147,7 @@ export function createWindowStore() {
       defaults: { x: 100, y: 60, w: 480, h: 460 },
     },
     batch: {
-      mode: "closed",
+      mode: 'closed',
       x: saved?.batch?.x ?? 150,
       y: saved?.batch?.y ?? 40,
       w: saved?.batch?.w ?? 520,
@@ -159,7 +156,7 @@ export function createWindowStore() {
       defaults: { x: 150, y: 40, w: 520, h: 440 },
     },
     history: {
-      mode: "closed",
+      mode: 'closed',
       x: saved?.history?.x ?? 50,
       y: saved?.history?.y ?? 60,
       w: saved?.history?.w ?? 280,
@@ -169,7 +166,7 @@ export function createWindowStore() {
     },
   });
 
-  let focusedWindow = $state<WindowId>("preview");
+  let focusedWindow = $state<WindowId>('preview');
 
   function focusWindow(id: WindowId) {
     const sorted = windowIds.slice().sort((a, b) => wins[a].z - wins[b].z);
@@ -190,15 +187,15 @@ export function createWindowStore() {
 
   function openWindow(id: WindowId) {
     const mode = wins[id].mode;
-    if (mode === "closed" || mode === "minimized") {
-      wins[id].mode = "windowed";
+    if (mode === 'closed' || mode === 'minimized') {
+      wins[id].mode = 'windowed';
     }
     focusWindow(id);
     saveLayout(wins);
   }
 
   function closeAndReset(id: WindowId) {
-    wins[id].mode = "closed";
+    wins[id].mode = 'closed';
     const def = wins[id].defaults;
     wins[id].x = def.x;
     wins[id].y = def.y;
@@ -211,7 +208,16 @@ export function createWindowStore() {
 
   /** Title-bar X button: close only, keep position/size */
   function close(id: WindowId) {
-    wins[id].mode = "closed";
+    wins[id].mode = 'closed';
+    if (focusedWindow === id) {
+      focusTopVisibleWindow(id);
+    }
+    saveLayout(wins);
+  }
+
+  function minimize(id: WindowId) {
+    if (wins[id].mode === 'closed') return;
+    wins[id].mode = 'minimized';
     if (focusedWindow === id) {
       focusTopVisibleWindow(id);
     }
@@ -223,8 +229,7 @@ export function createWindowStore() {
     if (mode === "minimized") {
       openWindow(id);
     } else if (focusedWindow === id) {
-      wins[id].mode = "minimized";
-      focusTopVisibleWindow(id);
+      minimize(id);
     } else {
       focusWindow(id);
     }
@@ -241,6 +246,7 @@ export function createWindowStore() {
     openWindow,
     closeAndReset,
     close,
+    minimize,
     handleTaskbarClick,
     /** Persist current layout to localStorage (debounced to reduce writes during drag/resize) */
     persistLayout: (() => {

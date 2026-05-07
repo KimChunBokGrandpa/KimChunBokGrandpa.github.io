@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { browser } from '$app/environment';
   import { getPaletteName } from '$lib/utils/palettes';
   import { presets, type Preset } from '$lib/utils/presets';
   import type { DitherType, GlitchFilter, ProcessingSettings, PostProcessFilters } from '$lib/types';
@@ -6,8 +7,10 @@
   import { defaultPostFilters } from '$lib/types';
   import type { SaveFormat } from '$lib/services/saveService';
   import { i18n } from '$lib/i18n/index.svelte';
-  import PresetManager from './PresetManager.svelte';
+  import { replacePrimaryModifierShortcutLabel } from '$lib/utils/platformShortcuts';
   import PostProcessFiltersComponent from './PostProcessFilters.svelte';
+
+  type PresetManagerComponent = typeof import('./PresetManager.svelte').default;
 
   // Dithering options
   const ditherOptions = [
@@ -80,6 +83,21 @@
     onChange(settings);
   }
 
+  function setPixelSize(pixelSize: number) {
+    settings.pixelSize = Math.max(1, Math.min(10, pixelSize));
+    update();
+  }
+
+  function setPalette(palette: string) {
+    settings.palette = palette;
+    update();
+  }
+
+  function setDitherType(ditherType: DitherType) {
+    settings.ditherType = ditherType;
+    update();
+  }
+
   function matchesPreset(preset: Preset): boolean {
     if (settings.pixelSize !== preset.pixelSize) return false;
     if (settings.palette !== preset.palette) return false;
@@ -121,6 +139,8 @@
   // ─── Tab System ───
   type TabId = 'basic' | 'effects' | 'adjust' | 'presets';
   let activeTab = $state<TabId>('basic');
+  let lazyPresetManager = $state<PresetManagerComponent | null>(null);
+  let PresetManager = $derived(lazyPresetManager);
 
   const tabs: { id: TabId; labelKey: 'tab_basic' | 'tab_effects' | 'tab_adjust' | 'tab_presets'; icon: string }[] = [
     { id: 'basic', labelKey: 'tab_basic', icon: '🎨' },
@@ -132,49 +152,102 @@
   // Badge indicators for tabs
   let effectsBadge = $derived(activeEffectCount + (settings.crtEffect !== 'none' ? 1 : 0));
   let adjustBadge = $derived(hasPostFilterChanges);
+  let saveShortcutHint = $derived(replacePrimaryModifierShortcutLabel(i18n.t('shortcut_hint_save')));
+
+  async function ensurePresetManagerLoaded() {
+    if (lazyPresetManager) return lazyPresetManager;
+
+    const mod = await import('./PresetManager.svelte');
+    lazyPresetManager = mod.default;
+    return lazyPresetManager;
+  }
+
+  function prefetchTab(tabId: TabId) {
+    if (tabId === 'presets') {
+      void ensurePresetManagerLoaded();
+    }
+  }
+
+  $effect(() => {
+    if (activeTab !== 'presets' || lazyPresetManager) return;
+    void ensurePresetManagerLoaded();
+  });
+
+  $effect(() => {
+    if (!browser || lazyPresetManager) return;
+
+    const warmPresetManager = () => {
+      void ensurePresetManagerLoaded();
+    };
+    const requestIdle = globalThis.requestIdleCallback?.bind(globalThis);
+    const cancelIdle = globalThis.cancelIdleCallback?.bind(globalThis);
+
+    if (requestIdle) {
+      const idleId = requestIdle(warmPresetManager, { timeout: 1500 });
+      return () => cancelIdle?.(idleId);
+    }
+
+    const timeoutId = globalThis.setTimeout(warmPresetManager, 1200);
+    return () => globalThis.clearTimeout(timeoutId);
+  });
 </script>
 
 <div class="cp-root">
   <!-- ═══ Top Bar: Auto-Process + Settings Summary ═══ -->
-  <div class="cp-topbar">
+  <div class="cp-topbar w98-toolbar">
     <div class="topbar-left">
-      <label class="auto-toggle" title={i18n.t('auto_process_label')}>
-        <input type="checkbox" bind:checked={autoProcess} />
+      <label class="auto-toggle w98-checkbox-label" title={i18n.t('auto_process_label')}>
+        <input class="w98-checkbox" type="checkbox" bind:checked={autoProcess} />
         <span>{i18n.t('auto_process_short')}</span>
       </label>
       {#if !autoProcess}
-        <button class="apply-now-btn-inline" class:has-changes={hasUnappliedChanges} onclick={() => onApplyNow?.()} disabled={!hasImage}>
+        <button
+          class="apply-now-btn-inline w98-inline-button w98-button--thin"
+          class:has-changes={hasUnappliedChanges}
+          onclick={() => onApplyNow?.()}
+          disabled={!hasImage}
+        >
           {#if hasUnappliedChanges}<span class="unsaved-dot"></span>{/if}
-          ▶ {i18n.t('apply_now')}
+          <span class="w98-structural-glyph" aria-hidden="true">▶</span>
+          <span>{i18n.t('apply_now')}</span>
           {#if hasUnappliedChanges}<span class="unsaved-badge">{i18n.t('unsaved_changes')}</span>{/if}
         </button>
       {/if}
     </div>
     <div class="topbar-summary">
-      <span class="summary-badge" title={i18n.t('pixel_size')}>📌 {settings.pixelSize}px</span>
-      <span class="summary-badge" title={i18n.t('palette')}>🎨 {getPaletteName(settings.palette)}</span>
-      {#if isCustom}<span class="summary-badge custom-badge">{i18n.t('custom')}</span>{/if}
+      <span class="summary-badge w98-chip" title={i18n.t('pixel_size')}>
+        <span class="w98-emoji" aria-hidden="true">📌</span>
+        <span>{settings.pixelSize}px</span>
+      </span>
+      <span class="summary-badge w98-chip" title={i18n.t('palette')}>
+        <span class="w98-emoji" aria-hidden="true">🎨</span>
+        <span>{getPaletteName(settings.palette)}</span>
+      </span>
+      {#if isCustom}<span class="summary-badge custom-badge w98-chip w98-chip--active">{i18n.t('custom')}</span>{/if}
     </div>
   </div>
 
   <!-- ═══ Tab Bar ═══ -->
-  <div class="cp-tab-bar" role="tablist">
+  <div class="cp-tab-bar w98-tab-strip" role="tablist">
     {#each tabs as tab}
       <button
-        class="cp-tab"
+        class="cp-tab w98-tab-button"
         class:cp-tab-active={activeTab === tab.id}
+        class:w98-tab-button--active={activeTab === tab.id}
         role="tab"
         aria-selected={activeTab === tab.id}
         aria-label={i18n.t(tab.labelKey)}
+        onpointerenter={() => prefetchTab(tab.id)}
+        onfocus={() => prefetchTab(tab.id)}
         onclick={() => { activeTab = tab.id; }}
       >
-        <span class="tab-icon">{tab.icon}</span>
+        <span class="tab-icon w98-emoji w98-tab-icon">{tab.icon}</span>
         <span class="tab-label">{i18n.t(tab.labelKey)}</span>
         {#if tab.id === 'effects' && effectsBadge > 0}
-          <span class="tab-badge">{effectsBadge}</span>
+          <span class="tab-badge w98-tab-badge">{effectsBadge}</span>
         {/if}
         {#if tab.id === 'adjust' && adjustBadge}
-          <span class="tab-badge">●</span>
+          <span class="tab-badge w98-tab-badge">●</span>
         {/if}
       </button>
     {/each}
@@ -185,12 +258,12 @@
     <!-- ─── Basic Tab ─── -->
     {#if activeTab === 'basic'}
       <div class="tab-panel" role="tabpanel">
-        <fieldset class="cp-section">
+        <fieldset class="cp-section w98-fieldset">
           <legend>{i18n.t('pixel_size')}: {settings.pixelSize}px</legend>
           <div class="field-row slider-row">
             <span class="slider-label">1</span>
             <button
-              class="stepper-btn"
+              class="stepper-btn w98-inline-button w98-button--thin"
               onclick={() => { settings.pixelSize = Math.max(1, settings.pixelSize - 1); update(); }}
               aria-label={i18n.t('decrease_pixel_size')}
             >-</button>
@@ -200,15 +273,15 @@
               max="10"
               step="1"
               value={settings.pixelSize}
+              class="slider-input w98-range"
               oninput={(e) => {
                 settings.pixelSize = Number((e.currentTarget as HTMLInputElement).value);
                 update();
               }}
-              class="slider-input"
               aria-label={i18n.t('pixel_size')}
             />
             <button
-              class="stepper-btn"
+              class="stepper-btn w98-inline-button w98-button--thin"
               onclick={() => { settings.pixelSize = Math.min(10, settings.pixelSize + 1); update(); }}
               aria-label={i18n.t('increase_pixel_size')}
             >+</button>
@@ -216,10 +289,10 @@
           </div>
         </fieldset>
 
-        <fieldset class="cp-section">
+        <fieldset class="cp-section w98-fieldset">
           <legend>{i18n.t('color_quant')}</legend>
           <div class="field-row">
-            <button class="palette-btn" onclick={onOpenGallery}>
+            <button class="palette-btn w98-inline-button w98-button--thin" onclick={onOpenGallery}>
               <span><b>{i18n.t('palette')}:</b> {getPaletteName(settings.palette)}</span>
               <span class="palette-arrow">{i18n.t('select')}</span>
             </button>
@@ -227,7 +300,7 @@
           <div class="quick-palette-row">
             {#each quickPalettes as qp}
               <button
-                class="quick-palette-chip"
+                class="quick-palette-chip w98-inline-button w98-button--thin"
                 data-testid={"quick-palette-" + qp.id}
                 class:preset-active={settings.palette === qp.id}
                 onclick={() => { settings.palette = qp.id; update(); }}
@@ -235,7 +308,7 @@
               >
                 <span class="qp-swatches">
                   {#each qp.preview as color}
-                    <span class="qp-dot" style="background:{color}"></span>
+                    <span class="qp-dot w98-color-swatch w98-color-swatch--tiny" style="background:{color}"></span>
                   {/each}
                 </span>
                 <span class="qp-label">{qp.shortName}</span>
@@ -248,7 +321,7 @@
             {#each ditherOptions as opt}
               <button
                 class:preset-active={settings.ditherType === opt.id}
-                class="render-btn"
+                class="render-btn w98-inline-button w98-button--thin"
                 onclick={() => { settings.ditherType = opt.id as DitherType; update(); }}
                 title={i18n.t(opt.titleKey)}
               >
@@ -259,10 +332,11 @@
         </fieldset>
 
         <!-- Oklab color space toggle -->
-        <fieldset>
+        <fieldset class="cp-section cp-section--compact w98-fieldset">
           <legend>{i18n.t('color_space')}</legend>
           <label class="oklab-toggle">
             <input
+              class="w98-checkbox"
               type="checkbox"
               checked={settings.useOklab ?? false}
               onchange={(e) => { settings.useOklab = (e.target as HTMLInputElement).checked; update(); }}
@@ -284,17 +358,104 @@
 
     <!-- ─── Presets Tab ─── -->
     {:else if activeTab === 'presets'}
-      <PresetManager bind:settings {imageSrc} onChange={update} onError={onError} />
+      <div class="tab-panel" role="tabpanel">
+        <fieldset
+          class="cp-section cp-preset-tune w98-fieldset"
+          data-testid="preset-tune-strip"
+        >
+          <legend>{i18n.t('quick_tune')}</legend>
+
+          <div class="preset-tune-grid">
+            <div class="preset-tune-control">
+              <span class="preset-tune-label">{i18n.t('pixel_size')}</span>
+              <div class="preset-stepper">
+                <button
+                  class="stepper-btn w98-inline-button w98-button--thin"
+                  data-testid="preset-tune-pixel-decrease"
+                  onclick={() => setPixelSize(settings.pixelSize - 1)}
+                  aria-label={i18n.t('decrease_pixel_size')}
+                >-</button>
+                <span class="preset-tune-value">{settings.pixelSize}px</span>
+                <button
+                  class="stepper-btn w98-inline-button w98-button--thin"
+                  data-testid="preset-tune-pixel-increase"
+                  onclick={() => setPixelSize(settings.pixelSize + 1)}
+                  aria-label={i18n.t('increase_pixel_size')}
+                >+</button>
+              </div>
+            </div>
+
+            <button
+              class="palette-btn preset-gallery-btn w98-inline-button w98-button--thin"
+              data-testid="preset-tune-palette-gallery"
+              onclick={onOpenGallery}
+            >
+              <span><b>{i18n.t('palette')}:</b> {getPaletteName(settings.palette)}</span>
+              <span class="palette-arrow">{i18n.t('select')}</span>
+            </button>
+          </div>
+
+          <div class="quick-palette-row preset-tune-palettes">
+            {#each quickPalettes as qp}
+              <button
+                class="quick-palette-chip w98-inline-button w98-button--thin"
+                data-testid={"preset-tune-palette-" + qp.id}
+                class:preset-active={settings.palette === qp.id}
+                onclick={() => setPalette(qp.id)}
+                title={getPaletteName(qp.id)}
+              >
+                <span class="qp-swatches">
+                  {#each qp.preview as color}
+                    <span class="qp-dot w98-color-swatch w98-color-swatch--tiny" style="background:{color}"></span>
+                  {/each}
+                </span>
+                <span class="qp-label">{qp.shortName}</span>
+              </button>
+            {/each}
+          </div>
+
+          <div class="section-label">{i18n.t('dithering')}:</div>
+          <div class="field-row render-row preset-tune-dither">
+            {#each ditherOptions as opt}
+              <button
+                class:preset-active={settings.ditherType === opt.id}
+                class="render-btn w98-inline-button w98-button--thin"
+                data-testid={"preset-tune-dither-" + opt.id}
+                onclick={() => setDitherType(opt.id as DitherType)}
+                title={i18n.t(opt.titleKey)}
+              >
+                {i18n.t(opt.labelKey)}
+              </button>
+            {/each}
+          </div>
+        </fieldset>
+
+        {#if PresetManager}
+          <PresetManager bind:settings {imageSrc} onChange={update} onError={onError} />
+        {:else}
+          <div
+            class="cp-lazy-panel w98-status-panel"
+            data-testid="preset-manager-loading"
+            role="status"
+            aria-live="polite"
+          >
+            <div class="cp-lazy-icon w98-emoji" aria-hidden="true">📋</div>
+            <div class="w98-section-title">{i18n.t('loading')}</div>
+            <div class="cp-lazy-title">{i18n.t('tab_presets')}</div>
+            <div class="cp-lazy-summary w98-quiet-copy">{i18n.t('presets')}</div>
+          </div>
+        {/if}
+      </div>
     {/if}
   </div>
 
   <!-- ═══ Sticky Save Bar ═══ -->
-  <div class="cp-save-bar">
+  <div class="cp-save-bar w98-toolbar">
     <div class="field-row format-row">
           {#each formatOptions as opt}
         <button
           class:preset-active={saveFormat === opt.id}
-          class="format-btn"
+          class="format-btn w98-inline-button w98-button--thin"
           onclick={() => onFormatChange?.(opt.id as SaveFormat)}
         >{opt.label}</button>
       {/each}
@@ -307,52 +468,56 @@
           step="0.05"
           value={saveQuality}
           oninput={(e) => onQualityChange?.(parseFloat((e.target as HTMLInputElement).value))}
-          class="slider-input quality-slider"
+          class="slider-input quality-slider w98-range"
           aria-label={i18n.t('quality')}
         />
       {/if}
     </div>
     <div class="field-row save-row">
       <button
-        class="save-btn"
+        class="save-btn w98-button"
         data-testid="save-image-button"
         class:save-ready={hasProcessedImage}
         onclick={onSave}
         disabled={!hasImage}
-        title={!hasImage ? i18n.t('save_no_image') : i18n.t('shortcut_hint_save')}
+        title={!hasImage ? i18n.t('save_no_image') : saveShortcutHint}
       >
-        💾 {i18n.t('save_as')}
+        <span class="w98-emoji" aria-hidden="true">💾</span>
+        <span>{i18n.t('save_as')}</span>
       </button>
       {#if onShare}
         <button
-          class="save-btn share-btn"
+          class="save-btn share-btn w98-button"
           data-testid="share-image-button"
           onclick={onShare}
           disabled={!hasImage}
           title={i18n.t('share_image')}
         >
-          📤 {i18n.t('share_image')}
+          <span class="w98-emoji" aria-hidden="true">📤</span>
+          <span>{i18n.t('share_image')}</span>
         </button>
       {/if}
       {#if onExportSvg}
         <button
-          class="save-btn svg-btn"
+          class="save-btn svg-btn w98-button"
           onclick={onExportSvg}
           disabled={!hasImage}
           title={i18n.t('export_svg')}
         >
-          🖼 SVG
+          <span class="w98-emoji" aria-hidden="true">🖼️</span>
+          <span>SVG</span>
         </button>
       {/if}
       {#if onSendToPosterMaker}
         <button
-          class="save-btn poster-btn"
+          class="save-btn poster-btn w98-button"
           data-testid="send-to-poster-maker-button"
           onclick={onSendToPosterMaker}
           disabled={!hasProcessedImage}
           title={i18n.t('send_to_poster_maker')}
         >
-          📰 {i18n.t('send_to_poster_maker')}
+          <span class="w98-emoji" aria-hidden="true">📰</span>
+          <span>{i18n.t('send_to_poster_maker')}</span>
         </button>
       {/if}
     </div>
@@ -367,10 +532,9 @@
     gap: 0;
   }
   .cp-root :global(.preset-active) {
-    box-shadow: var(--w98-inset);
+    box-shadow: var(--w98-inset-thin);
     font-weight: bold;
-    background: #d0d8e0;
-    border-color: var(--w98-highlight);
+    background: var(--w98-surface-active);
   }
 
   /* ===== Top Bar ===== */
@@ -378,11 +542,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 4px 2px;
     margin-bottom: 4px;
-    background: var(--w98-surface-active);
-    border: 1px solid;
-    border-color: var(--w98-shadow-light) var(--w98-shadow-808) var(--w98-shadow-808) var(--w98-shadow-light);
     gap: 4px;
     flex-wrap: wrap;
   }
@@ -404,29 +564,16 @@
   }
   .apply-now-btn-inline {
     font-size: var(--w98-font-size-sm);
-    padding: 2px 8px;
-    font-weight: bold;
-    background: var(--w98-surface);
     color: var(--w98-highlight);
-    cursor: pointer;
     white-space: nowrap;
-    box-shadow: var(--w98-outset-thin);
-  }
-  .apply-now-btn-inline:hover {
-    background: var(--w98-surface-active);
-  }
-  .apply-now-btn-inline:active {
-    box-shadow: var(--w98-inset-thin);
   }
   .apply-now-btn-inline:disabled {
-    color: var(--w98-shadow-808);
-    cursor: not-allowed;
     color: var(--w98-text-disabled);
   }
   .apply-now-btn-inline.has-changes {
-    background: var(--w98-color-error-light);
-    color: var(--w98-color-error);
-    border: 1px solid var(--w98-color-error);
+    background: var(--w98-surface-active);
+    box-shadow: var(--w98-inset-thin);
+    color: var(--w98-text);
   }
   .unsaved-dot {
     display: inline-block;
@@ -453,54 +600,25 @@
   }
   .summary-badge {
     font-size: var(--w98-font-size-base);
-    padding: 1px 5px;
-    background: #e8e4dc;
-    border: 1px solid var(--w98-surface);
     white-space: nowrap;
   }
   .custom-badge {
-    background: var(--w98-highlight);
-    color: #fff;
     font-weight: bold;
-    border-color: var(--w98-highlight);
   }
 
   /* ===== Tab Bar ===== */
   .cp-tab-bar {
-    display: flex;
-    gap: 0;
     margin-top: 4px;
-    border-bottom: 2px solid var(--w98-shadow-808);
-    padding: 0 2px;
   }
   .cp-tab {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 3px;
-    padding: 4px 2px;
     font-size: var(--w98-font-size-sm);
     font-weight: bold;
-    background: var(--w98-surface-active);
-    border: 1px solid var(--w98-shadow-808);
-    border-bottom: none;
-    margin-bottom: -2px;
-    cursor: pointer;
-    position: relative;
-    color: var(--w98-text-secondary);
-  }
-  .cp-tab:hover {
-    background: var(--w98-surface);
   }
   .cp-tab-active {
-    background: var(--w98-surface);
     color: var(--w98-text);
-    border-color: var(--w98-shadow-808) var(--w98-shadow-808) var(--w98-surface);
-    z-index: 1;
   }
   .tab-icon {
-    font-size: var(--w98-font-size-base);
+    flex-shrink: 0;
   }
   .tab-label {
     white-space: nowrap;
@@ -511,13 +629,7 @@
     }
   }
   .tab-badge {
-    font-size: var(--w98-font-size-micro);
-    background: var(--w98-highlight);
-    color: #fff;
-    padding: 0 4px;
-    line-height: 12px;
-    min-width: 12px;
-    text-align: center;
+    flex-shrink: 0;
   }
 
   /* ===== Tab Content ===== */
@@ -530,13 +642,111 @@
     padding: 6px 4px;
   }
 
+  .cp-lazy-panel {
+    align-items: center;
+    justify-content: center;
+    min-height: 180px;
+    text-align: center;
+    margin: var(--w98-space-8) var(--w98-space-4) 0;
+  }
+
+  .cp-lazy-icon {
+    font-size: 26px;
+  }
+
+  .cp-lazy-title {
+    font-size: var(--w98-font-size-action);
+    color: var(--w98-text);
+  }
+
+  .cp-lazy-summary {
+    line-height: 1.3;
+  }
+
+  /* ===== Preset Tune Strip ===== */
+  .cp-preset-tune {
+    margin-top: 0;
+  }
+  .preset-tune-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--w98-space-4);
+  }
+  .preset-tune-control {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--w98-space-6);
+    min-width: 0;
+  }
+  .preset-tune-label {
+    font-size: var(--w98-font-size-sm);
+    font-weight: bold;
+    white-space: nowrap;
+  }
+  .preset-stepper {
+    display: flex;
+    align-items: center;
+    gap: var(--w98-space-4);
+    flex-shrink: 0;
+  }
+  .preset-tune-value {
+    min-width: 36px;
+    padding: 0 var(--w98-space-4);
+    font-size: var(--w98-font-size-sm);
+    font-weight: bold;
+    line-height: 20px;
+    text-align: center;
+    background: var(--w98-surface-white);
+    box-shadow: var(--w98-inset-thin);
+  }
+  .preset-gallery-btn {
+    min-width: 0;
+  }
+  .preset-tune-palettes {
+    margin-top: var(--w98-space-6);
+  }
+  .preset-tune-dither .render-btn {
+    flex: 0 1 auto;
+    min-width: 82px;
+  }
+  @media (min-width: 460px) {
+    .preset-tune-grid {
+      grid-template-columns: minmax(130px, 0.7fr) minmax(180px, 1.3fr);
+      align-items: center;
+    }
+  }
+  @media (max-width: 420px) {
+    .preset-tune-control {
+      align-items: flex-start;
+      flex-direction: column;
+      gap: var(--w98-space-4);
+    }
+    .preset-stepper {
+      width: 100%;
+      justify-content: space-between;
+    }
+    .preset-tune-value {
+      flex: 1;
+    }
+  }
+
   /* ===== Sections ===== */
-  .cp-section { margin-top: 6px; }
+  .cp-section {
+    margin-top: 6px;
+  }
+
+  .cp-section--compact {
+    margin-top: 8px;
+  }
 
   .section-label {
     margin-top: 8px;
-    font-size: var(--w98-font-size-base);
+    font-size: var(--w98-font-size-caption);
     margin-bottom: 2px;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    color: var(--w98-text-hint);
   }
 
   /* ===== Slider Row ===== */
@@ -561,10 +771,10 @@
   .palette-btn {
     width: 100%;
     text-align: left;
-    padding: 4px;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    padding-inline: var(--w98-space-6);
   }
   .palette-arrow {
     font-size: var(--w98-font-size-sm);
@@ -578,7 +788,6 @@
   }
   .render-btn {
     font-size: var(--w98-font-size-sm);
-    padding: 3px 6px;
     flex: 1;
     text-align: center;
   }
@@ -588,10 +797,6 @@
     position: sticky;
     bottom: 0;
     margin-top: 8px;
-    padding: 6px;
-    background: var(--w98-surface-active);
-    border: 2px solid;
-    border-color: var(--w98-shadow-light) var(--w98-shadow-808) var(--w98-shadow-808) var(--w98-shadow-light);
     z-index: 2;
   }
   .format-row {
@@ -603,14 +808,13 @@
   }
   .format-btn {
     font-size: var(--w98-font-size-sm);
-    padding: 2px 8px;
     text-align: center;
   }
   .quality-inline {
     font-size: var(--w98-font-size-caption);
-    color: #333;
+    color: var(--w98-text-secondary);
     flex-shrink: 0;
-    margin-left: 4px;
+    margin-left: var(--w98-space-4);
   }
   .quality-slider {
     min-width: 60px;
@@ -621,67 +825,38 @@
     gap: 4px;
   }
   .save-btn {
-    font-weight: bold;
-    padding: 4px 12px;
     font-size: var(--w98-font-size-action);
-    background: var(--w98-highlight);
-    color: #fff;
-  }
-  .save-btn:hover {
-    background: color-mix(in srgb, var(--w98-highlight) 80%, #000);
+    color: var(--w98-text);
   }
   .save-btn:disabled {
-    background: var(--w98-surface);
-    color: var(--w98-shadow-808);
+    color: #6d6d6d;
   }
   .save-btn.save-ready {
-    animation: save-pulse 2s ease-in-out 1;
+    color: var(--w98-highlight);
   }
   .share-btn {
-    min-width: fit-content;
+    min-width: 0;
   }
-  @keyframes save-pulse {
-    0%, 100% { box-shadow: var(--w98-outset-thin); }
-    50% { box-shadow: 0 0 0 3px color-mix(in srgb, var(--w98-highlight) 40%, transparent); }
-  }
-  .svg-btn {
-    background: var(--w98-surface);
-    color: inherit;
-  }
-  .svg-btn:hover {
-    background: #d0d0d0;
-  }
-
   /* Quick Palette */
   .quick-palette-row {
     display: flex;
-    gap: 3px;
+    gap: var(--w98-space-4);
     flex-wrap: wrap;
-    margin-top: 4px;
+    margin-top: var(--w98-space-4);
   }
   .quick-palette-chip {
     display: flex;
     align-items: center;
-    gap: 3px;
-    padding: 2px 5px;
+    gap: var(--w98-space-4);
     font-size: var(--w98-font-size-sm);
-    background: var(--w98-surface);
-    border: none;
-    box-shadow: var(--w98-outset-thin);
-    cursor: pointer;
     flex-shrink: 0;
-  }
-  .quick-palette-chip:hover {
-    background: var(--w98-surface-active);
   }
   .qp-swatches {
     display: flex;
     gap: 1px;
   }
   .qp-dot {
-    width: 8px;
-    height: 8px;
-    border: 1px solid #000;
+    flex-shrink: 0;
   }
   .qp-label {
     font-size: var(--w98-font-size-sm);

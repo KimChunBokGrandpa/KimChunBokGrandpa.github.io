@@ -43,6 +43,7 @@
   let isProcessingAll = $state(false);
   let isSharingAll = $state(false);
   let isPaused = $state(false);
+  let batchFileInput = $state<HTMLInputElement | null>(null);
 
   const acceptedTypes = ['image/png', 'image/jpeg', 'image/gif', 'image/bmp', 'image/webp'];
 
@@ -100,6 +101,10 @@
 
   function togglePause() {
     isPaused = !isPaused;
+  }
+
+  function openBatchPicker() {
+    batchFileInput?.click();
   }
 
   /** Wait until unpaused */
@@ -257,14 +262,20 @@
 
 <div class="batch-root">
   <!-- Settings Info -->
-  <div class="batch-settings-info">
-    <span><strong>{i18n.t('settings_applied')}:</strong> Pixel {settings.pixelSize}x · {getPaletteName(settings.palette)}</span>
-    <span class="batch-settings-hint">{i18n.t('change_in_settings')}</span>
+  <div class="batch-settings-info w98-toolbar">
+    <div class="batch-settings-copy">
+      <span class="w98-toolbar-label">
+        <span class="w98-emoji" aria-hidden="true">📦</span>
+        <span>{i18n.t('settings_applied')}</span>
+      </span>
+      <span class="batch-settings-value">{i18n.t('pixel_size')}: {settings.pixelSize}px · {getPaletteName(settings.palette)}</span>
+    </div>
+    <span class="batch-settings-hint w98-quiet-copy">{i18n.t('change_in_settings')}</span>
   </div>
 
   <!-- Drop zone / Add area -->
   <div
-    class="batch-dropzone"
+    class="batch-dropzone w98-inset-panel"
     class:dragging={isDragging}
     ondragenter={handleDragEnter}
     ondragover={(e) => e.preventDefault()}
@@ -272,15 +283,24 @@
     ondrop={handleDrop}
     role="button"
     tabindex="0"
+    onkeydown={(event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        openBatchPicker();
+      }
+    }}
   >
+    <input bind:this={batchFileInput} type="file" accept={acceptedTypes.join(',')} multiple id="batch-upload" onchange={handleFileInput} style="display: none;" />
     {#if items.length === 0}
       <div class="batch-empty">
-        <span class="batch-empty-icon">📦</span>
+        <span class="batch-empty-icon w98-emoji">📦</span>
         <p>{i18n.t('drag_drop_multiple')}</p>
-        <p class="batch-hint">{i18n.t('batch_empty_hint')}</p>
-        <p class="batch-hint">{i18n.t('or')}</p>
-        <input type="file" accept={acceptedTypes.join(',')} multiple id="batch-upload" onchange={handleFileInput} style="display: none;" />
-        <button class="batch-browse-btn" onclick={() => document.getElementById('batch-upload')?.click()}>📂 {i18n.t('browse')}</button>
+        <p class="batch-hint w98-quiet-copy">{i18n.t('batch_empty_hint')}</p>
+        <p class="batch-hint w98-kicker">{i18n.t('or')}</p>
+        <button class="batch-browse-btn w98-button w98-button--primary" onclick={openBatchPicker}>
+          <span class="w98-emoji" aria-hidden="true">📂</span>
+          <span>{i18n.t('browse')}</span>
+        </button>
       </div>
     {:else}
       <!-- Items grid -->
@@ -300,10 +320,18 @@
             <div class="batch-item-info">
               <span class="batch-item-name">{item.name}</span>
               <span class="batch-item-status">
-                {#if item.status === 'pending'}⏳ {i18n.t('pending')}
-                {:else if item.status === 'processing'}⚙️ {Math.round(item.progress * 100)}%
-                {:else if item.status === 'done'}✅ {i18n.t('done')}
-                {:else if item.status === 'error'}❌ {i18n.t('processing_failed')}
+                {#if item.status === 'pending'}
+                  <span class="w98-emoji" aria-hidden="true">⏳</span>
+                  <span>{i18n.t('pending')}</span>
+                {:else if item.status === 'processing'}
+                  <span class="w98-emoji" aria-hidden="true">⚙️</span>
+                  <span>{Math.round(item.progress * 100)}%</span>
+                {:else if item.status === 'done'}
+                  <span class="w98-emoji" aria-hidden="true">ℹ️</span>
+                  <span>{i18n.t('done')}</span>
+                {:else if item.status === 'error'}
+                  <span class="w98-emoji" aria-hidden="true">⚠️</span>
+                  <span>{i18n.t('processing_failed')}</span>
                 {/if}
               </span>
               {#if item.status === 'processing'}
@@ -313,27 +341,30 @@
               {/if}
             </div>
             <button
-              class="batch-item-remove"
+              class="batch-item-remove w98-inline-button w98-button--thin"
               onclick={(e) => { e.stopPropagation(); removeItem(item.id); }}
               title={i18n.t('remove')}
-              aria-label="{i18n.t('remove')} {item.name}"
-            >×</button>
+              aria-label={`${i18n.t('remove')} ${item.name}`}
+            >
+              <span class="w98-structural-glyph" aria-hidden="true">✕</span>
+            </button>
           </div>
         {/each}
         <!-- Add more button -->
-        <button class="batch-add-more" onclick={() => document.getElementById('batch-upload')?.click()}>
-          ＋ {i18n.t('add')}
+        <button class="batch-add-more w98-button w98-button--thin" onclick={openBatchPicker}>
+          <span class="w98-structural-glyph" aria-hidden="true">＋</span>
+          <span>{i18n.t('add')}</span>
         </button>
       </div>
     {/if}
   </div>
 
   <!-- Controls -->
-  <div class="batch-controls">
+  <div class="batch-controls w98-toolbar">
     {#if isProcessingAll}
       <div class="batch-overall-progress">
-        <div class="batch-overall-bar">
-          <div class="batch-overall-fill" style:width="{overallProgress}%"></div>
+        <div class="batch-overall-bar w98-progress-track">
+          <div class="batch-overall-fill w98-progress-fill" style:width="{overallProgress}%"></div>
         </div>
         <span class="batch-overall-text">{overallProgress}% ({doneCount}/{items.length})</span>
       </div>
@@ -341,29 +372,39 @@
     <div class="batch-status">
       {items.length} {i18n.t('images')} · {doneCount} {i18n.t('done')}
       {#if errorCount > 0} · <span class="error-text">{errorCount} {i18n.t('errors')}</span>{/if}
-      {#if processingCount > 0} · ⚙️ {processingCount} {i18n.t('processing')}{/if}
+      {#if processingCount > 0}
+        ·
+        <span class="w98-emoji" aria-hidden="true">⚙️</span>
+        {processingCount} {i18n.t('processing')}
+      {/if}
     </div>
     <div class="batch-actions">
       {#if isProcessingAll}
-        <button onclick={togglePause}>
-          {isPaused ? '▶️ ' + i18n.t('resume') : '⏸️ ' + i18n.t('pause')}
+        <button class="w98-inline-button w98-button--thin" onclick={togglePause}>
+          <span class="w98-structural-glyph" aria-hidden="true">{isPaused ? '▶' : '⏸'}</span>
+          <span>{isPaused ? i18n.t('resume') : i18n.t('pause')}</span>
         </button>
-        <button onclick={() => { isProcessingAll = false; isPaused = false; }}>
-          ⏹️ {i18n.t('stop')}
+        <button class="w98-inline-button w98-button--thin" onclick={() => { isProcessingAll = false; isPaused = false; }}>
+          <span class="w98-structural-glyph" aria-hidden="true">⏹</span>
+          <span>{i18n.t('stop')}</span>
         </button>
       {:else}
-        <button onclick={processAll} disabled={items.length === 0}>
-          ▶️ {i18n.t('process_all')}
+        <button class="w98-button" onclick={processAll} disabled={items.length === 0}>
+          <span class="w98-structural-glyph" aria-hidden="true">▶</span>
+          <span>{i18n.t('process_all')}</span>
         </button>
       {/if}
-      <button onclick={saveAll} disabled={doneCount === 0 || isSharingAll}>
-        💾 {i18n.t('save_all')}
+      <button class="w98-inline-button w98-button--thin" onclick={saveAll} disabled={doneCount === 0 || isSharingAll}>
+        <span class="w98-emoji" aria-hidden="true">💾</span>
+        <span>{i18n.t('save_all')}</span>
       </button>
-      <button onclick={shareAll} disabled={doneCount === 0 || isSharingAll}>
-        📤 {i18n.t('share_all')}
+      <button class="w98-inline-button w98-button--thin" onclick={shareAll} disabled={doneCount === 0 || isSharingAll}>
+        <span class="w98-emoji" aria-hidden="true">📤</span>
+        <span>{i18n.t('share_all')}</span>
       </button>
-      <button onclick={clearAll} disabled={items.length === 0 || isProcessingAll}>
-        🗑️ {i18n.t('clear')}
+      <button class="w98-inline-button w98-button--thin" onclick={clearAll} disabled={items.length === 0 || isProcessingAll}>
+        <span class="w98-structural-glyph" aria-hidden="true">✕</span>
+        <span>{i18n.t('clear')}</span>
       </button>
     </div>
   </div>
@@ -381,16 +422,20 @@
 
   /* Settings Info */
   .batch-settings-info {
-    padding: 4px 6px;
-    background: var(--w98-highlight);
-    color: #fff;
-    font-size: var(--w98-font-size-base);
-    display: flex;
     justify-content: space-between;
+    flex-wrap: wrap;
+  }
+  .batch-settings-copy {
+    display: flex;
     align-items: center;
+    gap: var(--w98-space-6);
+    min-width: 0;
+    flex-wrap: wrap;
+  }
+  .batch-settings-value {
+    color: var(--w98-text);
   }
   .batch-settings-hint {
-    color: #aaa;
     font-size: var(--w98-font-size-caption);
   }
 
@@ -398,13 +443,14 @@
     flex: 1;
     overflow-y: auto;
     border: 2px dashed var(--w98-shadow-808);
-    margin: 4px;
-    background: #fff;
+    margin: var(--w98-space-4);
     min-height: 0;
+    padding: var(--w98-space-8);
   }
   .batch-dropzone.dragging {
-    background: #d0d8e0;
+    background: var(--w98-highlight-alpha);
     border-color: var(--w98-highlight);
+    box-shadow: var(--w98-inset-thin);
   }
 
   .batch-empty {
@@ -414,11 +460,10 @@
     justify-content: center;
     height: 100%;
     gap: 4px;
-    color: #555;
   }
   .batch-empty-icon { font-size: 32px; }
-  .batch-hint { font-size: var(--w98-font-size-sm); color: #999; margin: 0; }
-  .batch-browse-btn { font-weight: bold; padding: 4px 12px; }
+  .batch-hint { font-size: var(--w98-font-size-sm); margin: 0; }
+  .batch-browse-btn { min-width: 110px; }
 
   /* Grid */
   .batch-grid {
@@ -436,22 +481,26 @@
     gap: 6px;
     width: 100%;
     padding: 3px 4px;
-    background: var(--w98-surface-subtle);
-    border: 1px solid var(--w98-shadow-light);
+    background: var(--w98-surface);
+    box-shadow: var(--w98-outset-thin);
     cursor: pointer;
   }
-  .batch-item:hover { background: var(--w98-surface-hover); border-color: var(--w98-highlight); }
-  .batch-item.item-done { border-color: var(--w98-color-success-border); background: var(--w98-color-success-light); }
-  .batch-item.item-error { border-color: var(--w98-color-error-border); background: var(--w98-color-error-light); }
-  .batch-item.item-processing { border-color: #44a; background: #f0f0f8; }
+  .batch-item:hover { background: var(--w98-surface-active); }
+  .batch-item.item-done { background: var(--w98-color-success-light); }
+  .batch-item.item-error { background: var(--w98-color-error-light); }
+  .batch-item.item-processing {
+    background: var(--w98-surface-active);
+    box-shadow: var(--w98-inset-thin);
+  }
 
   .batch-thumb {
     width: 36px;
     height: 36px;
     object-fit: cover;
-    border: 1px solid #ddd;
+    box-shadow: var(--w98-inset-thin);
     flex-shrink: 0;
-    image-rendering: auto;
+    background: var(--w98-surface-white);
+    image-rendering: pixelated;
   }
 
   .batch-item-info {
@@ -465,11 +514,11 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-weight: 500;
+    font-weight: bold;
   }
   .batch-item-status {
     font-size: var(--w98-font-size-caption);
-    color: #666;
+    color: var(--w98-text-secondary);
   }
   .batch-item-progress {
     position: absolute;
@@ -477,12 +526,14 @@
     left: 0;
     right: 0;
     height: 3px;
-    background: #ddd;
+    background: var(--w98-surface-white);
+    box-shadow: var(--w98-inset-thin);
   }
   .batch-item-progress-fill {
     height: 100%;
-    background: var(--w98-highlight);
-    transition: width 0.15s ease;
+  }
+  .batch-item-remove {
+    min-width: 16px;
   }
   .batch-item-remove {
     position: absolute;
@@ -493,93 +544,66 @@
     padding: 0;
     font-size: var(--w98-font-size-base);
     line-height: 1;
-    font-weight: bold;
-    background: var(--w98-surface);
-    border: none;
-    cursor: pointer;
-    box-shadow: inset 1px 1px var(--w98-shadow-white), inset -1px -1px var(--w98-shadow-808);
-    min-width: 0;
-    min-height: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    min-height: 16px;
   }
-  .batch-item-remove:hover { background: #d0d0d0; }
 
   .batch-add-more {
     width: 100%;
-    padding: 6px;
-    font-size: var(--w98-font-size-base);
-    cursor: pointer;
-    color: #555;
+    justify-content: center;
   }
 
   /* Controls */
   .batch-controls {
-    padding: 4px;
-    border-top: 1px solid var(--w98-shadow-808);
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    flex-shrink: 0;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--w98-space-6);
   }
   .batch-overall-progress {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: var(--w98-space-6);
+    min-width: min(240px, 100%);
+    flex: 1 1 240px;
   }
   .batch-overall-bar {
     flex: 1;
-    height: 12px;
-    background: #000;
-    border: 2px inset var(--w98-shadow-light);
-    position: relative;
-    overflow: hidden;
-  }
-  .batch-overall-fill {
-    height: 100%;
-    background: repeating-linear-gradient(
-      90deg,
-      var(--w98-highlight) 0px, var(--w98-highlight) 8px,
-      #0000a0 8px, #0000a0 10px
-    );
-    transition: width 0.2s ease;
+    height: 14px;
   }
   .batch-overall-text {
-    font-size: var(--w98-font-size-sm);
+    font-size: var(--w98-font-size-caption);
     font-weight: bold;
-    color: var(--w98-highlight);
     white-space: nowrap;
-    font-family: 'Courier New', monospace;
+    min-width: 54px;
+    text-align: right;
   }
   .batch-status {
-    font-size: var(--w98-font-size-sm);
-    color: #444;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--w98-space-2);
+    font-size: var(--w98-font-size-caption);
   }
   .error-text { color: var(--w98-color-error); }
   .batch-actions {
     display: flex;
     gap: 4px;
-  }
-  .batch-actions button {
-    flex: 1;
-    padding: 3px 6px;
-    font-size: var(--w98-font-size-sm);
-    font-weight: bold;
-  }
-  .batch-actions button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+    flex-wrap: wrap;
+    justify-content: flex-end;
   }
 
   @media (max-width: 550px) {
-    .batch-browse-btn {
-      padding: 10px 24px;
-      font-size: var(--w98-font-size-icon);
+    .batch-settings-info {
+      align-items: stretch;
     }
-    .batch-actions button {
-      padding: 8px 6px;
-      font-size: var(--w98-font-size-action);
+    .batch-overall-progress {
+      min-width: 100%;
+    }
+    .batch-actions {
+      width: 100%;
+      justify-content: stretch;
+    }
+    .batch-actions :global(button) {
+      flex: 1 1 0;
     }
   }
 </style>

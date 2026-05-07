@@ -138,4 +138,21 @@ describe('posterMakerStore', () => {
     const recentProjects = await adapter.listRecentProjects();
     expect(recentProjects[0]?.name).toBe('Poster Maker 프로젝트');
   });
+
+  it('records poster exports and preserves history across later edits', async () => {
+    const store = createPosterMakerStore(adapter);
+    await store.ensureInitialized();
+
+    await store.recordExport({ format: 'png', width: 1080, height: 1350 });
+    await store.setTitle('After Export Edit');
+
+    const manifest = await adapter.loadProject(store.projectId);
+    expect(manifest?.exportHistory).toHaveLength(1);
+    expect(manifest?.exportHistory[0]).toMatchObject({
+      format: 'png',
+      width: 1080,
+      height: 1350,
+    });
+    expect(store.exportHistory).toHaveLength(1);
+  });
 });

@@ -13,20 +13,18 @@ describe('CrtDisplay', () => {
     expect(container.textContent).toContain('Hello CRT');
   });
 
-  it('does not show scanlines/glare when inactive', () => {
+  it('does not show scanlines when inactive', () => {
     const { container } = render(CrtDisplay, {
       props: { active: false, children: createSnippet('Test') },
     });
     expect(container.querySelector('.scanlines')).toBeNull();
-    expect(container.querySelector('.glare')).toBeNull();
   });
 
-  it('shows scanlines and glare when active', () => {
+  it('shows scanlines when active', () => {
     const { container } = render(CrtDisplay, {
       props: { active: true, children: createSnippet('Test') },
     });
     expect(container.querySelector('.scanlines')).toBeTruthy();
-    expect(container.querySelector('.glare')).toBeTruthy();
   });
 
   it('applies active CSS class when active', () => {

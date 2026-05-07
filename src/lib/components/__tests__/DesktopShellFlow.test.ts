@@ -100,6 +100,15 @@ describe('Desktop shell flow', () => {
     expect(screen.queryByTestId('desktop-first-run-guide')).toBeNull();
   }, 15000);
 
+  it('hides the first-run guide after launching a desktop program from an icon', async () => {
+    render(DesktopShellFlowWrapper);
+
+    await fireEvent.dblClick(screen.getByRole('button', { name: /open win_poster_maker/i }));
+
+    expect(screen.getByText('Poster Content')).toBeTruthy();
+    expect(screen.queryByTestId('desktop-first-run-guide')).toBeNull();
+  }, 15000);
+
   it('persists dismissal of the first-run desktop guide', async () => {
     render(DesktopShellFlowWrapper);
 
@@ -110,5 +119,25 @@ describe('Desktop shell flow', () => {
     render(DesktopShellFlowWrapper);
 
     expect(screen.queryByTestId('desktop-first-run-guide')).toBeNull();
+  }, 15000);
+
+  it('keeps the desktop drop overlay visible while the drag stays inside desktop children', async () => {
+    const { container } = render(DesktopShellFlowWrapper);
+
+    const desktop = container.querySelector('main.desktop');
+    const guideCard = screen.getByTestId('desktop-first-run-guide');
+
+    expect(desktop).toBeTruthy();
+
+    await fireEvent.dragEnter(desktop!);
+    expect(container.querySelector('.desktop-drop-overlay')).toBeTruthy();
+
+    const dragLeaveToChild = new Event('dragleave', { bubbles: true });
+    Object.defineProperty(dragLeaveToChild, 'relatedTarget', { value: guideCard });
+    await fireEvent(desktop!, dragLeaveToChild);
+    expect(container.querySelector('.desktop-drop-overlay')).toBeTruthy();
+
+    await fireEvent.dragLeave(desktop!);
+    expect(container.querySelector('.desktop-drop-overlay')).toBeNull();
   }, 15000);
 });

@@ -32,6 +32,7 @@ export interface ProjectStorageAdapter {
   saveAsset(input: SaveAssetInput): Promise<LocalAssetRefV1>;
   resolveAsset(assetId: string): Promise<StoredAssetRecord | null>;
   deleteProject(projectId: string, options?: DeleteProjectOptions): Promise<void>;
+  subscribe?(listener: () => void): () => void;
 }
 
 function cloneRecentProjectEntry(entry: RecentProjectEntryV1): RecentProjectEntryV1 {
@@ -45,10 +46,18 @@ function sortRecentEntries(entries: RecentProjectEntryV1[]): RecentProjectEntryV
 class InMemoryProjectStorageAdapter implements ProjectStorageAdapter {
   private readonly projects = new Map<string, RetroProjectManifestV1>();
   private readonly assets = new Map<string, StoredAssetRecord>();
+  private readonly listeners = new Set<() => void>();
+
+  private notifySubscribers() {
+    for (const listener of this.listeners) {
+      listener();
+    }
+  }
 
   async saveProject(manifest: RetroProjectManifestV1): Promise<RetroProjectManifestV1> {
     const cloned = cloneProjectManifest(manifest);
     this.projects.set(cloned.projectId, cloned);
+    this.notifySubscribers();
     return cloneProjectManifest(cloned);
   }
 
@@ -88,6 +97,14 @@ class InMemoryProjectStorageAdapter implements ProjectStorageAdapter {
     for (const assetId of options.deleteAssetIds ?? []) {
       this.assets.delete(assetId);
     }
+    this.notifySubscribers();
+  }
+
+  subscribe(listener: () => void): () => void {
+    this.listeners.add(listener);
+    return () => {
+      this.listeners.delete(listener);
+    };
   }
 }
 

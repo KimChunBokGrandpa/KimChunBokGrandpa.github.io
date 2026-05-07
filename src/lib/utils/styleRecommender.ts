@@ -1,9 +1,11 @@
 import type { TranslationKey } from '$lib/i18n/en';
-import { presets } from '$lib/utils/presets';
+import { presets, type PresetFamily } from '$lib/utils/presets';
 import { recommendPalettes, type PaletteRecommendation } from './paletteRecommender';
+import { createCanvasSurface } from './canvasSurface';
 
 export interface StyleRecommendation {
   id: string;
+  family: PresetFamily;
   score: number;
   reasonKey: TranslationKey;
 }
@@ -293,6 +295,7 @@ export function recommendStyles(imageData: ImageData, topN: number = 3): StyleRe
       const heuristic = scorePreset(preset.id, profile);
       return {
         id: preset.id,
+        family: preset.family,
         paletteId: preset.palette,
         score:
           paletteAffinity(preset.palette, paletteStats) * 1.1
@@ -322,12 +325,7 @@ export async function recommendStylesFromImage(
         w = Math.max(1, Math.round(w * scale));
         h = Math.max(1, Math.round(h * scale));
       }
-      const canvas = new OffscreenCanvas(w, h);
-      const ctx = canvas.getContext('2d');
-      if (!ctx) {
-        reject(new Error('Canvas context unavailable'));
-        return;
-      }
+      const { ctx } = createCanvasSurface(w, h);
       ctx.drawImage(img, 0, 0, w, h);
       resolve(recommendStyles(ctx.getImageData(0, 0, w, h), topN));
     };

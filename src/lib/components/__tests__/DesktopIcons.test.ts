@@ -26,6 +26,7 @@ describe('DesktopIcons', () => {
     selectedIcon: null as WindowId | null,
     onIconClick: vi.fn(),
     onIconDblClick: vi.fn(),
+    onIconIntent: vi.fn(),
   });
 
   it('renders with role=toolbar', () => {
@@ -89,5 +90,17 @@ describe('DesktopIcons', () => {
     const buttons = container.querySelectorAll('.desktop-icon');
     await fireEvent.keyDown(buttons[0], { key: 'Enter' });
     expect(props.onIconDblClick).toHaveBeenCalled();
+  });
+
+  it('calls onIconIntent when icon gets focus or hover intent', async () => {
+    const props = defaultProps();
+    const { container } = render(DesktopIcons, { props });
+    const buttons = container.querySelectorAll('.desktop-icon');
+
+    await fireEvent.focus(buttons[1]);
+    await fireEvent.mouseEnter(buttons[1]);
+
+    expect(props.onIconIntent).toHaveBeenCalledWith('poster_maker');
+    expect(props.onIconIntent).toHaveBeenCalledTimes(2);
   });
 });

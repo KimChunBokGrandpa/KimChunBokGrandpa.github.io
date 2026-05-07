@@ -5,6 +5,13 @@ import type {
 } from "../types";
 import { customPaletteStore } from "../stores/customPaletteStore.svelte";
 import { palettes, normalizePaletteId } from "../utils/palettes";
+import { isTauriRuntime } from "../utils/env";
+import {
+  applyEffectLayers,
+  countVisibleColors,
+  hasActiveHqxLayer,
+  normalizeEffectLayers,
+} from "../utils/effectLayers";
 import { invoke } from "@tauri-apps/api/core";
 import { createTauriQuantizeRequest } from '$lib/bridges/tauriQuantizer';
 
@@ -202,6 +209,7 @@ class ImageProcessorService {
     const ctx = c.getContext("2d");
     if (!ctx) throw new Error("Failed to get 2d context");
     ctx.drawImage(img, 0, 0);
+    this._lastColorCount = countVisibleColors(ctx.getImageData(0, 0, c.width, c.height));
     this.lastCanvas = c;
     const blob = await this.toBlobWithTimeout(c);
     if (this.currentRequestId !== requestId) return null;
@@ -220,6 +228,7 @@ class ImageProcessorService {
     const requestId = crypto.randomUUID();
     this.currentRequestId = requestId;
     const normalizedPalette = normalizePaletteId(settings.palette);
+    const usesHqxProcessing = hasActiveHqxLayer(settings);
 
     // Cancel previous pending requests — resolve as null (stale)
     if (this.pendingResolvers.size > 0) {
@@ -234,7 +243,7 @@ class ImageProcessorService {
       settings.pixelSize <= 1 &&
       normalizedPalette === "original" &&
       settings.glitchFilters.length === 0 &&
-      settings.renderMode !== "hqx" &&
+      !usesHqxProcessing &&
       (!settings.ditherType || settings.ditherType === 'none')
     ) {
       return this.processWithoutWorker(imageSrc, requestId);
@@ -245,7 +254,7 @@ class ImageProcessorService {
 
     // Constrain to maxDimension for performance
     // HQx doubles resolution, so use stricter limit
-    const maxDim = settings.renderMode === 'hqx' ? this.maxDimensionHqx : this.maxDimension;
+    const maxDim = usesHqxProcessing ? this.maxDimensionHqx : this.maxDimension;
     let procWidth = img.width;
     let procHeight = img.height;
     if (procWidth > maxDim || procHeight > maxDim) {
@@ -258,12 +267,21 @@ class ImageProcessorService {
       );
     }
 
-    const isTauri = typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
+    const isTauri = isTauriRuntime();
 
     if (isTauri) {
       return new Promise<string | null>(async (resolve, reject) => {
         this.pendingResolvers.set(requestId, { resolve, reject, onProgress });
+        const finishResolve = (value: string | null) => {
+          this.pendingResolvers.delete(requestId);
+          resolve(value);
+        };
+        const finishReject = (error: unknown) => {
+          this.pendingResolvers.delete(requestId);
+          reject(error);
+        };
         try {
+          onProgress?.(0.1);
           const c = document.createElement('canvas');
           c.width = procWidth;
           c.height = procHeight;
@@ -288,22 +306,48 @@ class ImageProcessorService {
             }),
           });
 
-          // Reconstruct
-          const safeData = new ImageData(
+          if (this.currentRequestId !== requestId) {
+            finishResolve(null);
+            return;
+          }
+
+          let processedData = new ImageData(
             new Uint8ClampedArray(processedBytes),
             procWidth,
             procHeight
           );
+          onProgress?.(0.4);
 
-          ctx.putImageData(safeData, 0, 0);
+          const layers = normalizeEffectLayers({
+            effectLayers: settings.effectLayers,
+            glitchFilters: settings.glitchFilters,
+            renderMode: settings.renderMode,
+          });
+          processedData = applyEffectLayers(processedData, {
+            layers,
+            glitchSeed: settings.glitchSeed,
+            onProgress: (layerProgress) => {
+              onProgress?.(0.4 + 0.5 * layerProgress);
+            },
+          });
+          onProgress?.(0.9);
+
+          this._lastColorCount = countVisibleColors(processedData);
+          c.width = processedData.width;
+          c.height = processedData.height;
+          const resultCtx = c.getContext('2d');
+          if (!resultCtx) throw new Error("Failed to get 2d context");
+          resultCtx.putImageData(processedData, 0, 0);
           this.lastCanvas = c;
-          
+
           const blob = await this.toBlobWithTimeout(c);
-          if (this.currentRequestId !== requestId) return resolve(null);
-          resolve(this.replaceBlobUrl(URL.createObjectURL(blob)));
+          if (this.currentRequestId !== requestId) {
+            finishResolve(null);
+            return;
+          }
+          finishResolve(this.replaceBlobUrl(URL.createObjectURL(blob)));
         } catch (err) {
-          this.pendingResolvers.delete(requestId);
-          reject(new Error(`Tauri Rust processing failed: ${err}`));
+          finishReject(new Error(`Tauri Rust processing failed: ${err}`));
         }
       });
     }

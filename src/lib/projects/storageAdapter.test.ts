@@ -98,5 +98,29 @@ describe('in-memory project storage adapter', () => {
     expect(await adapter.loadProject(manifest.projectId)).toBeNull();
     expect(await adapter.resolveAsset(asset.assetId)).toBeNull();
   });
-});
 
+  it('notifies subscribers when the project list changes', async () => {
+    const adapter = createInMemoryProjectStorageAdapter();
+    const calls: string[] = [];
+    const unsubscribe = adapter.subscribe?.(() => {
+      calls.push('changed');
+    });
+
+    const manifest = createProjectManifest({
+      appId: 'pixel-lab',
+      name: 'Watched',
+      programState: makePixelLabState(),
+    });
+
+    await adapter.saveProject(manifest);
+    await adapter.deleteProject(manifest.projectId);
+    unsubscribe?.();
+    await adapter.saveProject(createProjectManifest({
+      appId: 'pixel-lab',
+      name: 'Ignored',
+      programState: makePixelLabState(),
+    }));
+
+    expect(calls).toHaveLength(2);
+  });
+});

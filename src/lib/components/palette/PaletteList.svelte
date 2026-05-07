@@ -43,31 +43,39 @@
     recommendations?: PaletteRecommendation[];
     isRecommending?: boolean;
   } = $props();
+
+  const originalSwatches = ['#ff4d4d', '#ffa64d', '#4dd2ff', '#7cff7c'];
+  const neutralSwatches = ['#000000', '#4d4d4d', '#a6a6a6', '#ffffff'];
 </script>
 
 <div class="pg-list-panel">
   {#if activeThemeId === '_custom'}
-    <div class="pg-custom-toolbar">
-      <button class="pg-new-btn" onclick={openNewPaletteEditor}>{i18n.t('new_palette')}</button>
+    <div class="pg-custom-toolbar w98-toolbar">
+      <button class="pg-new-btn w98-inline-button w98-button--thin" onclick={openNewPaletteEditor}>{i18n.t('new_palette')}</button>
       {#if handleExtractFromImage}
-        <button class="pg-new-btn" onclick={handleExtractFromImage} disabled={isExtracting || !hasImage} title={!hasImage ? i18n.t('extract_no_image') : i18n.t('extract_palette')}>
-          {isExtracting ? '⏳' : '🎨'} {isExtracting ? i18n.t('extracting_palette') : i18n.t('extract_palette_short')}
+        <button class="pg-new-btn w98-inline-button w98-button--thin" onclick={handleExtractFromImage} disabled={isExtracting || !hasImage} title={!hasImage ? i18n.t('extract_no_image') : i18n.t('extract_palette')}>
+          <span class="w98-emoji" aria-hidden="true">{isExtracting ? '⏳' : '🎨'}</span>
+          <span>{isExtracting ? i18n.t('extracting_palette') : i18n.t('extract_palette_short')}</span>
         </button>
       {/if}
-      <button class="pg-new-btn" onclick={handleImportClick} disabled={isImporting}>
-        {isImporting ? '⏳' : '📥'} {isImporting ? i18n.t('loading') : i18n.t('import_palette')}
+      <button class="pg-new-btn w98-inline-button w98-button--thin" onclick={handleImportClick} disabled={isImporting}>
+        <span class="w98-emoji" aria-hidden="true">{isImporting ? '⏳' : '📥'}</span>
+        <span>{isImporting ? i18n.t('loading') : i18n.t('import_palette')}</span>
       </button>
     </div>
   {/if}
   
   {#if recommendations.length > 0 && activeThemeId !== '_custom'}
-    <div class="pg-recommend-bar">
-      <span class="pg-recommend-label">{isRecommending ? '⏳' : '✨'} {i18n.t('recommended_palettes')}</span>
+    <div class="pg-recommend-bar w98-status-panel">
+      <span class="pg-recommend-label w98-kicker">
+        <span class="w98-emoji" aria-hidden="true">{isRecommending ? '⏳' : '✨'}</span>
+        <span>{i18n.t('recommended_palettes')}</span>
+      </span>
       <div class="pg-recommend-list">
         {#each recommendations as rec}
           <button
-            class="pg-recommend-chip"
-            class:sel={selectedPaletteId === rec.id}
+            class="pg-recommend-chip w98-inline-button w98-button--thin"
+            class:w98-inline-button--active={selectedPaletteId === rec.id}
             onclick={() => onSelect(rec.id)}
             title={getPaletteName(rec.id)}
           >{getPaletteName(rec.id)}</button>
@@ -76,7 +84,7 @@
     </div>
   {/if}
 
-  <div class="pg-list" role="listbox">
+  <div class="pg-list w98-inset-panel" role="listbox">
     {#each activeVariants as item}
       <!-- svelte-ignore a11y_click_events_have_key_events -->
       <!-- svelte-ignore a11y_interactive_supports_focus -->
@@ -96,15 +104,15 @@
         onmouseenter={() => (hoveredPaletteId = item.id)}
         onmouseleave={() => (hoveredPaletteId = null)}
       >
-        <div class="pg-mini-swatches">
+        <div class="pg-mini-swatches w98-color-swatch-strip">
           {#if item.colors}
             {#each item.colors.slice(0, 8) as c}
-              <span class="ms" style="background:rgb({c.r},{c.g},{c.b})"></span>
+              <span class="ms w98-color-swatch w98-color-swatch--mini" style="background:rgb({c.r},{c.g},{c.b})"></span>
             {/each}
-          {:else if item.id === 'original'}
-            <span class="ms ms-rainbow"></span>
           {:else}
-            <span class="ms" style="background:linear-gradient(90deg,#000,#fff)"></span>
+            {#each (item.id === 'original' ? originalSwatches : neutralSwatches) as swatch}
+              <span class="ms ms-solid w98-color-swatch w98-color-swatch--mini w98-color-swatch--solid" style={`background:${swatch}`}></span>
+            {/each}
           {/if}
         </div>
         <span class="pg-item-name">
@@ -114,59 +122,69 @@
           {/if}
         </span>
         {#if item.colorCount > 0}
-          <span class="pg-color-badge">{item.colorCount}</span>
+          <span class="pg-color-badge w98-chip">{item.colorCount}</span>
         {/if}
         {#if selectedPaletteId === item.id}
-          <span class="pg-check">✓</span>
+          <span class="pg-check w98-structural-glyph" aria-hidden="true">▶</span>
         {/if}
         
         {#if item.isCustom}
           <button
-            class="pg-export-btn"
+            class="pg-export-btn pg-icon-btn w98-inline-button w98-button--thin"
             onclick={(e) => handleExportPalette(item.id, 'hex', e)}
             title={i18n.t('export_as_hex')}
-            aria-label="{i18n.t('export_as_hex')} {item.name}">💾</button>
+            aria-label="{i18n.t('export_as_hex')} {item.name}"
+          >
+            <span class="w98-emoji" aria-hidden="true">💾</span>
+          </button>
           <button
-            class="pg-edit-btn"
+            class="pg-edit-btn pg-icon-btn w98-inline-button w98-button--thin"
             onclick={(e) => { e.stopPropagation(); openEditPaletteEditor(item.id); }}
             title={i18n.t('edit_palette')}
-            aria-label="{i18n.t('edit_palette')} {item.name}">✎</button>
+            aria-label="{i18n.t('edit_palette')} {item.name}"
+          >
+            <span class="w98-emoji" aria-hidden="true">🎨</span>
+          </button>
           <button
-            class="pg-del-btn"
+            class="pg-del-btn pg-icon-btn w98-inline-button w98-button--thin"
             onclick={(e) => handleDeletePalette(item.id, e)}
             title={i18n.t('delete_palette')}
-            aria-label="{i18n.t('delete_palette')} {item.name}">×</button>
+            aria-label="{i18n.t('delete_palette')} {item.name}"
+          >
+            <span class="w98-structural-glyph" aria-hidden="true">✕</span>
+          </button>
         {:else}
           <button
-            class="pg-fav-btn"
+            class="pg-fav-btn pg-icon-btn w98-inline-button w98-button--thin"
             class:fav-active={favorites.has(item.id)}
             onclick={(e) => toggleFavorite(item.id, e)}
             title={favorites.has(item.id) ? i18n.t('remove_from_favorites') : i18n.t('add_to_favorites')}
-            aria-label={favorites.has(item.id) ? i18n.t('remove_from_favorites') : i18n.t('add_to_favorites')}>{favorites.has(item.id) ? '★' : '☆'}</button>
+            aria-label={favorites.has(item.id) ? i18n.t('remove_from_favorites') : i18n.t('add_to_favorites')}
+          >
+            <span class="w98-emoji" aria-hidden="true">📌</span>
+          </button>
         {/if}
       </div>
     {/each}
     {#if activeThemeId === '_custom' && activeVariants.length === 0}
-      <div class="pg-empty">{i18n.t('no_custom_palettes')}</div>
+      <div class="pg-empty w98-note">{i18n.t('no_custom_palettes')}</div>
     {:else if activeThemeId === '_favorites' && activeVariants.length === 0}
-      <div class="pg-empty">{i18n.t('no_favorites')}</div>
+      <div class="pg-empty w98-note">{i18n.t('no_favorites')}</div>
     {/if}
   </div>
 </div>
 
 <style>
   .pg-recommend-bar {
-    padding: 3px 4px;
-    border-bottom: 1px solid var(--w98-shadow-808);
-    background: var(--w98-color-surface-subtle, #f0f0f0);
+    padding: var(--w98-space-6);
     flex-shrink: 0;
   }
   .pg-recommend-label {
-    font-size: var(--w98-font-size-caption);
-    font-weight: bold;
     color: var(--w98-highlight);
-    display: block;
-    margin-bottom: 2px;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--w98-space-4);
+    margin-bottom: var(--w98-space-2);
   }
   .pg-recommend-list {
     display: flex;
@@ -174,22 +192,7 @@
     gap: 2px;
   }
   .pg-recommend-chip {
-    padding: 1px 6px;
-    font-size: var(--w98-font-size-sm);
-    font-family: inherit;
-    background: var(--w98-surface);
-    border: 1px solid var(--w98-shadow-808);
-    cursor: pointer;
     white-space: nowrap;
-  }
-  .pg-recommend-chip:hover {
-    background: var(--w98-surface-hover);
-  }
-  .pg-recommend-chip.sel {
-    background: var(--w98-highlight);
-    color: #fff;
-    border-color: var(--w98-highlight);
-    font-weight: bold;
   }
 
   .pg-list-panel {
@@ -201,9 +204,7 @@
   .pg-list {
     flex: 1;
     overflow-y: auto;
-    background: #fff;
-    border: 2px inset;
-    padding: 1px;
+    padding: var(--w98-space-2);
   }
   .pg-item {
     display: flex;
@@ -211,30 +212,30 @@
     gap: 6px;
     padding: 3px 5px;
     cursor: pointer;
-    border-bottom: 1px solid #f4f4f4;
+    background: var(--w98-surface);
+    box-shadow: var(--w98-outset-thin);
+    margin-bottom: var(--w98-space-2);
   }
-  .pg-item:hover {
-    background: #efefef;
+  .pg-item:hover,
+  .pg-item:focus-visible {
+    background: var(--w98-surface);
+    box-shadow: var(--w98-inset-thin);
+    outline: 1px dotted var(--w98-text);
+    outline-offset: -3px;
   }
   .pg-item.sel {
-    background: var(--w98-highlight);
-    color: #fff;
+    background: var(--w98-highlight-alpha);
+    color: var(--w98-text);
+    box-shadow: var(--w98-inset-thin);
+    outline: 1px dotted var(--w98-text);
+    outline-offset: -3px;
   }
 
   .pg-mini-swatches {
-    display: flex;
-    gap: 0;
-    flex-shrink: 0;
+    align-items: center;
   }
   .ms {
-    display: inline-block;
-    width: 8px;
-    height: 10px;
-    border: 0.5px solid rgba(0, 0, 0, 0.1);
-  }
-  .ms-rainbow {
-    width: 64px;
-    background: linear-gradient(90deg, red, orange, yellow, green, cyan, blue, violet);
+    flex-shrink: 0;
   }
 
   .pg-item-name {
@@ -242,114 +243,70 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-weight: 500;
+    font-weight: bold;
   }
 
   .pg-theme-label {
     display: block;
     font-size: var(--w98-font-size-caption);
-    font-weight: normal;
     color: var(--w98-text-hint);
     line-height: 1.1;
   }
   .pg-item.sel .pg-theme-label {
-    color: #ccc;
+    color: var(--w98-text-secondary);
   }
 
   .pg-color-badge {
     flex-shrink: 0;
     font-size: var(--w98-font-size-caption);
-    padding: 0 4px;
-    background: #e8e4e0;
-    color: #555;
-    font-weight: bold;
+    background: var(--w98-surface-white);
+    color: var(--w98-text-secondary);
   }
   .pg-item.sel .pg-color-badge {
-    background: #4040a0;
-    color: #ddd;
+    background: var(--w98-surface-active);
+    color: var(--w98-text);
   }
 
   .pg-check {
     flex-shrink: 0;
     font-size: var(--w98-font-size-action);
     font-weight: bold;
-    color: var(--w98-color-success);
-  }
-  .pg-item.sel .pg-check {
-    color: #8f8;
+    color: var(--w98-highlight);
   }
 
   .pg-custom-toolbar {
-    display: flex;
     gap: 1px;
   }
   .pg-new-btn {
     flex: 1;
-    padding: 4px 8px;
-    font-size: var(--w98-font-size-base);
-    font-weight: bold;
-    cursor: pointer;
-    background: var(--w98-surface-active);
-    border: none;
-    border-bottom: 1px solid var(--w98-shadow-808);
-    box-shadow:
-      inset 1px 1px var(--w98-shadow-white),
-      inset -1px -1px var(--w98-shadow-808);
-    text-align: center;
-  }
-  .pg-new-btn:hover {
-    background: #e0dcd4;
   }
 
-  .pg-fav-btn {
+  .pg-icon-btn {
     flex-shrink: 0;
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-size: var(--w98-font-size-icon);
-    padding: 0 2px;
-    color: #ccc;
-    min-width: 0;
-    min-height: 0;
-    box-shadow: none;
+    min-width: 18px;
+    min-height: 18px;
+    padding: 0 4px;
     line-height: 1;
   }
-  .pg-fav-btn:hover { color: var(--w98-color-warning); }
-  .pg-fav-btn.fav-active { color: var(--w98-color-warning); }
-  .pg-item.sel .pg-fav-btn { color: #aaa; }
-  .pg-item.sel .pg-fav-btn.fav-active { color: #ffd700; }
+  .pg-icon-btn :global(.w98-emoji),
+  .pg-icon-btn :global(.w98-structural-glyph) {
+    line-height: 1;
+  }
+  .pg-fav-btn {
+    color: var(--w98-text-hint);
+  }
+  .pg-fav-btn.fav-active {
+    background: var(--w98-surface-active);
+    box-shadow: var(--w98-inset-thin);
+    color: var(--w98-text);
+  }
 
   .pg-export-btn, .pg-edit-btn, .pg-del-btn {
-    flex-shrink: 0;
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-size: var(--w98-font-size-sm);
-    padding: 0 2px;
     color: var(--w98-text-hint);
-    min-width: 0;
-    min-height: 0;
-    box-shadow: none;
-    line-height: 1;
   }
-  .pg-edit-btn, .pg-del-btn { font-size: var(--w98-font-size-action); }
-
-  .pg-export-btn:hover { color: var(--w98-color-success); }
-  .pg-edit-btn:hover { color: var(--w98-highlight); }
-  .pg-del-btn:hover { color: var(--w98-color-error); }
-  
-  .pg-item.sel .pg-export-btn { color: #aaa; }
-  .pg-item.sel .pg-export-btn:hover { color: #8f8; }
-  .pg-item.sel .pg-edit-btn { color: #aaa; }
-  .pg-item.sel .pg-del-btn { color: #faa; }
-  .pg-item.sel .pg-edit-btn:hover { color: #fff; }
-  .pg-item.sel .pg-del-btn:hover { color: var(--w98-color-error); }
 
   .pg-empty {
-    padding: 12px;
-    color: var(--w98-text-hint);
-    text-align: center;
-    font-style: italic;
+    justify-content: center;
   }
 
   @media (max-width: 550px) {

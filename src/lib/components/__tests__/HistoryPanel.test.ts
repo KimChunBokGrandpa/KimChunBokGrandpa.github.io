@@ -7,6 +7,13 @@ import type { ProcessingSettings } from '$lib/types';
 
 afterEach(() => cleanup());
 
+function mockNavigatorPlatform(platform: string) {
+  Object.defineProperty(window.navigator, 'platform', {
+    configurable: true,
+    value: platform,
+  });
+}
+
 function makeSettings(overrides: Partial<ProcessingSettings> = {}): ProcessingSettings {
   return {
     pixelSize: 4,
@@ -101,5 +108,14 @@ describe('HistoryPanel', () => {
     const { container } = render(HistoryPanel, { props: defaultProps() });
     const badge = container.querySelector('.current-badge');
     expect(badge).toBeTruthy();
+  });
+
+  it('shows platform-aware undo and redo tooltips', () => {
+    mockNavigatorPlatform('MacIntel');
+
+    const { container } = render(HistoryPanel, { props: defaultProps() });
+    const buttons = container.querySelectorAll('.history-controls button');
+    expect(buttons[0]?.getAttribute('data-tooltip')).toContain('Cmd+Z');
+    expect(buttons[1]?.getAttribute('data-tooltip')).toContain('Cmd+Shift+Z');
   });
 });

@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const saveMock = vi.fn();
 const writeFileMock = vi.fn();
 
-vi.mock('$lib/utils/env', () => ({ isTauri: true }));
+vi.mock('$lib/utils/env', () => ({ isTauriRuntime: () => true }));
 vi.mock('$lib/i18n/index.svelte', () => ({
   i18n: { t: vi.fn((key: string) => key) },
 }));

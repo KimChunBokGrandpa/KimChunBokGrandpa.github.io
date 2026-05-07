@@ -121,12 +121,12 @@
 </script>
 
 <div class="cpe-root">
-  <fieldset>
+  <fieldset class="w98-fieldset">
     <legend>{i18n.t('palette_name')}</legend>
     <div class="field-row">
       <input
         type="text"
-        class="cpe-name-input"
+        class="cpe-name-input w98-input"
         bind:value={name}
         placeholder={i18n.t('my_custom_palette')}
         maxlength="40"
@@ -134,9 +134,9 @@
     </div>
   </fieldset>
 
-  <fieldset>
+  <fieldset class="w98-fieldset">
     <legend>{i18n.t('colors_count').replace('{0}', String(colors.length))}</legend>
-    <div class="cpe-swatches">
+    <div class="cpe-swatches w98-inset-panel">
       {#each colors as c, i}
         <div class="cpe-swatch-item">
           <span
@@ -151,7 +151,7 @@
             onkeydown={(e) => { if (e.key === 'Delete' || e.key === 'Backspace') removeColor(i); else if (e.key === 'Enter') editColor(i); }}
           ></span>
           <button
-            class="cpe-swatch-remove"
+            class="cpe-swatch-remove w98-inline-button w98-button--thin"
             onclick={() => removeColor(i)}
             aria-label={i18n.t('close')}
           >&times;</button>
@@ -171,17 +171,17 @@
       />
       <input
         type="text"
-        class="cpe-hex-input"
+        class="cpe-hex-input w98-input"
         bind:value={hexInput}
         placeholder="#RRGGBB"
         maxlength="7"
         onkeydown={(e) => { if (e.key === 'Enter') addColor(); }}
       />
-      <button class="cpe-add-btn" onclick={addColor}>
+      <button class="cpe-add-btn w98-inline-button w98-button--thin" onclick={addColor}>
         {editingIndex !== null ? i18n.t('update') : i18n.t('add_color')}
       </button>
       {#if editingIndex !== null}
-        <button class="cpe-add-btn" onclick={() => { editingIndex = null; hexInput = '#000000'; }}>
+        <button class="cpe-add-btn w98-inline-button w98-button--thin" onclick={() => { editingIndex = null; hexInput = '#000000'; }}>
           {i18n.t('cancel')}
         </button>
       {/if}
@@ -189,30 +189,30 @@
 
     {#if colors.length > 0}
       <div class="cpe-tools-row">
-        <button class="cpe-tool-btn" onclick={sortByHue} title={i18n.t('sort_by_hue')}>↕ {i18n.t('sort_by_hue')}</button>
-        <button class="cpe-tool-btn" onclick={reverseColors} title={i18n.t('reverse_colors')}>⇆ {i18n.t('reverse_colors')}</button>
+        <button class="cpe-tool-btn w98-inline-button w98-button--thin" onclick={sortByHue} title={i18n.t('sort_by_hue')}>↕ {i18n.t('sort_by_hue')}</button>
+        <button class="cpe-tool-btn w98-inline-button w98-button--thin" onclick={reverseColors} title={i18n.t('reverse_colors')}>⇆ {i18n.t('reverse_colors')}</button>
       </div>
     {/if}
   </fieldset>
 
-  <fieldset>
+  <fieldset class="w98-fieldset">
     <legend>{i18n.t('generate_gradient')}</legend>
     <div class="cpe-gradient-row">
-      <label class="cpe-grad-label">
-        <span>{i18n.t('gradient_start')}</span>
+      <label class="cpe-grad-label w98-form-stack">
+        <span class="w98-form-label">{i18n.t('gradient_start')}</span>
         <input type="color" bind:value={gradStart} class="cpe-color-picker" />
       </label>
-      <label class="cpe-grad-label">
-        <span>{i18n.t('gradient_end')}</span>
+      <label class="cpe-grad-label w98-form-stack">
+        <span class="w98-form-label">{i18n.t('gradient_end')}</span>
         <input type="color" bind:value={gradEnd} class="cpe-color-picker" />
       </label>
-      <label class="cpe-grad-label">
-        <span>{i18n.t('gradient_steps')}</span>
-        <input type="number" min="2" max="64" bind:value={gradSteps} class="cpe-step-input" />
+      <label class="cpe-grad-label w98-form-stack">
+        <span class="w98-form-label">{i18n.t('gradient_steps')}</span>
+        <input type="number" min="2" max="64" bind:value={gradSteps} class="cpe-step-input w98-input" />
       </label>
-      <button class="cpe-add-btn" onclick={generateGradient}>{i18n.t('generate_gradient')}</button>
+      <button class="cpe-add-btn w98-inline-button w98-button--thin" onclick={generateGradient}>{i18n.t('generate_gradient')}</button>
     </div>
-    <div class="cpe-gradient-preview">
+    <div class="cpe-gradient-preview w98-inset-panel">
       {#each Array(gradSteps) as _, i}
         {@const t = gradSteps > 1 ? i / (gradSteps - 1) : 0}
         {@const sr = hexToRgb(gradStart)}
@@ -228,8 +228,8 @@
   </fieldset>
 
   <div class="cpe-actions">
-    <button onclick={handleCancel}>{i18n.t('cancel')}</button>
-    <button onclick={handleSave} disabled={!canSave} title={!canSave ? i18n.t('add_at_least_2') : ''}>
+    <button class="w98-button" onclick={handleCancel}>{i18n.t('cancel')}</button>
+    <button class="w98-button w98-button--primary" onclick={handleSave} disabled={!canSave} title={!canSave ? i18n.t('add_at_least_2') : ''}>
       {i18n.t('save_palette')}
     </button>
   </div>
@@ -237,27 +237,24 @@
 
 <style>
   .cpe-root {
-    padding: 6px;
+    padding: var(--w98-space-6);
     font-size: var(--w98-font-size-base);
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: var(--w98-space-6);
   }
 
   .cpe-name-input {
     width: 100%;
     box-sizing: border-box;
-    padding: 2px 4px;
   }
 
   .cpe-swatches {
     display: flex;
     flex-wrap: wrap;
-    gap: 2px;
+    gap: var(--w98-space-2);
     min-height: 28px;
-    padding: 4px;
-    background: var(--w98-surface-white);
-    border: 2px inset var(--w98-shadow-light);
+    padding: var(--w98-space-4);
   }
 
   .cpe-swatch-item {
@@ -269,13 +266,12 @@
     top: -6px;
     right: -6px;
     width: 14px;
+    min-width: 14px;
     height: 14px;
+    min-height: 14px;
     padding: 0;
     font-size: var(--w98-font-size-sm);
     line-height: 1;
-    background: var(--w98-surface);
-    border: 1px solid var(--w98-shadow-808);
-    cursor: pointer;
     display: none;
     align-items: center;
     justify-content: center;
@@ -289,115 +285,82 @@
     display: block;
     width: 18px;
     height: 18px;
-    border: 1px solid rgba(0, 0, 0, 0.2);
+    box-shadow: var(--w98-outset-thin);
     cursor: pointer;
   }
 
   .cpe-swatch:hover {
-    outline: 2px solid var(--w98-highlight);
-    outline-offset: -1px;
+    outline: 1px dotted var(--w98-highlight);
+    outline-offset: 1px;
     z-index: 1;
     position: relative;
   }
 
   .cpe-swatch.cpe-editing {
-    outline: 2px solid #ff0000;
-    outline-offset: -1px;
+    outline: 1px solid var(--w98-highlight);
+    outline-offset: 1px;
   }
 
   .cpe-hint {
     color: var(--w98-text-hint);
-    font-style: italic;
-    padding: 4px;
+    padding: var(--w98-space-4);
   }
 
   .cpe-add-row {
     display: flex;
     align-items: center;
-    gap: 4px;
-    margin-top: 4px;
+    gap: var(--w98-space-4);
+    margin-top: var(--w98-space-4);
   }
 
   .cpe-color-picker {
     width: 28px;
     height: 22px;
-    padding: 0;
-    border: 1px solid var(--w98-shadow-808);
+    padding: 2px;
+    border: none;
+    background: var(--w98-surface-white);
+    box-shadow: var(--w98-inset-thin);
     cursor: pointer;
   }
 
   .cpe-hex-input {
     width: 70px;
-    padding: 2px 4px;
     font-family: 'Courier New', monospace;
     font-size: var(--w98-font-size-base);
-  }
-
-  .cpe-add-btn {
-    padding: 2px 8px;
-    font-size: var(--w98-font-size-sm);
-    font-weight: bold;
   }
 
   .cpe-actions {
     display: flex;
     justify-content: flex-end;
-    gap: 6px;
-  }
-
-  .cpe-actions button {
-    padding: 3px 12px;
-    font-weight: bold;
-    cursor: pointer;
-  }
-  .cpe-actions button:active {
-    box-shadow: var(--w98-inset-thin);
-  }
-
-  .cpe-actions button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+    gap: var(--w98-space-6);
   }
 
   /* ── Color Tools Row ── */
   .cpe-tools-row {
     display: flex;
-    gap: 4px;
-    margin-top: 4px;
-  }
-  .cpe-tool-btn {
-    padding: 2px 6px;
-    font-size: var(--w98-font-size-sm);
-    font-weight: bold;
-    cursor: pointer;
+    gap: var(--w98-space-4);
+    margin-top: var(--w98-space-4);
   }
 
   /* ── Gradient Generator ── */
   .cpe-gradient-row {
     display: flex;
     align-items: flex-end;
-    gap: 6px;
+    gap: var(--w98-space-6);
     flex-wrap: wrap;
   }
   .cpe-grad-label {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    font-size: var(--w98-font-size-sm);
-    font-weight: bold;
+    min-width: 72px;
   }
   .cpe-step-input {
     width: 44px;
-    padding: 2px 4px;
     font-size: var(--w98-font-size-base);
   }
   .cpe-gradient-preview {
     display: flex;
     gap: 1px;
-    margin-top: 4px;
+    margin-top: var(--w98-space-4);
     padding: 3px;
-    background: var(--w98-surface-white);
-    border: 2px inset var(--w98-shadow-light);
     min-height: 16px;
   }
   .cpe-grad-swatch {
@@ -412,7 +375,7 @@
       height: 28px;
     }
     .cpe-swatches {
-      gap: 6px;
+      gap: var(--w98-space-6);
     }
     .cpe-add-row {
       flex-wrap: wrap;

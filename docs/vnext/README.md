@@ -1,16 +1,16 @@
 # vNext Documentation Index
 
 > Scope: next-version planning for the client-only Retro Pixel Converter product.
-> Product framing: evolve from a single image converter into a retro desktop creative OS with multiple "programs".
+> Product framing: Pixel Lab is the main product surface for recommendation-led classic pixelization and retro treatment. Poster Maker, RetroCam, and the Win98 shell support that core editing loop.
 
 ---
 
 ## Reading Order
 
 1. [01_product_vision.md](01_product_vision.md)
-   Product position, target users, design principles, and non-goals.
+   Product position, target users, recommendation premise, design principles, and non-goals.
 2. [02_program_suite.md](02_program_suite.md)
-   The app suite concept: Pixel Lab, Poster Maker, RetroCam, and shared shell behavior.
+   Weighted product suite concept: Pixel Lab as primary, Poster Maker and RetroCam as supporting flows.
 3. [03_execution_roadmap.md](03_execution_roadmap.md)
    Delivery phases, workstreams, priorities, dependencies, and acceptance criteria.
 4. [04_ui_system_guidelines.md](04_ui_system_guidelines.md)
@@ -28,33 +28,39 @@
 10. [10_role_execution_plan.md](10_role_execution_plan.md)
    Priority-tier execution order across PM, frontend, shared-engine, mobile, and QA.
 11. [11_status_review.md](11_status_review.md)
-   Current implementation audit, issue watchlist, and documentation caveats after the Tier 4 QA gate.
+   Current issue watchlist, active caveats, and status authority notes.
 12. [12_retrocam_mvp_spec.md](12_retrocam_mvp_spec.md)
    Scope freeze for the first RetroCam deliverable: webcam-only input, still snapshot flow, and Pixel Lab handoff priority.
-13. [13_document_status_report_2026-04-16.md](13_document_status_report_2026-04-16.md)
-   Cross-document status summary: completed work, active work, next work, and documentation consistency notes.
+13. [13_design_system_alignment_tasks.md](13_design_system_alignment_tasks.md)
+   Current design-system alignment decisions, shell/UI parity scope, and remaining acceptance cleanup notes.
+14. [14_pm_priority_bundles_2026-04-23.md](14_pm_priority_bundles_2026-04-23.md)
+   PM priority bundles, now read through the Pixel Lab-centered recommendation premise.
 
 ---
 
 ## Ground Rules
 
 - The product remains strictly `client-only`.
-- Core behavior must work from browser or Tauri local resources only.
-- New features should strengthen the "retro desktop with launchable programs" fantasy.
-- A feature is not accepted if it feels like a hidden tab inside one app when it should feel like its own program.
+- Pixel Lab owns the core editing loop: import, recommend, tune, preview, compare, export.
+- New work should improve either `Classic Pixel` output quality or `Retro Treatment` recommendation quality before expanding supporting apps.
+- Poster Maker and RetroCam are accepted when they strengthen Pixel Lab input/output workflows.
+- The Win98 shell is a brand and interaction layer; it must not outrank editing clarity, result quality, or export reliability.
+- A feature is not accepted if it requires a server, account, remote rendering layer, or remote AI inference for the core workflow.
 
 ---
 
 ## Current Product Base
 
 - Existing strengths already in code:
+  - Pixel conversion pipeline with worker/WASM/Tauri support
+  - Palette, dithering, CRT/effect stack, animated export, preset/share flows
+  - Recommendation surfaces for style and palette suggestions
   - Desktop workspace and taskbar shell
-  - Multi-window Win98 interaction model
-  - Pixel conversion pipeline with worker/WASM support
-  - Presets, local sharing, batch processing, animated exports
+  - Poster Maker and RetroCam supporting flows
+  - Local project and cross-app handoff contracts
 - Immediate implication:
-  - vNext should focus less on adding isolated options
-  - vNext should focus more on packaging experiences into distinct programs
+  - vNext should focus less on adding more shell concepts
+  - vNext should focus more on making Pixel Lab recommendations trustworthy, explainable, and easy to refine
 
 ---
 
@@ -62,9 +68,13 @@
 
 These files replace older one-off planning artifacts and are intended to become the main forward-looking reference set for product direction, UI behavior, implementation planning, and execution checklists.
 
+Historical completion detail should live in `REVISION_HISTORY.md`, not in the active vNext trackers.
+
 For implementation work, the contract stack should be read in this order:
 
-1. `07_app_taxonomy_spec.md`
-2. `08_project_schema_spec.md`
-3. `09_cross_app_handoff_spec.md`
-4. `10_role_execution_plan.md`
+1. `01_product_vision.md`
+2. `02_program_suite.md`
+3. `07_app_taxonomy_spec.md`
+4. `08_project_schema_spec.md`
+5. `09_cross_app_handoff_spec.md`
+6. `10_role_execution_plan.md`

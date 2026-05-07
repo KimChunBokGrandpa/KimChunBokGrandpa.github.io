@@ -4,7 +4,7 @@
 
 ## Purpose
 
-Define how one program passes a local asset or editing outcome into another program while keeping the suite fast, understandable, and strictly client-only.
+Define how Pixel Lab and its supporting programs pass a local asset or editing outcome into another program while keeping the product fast, understandable, and strictly client-only.
 
 This document is the contract for:
 
@@ -22,6 +22,7 @@ This document is the contract for:
 - handoffs pass references, not remote URLs
 - source app state must remain intact if the handoff fails
 - target app behavior must be predictable from the command label
+- Pixel Lab remains the preferred destination for image refinement
 - every received asset should keep provenance metadata
 
 ---
@@ -128,6 +129,7 @@ Expected behavior:
 - if Poster Maker has no suitable open document, create a new poster project
 - place the processed asset on the canvas as the primary image layer
 - focus Poster Maker after launch
+- preserve Pixel Lab as the source of image refinement
 
 Suggested payload:
 
@@ -153,7 +155,7 @@ Expected behavior:
 - create a new Pixel Lab project when the current workspace is non-empty
 - otherwise allow `reuse_empty_project`
 - load the captured asset as the active source image
-- this is the required first `RetroCam` MVP handoff
+- this is the primary `RetroCam` handoff and the preferred route for deeper editing
 
 ### 3. RetroCam -> Poster Maker
 
@@ -173,7 +175,8 @@ Expected behavior:
 Implementation note:
 
 - valid contract path
-- not required for the first `RetroCam` MVP slice
+- valid supporting path after `RetroCam -> Pixel Lab`
+- should not become the default route when the capture still needs image treatment
 
 ### Deferred Handoffs
 
@@ -182,6 +185,7 @@ Not required for MVP:
 - Poster Maker -> Pixel Lab round-trip editing
 - multi-asset batch handoff
 - shell-wide `Open With` routing for every file type
+- RetroCam video/loop routing
 
 ---
 

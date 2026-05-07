@@ -3,6 +3,7 @@
  * Produces a custom palette that captures the image's color essence.
  */
 import type { RGB } from './palettes';
+import { createCanvasSurface } from './canvasSurface';
 
 /** Sampling limit — skip pixels to keep clustering fast on large images */
 const maxSamplePixels = 10000;
@@ -188,9 +189,7 @@ export async function extractPaletteFromImage(
         h = Math.round(h * scale);
       }
 
-      const canvas = new OffscreenCanvas(w, h);
-      const ctx = canvas.getContext('2d');
-      if (!ctx) { reject(new Error('Canvas context unavailable')); return; }
+      const { ctx } = createCanvasSurface(w, h);
       ctx.drawImage(img, 0, 0, w, h);
       const imageData = ctx.getImageData(0, 0, w, h);
       resolve(extractPaletteFromImageData(imageData, colorCount));

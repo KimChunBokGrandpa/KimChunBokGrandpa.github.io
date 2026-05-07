@@ -48,6 +48,7 @@ describe('Taskbar', () => {
     // Focused window button should have active/focused class
     const activeBtn = container.querySelector('.active, [class*="active"], [aria-pressed="true"]');
     expect(activeBtn).toBeTruthy();
+    expect(container.querySelector('.w98-taskbar-entry--active')).toBeTruthy();
   });
 
   it('shows clock', () => {
@@ -77,14 +78,32 @@ describe('Taskbar', () => {
     expect(container.innerHTML).toBeTruthy();
   });
 
+  it('exposes an accessible label for the locale switch button', () => {
+    const { container } = render(Taskbar, { props: defaultProps() });
+    const localeButton = container.querySelector('.tray-lang');
+    expect(localeButton?.getAttribute('aria-label')).toContain('language');
+    expect(localeButton?.getAttribute('aria-label')).toContain('English');
+  });
+
   it('calls onStartClick when start button is clicked', async () => {
     const onStartClick = vi.fn();
     const { container } = render(Taskbar, { props: { ...defaultProps(), onStartClick } });
     const startButton = container.querySelector('.start-btn');
     expect(startButton).toBeTruthy();
-    expect(startButton?.getAttribute('title')).toBe('start_open_launcher');
+    expect(startButton?.getAttribute('data-tooltip')).toBe('start_open_launcher');
     await fireEvent.click(startButton!);
     expect(onStartClick).toHaveBeenCalled();
+  });
+
+  it('shows the start button as pressed when the start menu is open', () => {
+    const { container } = render(Taskbar, {
+      props: { ...defaultProps(), startMenuOpen: true },
+    });
+
+    const startButton = container.querySelector('.start-btn');
+    expect(startButton?.classList.contains('w98-taskbar-button--active')).toBe(true);
+    expect(startButton?.getAttribute('aria-pressed')).toBe('true');
+    expect(startButton?.getAttribute('data-tooltip')).toBe('start_close_launcher');
   });
 
   it('uses restore/minimize/switch wording in taskbar window labels', () => {

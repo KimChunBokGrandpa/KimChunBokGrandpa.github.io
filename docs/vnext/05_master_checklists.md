@@ -4,9 +4,11 @@
 
 ## 0. Contract Readiness Checklist
 
-- [ ] `07_app_taxonomy_spec.md` is current and matches the shell language
-- [ ] `08_project_schema_spec.md` is current and matches persistence work
-- [ ] `09_cross_app_handoff_spec.md` is current and matches inter-app routing work
+- [ ] `01_product_vision.md` reflects Pixel Lab as the main product
+- [ ] `02_program_suite.md` keeps Poster Maker and RetroCam as supporting surfaces
+- [ ] `07_app_taxonomy_spec.md` matches the shell language
+- [ ] `08_project_schema_spec.md` matches persistence work
+- [ ] `09_cross_app_handoff_spec.md` matches inter-app routing work
 - [ ] `10_role_execution_plan.md` still matches the active delivery order
 - [ ] no implementation task proceeds by redefining these contracts ad hoc
 
@@ -14,44 +16,43 @@
 
 ## 1. Product Direction Checklist
 
-- [ ] The feature supports the `retro creative desktop` positioning
+- [ ] The feature supports Pixel Lab's core editing loop
+- [ ] The feature improves Classic Pixel output, Retro Treatment output, recommendation quality, or export reliability
 - [ ] The feature works inside the client-only architecture
-- [ ] The feature is classified as `shell`, `shared engine`, or `program-specific`
+- [ ] The feature is classified as `Pixel Lab core`, `shared engine`, `recommendation`, `supporting app`, or `shell`
 - [ ] The feature has a clear user-facing job-to-be-done
-- [ ] The feature does not duplicate an existing workflow without stronger app framing
-- [ ] The feature strengthens the "launchable programs" fantasy
+- [ ] The feature does not expand supporting apps without strengthening Pixel Lab input/output value
 
 ---
 
-## 2. App Definition Checklist
+## 2. Recommendation Checklist
 
-Use before promoting any workflow into its own desktop program.
-
-- [ ] The workflow has a distinct purpose
-- [ ] The workflow can be launched directly from the desktop
-- [ ] The workflow has its own icon and title identity
-- [ ] The workflow has a meaningful first screen
-- [ ] The workflow can reach a finished result on its own
-- [ ] The workflow is not just a settings subset of another app
-- [ ] The workflow has clear entry/exit points
+- [ ] Existing or new presets are classified as `Classic Pixel`, `Retro Treatment`, or a clearly justified hybrid
+- [ ] Recommendation reasons map to visible image traits or known preset behavior
+- [ ] The UI presents recommendations as starting points, not irreversible automation
+- [ ] Manual controls remain available after applying a recommendation
+- [ ] Reproduced recommendation edge cases receive targeted tests
+- [ ] Copy does not overclaim intelligence or remote AI behavior
 
 ---
 
-## 3. Shell Implementation Checklist
+## 3. Pixel Lab Checklist
 
-- [ ] Desktop icons exist for all first-party programs
-- [ ] Taskbar entries reflect running apps clearly
-- [ ] Window titles follow app-specific naming rules
-- [ ] Launch behavior is consistent
-- [ ] Minimize/restore/focus flows remain coherent
-- [ ] Toasts/messages still feel system-wide, not app-confusing
-- [ ] Mobile and narrow-view behavior still preserves app identity
+- [ ] Pixel Lab name appears consistently in shell-facing UI
+- [ ] Existing converter workflow remains stable
+- [ ] Import/upload remains obvious
+- [ ] Classic Pixel controls remain available
+- [ ] Retro Treatment controls remain available
+- [ ] Save/share/export still work after app reframing
+- [ ] Preset, batch, and gallery relationships remain understandable
+- [ ] Technical controls remain available without becoming cluttered
 
 ---
 
 ## 4. Shared Engine Checklist
 
 - [ ] Shared image pipeline boundaries are explicit
+- [ ] Quantizer, palette, dithering, scale, and effect-layer behavior remain coherent
 - [ ] Shared presets stay compatible across apps where intended
 - [ ] Export primitives are reusable
 - [ ] Local asset handoff is defined
@@ -62,13 +63,16 @@ Use before promoting any workflow into its own desktop program.
 
 ---
 
-## 5. Pixel Lab Checklist
+## 5. Shell Implementation Checklist
 
-- [ ] Pixel Lab name appears consistently in shell-facing UI
-- [ ] Existing converter workflow remains stable
-- [ ] Save/share/export still work after app reframing
-- [ ] Preset, batch, and gallery relationships remain understandable
-- [ ] Technical controls remain available without becoming cluttered
+- [ ] Pixel Lab is visually the primary desktop entry
+- [ ] Poster Maker and RetroCam remain understandable supporting entries
+- [ ] Taskbar entries reflect running apps clearly
+- [ ] Window titles follow app-specific naming rules
+- [ ] Launch behavior is consistent
+- [ ] Minimize/restore/focus flows remain coherent
+- [ ] Toasts/messages still feel system-wide, not app-confusing
+- [ ] Mobile and narrow-view behavior still preserves Pixel Lab identity
 
 ---
 
@@ -80,7 +84,8 @@ Use before promoting any workflow into its own desktop program.
 - [ ] Image placement workflow exists
 - [ ] Overlay/frame/sticker support exists at MVP level
 - [ ] Export to local file works
-- [ ] At least one cross-program handoff from Pixel Lab exists
+- [ ] Pixel Lab output handoff remains stable
+- [ ] Poster Maker does not become the default path for image refinement
 
 ---
 
@@ -89,27 +94,29 @@ Use before promoting any workflow into its own desktop program.
 - [ ] RetroCam launches from desktop
 - [ ] Capture input works locally
 - [ ] Fast preset switching works
-- [ ] Snapshot or short-loop export works
+- [ ] Snapshot export works
+- [ ] `Open in Pixel Lab` remains the primary handoff
+- [ ] `short-loop export` is only required if a future slice explicitly reopens it
 - [ ] Error states for permission/input are handled
-- [ ] At least one handoff to another app exists
+- [ ] Reopened snapshot save uses the stored snapshot asset, not a stale live canvas
 
 ---
 
 ## 8. UX Checklist
 
-- [ ] User can understand each app's purpose within seconds
-- [ ] No program feels like a disguised tab
+- [ ] User can understand Pixel Lab's purpose within seconds
+- [ ] User can choose or accept a recommended direction quickly
 - [ ] Common actions are discoverable without tutorials
 - [ ] Keyboard and pointer interactions are still consistent
 - [ ] Window clutter is manageable
-- [ ] Copy reflects software/app language, not feature-panel language
-- [ ] Onboarding supports the multi-program mental model
+- [ ] Copy reflects local software/editor language, not cloud platform language
+- [ ] Onboarding supports the Pixel Lab-first mental model
 
 ### Web Usability Guardrail
 
 - [ ] Browser-first usage is still clear without explaining the concept first
 - [ ] Core actions remain readable and discoverable on the web page
-- [ ] Novel shell styling does not hide save/open/capture/export actions
+- [ ] Novel shell styling does not hide save/open/recommend/capture/export actions
 
 ### Win98 Identity Guardrail
 
@@ -120,7 +127,7 @@ Use before promoting any workflow into its own desktop program.
 ### Mobile Guardrail
 
 - [ ] Core flows remain usable on a tall-phone viewport around `19.5:9`
-- [ ] Mobile layout preserves app identity, not generic stacked-page behavior
+- [ ] Mobile layout preserves Pixel Lab identity, not generic stacked-page behavior
 - [ ] Important actions remain visible and reachable without broken scrolling/clipping
 
 ---
@@ -130,6 +137,7 @@ Use before promoting any workflow into its own desktop program.
 - [ ] No required remote API was introduced
 - [ ] No account/login dependency was introduced
 - [ ] No cloud persistence assumption was introduced
+- [ ] No remote AI inference assumption was introduced for recommendations
 - [ ] Local storage/project persistence strategy is documented
 - [ ] Browser and Tauri local behavior remain aligned
 - [ ] Any optional network idea is clearly excluded from core scope
@@ -142,44 +150,11 @@ Use before promoting any workflow into its own desktop program.
 - [ ] Component tests cover new app launch and shell interactions
 - [ ] Integration tests cover cross-program handoff
 - [ ] Existing export and save regressions are checked
+- [ ] Recommendation edge cases are covered when reproduced
 - [ ] Mobile/narrow viewport behavior is checked
 - [ ] Accessibility states are reviewed
 - [ ] Client-only assumptions are preserved in tests and docs
 - [ ] Regression matrix is aligned to the current priority tier in `10_role_execution_plan.md`
-
-Current `WP-07` snapshot:
-
-- [x] Shared handoff helpers and bus flow are covered
-- [x] Poster Maker document restore/new/reset flows are covered
-- [x] Pixel Lab save/share/transfer store flow is covered
-- [x] Batch `saveAll` filename uniqueness and `shareAll` success/error/abort paths are covered
-- [x] Desktop icon launch and taskbar focus/minimize/restore shell flow are covered
-- [x] Mobile stacked shell/program DOM slot rendering is covered
-- [x] Full `verify:client` is currently green
-
-Current `WP-05` snapshot:
-
-- [x] RetroCam launches from desktop
-- [x] Capture input works locally
-- [x] Fast preset switching works
-- [x] Snapshot save and `Open in Pixel Lab` handoff work
-- [x] Permission/input failure states are handled at MVP level
-- [x] RetroCam -> Pixel Lab regression coverage exists
-- [x] Snapshot provenance is preserved across later live preset changes
-- [x] Durable local project persistence exists
-- [x] Targeted Tauri native save regression coverage exists
-- [ ] Real-device manual QA for tall-phone mobile and Tauri native save remains desirable
-
-Current `WP-06` snapshot:
-
-- [x] Start menu is now a real launch surface for first-party programs
-- [x] Start menu exposes recent `Poster Maker` projects as a shell-level reopen path
-- [ ] Cross-program reopen/open-with continuity still remains follow-up work
-
-Current mobile confidence note:
-
-- [x] mobile layout math and DOM slot rendering are covered
-- [ ] real-device manual QA for a `19.5:9` tall-phone viewport remains desirable as features expand
 
 ---
 
@@ -197,10 +172,11 @@ Current mobile confidence note:
 
 ## 12. Release Readiness Checklist
 
+- [ ] Pixel Lab recommendation flow is understandable
 - [ ] Shell naming and app naming are consistent
 - [ ] Desktop icon set is stable
 - [ ] Core app launch flows work from a fresh session
 - [ ] Project restore behavior is predictable
 - [ ] Export/save/share flows are validated
-- [ ] Main marketing/screenshots show multi-program identity clearly
-- [ ] Release notes explain the shift from single tool to retro desktop suite
+- [ ] Main marketing/screenshots show the Pixel Lab-first editor clearly
+- [ ] Release notes explain the shift to recommendation-led classic pixelization and retro treatment

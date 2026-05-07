@@ -20,6 +20,7 @@
 
   let okBtn: HTMLButtonElement | undefined = $state();
   let dialogEl: HTMLDivElement | undefined = $state();
+  let dialogToneIcon = $derived(onConfirm ? '⚠️' : 'ℹ️');
 
   // ESC key to close
   function handleKeydown(e: KeyboardEvent) {
@@ -78,9 +79,9 @@
 
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <!-- svelte-ignore a11y_no_static_element_interactions -->
-<div class="dialog-overlay" onclick={onClose}>
+<div class="dialog-overlay w98-overlay-scrim" onclick={onClose}>
   <div
-    class="window dialog-win"
+    class="window dialog-win w98-floating-surface w98-dialog-window"
     bind:this={dialogEl}
     onclick={(e) => e.stopPropagation()}
     role="dialog"
@@ -88,23 +89,32 @@
     aria-labelledby="msg-dialog-title"
     tabindex="-1"
   >
-    <div class="title-bar">
-      <div class="title-bar-text" id="msg-dialog-title">{title}</div>
-      <div class="title-bar-controls">
-        <button aria-label={i18n.t('close')} onclick={onClose}></button>
+    <div class="title-bar w98-shell-titlebar">
+      <div class="title-bar-text dialog-title w98-shell-title w98-dialog-titleline" id="msg-dialog-title">
+        <span class="dialog-title-icon w98-emoji" aria-hidden="true">{dialogToneIcon}</span>
+        <span>{title}</span>
+      </div>
+      <div class="title-bar-controls w98-window-control-strip">
+        <button type="button" class="w98-window-control-button" aria-label={i18n.t('close')} data-control="close" onclick={onClose}>
+          <span aria-hidden="true">✕</span>
+        </button>
       </div>
     </div>
-    <div class="window-body dialog-body">
-      <div class="dialog-content">
-        <span class="dialog-icon" aria-hidden="true">{onConfirm ? '⚠️' : 'ℹ️'}</span>
-        <p class="dialog-message">{message}</p>
+    <div class="window-body dialog-body w98-dialog-body-shell">
+      <div class="dialog-content w98-dialog-layout">
+        <div class="dialog-icon-shell w98-dialog-icon-panel" aria-hidden="true">
+          <span class="dialog-icon w98-emoji">{dialogToneIcon}</span>
+        </div>
+        <div class="dialog-copy-stack w98-dialog-copy-stack">
+          <p class="dialog-message w98-dialog-copy">{message}</p>
+        </div>
       </div>
-      <div class="field-row dialog-actions">
+      <div class="field-row dialog-actions w98-action-row w98-dialog-actions">
         {#if onConfirm}
-          <button class="dialog-ok-btn" bind:this={okBtn} onclick={onConfirm}>{confirmLabel ?? i18n.t('ok')}</button>
-          <button class="dialog-ok-btn" onclick={onClose}>{cancelLabel ?? i18n.t('cancel')}</button>
+          <button type="button" class="dialog-ok-btn w98-button" bind:this={okBtn} onclick={onConfirm}>{confirmLabel ?? i18n.t('ok')}</button>
+          <button type="button" class="dialog-ok-btn w98-button" onclick={onClose}>{cancelLabel ?? i18n.t('cancel')}</button>
         {:else}
-          <button class="dialog-ok-btn" bind:this={okBtn} onclick={onClose}>{i18n.t('ok')}</button>
+          <button type="button" class="dialog-ok-btn w98-button" bind:this={okBtn} onclick={onClose}>{i18n.t('ok')}</button>
         {/if}
       </div>
     </div>
@@ -113,46 +123,30 @@
 
 <style>
   .dialog-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.5);
-    display: flex;
-    align-items: center;
-    justify-content: center;
     z-index: 9999;
   }
-  .dialog-win {
-    min-width: 280px;
-    max-width: 400px;
-    box-shadow: var(--w98-outset);
+  .dialog-title {
+    flex: 1;
   }
-  .dialog-body {
-    padding: 12px;
+  .dialog-title-icon {
+    flex-shrink: 0;
   }
   .dialog-content {
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-    margin-bottom: 16px;
+    align-items: stretch;
+    margin-bottom: 0;
   }
   .dialog-icon {
-    font-size: 32px;
+    font-size: 26px;
     flex-shrink: 0;
-    font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
     line-height: 1;
   }
   .dialog-message {
-    margin: 0;
-    padding-top: 6px;
-  }
-  .dialog-actions {
-    justify-content: flex-end;
+    padding-top: 2px;
   }
   .dialog-ok-btn {
     min-width: 75px;
-    cursor: pointer;
   }
-  .dialog-ok-btn:active {
-    box-shadow: var(--w98-inset-thin);
+  .title-bar-controls :global(button) {
+    flex-shrink: 0;
   }
 </style>

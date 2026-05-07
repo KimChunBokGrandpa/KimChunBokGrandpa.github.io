@@ -1,24 +1,38 @@
-# Program Suite Specification
+# Product Suite Specification
 
 ---
 
 ## Suite Overview
 
-vNext should be presented as a desktop with a small set of first-party programs.
+vNext is a Pixel Lab-centered product with a small set of supporting first-party programs.
 
-### Program List
+The suite can still appear as a Win98-style desktop, but roadmap weight is intentionally uneven:
+
+1. `Pixel Lab` is the main product.
+2. `Poster Maker` is an output/composition destination.
+3. `RetroCam` is an input/capture source.
+4. `Shared Shell` keeps launch, windowing, recent projects, and handoff behavior coherent.
+
+---
+
+## Program Weighting
+
+### Primary
 
 - `Pixel Lab`
+
+### Supporting
+
 - `Poster Maker`
 - `RetroCam`
 
-Each program must have:
+### Shared Infrastructure
 
-- its own desktop icon
-- its own window title and iconography
-- its own default launch size/position
-- its own focused workflow
-- shared export/save/project conventions
+- desktop shell
+- local project storage
+- asset references
+- export/save/share services
+- cross-app handoff contracts
 
 ---
 
@@ -30,6 +44,16 @@ Each program must have:
 - taskbar shows every running program window
 - reopen should restore recent window position when appropriate
 - windows can coexist and users can move between them as if they are real programs
+
+### Priority Guard
+
+The shell exists to support editing. Shell polish is valuable only when it improves:
+
+- Pixel Lab discoverability
+- recommendation and preset access
+- preview/compare/export confidence
+- cross-app asset flow clarity
+- local project recovery
 
 ### Shared UX Contracts
 
@@ -43,7 +67,7 @@ Each program must have:
 
 - common local project metadata
 - shared asset references
-- shared preset references
+- shared preset references where intended
 - cross-program import/export primitives
 
 ---
@@ -52,28 +76,49 @@ Each program must have:
 
 ### Role
 
-The technical editing and conversion program.
+The main recommendation-led pixel/retro image editor.
 
 ### Purpose
 
-- image-to-pixel conversion
-- palette and dithering control
-- glitch/CRT/effect tuning
-- animated export
-- batch processing
+- convert source images into classic pixel-style results
+- apply broader retro treatments such as CRT, VHS, glitch, cyberpunk, and nostalgic color moods
+- recommend palettes, styles, and presets based on image traits
+- let users refine recommendations through visible controls
+- export still and animated outputs
+
+### Output Families
+
+#### Classic Pixel
+
+- palette-limited conversion
+- block-size-aware pixelization
+- dithering and quantization control
+- console/handheld-inspired palette presets
+- sharp scale/export behavior
+
+#### Retro Treatment
+
+- CRT scanlines and monitor feel
+- VHS/glitch/effect layer styling
+- cyberpunk / warm nostalgic / arcade mood presets
+- looser aesthetic transformations that preserve visual appeal over strict hardware authenticity
 
 ### Keep
 
 - current control depth
-- presets
+- presets and preset preview thumbnails
+- style and palette recommendation surfaces
 - batch processing
 - GIF/APNG/WebP/SVG export surface
+- local preset/share flows
 
 ### Strengthen
 
-- position it as the "power tool"
-- give it a clearer app identity in shell copy
-- let it open source images and produce reusable outputs for other programs
+- make recommendation categories explicit
+- explain why a preset or palette is suggested
+- keep before/after and compare tools close to recommendation decisions
+- make Pixel Lab feel like the obvious first and returning workspace
+- ensure shell/supporting apps never obscure import, preview, tune, and export
 
 ### Output Types
 
@@ -81,6 +126,7 @@ The technical editing and conversion program.
 - animated output
 - preset bundle
 - reusable effect recipe
+- asset for Poster Maker
 
 ---
 
@@ -88,7 +134,7 @@ The technical editing and conversion program.
 
 ### Role
 
-The composition and layout program.
+A supporting composition destination for finished or near-finished Pixel Lab assets.
 
 ### Purpose
 
@@ -104,11 +150,9 @@ The composition and layout program.
 - one imported image slot from filesystem or Pixel Lab
 - export as image
 
-### Why It Matters
+### Product Guard
 
-- transforms the product from a converter into a creator tool
-- gives users a final-use destination for converted images
-- fully fits the desktop-program fantasy
+Poster Maker should not become the roadmap center unless the product need is specifically about using Pixel Lab outputs in finished layouts.
 
 ### Output Types
 
@@ -124,13 +168,13 @@ The composition and layout program.
 
 ### Role
 
-The quick capture and live-play program.
+A supporting capture source for quick Pixel Lab inputs.
 
 ### Purpose
 
-- capture webcam, screen, or quick image input
-- apply fast retro treatment
-- output snapshots or short loops
+- capture webcam snapshots
+- apply fast preview treatment
+- output snapshots or route captures into Pixel Lab
 
 ### MVP Scope
 
@@ -139,25 +183,22 @@ The quick capture and live-play program.
 - snapshot capture
 - `RetroCam -> Pixel Lab` handoff
 
-Deferred within the broader `RetroCam` track:
+Deferred unless a new product reason appears:
 
-- image input mode
 - screen capture
 - short loop or animated export
-- `RetroCam -> Poster Maker` direct handoff
+- broader camera studio behavior
 
-### Why It Matters
+### Product Guard
 
-- gives the suite an instant-play app
-- broadens the product beyond manual editing
-- makes the desktop feel more alive and less tool-only
+RetroCam should stay lightweight. Its strongest value is a fast path from live capture to Pixel Lab editing, not becoming a separate video product.
 
 ### Output Types
 
 - snapshot
-- looping clip
-- quick avatar
-- reaction image
+- quick avatar source
+- reaction image source
+- Pixel Lab input asset
 
 ---
 
@@ -165,21 +206,21 @@ Deferred within the broader `RetroCam` track:
 
 ### Flow A: Pixel Lab -> Poster Maker
 
-1. User processes image in Pixel Lab
-2. User chooses "Send to Poster Maker"
-3. Poster Maker opens with the processed asset placed on canvas
+1. User processes image in Pixel Lab.
+2. User chooses `Send to Poster Maker`.
+3. Poster Maker opens with the processed asset placed on canvas.
 
 ### Flow B: RetroCam -> Pixel Lab
 
-1. User captures a snapshot in RetroCam
-2. User chooses "Open in Pixel Lab"
-3. Pixel Lab opens the captured asset for deeper treatment
+1. User captures a snapshot in RetroCam.
+2. User chooses `Open in Pixel Lab`.
+3. Pixel Lab opens the captured asset for deeper recommendation-led editing.
 
 ### Flow C: Poster Maker -> Export
 
-1. User assembles composition
-2. User exports to local file
-3. Asset is visible in recent files / last outputs
+1. User assembles composition.
+2. User exports to local file.
+3. Export summary is preserved in local project history where available.
 
 ---
 
@@ -187,15 +228,16 @@ Deferred within the broader `RetroCam` track:
 
 ### Needed for vNext
 
-The product should move from single-asset state to local project state.
+The product should preserve local work units across the main editor and supporting programs.
 
 ### Minimum Project Contents
 
 - project id
-- program type
+- owning app type
 - created/updated timestamps
 - source asset references
 - settings snapshot
+- recommendation/preset context when applicable
 - composition state when applicable
 - export history summary
 
@@ -203,7 +245,8 @@ The product should move from single-asset state to local project state.
 
 - stored locally only
 - no remote sync assumption
-- portable import/export when practical
+- object URLs must not be the only durable asset reference
+- portable import/export can be explored later, but is not required for the current core
 
 ---
 
@@ -211,7 +254,7 @@ The product should move from single-asset state to local project state.
 
 ### Shell Naming Rule
 
-The desktop should show product flavor plus app-specific utility names.
+The desktop should show product flavor plus app-specific utility names while preserving Pixel Lab as the default center.
 
 ### Recommended App Names
 
@@ -225,16 +268,16 @@ The desktop should show product flavor plus app-specific utility names.
 - `Asset Drawer`
 - `Project Explorer`
 
-These should only appear later if they solve real workflow friction.
+These should only appear later if they solve real Pixel Lab workflow friction.
 
 ---
 
-## Program Acceptance Test
+## Acceptance Test
 
-A program is real enough only if:
+The suite direction is healthy only if:
 
-- users can launch it directly from the desktop
-- it has a distinct job-to-be-done
-- it can complete a full mini-workflow on its own
-- it has a differentiated window identity
-- it is not merely a renamed modal or hidden tab
+- Pixel Lab is clearly the primary product surface
+- Classic Pixel and Retro Treatment recommendations are both available and understandable
+- Poster Maker and RetroCam support Pixel Lab rather than competing with it
+- shell behavior makes local editing feel playful without hiding core actions
+- export/save/share flows remain reliable in browser and Tauri local runtimes

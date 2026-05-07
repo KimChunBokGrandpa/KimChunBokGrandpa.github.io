@@ -11,12 +11,14 @@
     width = $bindable(400),
     height = $bindable(400),
     zIndex = 1,
+    isFocused = true,
     minWidth = 200,
     minHeight = 150,
     mobileSlot = null,
     swipeEnabled = false,
     menuItems = [] as string[],
     onClose,
+    onMinimize,
     onFocus,
     onLayoutChange,
     onSwipeLeft,
@@ -31,12 +33,14 @@
     width?: number;
     height?: number;
     zIndex?: number;
+    isFocused?: boolean;
     minWidth?: number;
     minHeight?: number;
     mobileSlot?: { top: string; height: string; left?: string; width?: string } | null;
     swipeEnabled?: boolean;
     menuItems?: string[];
     onClose?: () => void;
+    onMinimize?: () => void;
     onFocus?: () => void;
     onLayoutChange?: () => void;
     onSwipeLeft?: () => void;
@@ -209,6 +213,10 @@
 
   function handleMinimize(e: MouseEvent) {
     e.stopPropagation();
+    if (onMinimize) {
+      onMinimize();
+      return;
+    }
     mode = 'minimized';
   }
   function handleMaximize(e: MouseEvent) {
@@ -230,12 +238,6 @@
   }
   function handleWindowClick() {
     onFocus?.();
-  }
-
-  function handleKeydown(e: KeyboardEvent) {
-    if (e.key === 'Escape') {
-      onClose?.();
-    }
   }
 
   function handleTitleDblClick() {
@@ -278,56 +280,52 @@
 </script>
 
 {#if mode !== 'minimized'}
+  <!-- svelte-ignore a11y_click_events_have_key_events -->
+  <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
   <div
     class="window win98-window"
     class:maximized={mode === 'maximized'}
+    class:unfocused={!isFocused}
     class:interacting={isDragging || isResizing}
     class:resizing={isResizing}
     style={windowStyle}
-    role="dialog"
+    role="group"
     aria-label={title}
+    aria-roledescription="window"
     tabindex="-1"
     onclick={handleWindowClick}
-    onkeydown={handleKeydown}
   >
     <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div
-      class="title-bar"
+      class="title-bar w98-shell-titlebar"
+      class:w98-shell-titlebar--unfocused={!isFocused}
       onmousedown={startDrag}
       ontouchstart={(e) => { handleSwipeStart(e); startDrag(e); }}
       ontouchend={handleSwipeEnd}
       ondblclick={handleTitleDblClick}
     >
-      <div class="title-bar-text">
-        <span class="window-icon">{icon}</span>
+      <div class="title-bar-text w98-shell-title w98-shell-titleline">
+        <span class="window-icon w98-emoji">{icon}</span>
         {title}
         {#if mobileSlot}<span class="compact-expand-arrow" aria-hidden="true">&#9660;</span>{/if}
       </div>
-      <div class="title-bar-controls">
-        <button aria-label={i18n.t('minimize')} onclick={handleMinimize}></button>
-        <button aria-label={i18n.t('maximize')} onclick={handleMaximize}></button>
-        <button aria-label={i18n.t('close')} onclick={handleClose}></button>
+      <div class="title-bar-controls w98-window-control-strip">
+        <button type="button" class="w98-window-control-button" aria-label={i18n.t('minimize')} data-control="minimize" onclick={handleMinimize}>
+          <span aria-hidden="true">_</span>
+        </button>
+        <button type="button" class="w98-window-control-button" aria-label={i18n.t('maximize')} data-control="maximize" onclick={handleMaximize}>
+          <span aria-hidden="true">▢</span>
+        </button>
+        <button type="button" class="w98-window-control-button" aria-label={i18n.t('close')} data-control="close" onclick={handleClose}>
+          <span aria-hidden="true">✕</span>
+        </button>
       </div>
     </div>
     {#if menuItems.length > 0}
-      <div class="win98-menubar" role="menubar">
-        {#each menuItems as item, idx}
-          <button
-            class="win98-menu-item"
-            role="menuitem"
-            tabindex={idx === 0 ? 0 : -1}
-            onkeydown={(e) => {
-              const items = (e.currentTarget as HTMLElement).parentElement?.querySelectorAll<HTMLElement>('[role="menuitem"]');
-              if (!items) return;
-              if (e.key === 'ArrowRight') {
-                e.preventDefault();
-                items[(idx + 1) % items.length].focus();
-              } else if (e.key === 'ArrowLeft') {
-                e.preventDefault();
-                items[(idx - 1 + items.length) % items.length].focus();
-              }
-            }}
-          >{item}</button>
+      <!-- Presentation-only menubar. Add a real action model before reintroducing interactive menu semantics. -->
+      <div class="win98-menubar w98-shell-menubar" aria-hidden="true">
+        {#each menuItems as item}
+          <span class="win98-menu-item w98-shell-menubar-item">{item}</span>
         {/each}
       </div>
     {/if}
@@ -405,45 +403,22 @@
     overflow: hidden;
     box-shadow: var(--w98-window-shadow);
     user-select: none;
+    background: var(--w98-surface);
   }
   .win98-window.maximized {
     box-shadow: var(--w98-outset);
   }
   .win98-window.resizing {
-    outline: 2px dashed var(--w98-highlight);
+    outline: 1px dashed var(--w98-highlight);
     outline-offset: -2px;
   }
 
   /* ── Menu Bar ── */
   .win98-menubar {
-    display: flex;
-    align-items: stretch;
-    background: var(--w98-surface);
-    padding: 0;
-    border-bottom: 1px solid var(--w98-shadow-808);
     flex-shrink: 0;
-    overflow-x: auto;
   }
   .win98-menu-item {
-    display: flex;
-    align-items: center;
-    padding: 2px 8px;
-    font-size: var(--w98-font-size-base);
-    font-family: inherit;
-    background: transparent;
-    border: none;
-    box-shadow: none;
-    cursor: default;
-    color: var(--w98-text);
-    white-space: nowrap;
     flex: 0 0 auto;
-  }
-  .win98-menu-item:hover {
-    background: var(--w98-highlight);
-    color: #fff;
-  }
-  .win98-menu-item:active {
-    box-shadow: var(--w98-inset-thin);
   }
 
   .win98-body {
@@ -459,18 +434,32 @@
     cursor: grab;
     flex-shrink: 0;
     position: relative;
+    min-height: var(--w98-titlebar-height);
   }
   .interacting .title-bar {
     cursor: grabbing;
   }
+  .title-bar-text {
+    display: flex;
+    align-items: center;
+    gap: var(--w98-space-4);
+    min-width: 0;
+    padding-right: var(--w98-space-4);
+    font-size: var(--w98-font-size-base);
+  }
   .title-bar-controls {
-    position: relative;
-    z-index: 110;
+    flex-shrink: 0;
+  }
+  .title-bar-controls :global(button) {
+    flex-shrink: 0;
   }
   .window-icon {
-    font-family: var(--w98-emoji-font);
-    color: initial;
-    margin-right: 4px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 12px;
+    flex-shrink: 0;
+    margin-right: 0;
   }
 
   /* ===== Resize Handles (8-direction) ===== */
@@ -562,7 +551,7 @@
       display: inline;
       font-size: 8px;
       margin-left: 4px;
-      color: var(--w98-text-muted);
+      color: #fff;
       vertical-align: middle;
     }
   }

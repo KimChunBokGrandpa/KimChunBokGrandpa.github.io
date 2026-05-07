@@ -5,6 +5,7 @@
  */
 import type { RGB } from './palettes';
 import { palettes } from './palettes';
+import { createCanvasSurface } from './canvasSurface';
 import { extractPaletteFromImageData } from './paletteExtractor';
 
 /** Weighted Euclidean distance (matches colorQuantizer) */
@@ -86,9 +87,7 @@ export async function recommendPalettesFromImage(
         w = Math.round(w * scale);
         h = Math.round(h * scale);
       }
-      const canvas = new OffscreenCanvas(w, h);
-      const ctx = canvas.getContext('2d');
-      if (!ctx) { reject(new Error('Canvas context unavailable')); return; }
+      const { ctx } = createCanvasSurface(w, h);
       ctx.drawImage(img, 0, 0, w, h);
       const imageData = ctx.getImageData(0, 0, w, h);
       resolve(recommendPalettes(imageData, topN));

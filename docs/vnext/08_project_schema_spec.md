@@ -85,7 +85,6 @@ interface RetroProjectManifestV1 {
   previewAssetId?: string;
   tags?: string[];
   exportHistory: ExportHistoryEntry[];
-  shellState?: ProjectShellState;
   programState: ProgramStateV1;
 }
 ```
@@ -104,8 +103,9 @@ interface RetroProjectManifestV1 {
 | `primaryAssetId` | the asset the primary view should open with |
 | `previewAssetId` | lightweight thumbnail/preview reference when available |
 | `exportHistory` | summary only, not full binary export contents |
-| `shellState` | optional shell restoration hints |
 | `programState` | app-specific payload |
+
+`exportHistory` currently has connected writers for successful Pixel Lab save/share and Poster Maker PNG export. Runtime cancel paths must not append empty history entries.
 
 ---
 
@@ -156,12 +156,6 @@ interface ExportHistoryEntry {
   width?: number;
   height?: number;
 }
-
-interface ProjectShellState {
-  lastWindowLayoutId?: string;
-  preferredWindowMode?: 'windowed' | 'maximized';
-  activeUtilitySurface?: string;
-}
 ```
 
 ---
@@ -183,13 +177,8 @@ interface PixelLabProjectStateV1 {
   activeSourceAssetId?: string;
   lastProcessedAssetId?: string;
   processingSettings: Record<string, unknown>;
-  postFilters?: Record<string, unknown>;
-  transformState?: Record<string, unknown>;
-  selectedPresetId?: string;
-  historySummary?: {
-    undoDepth: number;
-    redoDepth: number;
-  };
+  postFilters: Record<string, unknown>;
+  transformState: Record<string, unknown>;
   exportDefaults?: {
     format: 'png' | 'jpeg' | 'webp';
     quality: number;
@@ -201,7 +190,6 @@ interface PixelLabProjectStateV1 {
 
 - `processingSettings` must contain the app’s serializable image-processing state
 - undo/redo stack contents do not need to be fully persisted in MVP
-- `historySummary` exists for shell insight and diagnostics only
 
 ### Poster Maker State
 
@@ -215,17 +203,22 @@ interface PosterMakerProjectStateV1 {
     backgroundStyleId?: string;
   };
   layers: PosterMakerLayerV1[];
+  sourceContext?: ProjectSourceContextV1;
   activeLayerId?: string;
-  exportDefaults?: {
-    format: 'png' | 'jpeg' | 'webp';
-    quality: number;
-  };
+}
+
+interface ProjectSourceContextV1 {
+  sourceAppId: AppId;
+  sourceProjectId?: string;
+  sourceLabel?: string;
+  importedAt: string;
 }
 
 type PosterMakerLayerV1 =
   | PosterImageLayerV1
   | PosterTextLayerV1
   | PosterFrameLayerV1
+  | PosterOverlayLayerV1
   | PosterStickerLayerV1;
 ```
 
@@ -256,6 +249,11 @@ interface PosterTextLayerV1 extends BasePosterLayerV1 {
 interface PosterFrameLayerV1 extends BasePosterLayerV1 {
   type: 'frame';
   frameStyleId: string;
+}
+
+interface PosterOverlayLayerV1 extends BasePosterLayerV1 {
+  type: 'overlay';
+  overlayStyleId: string;
 }
 
 interface PosterStickerLayerV1 extends BasePosterLayerV1 {

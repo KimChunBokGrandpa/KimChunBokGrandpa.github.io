@@ -1,5 +1,6 @@
 import { browser, dev } from '$app/environment';
 import { base } from '$app/paths';
+import { isTauriRuntime } from '$lib/utils/env';
 
 export function getServiceWorkerUrl(basePath = base): string {
   return `${basePath}/service-worker.js`;
@@ -10,7 +11,7 @@ export function shouldRegisterServiceWorker(): boolean {
     browser &&
     !dev &&
     'serviceWorker' in navigator &&
-    !(typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window)
+    !isTauriRuntime()
   );
 }
 

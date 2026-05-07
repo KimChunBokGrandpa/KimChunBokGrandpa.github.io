@@ -85,168 +85,172 @@
   }
 </script>
 
-<div class="gif-controls" aria-busy={isExporting}>
+<div class="gif-controls w98-floating-surface" aria-busy={isExporting}>
   <div class="gif-controls-row">
     <button
-      class="gif-btn"
+      class="gif-btn w98-inline-button w98-button--thin"
       onclick={() => isPlaying ? onPause() : onPlay()}
       title={isPlaying ? i18n.t('pause') : i18n.t('play')}
       disabled={isExporting}
       use:tooltip
     >
-      {isPlaying ? '⏸' : '▶'}
+      <span class="w98-structural-glyph" aria-hidden="true">{isPlaying ? '⏸' : '▶'}</span>
     </button>
     <button
-      class="gif-btn"
+      class="gif-btn w98-inline-button w98-button--thin"
       onclick={() => onSeek(0)}
       title={i18n.t('first_frame')}
       disabled={isExporting}
       use:tooltip
-    >⏮</button>
+    ><span class="w98-structural-glyph" aria-hidden="true">⏮</span></button>
     <button
-      class="gif-btn"
+      class="gif-btn w98-inline-button w98-button--thin"
       onclick={() => onSeek(Math.max(0, currentFrame - 1))}
       title={i18n.t('prev_frame')}
       disabled={isExporting}
       use:tooltip
-    >◀</button>
-    <span class="gif-frame-info">{currentFrame + 1}/{frameCount}</span>
+    ><span class="w98-structural-glyph" aria-hidden="true">◀</span></button>
+    <span class="gif-frame-info w98-chip">{currentFrame + 1}/{frameCount}</span>
     {#if onDeleteFrame}
       <button
-        class="gif-btn"
+        class="gif-btn w98-inline-button w98-button--thin"
         onclick={() => onDeleteFrame(currentFrame)}
         title={i18n.t('delete_frame')}
         disabled={isExporting || frameCount <= 1}
         use:tooltip
-      >🗑</button>
+      ><span class="w98-emoji" aria-hidden="true">🗑️</span></button>
     {/if}
     {#if onDuplicateFrame}
       <button
-        class="gif-btn"
+        class="gif-btn w98-inline-button w98-button--thin"
         onclick={() => onDuplicateFrame(currentFrame)}
         title={i18n.t('duplicate_frame')}
         disabled={isExporting}
         use:tooltip
-      >📋</button>
+      ><span class="w98-emoji" aria-hidden="true">📋</span></button>
     {/if}
     {#if onReorderFrame}
       <button
-        class="gif-btn"
+        class="gif-btn w98-inline-button w98-button--thin"
         onclick={() => onReorderFrame(currentFrame, currentFrame - 1)}
         title={i18n.t('move_frame_left')}
         disabled={isExporting || currentFrame === 0}
         use:tooltip
-      >⬅</button>
+      ><span class="w98-structural-glyph" aria-hidden="true">⬅</span></button>
       <button
-        class="gif-btn"
+        class="gif-btn w98-inline-button w98-button--thin"
         onclick={() => onReorderFrame(currentFrame, currentFrame + 1)}
         title={i18n.t('move_frame_right')}
         disabled={isExporting || currentFrame >= frameCount - 1}
         use:tooltip
-      >➡</button>
+      ><span class="w98-structural-glyph" aria-hidden="true">➡</span></button>
     {/if}
     <button
-      class="gif-btn"
+      class="gif-btn w98-inline-button w98-button--thin"
       onclick={() => onSeek(Math.min(frameCount - 1, currentFrame + 1))}
       title={i18n.t('next_frame')}
       disabled={isExporting}
       use:tooltip
-    >▶</button>
+    ><span class="w98-structural-glyph" aria-hidden="true">▶</span></button>
     <button
-      class="gif-btn"
+      class="gif-btn w98-inline-button w98-button--thin"
       onclick={() => onSeek(frameCount - 1)}
       title={i18n.t('last_frame')}
       disabled={isExporting}
       use:tooltip
-    >⏭</button>
-    <div class="gif-sep"></div>
+    ><span class="w98-structural-glyph" aria-hidden="true">⏭</span></button>
+    <div class="gif-sep w98-toolbar-divider"></div>
     {#if isExporting}
-      <span class="gif-export-status">
+      <span class="gif-export-status w98-chip">
         {Math.round(exportProgress * 100)}% ({Math.min(Math.ceil(exportProgress * frameCount), frameCount)}/{frameCount})
       </span>
       {#if onCancelExport}
         <button
-          class="gif-btn gif-cancel-btn"
+          class="gif-btn gif-cancel-btn w98-inline-button w98-button--thin"
           onclick={onCancelExport}
           title={i18n.t('cancel')}
           aria-label={i18n.t('cancel')}
           use:tooltip
-        >✕</button>
+        ><span class="w98-structural-glyph" aria-hidden="true">✕</span></button>
       {/if}
     {:else}
       <button
-        class="gif-btn gif-export-btn"
+        class="gif-btn gif-export-btn w98-button"
         onclick={onExport}
         title={i18n.t('export_gif')}
         use:tooltip
       >
-        💾 {i18n.t('gif_btn')}
+        <span class="w98-emoji" aria-hidden="true">💾</span>
+        <span>{i18n.t('gif_btn')}</span>
       </button>
     {/if}
     {#if onExportSpritesheet}
       <button
-        class="gif-btn gif-export-btn"
+        class="gif-btn gif-export-btn w98-inline-button w98-button--thin"
         onclick={onExportSpritesheet}
         disabled={isExporting}
         title={i18n.t('export_spritesheet')}
         use:tooltip
       >
-        🧩
+        <span class="w98-emoji" aria-hidden="true">🧩</span>
       </button>
     {/if}
     {#if onExportSequence}
       <button
-        class="gif-btn gif-export-btn"
+        class="gif-btn gif-export-btn w98-inline-button w98-button--thin"
         onclick={onExportSequence}
         disabled={isExporting}
         title={i18n.t('export_sequence_desc')}
         aria-label={i18n.t('export_sequence')}
         use:tooltip
       >
-        📁
+        <span class="w98-emoji" aria-hidden="true">📁</span>
       </button>
     {/if}
     {#if onExportApng}
       <button
-        class="gif-btn gif-export-btn"
+        class="gif-btn gif-export-btn w98-inline-button w98-button--thin"
         onclick={onExportApng}
         disabled={isExporting}
         title={i18n.t('export_apng_desc')}
         aria-label={i18n.t('export_apng')}
         use:tooltip
       >
-        🖼 APNG
+        <span class="w98-emoji" aria-hidden="true">🖼️</span>
+        <span>APNG</span>
       </button>
     {/if}
     {#if onExportAnimatedSvg}
       <button
-        class="gif-btn gif-export-btn"
+        class="gif-btn gif-export-btn w98-inline-button w98-button--thin"
         onclick={onExportAnimatedSvg}
         disabled={isExporting}
         title={i18n.t('export_animated_svg_desc')}
         aria-label={i18n.t('export_animated_svg')}
         use:tooltip
       >
-        ▦ SVG
+        <span class="w98-structural-glyph" aria-hidden="true">▦</span>
+        <span>SVG</span>
       </button>
     {/if}
     {#if onExportAnimatedWebp}
       <button
-        class="gif-btn gif-export-btn"
+        class="gif-btn gif-export-btn w98-inline-button w98-button--thin"
         onclick={onExportAnimatedWebp}
         disabled={isExporting}
         title={i18n.t('export_animated_webp_desc')}
         aria-label={i18n.t('export_animated_webp')}
         use:tooltip
       >
-        🎞 WebP
+        <span class="w98-emoji" aria-hidden="true">🎞️</span>
+        <span>WebP</span>
       </button>
     {/if}
   </div>
   <div class="gif-slider-row">
     <input
       type="range"
-      class="gif-slider"
+      class="gif-slider w98-range"
       min="0"
       max={frameCount - 1}
       value={currentFrame}
@@ -256,12 +260,12 @@
   </div>
   {#if onReorderFrame && frameCount > 1}
     <div class="gif-frame-strip-section">
-      <div class="gif-frame-strip-label">{i18n.t('drag_frames_reorder')}</div>
+      <div class="gif-frame-strip-label w98-kicker">{i18n.t('drag_frames_reorder')}</div>
       <div class="gif-frame-strip" role="list" aria-label={i18n.t('drag_frames_reorder')}>
         {#each Array.from({ length: frameCount }, (_, idx) => idx) as frameIndex}
           <button
-            class="gif-frame-chip"
-            class:active={frameIndex === currentFrame}
+            class="gif-frame-chip w98-inline-button w98-button--thin"
+            class:w98-inline-button--active={frameIndex === currentFrame}
             class:drag-source={frameIndex === dragFrameIndex}
             class:drag-target={frameIndex === dropFrameIndex && dragFrameIndex !== frameIndex}
             draggable={!isExporting}
@@ -283,8 +287,8 @@
     </div>
   {/if}
   {#if isExporting}
-    <div class="gif-export-progress">
-      <div class="gif-export-bar" style="width:{exportProgress * 100}%"></div>
+    <div class="gif-export-progress w98-progress-track">
+      <div class="gif-export-bar w98-progress-fill" style="width:{exportProgress * 100}%"></div>
     </div>
   {/if}
 </div>
@@ -295,8 +299,6 @@
     bottom: 42px;
     left: 50%;
     transform: translateX(-50%);
-    background: var(--w98-surface);
-    border: none;
     padding: 4px 8px;
     z-index: 7;
     display: flex;
@@ -305,7 +307,6 @@
     min-width: 220px;
     max-width: calc(100% - 16px);
     box-sizing: border-box;
-    box-shadow: var(--w98-outset);
   }
 
   .gif-controls-row {
@@ -320,18 +321,9 @@
     height: 20px;
     padding: 0 4px;
     font-size: var(--w98-font-size-base);
-    font-weight: bold;
-    font-family: inherit;
-    background: var(--w98-surface);
-    border: none;
-    cursor: pointer;
-    box-shadow: var(--w98-outset-thin);
     display: flex;
     align-items: center;
     justify-content: center;
-  }
-  .gif-btn:active {
-    box-shadow: var(--w98-inset-thin);
   }
   .gif-btn:disabled {
     color: var(--w98-text-disabled);
@@ -339,28 +331,25 @@
   }
 
   .gif-export-btn {
+    min-width: 0;
     padding: 0 8px;
     font-size: var(--w98-font-size-sm);
+    white-space: nowrap;
   }
 
   .gif-export-status {
     font-size: var(--w98-font-size-sm);
     font-family: 'Courier New', Courier, monospace;
     font-weight: bold;
-    color: var(--w98-color-success);
-    padding: 0 4px;
+    color: var(--w98-text);
     white-space: nowrap;
     font-variant-numeric: tabular-nums;
   }
 
   .gif-cancel-btn {
-    background: var(--w98-color-error);
-    color: var(--w98-surface-white);
+    color: var(--w98-color-error);
     font-size: var(--w98-font-size-sm);
     padding: 0 6px;
-  }
-  .gif-cancel-btn:active {
-    background: color-mix(in srgb, var(--w98-color-error) 80%, #000);
   }
 
   .gif-frame-info {
@@ -376,7 +365,9 @@
   }
 
   .gif-sep {
-    width: 6px;
+    width: 1px;
+    min-height: 18px;
+    margin: 0 2px;
   }
 
   .gif-slider-row {
@@ -386,21 +377,11 @@
 
   .gif-slider {
     width: 100%;
-    height: 12px;
     cursor: pointer;
-    accent-color: var(--w98-highlight);
   }
 
   .gif-export-progress {
     height: 8px;
-    background: #000;
-    border: 1px inset var(--w98-shadow-light);
-    overflow: hidden;
-  }
-
-  .gif-export-bar {
-    height: 100%;
-    background: var(--w98-highlight);
   }
 
   .gif-frame-strip-section {
@@ -410,8 +391,6 @@
   }
 
   .gif-frame-strip-label {
-    font-size: var(--w98-font-size-caption);
-    color: var(--w98-shadow-808);
     text-align: center;
   }
 
@@ -429,16 +408,8 @@
     font-size: var(--w98-font-size-sm);
     font-family: 'Courier New', Courier, monospace;
     font-variant-numeric: tabular-nums;
-    background: var(--w98-surface);
-    border: none;
     cursor: grab;
-    box-shadow: var(--w98-outset-thin);
     flex: 0 0 auto;
-  }
-
-  .gif-frame-chip.active {
-    background: var(--w98-highlight);
-    color: var(--w98-surface-white);
   }
 
   .gif-frame-chip.drag-source {
@@ -447,7 +418,10 @@
   }
 
   .gif-frame-chip.drag-target {
-    box-shadow: 0 0 0 2px var(--w98-color-success);
+    background: var(--w98-highlight-alpha);
+    box-shadow: var(--w98-inset-thin);
+    outline: 1px dotted var(--w98-highlight);
+    outline-offset: -3px;
   }
 
   .gif-frame-chip:disabled {

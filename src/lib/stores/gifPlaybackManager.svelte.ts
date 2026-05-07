@@ -5,6 +5,7 @@
  */
 import { processorService } from '$lib/services/imageProcessor';
 import { decodeGif, frameToBlobUrl, type GifInfo } from '$lib/utils/gifProcessor';
+import { hasActiveHqxLayer } from '$lib/utils/effectLayers';
 import type { ProcessingSettings, ImageWorkerMessage, GifEncodeWorkerMessage, GifEncodeWorkerResponse } from '$lib/types';
 import { i18n } from '$lib/i18n/index.svelte';
 import { customPaletteStore } from '$lib/stores/customPaletteStore.svelte';
@@ -253,7 +254,7 @@ export function createGifPlaybackManager(deps: GifManagerDeps) {
               ?.map(c => ({ r: c.r, g: c.g, b: c.b }))
           : undefined;
 
-        const maxDimension = settings.renderMode === 'hqx' ? 1024 : 2048;
+        const maxDimension = hasActiveHqxLayer(settings) ? 1024 : 2048;
         const frameW = frames[0].width;
         const frameH = frames[0].height;
         let procW = frameW;

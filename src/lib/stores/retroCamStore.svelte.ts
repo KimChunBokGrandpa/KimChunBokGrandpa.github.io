@@ -1,3 +1,4 @@
+import { createProjectManifest } from '$lib/projects/schema';
 import {
   getProjectStorageAdapter,
 } from '$lib/projects/runtime';
@@ -52,6 +53,23 @@ function revokeObjectUrl(url: string | null) {
 
 function isRetroCamPresetId(value: string | undefined): value is RetroCamPresetId {
   return retroCamPresets.some((preset) => preset.id === value);
+}
+
+async function nextOpenedTimestamp(
+  storageAdapter: ProjectStorageAdapter,
+  baselineTimestamps: Array<string | undefined> = [],
+) {
+  const latestRecentProject = (await storageAdapter.listRecentProjects({ limit: 1 }))[0];
+  const candidates = [
+    Date.now(),
+    ...baselineTimestamps
+      .filter((value): value is string => Boolean(value))
+      .map((value) => Date.parse(value)),
+    latestRecentProject ? Date.parse(latestRecentProject.lastOpenedAt) + 1 : Number.NaN,
+  ].filter((value) => Number.isFinite(value));
+
+  const nextValue = candidates.length > 0 ? Math.max(...candidates) : Date.now();
+  return new Date(nextValue).toISOString();
 }
 
 export function createRetroCamStore(
@@ -207,7 +225,23 @@ export function createRetroCamStore(
         : 'clean_pixel',
     );
     activePresetId = lastSnapshotPresetId ?? 'clean_pixel';
-    return manifest;
+    const reopenedAt = await nextOpenedTimestamp(storageAdapter, [manifest.updatedAt, manifest.lastOpenedAt]);
+    const reopenedManifest = createProjectManifest({
+      projectId: manifest.projectId,
+      createdAt: manifest.createdAt,
+      updatedAt: reopenedAt,
+      lastOpenedAt: reopenedAt,
+      appId: manifest.appId,
+      name: manifest.name,
+      sourceAssetIds: manifest.sourceAssetIds,
+      derivedAssetIds: manifest.derivedAssetIds,
+      primaryAssetId: manifest.primaryAssetId,
+      previewAssetId: manifest.previewAssetId,
+      exportHistory: manifest.exportHistory,
+      programState: manifest.programState,
+    });
+    await storageAdapter.saveProject(reopenedManifest);
+    return reopenedManifest;
   }
 
   function destroy() {

@@ -17,9 +17,10 @@ Object.defineProperty(globalThis, 'localStorage', { value: localStorageMock, wri
 
 import {
   createWindowStore,
-  getShellProgramLaunchLabel,
+  desktopWindowConfigs,
   getShellProgramSummary,
   getWindowTitle,
+  mobileWindowOrder,
   windowConfigs,
 } from './windowStore.svelte';
 
@@ -158,6 +159,16 @@ describe('windowStore', () => {
     });
   });
 
+  describe('minimize', () => {
+    it('should minimize a window and move focus to the next visible window', () => {
+      const store = createWindowStore();
+      store.focusWindow('settings');
+      store.minimize('settings');
+      expect(store.wins.settings.mode).toBe('minimized');
+      expect(store.focusedWindow).toBe('preview');
+    });
+  });
+
   describe('getWindowTitle', () => {
     it('should return i18n key for window id', () => {
       expect(getWindowTitle('preview')).toBe('win_preview');
@@ -170,15 +181,10 @@ describe('windowStore', () => {
       expect(getShellProgramSummary('preview')).toBe('desktop_summary_preview');
       expect(getShellProgramSummary('poster_maker')).toBe('desktop_summary_poster_maker');
     });
-
-    it('should build the Start menu launch label from title and summary copy', () => {
-      expect(getShellProgramLaunchLabel('preview')).toBe('win_preview — desktop_summary_preview');
-      expect(getShellProgramLaunchLabel('retrocam')).toBe('win_retrocam — desktop_summary_retrocam');
-    });
   });
 
   describe('windowConfigs', () => {
-    it('should define 6 windows', () => {
+    it('should define 7 windows', () => {
       expect(windowConfigs).toHaveLength(7);
     });
 
@@ -187,9 +193,13 @@ describe('windowStore', () => {
       expect(new Set(ids).size).toBe(ids.length);
     });
 
-    it('should expose only preview as a desktop shortcut', () => {
-      const desktopIds = windowConfigs.filter((config) => config.desktop).map((config) => config.id);
+    it('should expose the shell programs as desktop shortcuts', () => {
+      const desktopIds = desktopWindowConfigs.map((config) => config.id);
       expect(desktopIds).toEqual(['preview', 'poster_maker', 'retrocam']);
+    });
+
+    it('should reuse window config order as the mobile shell order', () => {
+      expect(mobileWindowOrder).toEqual(windowConfigs.map((config) => config.id));
     });
   });
 

@@ -74,9 +74,16 @@ function openProjectDatabase(indexedDbFactory: IDBFactory): Promise<IDBDatabase>
 
 class IndexedDbProjectStorageAdapter implements ProjectStorageAdapter {
   private readonly dbPromise: Promise<IDBDatabase>;
+  private readonly listeners = new Set<() => void>();
 
   constructor(indexedDbFactory: IDBFactory) {
     this.dbPromise = openProjectDatabase(indexedDbFactory);
+  }
+
+  private notifySubscribers() {
+    for (const listener of this.listeners) {
+      listener();
+    }
   }
 
   private async getDb(): Promise<IDBDatabase> {
@@ -93,6 +100,7 @@ class IndexedDbProjectStorageAdapter implements ProjectStorageAdapter {
       manifest: cloned,
     } satisfies StoredManifestRecord);
     await transactionDone(transaction);
+    this.notifySubscribers();
     return cloneProjectManifest(cloned);
   }
 
@@ -153,6 +161,14 @@ class IndexedDbProjectStorageAdapter implements ProjectStorageAdapter {
       transaction.objectStore(assetsStoreName).delete(assetId);
     }
     await transactionDone(transaction);
+    this.notifySubscribers();
+  }
+
+  subscribe(listener: () => void): () => void {
+    this.listeners.add(listener);
+    return () => {
+      this.listeners.delete(listener);
+    };
   }
 }
 

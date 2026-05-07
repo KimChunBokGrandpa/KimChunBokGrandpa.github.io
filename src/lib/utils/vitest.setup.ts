@@ -41,3 +41,7 @@ if (typeof globalThis.ImageData === "undefined") {
 if (typeof globalThis.ResizeObserver === "undefined") {
   globalThis.ResizeObserver = ResizeObserverPolyfill as unknown as typeof ResizeObserver;
 }
+
+if (typeof HTMLCanvasElement !== "undefined") {
+  HTMLCanvasElement.prototype.getContext = (() => null) as typeof HTMLCanvasElement.prototype.getContext;
+}

@@ -5,9 +5,9 @@
   export type ToastVariant = 'success' | 'error' | 'warning';
 
   const variantIcons: Record<ToastVariant, string> = {
-    success: '\u2705',
-    error: '\u274C',
-    warning: '\u26A0\uFE0F',
+    success: 'ℹ️',
+    error: '⚠️',
+    warning: '💡',
   };
 
   const shortMessageThreshold = 50;
@@ -36,7 +36,7 @@
 
   function dismiss() {
     visible = false;
-    setTimeout(onDone, 300);
+    onDone();
   }
 
   onMount(() => {
@@ -46,92 +46,74 @@
 </script>
 
 {#if visible}
-  <div class="toast toast-{variant}" role="status" aria-live="polite">
-    <span class="toast-icon">{variantIcons[variant]}</span>
+  <div class="toast toast-{variant} w98-floating-surface" role="status" aria-live="polite">
+    <span class="toast-icon-shell w98-dialog-icon-panel w98-dialog-icon-panel--small" aria-hidden="true">
+      <span class="toast-icon w98-emoji">{variantIcons[variant]}</span>
+    </span>
     <span class="toast-msg">{message}</span>
     {#if action}
-      <button class="toast-action" onclick={(e) => { e.stopPropagation(); action.onclick(); dismiss(); }}>{action.label}</button>
+      <button type="button" class="toast-action w98-inline-button w98-button--thin w98-toast-action" onclick={(e) => { e.stopPropagation(); action.onclick(); dismiss(); }}>{action.label}</button>
     {/if}
-    <button class="toast-close" aria-label={i18n.t('close')} onclick={dismiss}>×</button>
+    <button type="button" class="toast-close w98-window-control-button w98-structural-glyph" aria-label={i18n.t('close')} data-control="close" onclick={dismiss}>✕</button>
   </div>
 {/if}
 
 <style>
   .toast {
     position: fixed;
-    bottom: 38px;
-    right: 12px;
+    bottom: calc(var(--w98-taskbar-height) + var(--w98-space-8));
+    right: var(--w98-space-12);
     left: auto;
     transform: none;
     z-index: 9998;
     display: flex;
     align-items: center;
-    gap: 6px;
-    padding: 6px 14px;
-    background: var(--w98-surface);
-    border: 2px solid;
-    border-color: var(--w98-shadow-light) var(--w98-shadow-808) var(--w98-shadow-808) var(--w98-shadow-light);
-    box-shadow: var(--w98-outset);
-    font-size: var(--w98-font-size-action);
+    gap: var(--w98-space-6);
+    padding: var(--w98-space-8) var(--w98-space-12);
+    font-size: var(--w98-font-size-base);
     font-weight: bold;
     white-space: normal;
-    max-width: calc(100vw - 32px);
+    max-width: calc(100vw - (var(--w98-space-16) * 2));
     word-break: break-word;
     font-family: inherit;
     color: inherit;
     text-align: left;
   }
 
-  .toast-error {
-    border-color: var(--w98-color-error) var(--w98-shadow-808) var(--w98-shadow-808) var(--w98-color-error);
+  .toast-icon-shell {
+    flex-shrink: 0;
   }
-  .toast-warning {
-    border-color: var(--w98-color-warning-border) var(--w98-shadow-808) var(--w98-shadow-808) var(--w98-color-warning-border);
+
+  .toast-success .toast-icon-shell {
+    color: var(--w98-color-success);
+  }
+  .toast-error .toast-icon-shell {
+    color: var(--w98-color-error);
+  }
+  .toast-warning .toast-icon-shell {
+    color: var(--w98-color-warning);
   }
 
   .toast-icon {
-    font-size: 14px;
-    font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif;
-    flex-shrink: 0;
+    font-size: var(--w98-font-size-heading);
   }
 
   .toast-msg {
     color: var(--w98-text);
+    flex: 1;
   }
 
   .toast-action {
-    margin-left: 4px;
-    padding: 1px 8px;
-    font-size: var(--w98-font-size-sm);
-    font-weight: bold;
-    background: var(--w98-surface);
-    border: none;
-    box-shadow: var(--w98-outset-thin);
-    cursor: pointer;
+    margin-left: var(--w98-space-2);
+    font-size: var(--w98-font-size-base);
     white-space: nowrap;
-  }
-  .toast-action:hover {
-    background: var(--w98-surface-active);
-  }
-  .toast-action:active {
-    box-shadow: var(--w98-inset-thin);
   }
 
   .toast-close {
-    margin-left: 4px;
-    font-size: 14px;
-    color: var(--w98-shadow-808);
+    margin-left: var(--w98-space-2);
+    font-size: var(--w98-font-size-base);
+    color: var(--w98-text);
     flex-shrink: 0;
-    background: none;
-    border: none;
-    padding: 0 2px;
-    cursor: pointer;
-    font-weight: bold;
-    line-height: 1;
-  }
-
-  .toast-close:hover {
-    color: #000;
   }
 
 </style>

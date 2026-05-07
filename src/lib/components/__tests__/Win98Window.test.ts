@@ -25,7 +25,9 @@ describe('Win98Window', () => {
 
   it('renders the window with content', () => {
     const { container } = render(Win98WindowWrapper, { props: defaultProps() });
-    expect(container.querySelector('.win98-window')).toBeTruthy();
+    const windowEl = container.querySelector('.win98-window');
+    expect(windowEl).toBeTruthy();
+    expect(windowEl?.getAttribute('role')).toBe('group');
   });
 
   it('displays window title', () => {
@@ -71,6 +73,17 @@ describe('Win98Window', () => {
     }
   });
 
+  it('calls onMinimize when minimize button is clicked', async () => {
+    const onMinimize = vi.fn();
+    const props = { ...defaultProps(), onMinimize };
+    const { container } = render(Win98WindowWrapper, { props });
+    const buttons = container.querySelectorAll('.title-bar-controls button');
+    if (buttons.length > 0) {
+      await fireEvent.click(buttons[0]);
+      expect(onMinimize).toHaveBeenCalled();
+    }
+  });
+
   it('calls onFocus when title bar is mouse-downed', async () => {
     const onFocus = vi.fn();
     const props = { ...defaultProps(), onFocus };
@@ -103,17 +116,33 @@ describe('Win98Window', () => {
     expect(windowEl.getAttribute('style')).toContain('--mobile-w: 62vw');
   });
 
-  it('renders menubar items when provided', () => {
-    const { getByRole, getByText } = render(Win98WindowWrapper, {
+  it('renders menubar items as presentation-only labels when provided', () => {
+    const { container, getByText } = render(Win98WindowWrapper, {
       props: {
         ...defaultProps(),
         menuItems: ['File', 'View', 'Help'],
       },
     });
 
-    expect(getByRole('menubar')).toBeTruthy();
+    expect(container.querySelector('[role="menubar"]')).toBeNull();
+    expect(container.querySelectorAll('.win98-menubar .win98-menu-item')).toHaveLength(3);
     expect(getByText('File')).toBeTruthy();
     expect(getByText('Help')).toBeTruthy();
+  });
+
+  it('does not close the window on Escape', async () => {
+    const onClose = vi.fn();
+    const { container } = render(Win98WindowWrapper, {
+      props: {
+        ...defaultProps(),
+        onClose,
+      },
+    });
+
+    const windowEl = container.querySelector('.win98-window') as HTMLElement;
+    await fireEvent.keyDown(windowEl, { key: 'Escape' });
+
+    expect(onClose).not.toHaveBeenCalled();
   });
 
   it('fires swipe callbacks from the mobile title bar', async () => {

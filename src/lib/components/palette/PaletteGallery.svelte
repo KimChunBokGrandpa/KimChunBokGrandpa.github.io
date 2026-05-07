@@ -481,34 +481,60 @@
 
     <!-- Blend Panel -->
     {#if blendMode}
-      <div class="blend-panel">
-        <div class="blend-header">
-          <span class="blend-title">🎨 {i18n.t('blend_palettes')}</span>
-          <button class="blend-close" onclick={cancelBlend}>✕</button>
+      <div class="blend-panel w98-frame">
+        <div class="blend-header w98-panel-titlebar">
+          <span class="blend-title w98-panel-title">
+            <span class="w98-emoji" aria-hidden="true">🎨</span>
+            <span>{i18n.t('blend_palettes')}</span>
+          </span>
+          <button
+            type="button"
+            class="blend-close w98-inline-button w98-button--thin w98-window-control-button"
+            onclick={cancelBlend}
+            aria-label={i18n.t('cancel')}
+            title={i18n.t('cancel')}
+          >
+            ✕
+          </button>
         </div>
-        <div class="blend-info">
-          {getDisplayPaletteName(blendSourceId!)} ↔ {getDisplayPaletteName(selectedPaletteId)}
-        </div>
-        <div class="blend-slider-row">
-          <span class="blend-label">0%</span>
-          <input type="range" class="blend-slider" min="0" max="100" value={Math.round(blendFactor * 100)} oninput={(e) => { blendFactor = parseInt((e.target as HTMLInputElement).value) / 100; }} />
-          <span class="blend-current">{Math.round(blendFactor * 100)}%</span>
-          <span class="blend-label">100%</span>
-        </div>
-        {#if blendedColors && blendedColors.length > 0}
-          <div class="blend-preview">
-            {#each blendedColors as c}
-              <div class="blend-swatch" style="background:rgb({c.r},{c.g},{c.b})"></div>
-            {/each}
+        <div class="blend-body w98-panel-body">
+          <div class="blend-info w98-note">
+            {getDisplayPaletteName(blendSourceId!)} ↔ {getDisplayPaletteName(selectedPaletteId)}
           </div>
-          <button class="blend-save-btn" onclick={saveBlendedPalette}>💾 {i18n.t('blend_save')}</button>
-        {:else}
-          <div class="blend-hint">{i18n.t('blend_select_target')}</div>
-        {/if}
+          <div class="blend-slider-row">
+            <span class="blend-label">0%</span>
+            <input
+              type="range"
+              class="blend-slider w98-range"
+              min="0"
+              max="100"
+              value={Math.round(blendFactor * 100)}
+              oninput={(e) => { blendFactor = parseInt((e.target as HTMLInputElement).value) / 100; }}
+            />
+            <span class="blend-current w98-chip w98-chip--active">{Math.round(blendFactor * 100)}%</span>
+            <span class="blend-label">100%</span>
+          </div>
+          {#if blendedColors && blendedColors.length > 0}
+            <div class="blend-preview w98-panel-inset-thin">
+              {#each blendedColors as c}
+                <div class="blend-swatch" style="background:rgb({c.r},{c.g},{c.b})"></div>
+              {/each}
+            </div>
+            <button type="button" class="blend-save-btn w98-button w98-button--primary" onclick={saveBlendedPalette}>
+              <span class="w98-emoji" aria-hidden="true">💾</span>
+              <span>{i18n.t('blend_save')}</span>
+            </button>
+          {:else}
+            <div class="blend-hint w98-note">{i18n.t('blend_select_target')}</div>
+          {/if}
+        </div>
       </div>
     {:else if selectedPaletteId !== 'original'}
       <div class="blend-start-row">
-        <button class="blend-start-btn" onclick={startBlend}>🔀 {i18n.t('blend_start')}</button>
+        <button type="button" class="blend-start-btn w98-inline-button w98-button--thin" onclick={startBlend}>
+          <span aria-hidden="true">🔀</span>
+          <span>{i18n.t('blend_start')}</span>
+        </button>
       </div>
     {/if}
 
@@ -553,92 +579,58 @@
   /* ── Blend Panel ── */
   .blend-panel {
     margin: 0 3px;
-    padding: 6px 8px;
-    background: #f0f0e8;
-    border: 1px solid var(--w98-shadow-light);
     display: flex;
     flex-direction: column;
-    gap: 4px;
     flex-shrink: 0;
   }
-  .blend-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
   .blend-title {
-    font-weight: bold;
-    font-size: var(--w98-font-size-base);
-    color: var(--w98-highlight);
+    min-width: 0;
   }
   .blend-close {
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-size: var(--w98-font-size-sm);
-    color: var(--w98-shadow-808);
-    padding: 0 2px;
+    flex-shrink: 0;
   }
-  .blend-close:hover { color: #c00; }
   .blend-info {
-    font-size: var(--w98-font-size-sm);
-    color: var(--w98-text);
     text-align: center;
+    justify-content: center;
   }
   .blend-slider-row {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: var(--w98-space-4);
   }
   .blend-slider {
     flex: 1;
-    height: 14px;
-    accent-color: var(--w98-highlight);
   }
   .blend-label {
     font-size: var(--w98-font-size-caption);
-    color: var(--w98-shadow-808);
+    color: var(--w98-text-hint);
     min-width: 24px;
     text-align: center;
   }
   .blend-current {
-    min-width: 42px;
-    text-align: center;
-    font-size: var(--w98-font-size-caption);
-    font-weight: bold;
-    color: var(--w98-highlight);
+    min-width: 52px;
+    justify-content: center;
   }
   .blend-preview {
     display: flex;
     gap: 1px;
     height: 16px;
+    padding: 1px;
   }
   .blend-swatch {
     flex: 1;
     min-width: 0;
   }
   .blend-save-btn {
-    font-size: var(--w98-font-size-sm);
-    font-weight: bold;
-    padding: 2px 8px;
-    cursor: pointer;
     align-self: center;
   }
   .blend-hint {
-    font-size: var(--w98-font-size-sm);
-    color: var(--w98-shadow-808);
     text-align: center;
-    font-style: italic;
   }
   .blend-start-row {
     display: flex;
     justify-content: center;
     padding: 2px 3px;
     flex-shrink: 0;
-  }
-  .blend-start-btn {
-    font-size: var(--w98-font-size-sm);
-    padding: 1px 10px;
-    cursor: pointer;
   }
 </style>

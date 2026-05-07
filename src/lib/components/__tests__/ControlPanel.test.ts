@@ -1,13 +1,20 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, cleanup } from '@testing-library/svelte';
+import { fireEvent } from '@testing-library/svelte';
 
 // Mock $app/environment
 vi.mock('$app/environment', () => ({ browser: true }));
 
 // Mock i18n
 vi.mock('$lib/i18n/index.svelte', () => ({
-  i18n: { t: vi.fn((key: string) => key) },
+  i18n: {
+    t: vi.fn((key: string) => ({
+      shortcut_hint_save: 'Save (Ctrl+S)',
+      save_no_image: 'Load an image in Preview to save',
+      save_as: 'Save As...',
+    }[key] ?? key)),
+  },
 }));
 
 // Mock customPresetStore
@@ -27,10 +34,21 @@ vi.mock('$lib/stores/customPaletteStore.svelte', () => ({
   },
 }));
 
+vi.mock('../editor/PresetManager.svelte', async () => ({
+  default: (await import('./PresetManagerLazyStub.svelte')).default,
+}));
+
 import ControlPanel from '../editor/ControlPanel.svelte';
 import type { ProcessingSettings } from '$lib/types';
 
 afterEach(() => cleanup());
+
+function mockNavigatorPlatform(platform: string) {
+  Object.defineProperty(window.navigator, 'platform', {
+    configurable: true,
+    value: platform,
+  });
+}
 
 function makeSettings(overrides?: Partial<ProcessingSettings>): ProcessingSettings {
   return {
@@ -66,6 +84,35 @@ describe('ControlPanel', () => {
     const { container } = render(ControlPanel, { props: defaultProps() });
     const tabs = container.querySelectorAll('.tab-btn, [role="tab"]');
     expect(tabs.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it('lazy-loads preset manager when presets tab opens', async () => {
+    const { getByRole, findByTestId } = render(ControlPanel, { props: defaultProps() });
+
+    await fireEvent.click(getByRole('tab', { name: 'tab_presets' }));
+
+    expect(await findByTestId('mock-preset-manager')).toBeTruthy();
+  });
+
+  it('keeps quick tuning controls on the presets tab', async () => {
+    const props = defaultProps();
+    const { getByRole, getByTestId } = render(ControlPanel, { props });
+
+    await fireEvent.click(getByRole('tab', { name: 'tab_presets' }));
+
+    expect(getByTestId('preset-tune-strip')).toBeTruthy();
+
+    await fireEvent.click(getByTestId('preset-tune-pixel-increase'));
+    expect(props.onChange).toHaveBeenLastCalledWith(expect.objectContaining({ pixelSize: 5 }));
+
+    await fireEvent.click(getByTestId('preset-tune-palette-nes'));
+    expect(props.onChange).toHaveBeenLastCalledWith(expect.objectContaining({ palette: 'nes' }));
+
+    await fireEvent.click(getByTestId('preset-tune-dither-ordered'));
+    expect(props.onChange).toHaveBeenLastCalledWith(expect.objectContaining({ ditherType: 'ordered' }));
+
+    await fireEvent.click(getByTestId('preset-tune-palette-gallery'));
+    expect(props.onOpenGallery).toHaveBeenCalledTimes(1);
   });
 
   it('renders save button', () => {
@@ -111,5 +158,15 @@ describe('ControlPanel', () => {
     const props = { ...defaultProps(), autoProcess: false, hasUnappliedChanges: true, onApplyNow: vi.fn() };
     const { container } = render(ControlPanel, { props });
     expect(container.innerHTML).toBeTruthy();
+  });
+
+  it('shows a platform-aware save tooltip on Apple platforms', async () => {
+    mockNavigatorPlatform('MacIntel');
+
+    const { getByTestId } = render(ControlPanel, { props: defaultProps() });
+    const saveButton = getByTestId('save-image-button');
+    await fireEvent.mouseEnter(saveButton);
+
+    expect(saveButton.getAttribute('title')).toContain('Cmd+S');
   });
 });

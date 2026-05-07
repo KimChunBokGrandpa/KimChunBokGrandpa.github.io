@@ -30,27 +30,27 @@
     {originalSrc}
     {processedSrc}
     {imageRendering}
-    altText="Before/After: {paletteName}"
+    altText={`${i18n.t('before')}/${i18n.t('after')}: ${paletteName}`}
   />
 {:else if variant === 'side-by-side'}
   <div class="side-by-side">
     <div class="sbs-panel">
       <img src={originalSrc} alt={i18n.t('before')} class="sbs-img" style:image-rendering="auto" draggable="false" />
-      <span class="sbs-label">{i18n.t('before')}</span>
+      <span class="sbs-label w98-preview-badge">{i18n.t('before')}</span>
     </div>
-    <div class="sbs-divider"></div>
+    <div class="sbs-divider w98-preview-divider"></div>
     <div class="sbs-panel">
       <img src={processedSrc} alt={i18n.t('after')} class="sbs-img" style:image-rendering={imageRendering} style:filter={postFilterCss || 'none'} draggable="false" />
-      <span class="sbs-label">{i18n.t('after')}</span>
+      <span class="sbs-label w98-preview-badge">{i18n.t('after')}</span>
     </div>
   </div>
 {:else}
   <div class="onion-skin">
     <img src={originalSrc} alt={i18n.t('before')} class="onion-img onion-base" style:image-rendering="auto" draggable="false" />
     <img src={processedSrc} alt={i18n.t('after')} class="onion-img onion-overlay" style:opacity={onionOpacity} style:image-rendering={imageRendering} style:filter={postFilterCss || 'none'} draggable="false" />
-    <div class="onion-controls">
+    <div class="onion-controls w98-preview-utility">
       <span class="onion-label">{i18n.t('onion_opacity')}</span>
-      <input type="range" min="0" max="1" step="0.05" bind:value={onionOpacity} class="onion-slider" aria-label={i18n.t('onion_opacity')} aria-valuetext="{Math.round(onionOpacity * 100)}%" />
+      <input type="range" min="0" max="1" step="0.05" bind:value={onionOpacity} class="onion-slider w98-range" aria-label={i18n.t('onion_opacity')} aria-valuetext="{Math.round(onionOpacity * 100)}%" />
       <span class="onion-value">{Math.round(onionOpacity * 100)}%</span>
     </div>
   </div>
@@ -80,22 +80,12 @@
   }
   .sbs-divider {
     width: 2px;
-    background: #fff;
     flex-shrink: 0;
-    box-shadow: var(--w98-outset-thin);
   }
   .sbs-label {
     position: absolute;
     top: 8px;
     left: 8px;
-    font-size: var(--w98-font-size-caption);
-    font-weight: bold;
-    padding: 2px 6px;
-    background: var(--w98-surface);
-    color: var(--w98-text);
-    box-shadow: var(--w98-outset-thin);
-    letter-spacing: 1px;
-    pointer-events: none;
     z-index: 4;
   }
 
@@ -126,12 +116,6 @@
     bottom: 40px;
     left: 50%;
     transform: translateX(-50%);
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    background: var(--w98-surface);
-    box-shadow: var(--w98-outset);
-    padding: 4px 10px;
     z-index: 5;
   }
   .onion-label {
@@ -142,11 +126,10 @@
   }
   .onion-slider {
     width: 100px;
-    accent-color: var(--w98-highlight);
   }
   .onion-value {
     font-size: var(--w98-font-size-sm);
-    color: var(--w98-color-success);
+    color: var(--w98-highlight);
     font-family: 'Courier New', monospace;
     font-weight: bold;
     min-width: 32px;

@@ -10,6 +10,7 @@
     selectedIcon,
     onIconClick,
     onIconDblClick,
+    onIconIntent,
     onDesktopClick,
     onImageDropped
   }: {
@@ -17,6 +18,7 @@
     selectedIcon: WindowId | null;
     onIconClick: (id: WindowId) => void;
     onIconDblClick: (id: WindowId) => void;
+    onIconIntent?: (id: WindowId) => void;
     onDesktopClick: () => void;
     onImageDropped: (file: File) => void;
   } = $props();
@@ -49,6 +51,9 @@
 
   function handleDesktopDragLeave(e: DragEvent) {
     e.preventDefault();
+    if (e.currentTarget && (e.currentTarget as HTMLElement).contains(e.relatedTarget as Node | null)) {
+      return;
+    }
     dragCounter--;
     if (dragCounter <= 0) {
       dragCounter = 0;
@@ -76,13 +81,16 @@
 
   function launchSelectedDesktopProgram() {
     if (!selectedDesktopConfig) return;
-    dismissDesktopGuide();
-    onIconDblClick(selectedDesktopConfig.id);
+    openDesktopProgram(selectedDesktopConfig.id);
   }
 
   function launchPixelLabFromDesktopGuide() {
+    openDesktopProgram('preview');
+  }
+
+  function openDesktopProgram(id: WindowId) {
     dismissDesktopGuide();
-    onIconDblClick('preview');
+    onIconDblClick(id);
   }
 </script>
 
@@ -99,8 +107,8 @@
 >
   {#if isDraggingOverDesktop}
     <div class="desktop-drop-overlay">
-      <div class="desktop-drop-message">
-        <span class="desktop-drop-icon">📥</span>
+      <div class="desktop-drop-message w98-floating-surface">
+        <span class="desktop-drop-icon w98-emoji">📥</span>
         <span>{i18n.t('drop_image_here')}</span>
       </div>
     </div>
@@ -109,21 +117,26 @@
   <DesktopIcons
     {selectedIcon}
     {onIconClick}
-    {onIconDblClick}
+    onIconDblClick={openDesktopProgram}
+    {onIconIntent}
   />
 
   {#if !desktopGuideDismissed}
     <section
-      class="desktop-guide-card"
+      class="desktop-guide-card w98-frame-desktop"
       data-testid="desktop-first-run-guide"
       aria-label={i18n.t('desktop_first_run_title')}
       onclick={(event) => event.stopPropagation()}
       onkeydown={(event) => event.stopPropagation()}
     >
-      <div class="desktop-guide-titlebar">
-        <strong>{i18n.t('desktop_first_run_title')}</strong>
+      <div class="desktop-guide-titlebar w98-window-card-titlebar">
+        <div class="desktop-guide-title w98-window-card-title">
+          <span class="w98-emoji" aria-hidden="true">💡</span>
+          <span>{i18n.t('desktop_first_run_title')}</span>
+        </div>
         <button
-          class="desktop-guide-dismiss"
+          type="button"
+          class="desktop-guide-dismiss w98-window-control-button w98-structural-glyph"
           data-testid="desktop-first-run-dismiss"
           onclick={dismissDesktopGuide}
           aria-label={i18n.t('desktop_first_run_dismiss')}
@@ -132,49 +145,63 @@
           ✕
         </button>
       </div>
-      <p class="desktop-guide-intro">{i18n.t('desktop_first_run_intro')}</p>
-      <ul class="desktop-guide-list">
-        <li>🖼️ {i18n.t('desktop_first_run_step_preview')}</li>
-        <li>📰 {i18n.t('desktop_first_run_step_poster')}</li>
-        <li>📷 {i18n.t('desktop_first_run_step_retrocam')}</li>
-      </ul>
-      <p class="desktop-guide-tip">{i18n.t('desktop_first_run_tip')}</p>
-      <div class="desktop-guide-actions">
-        <button
-          class="desktop-guide-primary"
-          data-testid="desktop-first-run-open-preview"
-          onclick={launchPixelLabFromDesktopGuide}
-        >
-          {i18n.t('desktop_first_run_open_pixel_lab')}
-        </button>
-        <button class="desktop-guide-secondary" onclick={dismissDesktopGuide}>
-          {i18n.t('desktop_first_run_dismiss')}
-        </button>
+      <div class="desktop-guide-body w98-window-card-body">
+        <p class="desktop-guide-intro w98-quiet-copy">{i18n.t('desktop_first_run_intro')}</p>
+        <ul class="desktop-guide-list">
+          <li><span class="w98-emoji" aria-hidden="true">🖼️</span><span>{i18n.t('desktop_first_run_step_preview')}</span></li>
+          <li><span class="w98-emoji" aria-hidden="true">📰</span><span>{i18n.t('desktop_first_run_step_poster')}</span></li>
+          <li><span class="w98-emoji" aria-hidden="true">📷</span><span>{i18n.t('desktop_first_run_step_retrocam')}</span></li>
+        </ul>
+        <div class="desktop-guide-tip w98-note">{i18n.t('desktop_first_run_tip')}</div>
+        <div class="desktop-guide-actions w98-action-row">
+          <button
+            type="button"
+            class="desktop-guide-primary w98-button w98-button--primary"
+            data-testid="desktop-first-run-open-preview"
+            onclick={launchPixelLabFromDesktopGuide}
+          >
+            <span class="w98-emoji" aria-hidden="true">🖼️</span>
+            {i18n.t('desktop_first_run_open_pixel_lab')}
+          </button>
+          <button type="button" class="desktop-guide-secondary w98-button" onclick={dismissDesktopGuide}>
+            {i18n.t('desktop_first_run_dismiss')}
+          </button>
+        </div>
       </div>
     </section>
   {/if}
 
   {#if selectedDesktopConfig}
     <section
-      class="desktop-launch-strip"
+      class="desktop-launch-strip w98-frame-desktop"
       data-testid="desktop-launch-strip"
       aria-label={i18n.t('desktop_launch_selected')}
       onclick={(event) => event.stopPropagation()}
       onkeydown={(event) => event.stopPropagation()}
     >
-      <div class="desktop-launch-icon" aria-hidden="true">{selectedDesktopConfig.icon}</div>
-      <div class="desktop-launch-copy">
-        <div class="desktop-launch-title">{getWindowTitle(selectedDesktopConfig.id)}</div>
-        <div class="desktop-launch-summary">{getDesktopWindowSummary(selectedDesktopConfig.id)}</div>
-        <div class="desktop-launch-hint">{i18n.t('desktop_launch_hint')}</div>
+      <div class="desktop-launch-titlebar w98-window-card-titlebar">
+        <div class="w98-window-card-title">
+          <span class="w98-emoji" aria-hidden="true">📌</span>
+          <span>{i18n.t('desktop_launch_selected')}</span>
+        </div>
       </div>
-      <button
-        class="desktop-launch-button"
-        data-testid="desktop-launch-open-button"
-        onclick={launchSelectedDesktopProgram}
-      >
-        {i18n.t('desktop_launch_open')}
-      </button>
+      <div class="desktop-launch-body w98-window-card-body">
+        <div class="desktop-launch-icon w98-inset-panel" aria-hidden="true">{selectedDesktopConfig.icon}</div>
+        <div class="desktop-launch-copy">
+          <div class="desktop-launch-title">{getWindowTitle(selectedDesktopConfig.id)}</div>
+          <div class="desktop-launch-summary w98-quiet-copy">{getDesktopWindowSummary(selectedDesktopConfig.id)}</div>
+          <div class="desktop-launch-hint w98-quiet-copy">{i18n.t('desktop_launch_hint')}</div>
+        </div>
+        <button
+          type="button"
+          class="desktop-launch-button w98-button w98-button--primary"
+          data-testid="desktop-launch-open-button"
+          onclick={launchSelectedDesktopProgram}
+        >
+          <span class="w98-emoji" aria-hidden="true">{selectedDesktopConfig.icon}</span>
+          {i18n.t('desktop_launch_open')}
+        </button>
+      </div>
     </section>
   {/if}
 
@@ -196,7 +223,7 @@
     position: absolute;
     inset: 0;
     z-index: 9998;
-    background: rgba(0, 0, 128, 0.2);
+    background: var(--w98-desktop-drop-overlay);
     border: 3px dashed var(--w98-highlight);
     display: flex;
     align-items: center;
@@ -208,110 +235,92 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 6px;
-    padding: 16px 32px;
-    background: var(--w98-surface);
-    border: 2px solid;
-    border-color: var(--w98-shadow-light) var(--w98-shadow-808) var(--w98-shadow-808) var(--w98-shadow-light);
-    box-shadow: 4px 4px 12px rgba(0, 0, 0, 0.4);
-    font-size: 14px;
+    gap: var(--w98-space-6);
+    padding: var(--w98-space-16);
+    font-size: var(--w98-font-size-heading);
     font-weight: bold;
     color: var(--w98-highlight);
   }
 
   .desktop-drop-icon {
     font-size: 32px;
-    font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
   }
 
   .desktop-launch-strip {
     position: absolute;
-    left: 18px;
+    left: var(--w98-space-16);
     right: auto;
-    bottom: 18px;
+    bottom: var(--w98-space-16);
     z-index: 2;
-    width: min(420px, calc(100vw - 36px));
+    width: min(420px, calc(100vw - 32px));
     display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 10px 12px;
-    background: linear-gradient(180deg, #d8e3f3 0%, #bccadf 100%);
-    border: 2px solid;
-    border-color: var(--w98-shadow-light) var(--w98-shadow-808) var(--w98-shadow-808) var(--w98-shadow-light);
-    box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.25);
+    flex-direction: column;
   }
 
   .desktop-guide-card {
     position: absolute;
-    top: 18px;
-    right: 18px;
+    top: var(--w98-space-16);
+    right: var(--w98-space-16);
     z-index: 2;
-    width: min(360px, calc(100vw - 36px));
+    width: min(360px, calc(100vw - 32px));
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    padding: 10px 12px 12px;
-    background: linear-gradient(180deg, #f0f2df 0%, #d7dcc0 100%);
-    border: 2px solid;
-    border-color: var(--w98-shadow-light) var(--w98-shadow-808) var(--w98-shadow-808) var(--w98-shadow-light);
-    box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.25);
-    color: #1e2b18;
+    color: var(--w98-text);
   }
 
-  .desktop-guide-titlebar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    font-size: 13px;
+  .desktop-guide-title {
+    font-weight: bold;
   }
 
   .desktop-guide-dismiss {
-    min-width: 24px;
-    height: 24px;
-    border: none;
-    box-shadow: var(--w98-outset-thin);
-    background: var(--w98-surface);
-    font: inherit;
-    cursor: pointer;
+    flex-shrink: 0;
   }
 
-  .desktop-guide-dismiss:active,
-  .desktop-guide-primary:active,
-  .desktop-guide-secondary:active {
-    box-shadow: var(--w98-inset-thin);
+  .desktop-guide-body,
+  .desktop-launch-body {
+    min-width: 0;
   }
 
   .desktop-guide-intro,
   .desktop-guide-tip {
     margin: 0;
-    font-size: 12px;
+    font-size: var(--w98-font-size-base);
     line-height: 1.35;
   }
 
   .desktop-guide-list {
     margin: 0;
-    padding-left: 18px;
+    padding: 0;
+    list-style: none;
     display: flex;
     flex-direction: column;
-    gap: 4px;
-    font-size: 12px;
+    gap: var(--w98-space-4);
+    font-size: var(--w98-font-size-base);
+  }
+
+  .desktop-guide-list li {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--w98-space-6);
   }
 
   .desktop-guide-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
+    justify-content: flex-start;
   }
 
   .desktop-guide-primary,
   .desktop-guide-secondary {
-    border: none;
-    box-shadow: var(--w98-outset-thin);
-    background: var(--w98-surface);
-    padding: 4px 10px;
-    font: inherit;
-    cursor: pointer;
+    min-width: 88px;
+  }
+
+  .desktop-launch-titlebar {
+    flex-shrink: 0;
+  }
+
+  .desktop-launch-body {
+    display: flex;
+    align-items: center;
+    gap: var(--w98-space-12);
   }
 
   .desktop-launch-icon {
@@ -322,49 +331,32 @@
     flex-shrink: 0;
     font-size: 28px;
     line-height: 1;
-    background: rgba(255, 255, 255, 0.38);
-    border: 1px solid rgba(0, 0, 0, 0.16);
-    font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+    font-family: var(--w98-emoji-font);
   }
 
   .desktop-launch-copy {
     min-width: 0;
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: var(--w98-space-2);
     flex: 1;
-    color: #10233d;
     text-shadow: none;
   }
 
   .desktop-launch-title {
     font-weight: bold;
-    font-size: 13px;
+    font-size: var(--w98-font-size-action);
   }
 
   .desktop-launch-summary,
   .desktop-launch-hint {
-    font-size: 12px;
+    font-size: var(--w98-font-size-base);
     line-height: 1.25;
   }
 
-  .desktop-launch-hint {
-    color: #29435f;
-  }
-
   .desktop-launch-button {
-    min-width: 78px;
-    padding: 5px 10px;
-    background: var(--w98-surface);
-    border: none;
-    box-shadow: var(--w98-outset);
-    font: inherit;
-    cursor: pointer;
+    min-width: 86px;
     flex-shrink: 0;
-  }
-
-  .desktop-launch-button:active {
-    box-shadow: var(--w98-inset);
   }
 
   .desktop-launch-button:focus-visible {
@@ -378,17 +370,26 @@
       right: 8px;
       top: 8px;
       width: auto;
-      padding: 8px 10px 10px;
-      gap: 8px;
+      max-height: calc(100% - 104px);
+      overflow: auto;
+    }
+
+    .desktop-guide-body,
+    .desktop-launch-body {
+      padding: var(--w98-space-8);
+    }
+
+    .desktop-launch-body {
+      align-items: flex-start;
+      flex-direction: column;
     }
 
     .desktop-launch-strip {
       left: 8px;
       right: 8px;
       width: auto;
-      bottom: 10px;
-      gap: 8px;
-      padding: 8px 10px;
+      bottom: 8px;
+      max-width: none;
     }
 
     .desktop-launch-icon {
@@ -401,9 +402,27 @@
       display: none;
     }
 
+    .desktop-launch-hint {
+      display: none;
+    }
+
     .desktop-launch-button {
       min-width: 66px;
       padding: 4px 8px;
+    }
+  }
+
+  @media (max-width: 550px) and (max-height: 780px) {
+    .desktop-guide-card {
+      max-height: calc(100% - 120px);
+    }
+
+    .desktop-guide-list {
+      gap: var(--w98-space-2);
+    }
+
+    .desktop-guide-actions {
+      gap: var(--w98-space-4);
     }
   }
 </style>

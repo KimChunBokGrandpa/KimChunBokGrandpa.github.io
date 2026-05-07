@@ -2,6 +2,757 @@
 
 ---
 
+## Unreleased (2026-05-07)
+
+> Product planning has been recentered around Pixel Lab as the main recommendation-led editor for both classic pixelization and broader retro treatment.
+
+### Product Direction Reset
+
+- **Pixel Lab-first premise**
+  - `README.md`
+  - `PLAN_TASK.md`
+  - `docs/vnext/01_product_vision.md`
+  - `docs/vnext/02_program_suite.md`
+  - 제품 중심을 동급 3-program suite에서 Pixel Lab 중심 편집기로 재정리
+  - `Poster Maker`와 `RetroCam`은 supporting input/output surface로 명확히 낮춤
+- **Recommendation direction**
+  - `docs/vnext/03_execution_roadmap.md`
+  - `docs/vnext/05_master_checklists.md`
+  - `docs/vnext/06_work_packages.md`
+  - `docs/vnext/10_role_execution_plan.md`
+  - `Classic Pixel`과 `Retro Treatment`를 모두 수용하는 추천형 편집 방향을 active roadmap으로 반영
+- **Active status and priority sync**
+  - `docs/vnext/07_app_taxonomy_spec.md`
+  - `docs/vnext/11_status_review.md`
+  - `docs/vnext/13_design_system_alignment_tasks.md`
+  - `docs/vnext/14_pm_priority_bundles_2026-04-23.md`
+  - 현재까지 완료된 shell/runtime/export-history 작업을 보존 baseline으로 정리하고 다음 우선순위를 recommendation / processing quality / Pixel Lab surface alignment로 재배치
+- **Preset family taxonomy connected**
+  - `src/lib/utils/presets.ts`
+  - `src/lib/utils/styleRecommender.ts`
+  - `src/lib/components/editor/PresetManager.svelte`
+  - `src/lib/i18n/en.ts`
+  - `src/lib/i18n/ko.ts`
+  - `src/lib/i18n/ja.ts`
+  - built-in presets에 `Classic Pixel` / `Retro Treatment` / `Hybrid` / `Reference` family metadata를 추가
+  - style recommendation 결과가 family를 함께 반환하도록 정리
+  - PresetManager 추천 카드와 기본 preset 카드에 family label을 노출
+- **Recommendation reason copy aligned**
+  - `src/lib/i18n/en.ts`
+  - `src/lib/i18n/ko.ts`
+  - `src/lib/i18n/ja.ts`
+  - current reason strings를 brightness/contrast/saturation/edge/palette match 같은 실제 scoring signal에 맞춰 더 구체화
+- **Recommendation-to-tuning bridge connected**
+  - `src/lib/components/editor/ControlPanel.svelte`
+  - `src/lib/components/__tests__/ControlPanel.test.ts`
+  - `src/lib/i18n/en.ts`
+  - `src/lib/i18n/ko.ts`
+  - `src/lib/i18n/ja.ts`
+  - Presets 탭 상단에 `Quick Tune` strip을 추가해 추천 적용 후 픽셀 크기, quick palette, dithering을 바로 조정할 수 있게 정리
+  - quick tune 조작과 palette gallery 진입을 ControlPanel 회귀 테스트로 보호
+- **Preview output confidence summary connected**
+  - `src/lib/components/editor/PreviewBottomBar.svelte`
+  - `src/lib/components/editor/PreviewContent.svelte`
+  - `src/lib/components/__tests__/PreviewBottomBar.test.ts`
+  - `src/lib/components/__tests__/PreviewContent.test.ts`
+  - `src/lib/i18n/en.ts`
+  - `src/lib/i18n/ko.ts`
+  - `src/lib/i18n/ja.ts`
+  - Preview 하단 action bar 위에 pixel size, palette, dithering, color count readout을 추가해 조정 결과 판단 근거를 바로 보이게 정리
+
+### Verification
+
+- `npm test -- src/lib/utils/styleRecommender.test.ts src/lib/components/__tests__/PresetManager.test.ts`
+  - `20 tests / 2 files` green
+- `npm test -- src/lib/utils/styleRecommender.test.ts src/lib/components/__tests__/PresetManager.test.ts src/lib/i18n/index.svelte.test.ts`
+  - `22 tests / 3 files` green
+- `npm run check`
+  - `0 errors / 0 warnings`
+- `npm test -- src/lib/components/__tests__/ControlPanel.test.ts src/lib/i18n/index.svelte.test.ts`
+  - `14 tests / 2 files` green
+- `npm test -- src/lib/components/__tests__/PreviewBottomBar.test.ts src/lib/components/__tests__/PreviewContent.test.ts src/lib/i18n/index.svelte.test.ts`
+  - `11 tests / 3 files` green
+- `npm run lint`
+  - green
+
+---
+
+## v1.6.85 (2026-04-24)
+
+> Export history is now a real persistence path instead of a manifest field that could be silently erased by later project saves.
+
+### Export History Persistence Fix
+
+- **Schema helper restored as used runtime contract**
+  - `src/lib/projects/schema.ts`
+  - `createExportId` / `createExportHistoryEntry`를 실제 writer 경로에서 사용하도록 재도입
+  - export summary entry 생성 로직을 schema boundary에 모아 Pixel Lab / Poster Maker가 같은 shape를 쓰도록 정리
+- **Pixel Lab export history no longer gets wiped**
+  - `src/lib/stores/imageProcessingStore.svelte.ts`
+  - save/share 성공 시 `exportHistory`에 format/size/timestamp/id를 기록
+  - 이후 settings/filter/export-default 저장이 기존 export history를 빈 배열로 덮는 weak path를 제거
+- **Poster Maker export writer connected**
+  - `src/lib/stores/posterMakerStore.svelte.ts`
+  - `src/lib/components/poster/PosterMaker.svelte`
+  - poster PNG export 성공 시 canvas size와 format을 project manifest에 기록
+  - later title/style edits after export preserve existing history
+- **Regression guards**
+  - `src/lib/projects/schema.test.ts`
+  - `src/lib/stores/imageProcessingStore.test.ts`
+  - `src/lib/stores/posterMakerStore.test.ts`
+
+### Verification
+
+- `npm run lint`
+  - green
+- `npm run check`
+  - `0 errors / 0 warnings`
+- targeted `npm test -- src/lib/stores/imageProcessingStore.test.ts`
+  - `41 tests / 1 file` green
+- `npm test`
+  - `671 tests / 93 files` green
+- `npm run build`
+  - green
+  - main client chunk: `345.11 kB`
+
+### Notes
+
+- manual QA authority remains `required.md`
+- next high-value automatic cleanup remains HQx/effect-layer boundary inventory and real-device/runtime QA tracking
+
+---
+
+## v1.6.84 (2026-04-23)
+
+> Current product docs now match the shipped three-program shell, and disconnected manifest baggage that no runtime path reads has been trimmed from the local project schema.
+
+### Schema Baggage Cleanup + Docs Sync
+
+- **Disconnected manifest fields removed**
+  - `src/lib/projects/schema.ts`
+  - `src/lib/stores/posterMakerStore.svelte.ts`
+  - `src/lib/stores/retroCamStore.svelte.ts`
+  - unused top-level `shellState`, Pixel Lab `selectedPresetId` / `historySummary`, Poster Maker `exportDefaults`, and unused `createExportId` helper를 제거
+  - 현재 save/load/runtime path에서 실제로 읽지 않는 manifest baggage를 줄여 schema 계약과 구현을 더 가깝게 맞춤
+- **Current shell/taxonomy docs aligned**
+  - `README.md`
+  - `docs/vnext/07_app_taxonomy_spec.md`
+  - `docs/vnext/08_project_schema_spec.md`
+  - README intro를 single converter app 설명에서 shipped 3-program suite 설명으로 정리
+  - taxonomy spec은 Start menu / desktop icon / current runtime mapping / `Pixel Lab - Presets` naming까지 실제 shell 기준으로 수정
+  - project schema spec은 현재 구현이 실제로 저장하는 manifest shape 기준으로 정리
+- **Active-doc sync**
+  - `PLAN_TASK.md`
+
+### Verification
+
+- `npm run lint`
+  - green
+- `npm run check`
+  - `0 errors / 0 warnings`
+- `npm test`
+  - `667 tests / 93 files` green
+- `npm run build`
+  - green
+  - main client chunk: `344.33 kB`
+
+### Notes
+
+- manual QA authority는 계속 `required.md`
+- `docs/vnext/03_execution_roadmap.md`는 historical roadmap note로 남길지 후속 판단 대상
+- next legacy/schema cleanup candidate는 여전히 `exportHistory` weak path와 HQx boundary review다
+
+---
+
+## v1.6.83 (2026-04-23)
+
+> Pixel Lab preset surfaces now load off the initial settings bundle, preserving the Win98 shell feel while trimming the main client chunk by about 33kB.
+
+### Preset Tab Lazy Split + Shell Weight Reduction
+
+- **PresetManager moved behind the Presets tab boundary**
+  - `src/lib/components/editor/ControlPanel.svelte`
+  - settings shell no longer eagerly pulls `PresetManager` and its preview/share/recommendation stack into initial load
+  - presets tab hover/focus, direct tab open, and idle warm-up all prefetch the split chunk so first-open latency stays bounded
+  - first-open fallback now uses a shell-consistent loading panel instead of blank space
+- **Regression guard for lazy preset entry**
+  - `src/lib/components/__tests__/ControlPanel.test.ts`
+  - `src/lib/components/__tests__/PresetManagerLazyStub.svelte`
+  - presets tab open path가 실제 lazy component를 렌더링하는지 회귀 테스트 추가
+- **Active-doc sync**
+  - `docs/ui_shell_audit_2026-04-23.md`
+  - `docs/vnext/14_pm_priority_bundles_2026-04-23.md`
+  - `PLAN_TASK.md`
+  - `required.md`
+
+### Verification
+
+- targeted `npm test -- src/lib/components/__tests__/ControlPanel.test.ts src/lib/components/__tests__/PresetManager.test.ts`
+  - `24 tests / 2 files` green
+- `npm run verify:client`
+  - green
+  - `667 tests / 93 files`
+- `npm run build`
+  - green
+  - main client chunk: `344.65 kB` (`377.96 kB` → `344.65 kB`)
+
+### Notes
+
+- manual QA authority는 계속 `required.md`
+- `Pixel Lab > Presets` first-open loading feel은 tall-phone/small viewport 실기기 확인만 남음
+- next high-value follow-up은 HQx legacy branch boundary cleanup, stale docs(`docs/vnext/03`, `docs/vnext/07`) review, 추가 shell split 필요성 재판단이다
+
+---
+
+## v1.6.82 (2026-04-23)
+
+> RetroCam reopened snapshots now save from the actual stored snapshot asset instead of whichever live canvas happens to exist, and one more disconnected legacy wrapper/artifact is gone.
+
+### RetroCam Snapshot Save Fix + Legacy Surface Cleanup
+
+- **RetroCam save path now follows the stored snapshot payload**
+  - `src/lib/components/retrocam/RetroCam.svelte`
+  - `src/lib/components/__tests__/RetroCam.test.ts`
+  - snapshot save가 live capture canvas에 묶이지 않고 `lastSnapshotUrl`/snapshot file을 기준으로 export되도록 정리
+  - reopen project 뒤에도 stale canvas/blank frame 저장 위험을 줄이고 saved snapshot payload와 save action 의미를 일치시킴
+- **Disconnected legacy surface reduction**
+  - `src/lib/services/cloudPresetService.ts`
+  - `tauri-build_non_use.yml`
+  - 미사용 `getCloudPresetByShortId` wrapper를 제거하고 inert root workflow artifact를 삭제해 legacy 탐색면을 축소
+- **Active-doc sync**
+  - `docs/ui_shell_audit_2026-04-23.md`
+  - `docs/vnext/11_status_review.md`
+  - `PLAN_TASK.md`
+  - `required.md`
+
+### Verification
+
+- targeted `npm test -- src/lib/components/__tests__/RetroCam.test.ts src/lib/services/cloudPresetService.test.ts`
+  - `17 tests / 2 files` green
+- `npm run verify:client`
+  - green
+  - `666 tests / 93 files`
+- `npm run build`
+  - green
+  - main client chunk: `377.96 kB`
+
+### Notes
+
+- runtime/device manual QA authority는 계속 `required.md`
+- next high-value follow-up은 HQx legacy branch boundary cleanup, preview/settings eager split 판단, stale docs(`docs/vnext/03`, `docs/vnext/07`) review다
+
+---
+
+## v1.6.81 (2026-04-23)
+
+> Tauri processing now respects the same effect-layer/HQx pipeline as the web worker, original fast-path color counts stop going stale, and the duplicated legacy effect mapper is centralized.
+
+### Tauri Effect Parity + Shared Effect Pipeline Cleanup
+
+- **Shared effect-layer normalization/application SSOT**
+  - `src/lib/utils/effectLayers.ts`
+  - `src/lib/utils/effectLayers.test.ts`
+  - `src/lib/utils/presetPreview.ts`
+  - legacy `glitchFilters` / `renderMode` -> `effectLayers` 정규화, effect application, visible color count 계산을 한 군데로 모아 worker / Tauri / preset preview가 같은 규칙을 쓰게 정리
+- **Tauri post-quantization parity**
+  - `src/lib/services/imageProcessor.ts`
+  - `src/lib/services/imageProcessor.test.ts`
+  - Rust quantize 뒤에도 main-thread에서 `effectLayers` / legacy HQx 후처리를 적용하고, HQx 결과 canvas size를 갱신하고, progress / colorCount를 worker 경로와 더 가깝게 맞춤
+  - successful Tauri request 뒤 `pendingResolvers`가 남던 누수와 original/no-worker fast path의 stale color count도 함께 정리
+- **Worker duplication reduction**
+  - `src/lib/workers/imageWorker.ts`
+  - worker도 shared effect pipeline / color count util을 재사용하게 정리해서 duplicated legacy branch를 축소
+- **Active-doc sync**
+  - `docs/ui_shell_audit_2026-04-23.md`
+  - `PLAN_TASK.md`
+  - `required.md`
+
+### Verification
+
+- `npm run lint`
+  - green
+- `npm run check`
+  - `0 errors / 0 warnings`
+- `npm test`
+  - `665 tests / 93 files` green
+- `npm run build`
+  - green
+  - main client chunk: `378.04 kB`
+
+### Notes
+
+- runtime/device manual QA authority는 계속 `required.md`
+- next high-value follow-up은 RetroCam reopen snapshot save bug, HQx legacy branch boundary cleanup, preview/settings eager split 판단, stale docs/dead workflow 후보 정리다
+
+---
+
+## v1.6.80 (2026-04-23)
+
+> Desktop shell copy and launch flow are cleaner now: desktop program launch clears the onboarding card, Start menu labels read like real Win98 menu items, mobile taskbar wastes less width, and native-save Tauri detection no longer depends on a stale module snapshot.
+
+### Shell Entry Cleanup + Runtime Detection Follow-Up
+
+- **Desktop launch now clears the first-run guide**
+  - `src/lib/components/window/DesktopWorkspace.svelte`
+  - `src/lib/components/__tests__/DesktopShellFlow.test.ts`
+  - desktop icon double-click / Enter / launch-strip open이 같은 open path를 쓰도록 묶어서 program launch 뒤 guide가 shell 위에 남지 않게 정리
+- **Start menu labels are title-only again**
+  - `src/routes/+page.svelte`
+  - `src/lib/stores/windowStore.svelte.ts`
+  - `src/lib/stores/windowStore.test.ts`
+  - Start menu program item에서 summary sentence를 빼고 window title만 노출해 Win98 menu grammar와 shell density를 맞춤
+- **Mobile taskbar footprint trimmed**
+  - `src/lib/components/window/Taskbar.svelte`
+  - mobile에서 hidden Start text가 차지하던 고정 폭과 tray padding을 줄여 narrow/tall-phone에서 task buttons가 쓸 수 있는 가로 공간을 늘림
+- **Native save uses runtime env detection only**
+  - `src/lib/utils/env.ts`
+  - `src/lib/services/saveService.ts`
+  - `src/lib/utils/env.test.ts`
+  - `src/lib/services/saveService.test.ts`
+  - `src/lib/services/saveService.tauri.test.ts`
+  - frozen `isTauri` snapshot export를 제거하고 save path도 `isTauriRuntime()`만 사용하도록 통일해 late-available Tauri sentinel과 어긋날 위험을 줄임
+- **Active-doc sync**
+  - `docs/ui_shell_audit_2026-04-23.md`
+  - `PLAN_TASK.md`
+  - `required.md`
+
+### Verification
+
+- `npm run lint`
+  - green
+- `npm run check`
+  - `0 errors / 0 warnings`
+- `npm test`
+  - `656 tests / 92 files` green
+- `npm run build`
+  - green
+
+### Notes
+
+- runtime/device manual QA authority는 계속 `required.md`
+- next high-value follow-up은 여전히 Tauri effect parity/HQx legacy path 정리와 tall-phone/RetroCam/native-save runtime QA다
+
+---
+
+## v1.6.79 (2026-04-23)
+
+> Window menubars now read as visual shell chrome instead of fake interactive controls, keeping the app closer to the design kit and removing a misleading affordance.
+
+### Menubar Presentation Semantics Cleanup
+
+- **Presentation-only shell menubars**
+  - `src/lib/components/window/Win98Window.svelte`
+  - `src/app.css`
+  - design-system kit와 맞지 않게 button/`menubar`/`menuitem` semantics를 주던 window menubar를 presentation row로 되돌리고, hover chrome만 남겨 fake interactive affordance를 제거
+- **Regression coverage + active-doc sync**
+  - `src/lib/components/__tests__/Win98Window.test.ts`
+  - `src/lib/components/__tests__/MobileShellFlow.test.ts`
+  - `docs/ui_shell_audit_2026-04-23.md`
+  - `docs/vnext/11_status_review.md`
+  - `docs/vnext/13_design_system_alignment_tasks.md`
+  - `PLAN_TASK.md`
+  - `required.md`
+
+### Verification
+
+- `npm run lint`
+  - green
+- `npm run check`
+  - `0 errors / 0 warnings`
+- `npm test`
+  - `656 tests / 92 files` green
+- `npm run build`
+  - green
+
+### Notes
+
+- runtime/device manual QA authority는 계속 `required.md`
+- next high-value follow-up은 Tauri effect parity/HQx legacy path 정리와 tall-phone/RetroCam/native-save runtime QA다
+
+---
+
+## v1.6.78 (2026-04-23)
+
+> Shell shortcut behavior now matches preview affordance more closely, standard app windows stop presenting as modal dialogs, and Tauri runtime detection is aligned across save/worker/service-worker paths.
+
+### Shell Shortcut + Window Semantics + Tauri Sentinel Alignment
+
+- **Preview copy shortcut wiring + overlay guard**
+  - `src/lib/utils/shellShortcuts.ts`
+  - `src/routes/+page.svelte`
+  - preview context menu가 이미 약속하던 `Cmd/Ctrl+C`를 shell shortcut으로 실제 연결하고, dialog/shortcuts/context menu overlay가 열린 동안에는 global shell shortcut이 뒤 UI로 새지 않도록 막음
+- **Regular app windows are no longer announced as modal dialogs**
+  - `src/lib/components/window/Win98Window.svelte`
+  - `src/lib/components/__tests__/Win98Window.test.ts`
+  - 일반 작업 창을 `role="group"` + `aria-roledescription="window"`로 정리하고, `Esc`로 일반 창이 닫히던 동작을 제거해서 modal dialog와 app window 의미가 섞이지 않도록 정리
+- **Platform-aware shortcut hint copy**
+  - `src/lib/components/editor/ControlPanel.svelte`
+  - `src/lib/components/editor/PreviewBottomBar.svelte`
+  - `src/lib/components/__tests__/ControlPanel.test.ts`
+  - `src/lib/components/__tests__/PreviewBottomBar.test.ts`
+  - save/compare/zoom hint가 Mac 계열에서 `Cmd` 표기를 쓰도록 통일해서 shortcuts panel과 tooltip copy가 서로 어긋나지 않게 정리
+- **Tauri runtime sentinel SSOT**
+  - `src/lib/utils/env.ts`
+  - `src/lib/services/imageProcessor.ts`
+  - `src/lib/utils/serviceWorker.ts`
+  - `src/lib/utils/env.test.ts`
+  - Tauri 판별을 `__TAURI__` 또는 `__TAURI_INTERNALS__` 둘 다 수용하도록 통일해서 native save / Rust processor / service worker guard가 서로 다른 legacy sentinel을 보지 않도록 정리
+- **Localization cleanup**
+  - `src/lib/i18n/ja.ts`
+  - 일본어 publish label의 duplicated wording(`公開公開`, `非公開公開`)을 실제 의미로 수정
+
+### Verification
+
+- `npm run check`
+  - `0 errors / 0 warnings`
+- `npm test`
+  - `656 tests / 92 files` green
+- `npm run build`
+  - green
+
+### Notes
+
+- runtime/device manual QA authority는 계속 `required.md`
+- next high-value follow-up은 Tauri effect parity/HQx no-op path 정리와 tall-phone/RetroCam/native-save runtime QA다
+
+---
+
+## v1.6.77 (2026-04-23)
+
+> Preview clipboard affordance now reflects real runtime capability more honestly, and the mobile desktop guide is less likely to crowd the shell on short screens.
+
+### Clipboard Affordance Guard + Tall-Phone Shell Mitigation
+
+- **Preview clipboard image capability guard**
+  - `src/lib/utils/clipboardSupport.ts`
+  - `src/lib/shell/previewContextMenu.ts`
+  - `src/routes/+page.svelte`
+  - secure context + `navigator.clipboard.write` + `ClipboardItem`를 모두 만족할 때만 preview context menu `Copy`를 활성화하도록 정리
+  - unsupported runtime에서는 dead action을 노출하지 않고 disabled affordance로 남겨 browser/Tauri 차이를 더 정직하게 표현
+- **Tall-phone desktop guide containment**
+  - `src/lib/components/window/DesktopWorkspace.svelte`
+  - mobile/short-height viewport에서 first-run guide가 launch strip 공간을 과도하게 잠식하지 않도록 max-height + overflow guard를 추가
+- **Regression coverage + active-doc sync**
+  - `src/lib/utils/clipboardSupport.test.ts`
+  - `src/lib/shell/previewContextMenu.test.ts`
+  - `src/lib/components/__tests__/DesktopShellFlow.test.ts`
+  - `docs/ui_shell_audit_2026-04-23.md`
+  - `docs/vnext/11_status_review.md`
+  - `PLAN_TASK.md`
+  - `required.md`
+
+### Verification
+
+- `npm run lint`
+  - green
+- `npm run check`
+  - `0 errors / 0 warnings`
+- targeted `npm test -- src/lib/utils/clipboardSupport.test.ts src/lib/shell/previewContextMenu.test.ts src/lib/components/__tests__/DesktopShellFlow.test.ts`
+  - `13 tests / 3 files` green
+
+### Notes
+
+- runtime/device manual QA authority는 계속 `required.md`
+- next close-out focus는 tall-phone 실기기, secure browser/Tauri clipboard/save runtime, RetroCam permission/device 확인이다
+
+---
+
+## v1.6.76 (2026-04-23)
+
+> Context-menu headings now behave like labels instead of fake disabled buttons, and desktop shortcut open gestures stay better scoped to shell launch intent.
+
+### Context Menu Semantics + Desktop Shortcut Event Guard
+
+- **Context menu heading semantics cleanup**
+  - `src/lib/components/feedback/ContextMenu.svelte`
+  - `src/lib/shell/openWithMenu.ts`
+  - disabled button로 흉내 내던 heading row를 presentation row로 바꾸고, keyboard navigation도 실제 action button만 순회하도록 정리
+  - `Open With` section에서 남아 있던 no-op legacy action wiring을 제거해서 menu model이 실제 의미와 일치하게 정리
+- **Desktop shortcut open gesture guard**
+  - `src/lib/components/window/DesktopIcons.svelte`
+  - desktop icon double-click / Enter open 시 desktop parent까지 이벤트가 새지 않도록 guard를 추가해서 shortcut open intent가 shell background interaction과 섞이지 않게 정리
+- **Regression coverage + doc sync**
+  - `src/lib/components/__tests__/ContextMenu.test.ts`
+  - `src/lib/components/__tests__/DesktopIcons.test.ts`
+  - `src/lib/shell/openWithMenu.test.ts`
+  - `src/lib/shell/previewContextMenu.test.ts`
+  - `docs/ui_shell_audit_2026-04-23.md`
+  - `PLAN_TASK.md`
+  - `required.md`
+
+### Verification
+
+- `npm run lint`
+  - green
+- `npm run check`
+  - `0 errors / 0 warnings`
+- `npm test`
+  - `645 tests / 89 files` green
+- `npm run build`
+  - green
+
+### Notes
+
+- runtime/device manual QA authority는 계속 `required.md`
+- next shell follow-up은 tall-phone/device/native-save 실환경 확인과 eager shell chunk 추가 분리 필요성 판단이다
+
+---
+
+## v1.6.75 (2026-04-22)
+
+> Secondary shell windows now load on demand, shell launch/order metadata comes from one source of truth, and the main client chunk dropped enough to reduce first-load pressure without changing shell behavior.
+
+### Shell Entry Weight Reduction + Metadata SSOT
+
+- **Secondary window lazy-load**
+  - `src/routes/+page.svelte`
+  - `gallery`, `poster_maker`, `retrocam`, `batch`, `history` content를 dynamic import로 전환해서 닫힌 상태의 secondary program/window code가 initial shell chunk에 묶이지 않도록 정리
+  - window body에는 loading placeholder를 넣어 first-open 시 shell chrome이 먼저 보이도록 유지
+- **Shell metadata SSOT cleanup**
+  - `src/lib/stores/windowStore.svelte.ts`
+  - `src/routes/+page.svelte`
+  - mobile window order와 start menu launch rows가 `windowStore` metadata(`windowConfigs`, `desktopWindowConfigs`, `mobileWindowOrder`)를 재사용하도록 정리해서 duplicated launch wiring을 제거
+- **Regression coverage + active-doc sync**
+  - `src/lib/stores/windowStore.test.ts`
+  - `PLAN_TASK.md`
+  - `docs/vnext/11_status_review.md`
+  - `docs/vnext/13_design_system_alignment_tasks.md`
+  - `required.md`
+  - metadata SSOT 회귀를 테스트에 고정하고, 남은 manual QA / shell-weight follow-up을 현재 기준으로 동기화
+
+### Verification
+
+- `npm run lint`
+  - green
+- `npm run check`
+  - `0 errors / 0 warnings`
+- `npm test`
+  - `645 tests / 89 files` green
+- `npm run build`
+  - green
+  - main client chunk: `373.41 kB` (previously `438.64 kB`)
+
+### Notes
+
+- manual QA authority는 계속 `required.md`
+- next shell-weight follow-up은 `preview/settings` eager path를 더 쪼갤지, current loading feel이 충분히 자연스러운지 판단하는 단계다
+
+## v1.6.74 (2026-04-22)
+
+> Shell keyboard/save handling now stays out of editable fields, desktop drag overlay behavior is steadier, and one unreachable preview fallback branch is removed.
+
+### Shell Input Guard + Desktop Drag Stability
+
+- **Shell shortcut boundary fix**
+  - `src/lib/utils/shellShortcuts.ts`
+  - `src/lib/utils/shellShortcuts.test.ts`
+  - document-level `Cmd`/`Ctrl` + `S` save shortcut이 input / textarea / select / contentEditable focus 중에는 실행되지 않도록 막아서 typing flow와 shell save action이 충돌하지 않게 정리
+- **Desktop drag overlay child-boundary stability**
+  - `src/lib/components/window/DesktopWorkspace.svelte`
+  - `src/lib/components/__tests__/DesktopShellFlow.test.ts`
+  - desktop drag overlay가 guide card / icon 같은 desktop child 경계로 pointer가 이동할 때 premature `dragleave`로 사라질 수 있는 경로를 막아 flicker 가능성을 줄임
+- **Disconnected legacy branch cleanup**
+  - `src/lib/components/editor/ImageCanvas.svelte`
+  - `originalImageSrc` 분기 뒤에 남아 있던 unreachable drop-zone fallback branch를 제거해서 preview empty-state flow를 현재 조건식과 일치시킴
+
+### Verification
+
+- `npm run verify:client`
+  - `644 tests / 89 files` green
+- `npm run build`
+  - green
+
+### Notes
+
+- manual QA authority는 계속 `required.md`
+- current production build main shell chunk는 여전히 `438.64 kB`로 split / lazy-load follow-up 가치가 큼
+
+## v1.6.73 (2026-04-22)
+
+> Shell shortcut copy now matches actual platform behavior, and preview context-menu save no longer depends on a synthetic keyboard event.
+
+### Platform Shortcut Alignment + Preview Save Path Cleanup
+
+- **Preview context-menu save bug fix**
+  - `src/routes/+page.svelte`
+  - preview context menu의 `Save`가 synthetic `Ctrl+S` key event에 기대던 흐름을 직접 `handleSave()` 호출로 교체
+  - macOS `Cmd` 환경과 synthetic keyboard event 차이로 인한 저장 affordance mismatch를 줄임
+- **Platform-aware shortcut labels**
+  - `src/lib/utils/platformShortcuts.ts`
+  - `src/lib/components/editor/ImageDropZone.svelte`
+  - `src/lib/components/feedback/KeyboardShortcuts.svelte`
+  - `src/lib/components/feedback/HistoryPanel.svelte`
+  - `src/lib/shell/previewContextMenu.ts`
+  - `src/routes/design-system/+page.svelte`
+  - `Ctrl` 고정 표기를 `Cmd`/`Ctrl` runtime 기준으로 치환해 paste hint, shortcut dialog, history tooltip, preview context menu, design-system 샘플까지 일관화
+- **Regression coverage refresh**
+  - `src/lib/utils/platformShortcuts.test.ts`
+  - `src/lib/components/__tests__/ImageDropZone.test.ts`
+  - `src/lib/components/__tests__/KeyboardShortcuts.test.ts`
+  - `src/lib/components/__tests__/HistoryPanel.test.ts`
+  - `src/lib/shell/previewContextMenu.test.ts`
+  - platform-aware shortcut 표시와 helper 동작 회귀를 테스트로 고정
+- **Docs / manual-QA tracker sync**
+  - `PLAN_TASK.md`
+  - `required.md`
+  - 이번 shortcut/save 경로 정리와 남은 runtime manual QA 범위를 현재 기준으로 동기화
+
+### Verification
+
+- `npm run lint`
+  - green
+- `npm run check`
+  - `0 errors / 0 warnings`
+- `npm test`
+  - `642 tests / 89 files` green
+- `npm run build`
+  - green
+
+### Notes
+
+- current production build main shell chunk는 여전히 `438.67 kB`로 split / lazy-load follow-up 가치가 큼
+- manual QA는 tall-phone shell, RetroCam permission/device runtime, native save, clipboard/save runtime 차이를 계속 추적
+
+## v1.6.72 (2026-04-22)
+
+> Shell cleanup in this pass removed fake menu wiring, tightened a few accessibility affordances, and synced active docs to the current green baseline plus the remaining manual-QA gates.
+
+### Shell Menu Cleanup + Manual-QA Authority Sync
+
+- **Passive menu rows no longer carry fake handlers**
+  - `src/lib/components/feedback/ContextMenu.svelte`
+  - `src/lib/shell/openWithMenu.ts`
+  - `src/routes/+page.svelte`
+  - heading / empty-state context-menu rows no longer require `() => {}` no-op actions, reducing disconnected legacy wiring in the shell menu model
+- **Shell accessibility polish — missing labels filled in**
+  - `src/lib/components/window/Taskbar.svelte`
+  - `src/lib/components/editor/ImageDropZone.svelte`
+  - `src/lib/components/editor/PreviewBottomBar.svelte`
+  - locale switch, onboarding dismiss, and preview zoom input now expose stable accessible labels
+- **Regression coverage refresh**
+  - `src/lib/components/__tests__/ContextMenu.test.ts`
+  - `src/lib/components/__tests__/ImageDropZone.test.ts`
+  - `src/lib/components/__tests__/PreviewContent.test.ts`
+  - `src/lib/components/__tests__/Taskbar.test.ts`
+  - `src/lib/shell/openWithMenu.test.ts`
+  - shell cleanup / accessibility expectations are now covered directly in tests
+- **Active-doc sync + manual-QA tracker**
+  - `PLAN_TASK.md`
+  - `docs/vnext/11_status_review.md`
+  - `required.md`
+  - current verify baseline (`635 tests / 88 files`), build-green state, shell entry-weight follow-up, and remaining manual QA gates are now synchronized
+
+### Verification
+
+- `npm run lint`
+  - `0 errors / 0 warnings`
+- `npm run check`
+  - `0 errors / 0 warnings`
+- `npm test`
+  - `635 tests / 88 files` green
+- `npm run build`
+  - green
+
+### Notes
+
+- manual QA remains required for tall-phone shell, RetroCam permission/device runtime, and Tauri native save runtime
+- `src/routes/+page.svelte` main shell chunk remains large enough to justify a later split / lazy-load follow-up
+
+## v1.6.71 (2026-04-22)
+
+> The shell docs now reflect the current design-system acceptance state more accurately, while the mobile taskbar and desktop launch affordances stay a little less cluttered during the final WP-06 polish pass.
+
+### WP-06 Acceptance Cleanup + Doc Sync
+
+- **Mobile shell clutter reduction — compact taskbar / launch-strip follow-up**
+  - `src/lib/components/window/Taskbar.svelte`
+  - `src/lib/components/window/DesktopWorkspace.svelte`
+  - tall-phone shell에서 taskbar close affordance를 숨기고 launch-strip hint를 줄여서 작은 viewport에서 shell complexity가 과하게 읽히지 않도록 정리
+- **RetroCam primary action emphasis — capture-first identity 유지**
+  - `src/lib/components/retrocam/RetroCam.svelte`
+  - snapshot capture 버튼을 primary action으로 강조해서 `RetroCam`이 editor보다 capture software처럼 먼저 읽히도록 유지
+- **Active-doc sync — residual scope / acceptance 상태 정리**
+  - `README.md`
+  - `PLAN_TASK.md`
+  - `docs/vnext/05_master_checklists.md`
+  - `docs/vnext/06_work_packages.md`
+  - `docs/vnext/10_role_execution_plan.md`
+  - `docs/vnext/11_status_review.md`
+  - `docs/vnext/13_design_system_alignment_tasks.md`
+  - `docs/vnext/README.md`
+  - `WP-05`의 `short-loop export`를 active decision이 아니라 deferred scope guard로 정리하고, design-system alignment 문서의 resolved/remaining 상태를 현재 코드 기준으로 동기화
+
+### Verification
+
+- `npm run lint`
+  - `0 errors / 0 warnings`
+- `npm run check`
+  - `0 errors / 0 warnings`
+- `npm test`
+  - `626 tests / 87 files` green
+
+### Notes
+
+- current implementation priority remains `WP-06` acceptance close-out
+- `WP-05` is now best read as manual-QA tracking plus scope guard maintenance, not as an automatic feature-expansion queue
+
+## v1.6.70 (2026-04-21)
+
+> Active task/workflow/workspace docs now keep only current focus and current caveats, while completed work summaries are consolidated into revision history so they do not keep resurfacing as live planning input.
+
+### Active-Doc Pruning Pass
+
+- **Completed-work consolidation — historical summaries moved out of active docs**
+  - `PLAN_TASK.md`
+  - `README.md`
+  - `docs/vnext/05_master_checklists.md`
+  - `docs/vnext/06_work_packages.md`
+  - `docs/vnext/10_role_execution_plan.md`
+  - `docs/vnext/11_status_review.md`
+  - active/workspace 문서에서 완료 패키지 요약, 완료 snapshot, 완료 상태 회고를 제거하고 현재 남은 일/현재 기준만 남기도록 정리
+- **vNext index cleanup — completed status report 인덱싱 제거**
+  - `docs/vnext/README.md`
+  - `docs/vnext/13_document_status_report_2026-04-16.md`
+  - 완료 상태 요약 보고서는 active 문서 세트에서 제거하고, 이후 완료 이력의 단일 기준을 `REVISION_HISTORY.md`로 고정
+
+### Verification
+
+- `rg -n "WP-01|WP-02|WP-03|WP-04|WP-07|Current WP-|완료 확인 사항|Phase 3에서 완료된 항목" README.md PLAN_TASK.md docs/vnext/05_master_checklists.md docs/vnext/06_work_packages.md docs/vnext/10_role_execution_plan.md docs/vnext/11_status_review.md docs/vnext/README.md`
+  - completed-work tracker text removed from active/workspace docs
+
+### Notes
+
+- active docs should now be read as current-focus documents only
+- historical completion detail should be added to `REVISION_HISTORY.md` and not reintroduced into the active trackers
+
+## v1.6.69 (2026-04-21)
+
+> The client test run stays green and quieter after removing the last broad jsdom canvas stderr that was still polluting otherwise healthy component suites.
+
+### Test Signal Hygiene Pass
+
+- **Shared canvas fallback — common jsdom `getContext()` stderr 정리**
+  - `src/lib/utils/vitest.setup.ts`
+  - test 환경 기본 `HTMLCanvasElement.getContext()`를 조용한 `null` 반환으로 맞춰서, jsdom의 not-implemented stderr를 없애면서 기존 null-context fallback 동작은 유지
+- **Active-doc sync — current baseline/status 반영**
+  - `PLAN_TASK.md`
+  - `docs/vnext/11_status_review.md`
+  - full test baseline과 known-issue 문구를 현재 상태에 맞게 갱신
+
+### Verification
+
+- `npm test -- src/lib/components/__tests__/MobileShellFlow.test.ts src/lib/components/__tests__/PaletteGallery.test.ts`
+  - `12 passed`
+- `npm run check`
+  - `0 errors / 0 warnings`
+- `npm test`
+  - `607 tests / 83 files` green
+
+### Notes
+
+- current automatic coding priority now tilts back toward `P3-005` recommendation-quality edge cases and `WP-06` shell acceptance checks
+- native/runtime manual QA items remain deferred documentation work, not current automated coding blockers
+
 ## v1.6.68 (2026-04-16)
 
 > Active task/flow docs now track only remaining work, and the local validation baseline is green again after aligning the last stale test expectations with current taskbar accessibility wording.

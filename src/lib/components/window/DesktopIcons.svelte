@@ -7,22 +7,32 @@
     selectedIcon,
     onIconClick,
     onIconDblClick,
+    onIconIntent,
   }: {
     selectedIcon: WindowId | null;
     onIconClick: (id: WindowId) => void;
     onIconDblClick: (id: WindowId) => void;
+    onIconIntent?: (id: WindowId) => void;
   } = $props();
 </script>
 
 <div class="desktop-icons" role="toolbar" aria-label={i18n.t('desktop_shortcuts')}>
   {#each desktopWindowConfigs as cfg}
     <button
-      class="desktop-icon"
+      type="button"
+      class="desktop-icon w98-desktop-shortcut"
       class:icon-selected={selectedIcon === cfg.id}
+      class:w98-desktop-shortcut--selected={selectedIcon === cfg.id}
       onclick={(e) => { e.stopPropagation(); onIconClick(cfg.id); }}
-      ondblclick={() => onIconDblClick(cfg.id)}
+      ondblclick={(e) => { e.stopPropagation(); onIconDblClick(cfg.id); }}
+      onfocus={() => onIconIntent?.(cfg.id)}
+      onmouseenter={() => onIconIntent?.(cfg.id)}
       onkeydown={(e) => {
-        if (e.key === 'Enter') { onIconDblClick(cfg.id); e.preventDefault(); }
+        if (e.key === 'Enter') {
+          e.stopPropagation();
+          onIconDblClick(cfg.id);
+          e.preventDefault();
+        }
         else if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
           const next = (e.currentTarget as HTMLElement).nextElementSibling as HTMLElement | null;
           if (next) { next.focus(); e.preventDefault(); }
@@ -32,10 +42,11 @@
         }
       }}
       aria-label={i18n.t('desktop_open_program', getWindowTitle(cfg.id))}
+      aria-pressed={selectedIcon === cfg.id}
       title={getWindowTitle(cfg.id)}
     >
-      <span class="icon-img" aria-hidden="true">{cfg.icon}</span>
-      <span class="icon-label">{getWindowTitle(cfg.id)}</span>
+      <span class="icon-img w98-emoji w98-desktop-shortcut-icon" aria-hidden="true">{cfg.icon}</span>
+      <span class="icon-label w98-desktop-shortcut-label">{getWindowTitle(cfg.id)}</span>
     </button>
   {/each}
 </div>
@@ -43,74 +54,29 @@
 <style>
   .desktop-icons {
     position: absolute;
-    top: 8px;
-    left: 8px;
+    top: var(--w98-space-8);
+    left: var(--w98-space-8);
     bottom: 38px;
     display: flex;
     flex-direction: column;
     align-items: flex-start;
     align-content: flex-start;
     flex-wrap: wrap;
-    gap: 8px 16px;
-    padding: 8px;
+    gap: var(--w98-space-4) var(--w98-space-12);
+    padding: var(--w98-space-8);
     z-index: 1;
   }
 
   .desktop-icon {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 2px;
-    width: 68px;
-    min-height: 64px;
-    padding: 6px 2px;
-    background: transparent;
-    border: 1px dotted transparent;
-    cursor: pointer;
-    font-family: inherit;
-    font-size: var(--w98-font-size-base);
-    color: #fff;
-    text-shadow: 1px 1px 1px #000;
-  }
-
-  .desktop-icon:hover {
-    background: rgba(255, 255, 255, 0.1);
-  }
-
-  .desktop-icon:focus-visible {
-    outline: 2px solid #fff;
-    outline-offset: 1px;
-    box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.5);
-    background: rgba(255, 255, 255, 0.15);
-  }
-
-  .desktop-icon.icon-selected {
-    background: color-mix(in srgb, var(--w98-highlight) 60%, transparent);
-    border: 1px solid rgba(255, 255, 255, 0.5);
-    outline: 1px dashed #fff;
-    outline-offset: 1px;
-  }
-
-  .desktop-icon.icon-selected .icon-label {
-    background: var(--w98-highlight);
-    color: #fff;
-    padding: 1px 4px;
+    font-size: var(--w98-font-size-sm);
   }
 
   .icon-img {
-    font-size: 32px;
-    font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
-    color: initial;
-    text-shadow: none;
-    line-height: 1;
+    flex-shrink: 0;
   }
 
   .icon-label {
-    word-break: break-word;
-    text-align: center;
-    line-height: 1.2;
-    padding: 0 4px;
+    min-width: 0;
   }
 
   /* ===== Mobile ===== */
@@ -119,7 +85,7 @@
       top: 8px;
       left: 8px;
       flex-direction: row;
-      gap: 6px;
+      gap: 4px;
     }
     .desktop-icon { width: 56px; }
     .icon-img { font-size: 24px; }

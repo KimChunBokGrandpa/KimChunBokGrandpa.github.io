@@ -1,5 +1,11 @@
 <script lang="ts">
   import { i18n } from '$lib/i18n/index.svelte';
+  import { canvasSurfaceToBlob, createCanvasSurface } from '$lib/utils/canvasSurface';
+  import { replacePrimaryModifierShortcutLabel } from '$lib/utils/platformShortcuts';
+  import {
+    ACCEPTED_IMAGE_TYPES,
+    validateImageFile,
+  } from '$lib/utils/imageFileValidation';
 
   let { onImageSelected, onError }: {
     onImageSelected: (file: File) => void;
@@ -7,6 +13,7 @@
   } = $props();
 
   let isDragging = $state(false);
+  let fileInputEl = $state<HTMLInputElement | null>(null);
 
   // Onboarding: show quick start guide for first-time users
   const onboardingKey = 'retropixel_onboarding_dismissed';
@@ -22,8 +29,20 @@
     catch { /* localStorage unavailable or full */ }
   }
 
-  const acceptedTypes = ['image/png', 'image/jpeg', 'image/gif', 'image/bmp', 'image/webp'];
-  const maxImageSize = 50 * 1024 * 1024; // 50MB
+  const acceptedTypes = [...ACCEPTED_IMAGE_TYPES];
+  let pasteHint = $derived(replacePrimaryModifierShortcutLabel(i18n.t('paste_hint')));
+
+  function handleValidatedImage(file: File, invalidTypeKey: 'drop_image_error' | 'unsupported_format' = 'unsupported_format') {
+    const validation = validateImageFile(file);
+    if (!validation.ok) {
+      onError?.(i18n.t(validation.reason === 'size' ? 'image_too_large' : invalidTypeKey));
+      return false;
+    }
+
+    dismissOnboarding();
+    onImageSelected(file);
+    return true;
+  }
 
   function handleDragEnter(e: DragEvent) {
     e.preventDefault();
@@ -44,69 +63,67 @@
     isDragging = false;
 
     if (e.dataTransfer?.files && e.dataTransfer.files.length > 0) {
-      const file = e.dataTransfer.files[0];
-      if (!acceptedTypes.includes(file.type)) {
-        onError?.(i18n.t('drop_image_error'));
-      } else if (file.size > maxImageSize) {
-        onError?.(i18n.t('image_too_large'));
-      } else {
-        onImageSelected(file);
-      }
+      handleValidatedImage(e.dataTransfer.files[0], 'drop_image_error');
     }
   }
 
   function handleFileInput(e: Event) {
     const input = e.target as HTMLInputElement;
     if (input.files && input.files.length > 0) {
-      onImageSelected(input.files[0]);
+      handleValidatedImage(input.files[0]);
     }
     // Reset so the same file can be selected again
     input.value = '';
   }
 
   function openFilePicker() {
-    document.getElementById('file-upload')?.click();
+    fileInputEl?.click();
   }
 
   /** Generate a simple gradient sample image for first-time users */
   async function loadSampleImage() {
-    const w = 320, h = 240;
-    const canvas = new OffscreenCanvas(w, h);
-    const ctx = canvas.getContext('2d')!;
+    try {
+      const w = 320;
+      const h = 240;
+      const { canvas, ctx } = createCanvasSurface(w, h);
 
-    // Sky gradient
-    const sky = ctx.createLinearGradient(0, 0, 0, h * 0.6);
-    sky.addColorStop(0, '#1a1a4e');
-    sky.addColorStop(0.5, '#e06040');
-    sky.addColorStop(1, '#f0c060');
-    ctx.fillStyle = sky;
-    ctx.fillRect(0, 0, w, h * 0.6);
+      // Sky gradient
+      const sky = ctx.createLinearGradient(0, 0, 0, h * 0.6);
+      sky.addColorStop(0, '#1a1a4e');
+      sky.addColorStop(0.5, '#e06040');
+      sky.addColorStop(1, '#f0c060');
+      ctx.fillStyle = sky;
+      ctx.fillRect(0, 0, w, h * 0.6);
 
-    // Ground
-    ctx.fillStyle = '#2a5e2a';
-    ctx.fillRect(0, h * 0.6, w, h * 0.4);
+      // Ground
+      ctx.fillStyle = '#2a5e2a';
+      ctx.fillRect(0, h * 0.6, w, h * 0.4);
 
-    // Sun
-    ctx.fillStyle = '#ffe080';
-    ctx.beginPath();
-    ctx.arc(w * 0.7, h * 0.35, 30, 0, Math.PI * 2);
-    ctx.fill();
+      // Sun
+      ctx.fillStyle = '#ffe080';
+      ctx.beginPath();
+      ctx.arc(w * 0.7, h * 0.35, 30, 0, Math.PI * 2);
+      ctx.fill();
 
-    // Mountains
-    ctx.fillStyle = '#3a3a6e';
-    ctx.beginPath();
-    ctx.moveTo(0, h * 0.6);
-    ctx.lineTo(80, h * 0.3);
-    ctx.lineTo(160, h * 0.55);
-    ctx.lineTo(220, h * 0.25);
-    ctx.lineTo(320, h * 0.5);
-    ctx.lineTo(320, h * 0.6);
-    ctx.closePath();
-    ctx.fill();
+      // Mountains
+      ctx.fillStyle = '#3a3a6e';
+      ctx.beginPath();
+      ctx.moveTo(0, h * 0.6);
+      ctx.lineTo(80, h * 0.3);
+      ctx.lineTo(160, h * 0.55);
+      ctx.lineTo(220, h * 0.25);
+      ctx.lineTo(320, h * 0.5);
+      ctx.lineTo(320, h * 0.6);
+      ctx.closePath();
+      ctx.fill();
 
-    const blob = await canvas.convertToBlob({ type: 'image/png' });
-    const file = new File([blob], 'sample-landscape.png', { type: 'image/png' });
-    onImageSelected(file);
+      const blob = await canvasSurfaceToBlob(canvas, 'image/png');
+      const file = new File([blob], 'sample-landscape.png', { type: 'image/png' });
+      handleValidatedImage(file);
+    } catch (error) {
+      console.error('Failed to create sample image', error);
+      onError?.(i18n.t('error_canvas_context'));
+    }
   }
 
   function handlePaste(e: ClipboardEvent) {
@@ -116,11 +133,7 @@
       if (item.type.startsWith('image/')) {
         const file = item.getAsFile();
         if (file) {
-          if (file.size > maxImageSize) {
-            onError?.(i18n.t('image_too_large'));
-          } else {
-            onImageSelected(file);
-          }
+          handleValidatedImage(file);
           return;
         }
       }
@@ -135,8 +148,11 @@
 <div
   class="window dropzone-wrapper"
 >
-  <div class="title-bar">
-    <div class="title-bar-text">{i18n.t('win_preview')}</div>
+  <div class="title-bar w98-shell-titlebar">
+    <div class="title-bar-text w98-shell-title">
+      <span class="w98-emoji" aria-hidden="true">🖼️</span>
+      <span>{i18n.t('win_preview')}</span>
+    </div>
   </div>
   <div
     class="window-body dropzone"
@@ -149,55 +165,69 @@
     aria-label={i18n.t('drag_drop_image')}
   >
     <div class="drop-content">
-      <button
-        class="drop-target-button"
-        data-testid="drop-target-button"
-        onclick={openFilePicker}
-        type="button"
-      >
-        <span class="drop-icon">{isDragging ? '📥' : '🖼️'}</span>
-        <span class="drop-app-name">{i18n.t('win_preview')}</span>
-        <span class="drop-title">{isDragging ? i18n.t('drop_here') : i18n.t('drag_drop_image')}</span>
-        <span class="drop-subtitle">{i18n.t('pixel_lab_subtitle')}</span>
-      </button>
-      <p class="drop-or">{i18n.t('or')}</p>
-      <div class="field-row" style="gap: 6px;">
-        <input type="file" accept={acceptedTypes.join(',')} id="file-upload" onchange={handleFileInput} style="display: none;" />
-        <button class="browse-btn" data-testid="browse-image-button" onclick={openFilePicker}>📂 {i18n.t('open_image')}</button>
-        <button class="browse-btn sample-btn" data-testid="try-sample-button" onclick={loadSampleImage}>🌄 {i18n.t('try_sample')}</button>
+      <div class="drop-target-shell w98-frame">
+        <button
+          class="drop-target-button"
+          data-testid="drop-target-button"
+          onclick={openFilePicker}
+          type="button"
+        >
+          <span class="drop-app-name w98-kicker">
+            <span class="w98-emoji" aria-hidden="true">{isDragging ? '📥' : '🖼️'}</span>
+            <span>{i18n.t('win_preview')}</span>
+          </span>
+          <span class="drop-icon w98-emoji">{isDragging ? '📥' : '🖼️'}</span>
+          <span class="drop-title">{isDragging ? i18n.t('drop_here') : i18n.t('drag_drop_image')}</span>
+          <span class="drop-subtitle w98-quiet-copy">{i18n.t('pixel_lab_subtitle')}</span>
+        </button>
       </div>
-      <p class="drop-hint">{i18n.t('paste_hint')}</p>
-      <p class="drop-formats">{i18n.t('supported_formats')}</p>
+      <div class="field-row drop-actions">
+        <input
+          bind:this={fileInputEl}
+          type="file"
+          accept={acceptedTypes.join(',')}
+          onchange={handleFileInput}
+          style="display: none;"
+        />
+        <button type="button" class="browse-btn w98-button" data-testid="browse-image-button" onclick={openFilePicker}><span class="w98-emoji">📂</span> {i18n.t('open_image')}</button>
+        <button type="button" class="browse-btn sample-btn w98-button" data-testid="try-sample-button" onclick={loadSampleImage}><span class="w98-emoji">🖼️</span> {i18n.t('try_sample')}</button>
+      </div>
+      <div class="drop-guidance w98-note">
+        <p class="drop-hint">{pasteHint}</p>
+        <p class="drop-formats">{i18n.t('supported_formats')}</p>
+      </div>
     </div>
     <!-- Onboarding Quick Start -->
     {#if !onboardingDismissed}
-      <div class="onboarding-guide">
-        <div class="onboarding-header">
-          <span class="onboarding-title">💡 {i18n.t('onboarding_title')}</span>
-          <button class="onboarding-dismiss" onclick={dismissOnboarding} title={i18n.t('onboarding_dont_show')}>✕</button>
+      <div class="onboarding-guide w98-frame">
+        <div class="onboarding-header w98-window-card-titlebar">
+          <div class="onboarding-title w98-window-card-title"><span class="w98-emoji">💡</span> {i18n.t('onboarding_title')}</div>
+          <button type="button" class="onboarding-dismiss w98-window-control-button w98-structural-glyph" onclick={dismissOnboarding} title={i18n.t('onboarding_dont_show')} aria-label={i18n.t('onboarding_dont_show')}>✕</button>
         </div>
-        <div class="onboarding-steps">
-          <div class="onboarding-step">
-            <span class="step-icon">📐</span>
-            <div class="step-text">
-              <span class="step-title">{i18n.t('onboarding_step1_title')}</span>
-              <span class="step-desc">{i18n.t('onboarding_step1_desc')}</span>
+        <div class="onboarding-body w98-window-card-body">
+          <div class="onboarding-steps">
+            <div class="onboarding-step">
+              <span class="step-icon w98-emoji">📐</span>
+              <div class="step-text">
+                <span class="step-title">{i18n.t('onboarding_step1_title')}</span>
+                <span class="step-desc">{i18n.t('onboarding_step1_desc')}</span>
+              </div>
             </div>
-          </div>
-          <div class="onboarding-arrow">→</div>
-          <div class="onboarding-step">
-            <span class="step-icon">🎨</span>
-            <div class="step-text">
-              <span class="step-title">{i18n.t('onboarding_step2_title')}</span>
-              <span class="step-desc">{i18n.t('onboarding_step2_desc')}</span>
+            <div class="onboarding-arrow">→</div>
+            <div class="onboarding-step">
+              <span class="step-icon w98-emoji">🎨</span>
+              <div class="step-text">
+                <span class="step-title">{i18n.t('onboarding_step2_title')}</span>
+                <span class="step-desc">{i18n.t('onboarding_step2_desc')}</span>
+              </div>
             </div>
-          </div>
-          <div class="onboarding-arrow">→</div>
-          <div class="onboarding-step">
-            <span class="step-icon">💾</span>
-            <div class="step-text">
-              <span class="step-title">{i18n.t('onboarding_step3_title')}</span>
-              <span class="step-desc">{i18n.t('onboarding_step3_desc')}</span>
+            <div class="onboarding-arrow">→</div>
+            <div class="onboarding-step">
+              <span class="step-icon w98-emoji">💾</span>
+              <div class="step-text">
+                <span class="step-title">{i18n.t('onboarding_step3_title')}</span>
+                <span class="step-desc">{i18n.t('onboarding_step3_desc')}</span>
+              </div>
             </div>
           </div>
         </div>
@@ -214,6 +244,7 @@
     flex-direction: column;
     box-sizing: border-box;
     overflow: hidden;
+    background: var(--w98-surface);
   }
   .dropzone {
     flex: 1;
@@ -222,24 +253,37 @@
     justify-content: center;
     align-items: center;
     border: 2px dashed var(--w98-shadow-808);
-    margin: 8px;
+    margin: var(--w98-space-8);
     background-color: var(--w98-surface-white);
+    box-shadow: var(--w98-inset);
     overflow: hidden;
     cursor: pointer;
   }
 
   .dropzone.dragging {
-    background-color: var(--w98-surface-hover);
+    background-color: var(--w98-highlight-alpha);
     border-color: var(--w98-highlight);
     border-width: 3px;
     box-shadow: var(--w98-inset-thin);
+  }
+
+  .dropzone.dragging .drop-target-button {
+    border-color: var(--w98-highlight);
+    background: var(--w98-highlight-alpha);
   }
 
   .drop-content {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 4px;
+    gap: var(--w98-space-8);
+    width: min(100%, 460px);
+    padding: 0 var(--w98-space-12);
+  }
+
+  .drop-target-shell {
+    width: min(100%, 360px);
+    padding: var(--w98-space-8);
   }
 
   .drop-target-button {
@@ -247,12 +291,15 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 4px;
+    gap: var(--w98-space-4);
     cursor: pointer;
     text-align: center;
-    width: min(100%, 360px);
-    border: 2px solid transparent;
-    padding: 8px 12px;
+    width: 100%;
+    min-height: 156px;
+    border: 2px dashed var(--w98-shadow-808);
+    background: var(--w98-surface-subtle);
+    box-shadow: var(--w98-inset-thin);
+    padding: var(--w98-space-12) var(--w98-space-16);
     box-sizing: border-box;
   }
 
@@ -263,24 +310,22 @@
   }
 
   .drop-icon {
-    font-size: 40px;
-    font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
-    color: initial;
+    font-size: 32px;
   }
 
   .drop-title {
-    font-size: 14px;
+    font-size: var(--w98-font-size-heading);
     font-weight: bold;
-    margin: 4px 0;
+    margin: var(--w98-space-4) 0;
     color: var(--w98-text);
   }
 
   .drop-app-name {
-    font-size: var(--w98-font-size-action);
-    font-weight: bold;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--w98-space-4);
     margin: 0;
     color: var(--w98-highlight);
-    letter-spacing: 0.3px;
   }
 
   .drop-subtitle {
@@ -292,68 +337,44 @@
     line-height: 1.35;
   }
 
-  .drop-or {
-    font-size: var(--w98-font-size-base);
-    color: var(--w98-shadow-808);
-    margin: 2px 0;
-  }
-
   .browse-btn {
-    font-weight: bold;
-    padding: 4px 16px;
     font-size: var(--w98-font-size-action);
   }
-  .sample-btn {
-    background: var(--w98-color-surface-subtle, #f0f0f0);
-    color: var(--w98-highlight);
+
+  .drop-actions {
+    justify-content: center;
+    gap: var(--w98-space-6);
+  }
+
+  .drop-guidance {
+    width: min(100%, 360px);
+    text-align: center;
   }
 
   .drop-hint {
-    font-size: var(--w98-font-size-sm);
-    color: var(--w98-shadow-808);
-    margin: 6px 0 0 0;
-    font-style: italic;
+    margin: 0;
   }
 
   .drop-formats {
-    font-size: var(--w98-font-size-sm);
-    color: #a0a0a0;
-    margin: 2px 0 0 0;
+    font-size: var(--w98-font-size-caption);
+    color: var(--w98-text-hint);
+    margin: var(--w98-space-4) 0 0;
   }
 
   /* ===== Onboarding Guide ===== */
   .onboarding-guide {
-    margin-top: 12px;
-    padding: 8px 12px;
-    background: #f0f0e8;
-    border: 1px solid var(--w98-surface);
-    border-radius: var(--w98-radius-none);
+    margin-top: var(--w98-space-12);
     max-width: 340px;
     width: 90%;
-    box-shadow: inset 1px 1px var(--w98-shadow-white);
-  }
-  .onboarding-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 8px;
   }
   .onboarding-title {
-    font-size: var(--w98-font-size-base);
     font-weight: bold;
-    color: var(--w98-highlight);
   }
   .onboarding-dismiss {
-    font-size: var(--w98-font-size-sm);
-    background: none;
-    border: none;
-    cursor: pointer;
-    color: var(--w98-shadow-808);
-    padding: 0 2px;
-    line-height: 1;
+    flex-shrink: 0;
   }
-  .onboarding-dismiss:hover {
-    color: #c00;
+  .onboarding-body {
+    min-width: 0;
   }
   .onboarding-steps {
     display: flex;
@@ -380,15 +401,13 @@
   .step-title {
     font-size: var(--w98-font-size-sm);
     font-weight: bold;
-    color: #333;
+    color: var(--w98-text);
     white-space: nowrap;
   }
   .step-desc {
     font-size: var(--w98-font-size-caption);
-    color: var(--w98-shadow-808);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    color: var(--w98-text-hint);
+    line-height: 1.2;
   }
   .onboarding-arrow {
     font-size: var(--w98-font-size-action);
@@ -400,10 +419,10 @@
   /* Mobile: larger browse button, hide drag hint */
   @media (max-width: 550px) {
     .browse-btn {
-      padding: 10px 24px;
-      font-size: 14px;
+      padding: var(--w98-space-8) var(--w98-space-16);
+      font-size: var(--w98-font-size-action);
     }
-    .drop-hint, .drop-or {
+    .drop-hint {
       display: none;
     }
     .drop-title {

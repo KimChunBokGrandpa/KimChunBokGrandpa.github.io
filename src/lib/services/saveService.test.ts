@@ -2,7 +2,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // Mock env (non-Tauri)
-vi.mock('$lib/utils/env', () => ({ isTauri: false }));
+vi.mock('$lib/utils/env', () => ({ isTauriRuntime: () => false }));
 
 // Mock i18n
 vi.mock('$lib/i18n/index.svelte', () => ({

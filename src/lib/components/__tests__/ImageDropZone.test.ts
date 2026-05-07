@@ -6,12 +6,27 @@ import ImageDropZone from '../editor/ImageDropZone.svelte';
 
 afterEach(() => cleanup());
 
+function mockNavigatorPlatform(platform: string) {
+  Object.defineProperty(window.navigator, 'platform', {
+    configurable: true,
+    value: platform,
+  });
+}
+
 describe('ImageDropZone', () => {
   it('renders browse button', () => {
     const onImageSelected = vi.fn();
     const { container } = render(ImageDropZone, { props: { onImageSelected } });
     const browseBtn = container.querySelector('.browse-btn');
     expect(browseBtn).toBeTruthy();
+  });
+
+  it('uses canonical brand emoji for the primary drop actions', () => {
+    const onImageSelected = vi.fn();
+    const { container } = render(ImageDropZone, { props: { onImageSelected } });
+    const buttons = container.querySelectorAll('.browse-btn');
+    expect(buttons[0]?.textContent).toContain('📂');
+    expect(buttons[1]?.textContent).toContain('🖼️');
   });
 
   it('renders separate drop target button without nesting action buttons', () => {
@@ -23,6 +38,20 @@ describe('ImageDropZone', () => {
     expect(dropTarget).toBeTruthy();
     expect(dropTarget?.contains(browseButton)).toBe(false);
     expect(dropTarget?.contains(sampleButton)).toBe(false);
+  });
+
+  it('gives the onboarding dismiss control an accessible label', () => {
+    const onImageSelected = vi.fn();
+    const { getByLabelText } = render(ImageDropZone, { props: { onImageSelected } });
+    expect(getByLabelText("Don't show again")).toBeTruthy();
+  });
+
+  it('shows platform-aware paste guidance', () => {
+    mockNavigatorPlatform('MacIntel');
+
+    const onImageSelected = vi.fn();
+    const { container } = render(ImageDropZone, { props: { onImageSelected } });
+    expect(container.textContent).toContain('Cmd+V');
   });
 
   it('has hidden file input with correct accept types', () => {
@@ -65,6 +94,33 @@ describe('ImageDropZone', () => {
     const dataTransfer = { files: [file] } as unknown as DataTransfer;
 
     await fireEvent.drop(dropzone, { dataTransfer });
+    expect(onImageSelected).not.toHaveBeenCalled();
+    expect(onError).toHaveBeenCalled();
+  });
+
+  it('rejects invalid file types from the file picker too', async () => {
+    const onImageSelected = vi.fn();
+    const onError = vi.fn();
+    const { container } = render(ImageDropZone, { props: { onImageSelected, onError } });
+    const input = container.querySelector('input[type="file"]') as HTMLInputElement;
+
+    const file = new File(['dummy'], 'test.txt', { type: 'text/plain' });
+    await fireEvent.change(input, { target: { files: [file] } });
+
+    expect(onImageSelected).not.toHaveBeenCalled();
+    expect(onError).toHaveBeenCalled();
+  });
+
+  it('rejects oversized images from clipboard and picker flows', async () => {
+    const onImageSelected = vi.fn();
+    const onError = vi.fn();
+    const { container } = render(ImageDropZone, { props: { onImageSelected, onError } });
+    const input = container.querySelector('input[type="file"]') as HTMLInputElement;
+    const largeFile = new File(['dummy'], 'large.png', { type: 'image/png' });
+    Object.defineProperty(largeFile, 'size', { value: 51 * 1024 * 1024 });
+
+    await fireEvent.change(input, { target: { files: [largeFile] } });
+
     expect(onImageSelected).not.toHaveBeenCalled();
     expect(onError).toHaveBeenCalled();
   });

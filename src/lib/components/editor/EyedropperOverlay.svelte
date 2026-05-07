@@ -91,17 +91,17 @@
 </script>
 
 {#if pickedColor}
-  <div class="color-tooltip" style="left:{pickedColorPos.x}px;top:{pickedColorPos.y}px;">
-    <div class="color-swatch" style="background:{pickedColor.hex};"></div>
-    <div class="color-info">
+  <div class="color-tooltip w98-floating-surface" style="left:{pickedColorPos.x}px;top:{pickedColorPos.y}px;">
+    <div class="color-swatch w98-panel-inset-thin" style="background:{pickedColor.hex};"></div>
+    <div class="color-info w98-mono">
       <span class="color-hex">{pickedColor.hex.toUpperCase()}</span>
       <span class="color-rgb">RGB({pickedColor.r}, {pickedColor.g}, {pickedColor.b})</span>
     </div>
     <div class="color-actions">
-      <button class="color-action-btn" onclick={copyColor} title={i18n.t('copy_color')} aria-label={i18n.t('btn_copy_color')}
-        >{colorCopied ? '✅' : '📋'}</button
+      <button class="color-action-btn w98-inline-button w98-button--thin" onclick={copyColor} title={i18n.t('copy_color')} aria-label={i18n.t('btn_copy_color')}
+        >{colorCopied ? '📌' : '📋'}</button
       >
-      <button class="color-action-btn" onclick={dismissColor} aria-label={i18n.t('btn_dismiss_color')}>✕</button>
+      <button class="color-action-btn w98-inline-button w98-button--thin" onclick={dismissColor} aria-label={i18n.t('btn_dismiss_color')}>✕</button>
     </div>
   </div>
 {/if}
@@ -111,27 +111,21 @@
     position: fixed;
     z-index: 100;
     transform: translate(8px, -100%);
-    background: var(--w98-surface);
-    border: 2px solid;
-    border-color: var(--w98-shadow-light) var(--w98-shadow-808) var(--w98-shadow-808) var(--w98-shadow-light);
     padding: 4px;
     display: flex;
     align-items: center;
     gap: 6px;
-    box-shadow: var(--w98-outset);
     pointer-events: auto;
   }
   .color-swatch {
     width: 24px;
     height: 24px;
-    border: 1px solid #000;
     flex-shrink: 0;
   }
   .color-info {
     display: flex;
     flex-direction: column;
     font-size: var(--w98-font-size-sm);
-    font-family: 'Courier New', monospace;
     font-weight: bold;
   }
   .color-hex {
@@ -149,15 +143,6 @@
     height: 20px;
     padding: 0 3px;
     font-size: var(--w98-font-size-base);
-    background: var(--w98-surface);
-    border: none;
-    cursor: pointer;
-    box-shadow: var(--w98-outset-thin);
-    display: flex;
-    align-items: center;
     justify-content: center;
-  }
-  .color-action-btn:active {
-    box-shadow: var(--w98-inset-thin);
   }
 </style>

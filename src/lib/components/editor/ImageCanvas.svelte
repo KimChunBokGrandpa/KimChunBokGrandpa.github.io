@@ -141,7 +141,7 @@
             : 'pixelated'}
           style:filter={postFilterCss || 'none'}
         ></div>
-        <span class="tile-label">{i18n.t('tile_label')}</span>
+        <span class="tile-label w98-preview-badge">{i18n.t('tile_label')}</span>
       </div>
     {:else if compareMode && originalImageSrc}
       <CompareView
@@ -194,16 +194,24 @@
       {@const elapsed = processingStartTime ? (Date.now() - processingStartTime) / 1000 : 0}
       {@const eta = processingProgress > 0.05 ? Math.round(elapsed / processingProgress * (1 - processingProgress)) : 0}
       <div class="processing-overlay" role="status" aria-live="polite">
-        <div class="processing-indicator">
-          <div class="progress-container">
-            <div class="progress-bar-real" style="width:{pct}%"></div>
+        <div class="processing-indicator w98-floating-surface">
+          <div class="w98-window-card-titlebar">
+            <div class="w98-window-card-title">
+              <span class="processing-icon w98-emoji" aria-hidden="true">⚙️</span>
+              <span>{i18n.t('applying_settings')}</span>
+            </div>
           </div>
-          <span class="processing-text">
-            {i18n.t('applying_settings')} {pct}%
-            {#if eta > 0}
-              <span class="processing-eta">~{eta}s</span>
-            {/if}
-          </span>
+          <div class="processing-body w98-window-card-body">
+            <div class="processing-readouts">
+              <span class="w98-readout-chip w98-readout-chip--active">{pct}%</span>
+              {#if eta > 0}
+                <span class="w98-readout-chip">~{eta}s</span>
+              {/if}
+            </div>
+            <div class="progress-container w98-progress-track">
+              <div class="progress-bar-real w98-progress-fill" style="width:{pct}%"></div>
+            </div>
+          </div>
         </div>
       </div>
     {/if}
@@ -212,12 +220,22 @@
     {#if hasImage && !compareMode}
       <div class="status-bar">
         {#if displayedWidth > 0 && displayedHeight > 0}
-          <span class="status-item" title={i18n.t('image_resolution')} use:tooltip>{displayedWidth}x{displayedHeight}</span>
+          <span class="status-item w98-readout-chip" title={i18n.t('image_resolution')} use:tooltip>{displayedWidth}×{displayedHeight}</span>
         {/if}
         {#if colorCount > 0}
-          <span class="status-item status-colors" title={i18n.t('unique_colors')} use:tooltip>{localizedColorCount}</span>
+          <span
+            class="status-item w98-readout-chip w98-readout-chip--accent"
+            title={i18n.t('unique_colors')}
+            use:tooltip
+          >
+            <span class="status-item-icon w98-emoji" aria-hidden="true">🎨</span>
+            {localizedColorCount}
+          </span>
         {/if}
-        <span class="status-item">{Math.round(zp.zoomLevel * 100)}%</span>
+        <span class="status-item w98-readout-chip w98-readout-chip--active">
+          <span class="status-item-icon w98-structural-glyph" aria-hidden="true">⊡</span>
+          {Math.round(zp.zoomLevel * 100)}%
+        </span>
       </div>
     {/if}
     
@@ -225,15 +243,20 @@
     
   {:else if originalImageSrc}
     <div class="initial-processing">
-      <div class="processing-indicator">
-        <div class="progress-container progress-wide">
-          <div class="progress-bar"></div>
+      <div class="processing-indicator processing-indicator--initial w98-floating-surface">
+        <div class="w98-window-card-titlebar">
+          <div class="w98-window-card-title">
+            <span class="processing-icon w98-emoji" aria-hidden="true">🖼️</span>
+            <span>{i18n.t('loading_image')}</span>
+          </div>
         </div>
-        <span class="processing-text">{i18n.t('loading_image')}</span>
+        <div class="processing-body w98-window-card-body">
+          <div class="progress-container progress-wide w98-progress-track">
+            <div class="progress-bar-indeterminate w98-progress-fill"></div>
+          </div>
+        </div>
       </div>
     </div>
-  {:else}
-    <ImageDropZone {onImageSelected} {onError} />
   {/if}
 </div>
 
@@ -276,23 +299,17 @@
     top: 6px;
     left: 6px;
     display: flex;
-    gap: 1px;
+    gap: var(--w98-space-2);
     z-index: 6;
     pointer-events: none;
   }
   .status-item {
-    font-size: var(--w98-font-size-sm);
-    font-family: 'Courier New', Courier, monospace;
-    font-weight: bold;
-    color: #ccc;
-    padding: 2px 6px;
-    background: rgba(0, 0, 0, 0.55);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    white-space: nowrap;
-    line-height: 1.2;
+    pointer-events: auto;
+    cursor: default;
   }
-  .status-colors {
-    color: #8f8;
+  .status-item-icon {
+    font-size: var(--w98-font-size-caption);
+    line-height: 1;
   }
 
   .processing-overlay {
@@ -301,61 +318,58 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(0, 0, 0, 0.35);
+    background: var(--w98-dialog-scrim);
     z-index: 5;
     pointer-events: none;
   }
   .processing-indicator {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    gap: 6px;
-    background: var(--w98-surface);
-    border: 1px solid var(--w98-shadow-808);
-    padding: 10px 20px;
+    min-width: 180px;
+    overflow: hidden;
     color: var(--w98-text);
-    font-size: var(--w98-font-size-base);
-    font-family: 'Courier New', Courier, monospace;
-    font-weight: bold;
   }
-  .processing-text {
-    font-size: var(--w98-font-size-sm);
+  .processing-indicator--initial {
+    min-width: 220px;
+  }
+  .processing-body {
+    align-items: stretch;
+  }
+  .processing-icon {
+    font-size: var(--w98-font-size-heading);
+    line-height: 1;
+  }
+  .processing-readouts {
+    display: flex;
+    align-items: center;
+    gap: var(--w98-space-4);
+    flex-wrap: wrap;
   }
   .progress-container {
-    width: 140px;
-    height: 6px;
-    background: var(--w98-surface-dim);
-    box-shadow: var(--w98-inset-thin);
+    width: 100%;
     position: relative;
-    overflow: hidden;
+    min-height: 16px;
+    align-self: stretch;
   }
-  .progress-bar {
-    position: absolute;
-    inset: 0;
-    background: var(--w98-highlight);
-    animation: progressSlide 1.2s linear infinite;
-    transform-origin: left;
+  .progress-bar-indeterminate,
+  .progress-bar-real {
+    position: relative;
   }
   .progress-bar-real {
     position: absolute;
     top: 0;
     left: 0;
     bottom: 0;
-    background: var(--w98-highlight);
-    transition: width 0.15s ease-out;
+  }
+  .progress-bar-indeterminate {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 20%;
+    width: 60%;
   }
   .progress-wide {
-    width: 200px;
-  }
-  .processing-eta {
-    opacity: 0.7;
-    margin-left: 4px;
-  }
-
-  @keyframes progressSlide {
-    0% { transform: scaleX(0); }
-    50% { transform: scaleX(1); }
-    100% { transform: scaleX(0); }
+    width: 100%;
   }
 
   .initial-processing {
@@ -363,12 +377,10 @@
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    color: #ccc;
-    font-family: 'Courier New', Courier, monospace;
-    font-size: 14px;
     display: flex;
     flex-direction: column;
     align-items: center;
+    pointer-events: none;
   }
 
   .tile-preview {
@@ -389,14 +401,6 @@
     position: absolute;
     top: 8px;
     right: 8px;
-    font-size: var(--w98-font-size-caption);
-    font-weight: bold;
-    padding: 2px 6px;
-    background: var(--w98-surface);
-    color: var(--w98-text);
-    box-shadow: var(--w98-outset-thin);
-    letter-spacing: 1px;
-    pointer-events: none;
     z-index: 4;
   }
 

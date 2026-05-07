@@ -13,9 +13,9 @@
 
 <div class="pg-detail">
   {#if detailItem}
-    <fieldset>
+    <fieldset class="w98-fieldset">
       <legend>{activeThemeName} — {detailItem.name}</legend>
-      <p class="pg-desc">
+      <p class="pg-desc w98-quiet-copy">
         {detailItem.colorCount > 0
           ? i18n.t('gallery_n_colors').replace('{0}', String(detailItem.colorCount))
           : i18n.t('full_color_desc')}
@@ -24,20 +24,20 @@
         <div class="pg-grid">
           {#each detailItem.colors as c}
             <span
-              class="pg-swatch"
+              class="pg-swatch w98-color-swatch w98-color-swatch--small w98-color-swatch--interactive"
               style="background:rgb({c.r},{c.g},{c.b})"
               title="rgb({c.r}, {c.g}, {c.b})"
             ></span>
           {/each}
         </div>
       {:else}
-        <div class="pg-info-box">
+        <div class="pg-info-box w98-note">
           <p>{i18n.t('full_color_desc')}</p>
         </div>
       {/if}
     </fieldset>
   {:else}
-    <p class="pg-hint">{i18n.t('select_palette_hint')}</p>
+    <p class="pg-hint w98-note">{i18n.t('select_palette_hint')}</p>
   {/if}
 </div>
 
@@ -48,21 +48,11 @@
     overflow-y: auto;
     padding: 0 0 0 3px;
   }
-  .pg-detail fieldset {
-    margin: 0;
-    padding: 6px;
+  .pg-detail :global(fieldset) {
     min-width: 0;
-  }
-  .pg-detail legend {
-    font-weight: bold;
-    padding: 0 4px;
-    font-size: var(--w98-font-size-base);
   }
   .pg-desc {
     margin: 0 0 6px 0;
-    color: var(--w98-text-secondary);
-    font-style: italic;
-    font-size: var(--w98-font-size-base);
   }
   .pg-grid {
     display: flex;
@@ -70,30 +60,14 @@
     gap: 1px;
   }
   .pg-swatch {
-    width: 14px;
-    height: 14px;
-    border: 1px solid rgba(0, 0, 0, 0.15);
     cursor: crosshair;
     flex-shrink: 0;
   }
-  .pg-swatch:hover {
-    outline: 2px solid var(--w98-highlight);
-    outline-offset: -1px;
-    z-index: 1;
-    position: relative;
-  }
   .pg-info-box {
-    padding: 8px;
-    background: #e8e4e0;
-    border: 1px solid #ccc;
-    font-size: var(--w98-font-size-sm);
+    display: block;
   }
   .pg-hint {
-    padding: 12px;
-    color: var(--w98-text-hint);
     text-align: center;
-    font-style: italic;
-    font-size: var(--w98-font-size-base);
   }
 
   @media (max-width: 550px) {

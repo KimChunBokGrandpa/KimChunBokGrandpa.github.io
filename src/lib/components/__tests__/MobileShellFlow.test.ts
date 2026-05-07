@@ -35,24 +35,24 @@ describe('Mobile shell flow', () => {
   it('renders stacked mobile windows with compact strips around focused window', () => {
     const { container } = render(MobileShellFlowWrapper);
 
-    const previewWindow = screen.getByRole('dialog', { name: 'win_preview' });
-    const posterWindow = screen.getByRole('dialog', { name: 'win_poster_maker' });
-    const historyWindow = screen.getByRole('dialog', { name: 'win_history' });
+    const previewWindow = screen.getByRole('group', { name: 'win_preview' });
+    const posterWindow = screen.getByRole('group', { name: 'win_poster_maker' });
+    const historyWindow = screen.getByRole('group', { name: 'win_history' });
 
     expect(previewWindow.getAttribute('style')).toContain('--mobile-t: 0px');
     expect(previewWindow.getAttribute('style')).toContain('--mobile-h: calc(100dvh - var(--taskbar-h) - 68px)');
     expect(posterWindow.getAttribute('style')).toContain('--mobile-h: 34px');
     expect(historyWindow.getAttribute('style')).toContain('--mobile-h: 34px');
     expect(container.querySelectorAll('.compact-expand-arrow')).toHaveLength(3);
-    expect(container.querySelectorAll('[role="menubar"]')).toHaveLength(3);
+    expect(container.querySelectorAll('.win98-menubar')).toHaveLength(3);
   }, 15000);
 
   it('recomputes mobile slot placement when taskbar focus changes', async () => {
     render(MobileShellFlowWrapper);
 
-    const previewWindow = screen.getByRole('dialog', { name: 'win_preview' });
-    const posterWindow = screen.getByRole('dialog', { name: 'win_poster_maker' });
-    const historyWindow = screen.getByRole('dialog', { name: 'win_history' });
+    const previewWindow = screen.getByRole('group', { name: 'win_preview' });
+    const posterWindow = screen.getByRole('group', { name: 'win_poster_maker' });
+    const historyWindow = screen.getByRole('group', { name: 'win_history' });
 
     await fireEvent.click(screen.getByRole('button', { name: /taskbar_switch_to_window: win_poster_maker/i }));
 

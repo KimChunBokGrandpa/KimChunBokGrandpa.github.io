@@ -304,10 +304,18 @@
   {:else}
     <!-- Full overlay with hint text -->
     <div class="crop-hint-overlay">
-      <div class="crop-hint-box">
-        <span class="crop-hint-icon">✂</span>
-        <span class="crop-hint-text">{i18n.t('crop_drag_hint')}</span>
-        <span class="crop-hint-keys">{i18n.t('crop_keyboard_hint')}</span>
+      <div class="crop-hint-box w98-floating-surface">
+        <div class="crop-hint-body w98-window-card-body">
+          <div class="crop-hint-head">
+            <span class="crop-hint-icon w98-structural-glyph" aria-hidden="true">✂</span>
+            <span class="crop-hint-text">{i18n.t('crop_drag_hint')}</span>
+          </div>
+          <div class="crop-hint-keys">
+            <span class="w98-kbd">Enter</span>
+            <span class="w98-kbd">Esc</span>
+          </div>
+          <span class="crop-hint-copy w98-quiet-copy">{i18n.t('crop_keyboard_hint')}</span>
+        </div>
       </div>
     </div>
   {/if}
@@ -315,19 +323,21 @@
   <!-- Action buttons -->
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
-    class="crop-actions"
+    class="crop-actions w98-floating-surface"
     onmousedown={(e) => { e.stopPropagation(); e.preventDefault(); }}
     ontouchstart={(e) => { e.stopPropagation(); e.preventDefault(); }}
   >
     <button
-      class="crop-action-btn crop-apply"
+      type="button"
+      class="crop-action-btn crop-apply w98-button w98-button--primary"
       disabled={!hasSelection}
       onclick={(e) => { e.stopPropagation(); applyCrop(); }}
-    >✓ {i18n.t('crop_apply')}</button>
+    ><span class="w98-structural-glyph" aria-hidden="true">▶</span> {i18n.t('crop_apply')}</button>
     <button
-      class="crop-action-btn crop-cancel"
+      type="button"
+      class="crop-action-btn crop-cancel w98-button"
       onclick={(e) => { e.stopPropagation(); onCancel(); }}
-    >✕ {i18n.t('crop_cancel')}</button>
+    ><span class="w98-structural-glyph" aria-hidden="true">✕</span> {i18n.t('crop_cancel')}</button>
   </div>
 </div>
 
@@ -343,14 +353,14 @@
   .crop-mask {
     position: absolute;
     inset: 0;
-    background: rgba(0, 0, 0, 0.55);
+    background: var(--w98-dialog-scrim);
     pointer-events: none;
   }
 
   .crop-hint-overlay {
     position: absolute;
     inset: 0;
-    background: rgba(0, 0, 0, 0.4);
+    background: var(--w98-dialog-scrim);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -358,33 +368,40 @@
   }
 
   .crop-hint-box {
+    min-width: 220px;
+    max-width: min(320px, calc(100% - 32px));
+    overflow: hidden;
+  }
+  .crop-hint-body {
+    align-items: center;
+    text-align: center;
+  }
+  .crop-hint-head {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 4px;
-    background: color-mix(in srgb, var(--w98-highlight) 80%, transparent);
-    padding: 10px 18px;
-    border: 2px outset var(--w98-shadow-light);
+    gap: var(--w98-space-6);
   }
   .crop-hint-icon {
     font-size: 24px;
   }
   .crop-hint-text {
-    font-size: var(--w98-font-size-icon);
-    font-weight: bold;
-    color: #fff;
-    text-shadow: 1px 1px 2px #000;
+    font-size: var(--w98-font-size-base);
+    color: var(--w98-text);
   }
   .crop-hint-keys {
+    display: flex;
+    gap: var(--w98-space-4);
+  }
+  .crop-hint-copy {
     font-size: var(--w98-font-size-sm);
-    color: rgba(255, 255, 255, 0.7);
-    font-family: 'Courier New', monospace;
   }
 
   .crop-selection {
     position: absolute;
-    border: 2px dashed #fff;
-    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(0, 0, 0, 0.3);
+    border: 1px dashed #fff;
+    outline: 1px solid var(--w98-highlight);
+    outline-offset: -2px;
     pointer-events: none;
   }
 
@@ -392,8 +409,8 @@
     position: absolute;
     width: 10px;
     height: 10px;
-    background: #fff;
-    border: 1px solid #000;
+    background: var(--w98-surface);
+    box-shadow: var(--w98-outset-thin);
     pointer-events: none;
   }
   .crop-handle.top-left { top: -5px; left: -5px; cursor: nwse-resize; }
@@ -407,33 +424,13 @@
     left: 50%;
     transform: translateX(-50%);
     display: flex;
-    gap: 4px;
+    gap: var(--w98-space-4);
+    padding: var(--w98-space-4);
     z-index: 10;
     pointer-events: auto;
   }
 
   .crop-action-btn {
-    padding: 4px 12px;
-    font-size: var(--w98-font-size-base);
-    font-weight: bold;
-    cursor: pointer;
-    border: none;
-    box-shadow: var(--w98-outset-thin);
-  }
-  .crop-action-btn:active {
-    box-shadow: var(--w98-inset-thin);
-  }
-  .crop-action-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
-  .crop-apply {
-    background: var(--w98-surface);
-    color: #000;
-  }
-  .crop-cancel {
-    background: var(--w98-surface);
-    color: #000;
+    min-width: 100px;
   }
 </style>

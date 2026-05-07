@@ -1,6 +1,6 @@
 <script lang="ts">
   import { getPaletteName } from '$lib/utils/palettes';
-  import { presets, type Preset } from '$lib/utils/presets';
+  import { getPresetFamilyLabelKey, presets, type Preset } from '$lib/utils/presets';
   import type { EffectLayer, ProcessingSettings } from '$lib/types';
   import { i18n } from '$lib/i18n/index.svelte';
   import { getCustomPresets, addCustomPreset, removeCustomPreset, type CustomPreset } from '$lib/stores/customPresetStore.svelte';
@@ -397,7 +397,7 @@
           {#if preset}
             <button
               class:preset-active={matchesPreset(preset)}
-              class="preset-btn preset-card style-card"
+              class="preset-btn preset-card style-card w98-button"
               data-testid={`style-recommendation-${preset.id}`}
               onclick={() => applyPreset(preset)}
               title={i18n.t(recommendation.reasonKey)}
@@ -411,6 +411,7 @@
                 />
               {/if}
               <span class="preset-card-icon">{preset.icon}</span>
+              <span class="preset-family-label">{i18n.t(getPresetFamilyLabelKey(recommendation.family))}</span>
               <span class="preset-card-name">{i18n.t(preset.labelKey)}</span>
               <span class="style-reason">{i18n.t(recommendation.reasonKey)}</span>
             </button>
@@ -423,10 +424,10 @@
     {#each presets as preset}
       <button
         class:preset-active={matchesPreset(preset)}
-        class="preset-btn preset-card"
+        class="preset-btn preset-card w98-button"
         data-testid={`preset-${preset.id}`}
         onclick={() => applyPreset(preset)}
-        title="{i18n.t('pixel_size')}: {preset.pixelSize}px | {i18n.t('palette')}: {getPaletteName(preset.palette)} | {i18n.t('dithering')}: {preset.ditherType}{preset.crtEffect !== 'none' ? ` | CRT (${preset.crtEffect})` : ''}{preset.glitchFilters.length > 0 ? ` | ${preset.glitchFilters.length} effects` : ''}"
+        title={`${i18n.t('pixel_size')}: ${preset.pixelSize}px | ${i18n.t('palette')}: ${getPaletteName(preset.palette)} | ${i18n.t('dithering')}: ${preset.ditherType}${preset.crtEffect !== 'none' ? ` | CRT (${preset.crtEffect})` : ''}${preset.glitchFilters.length > 0 ? ` | ${preset.glitchFilters.length} effects` : ''}`}
       >
         {#if presetPreviews[preset.id]}
           <img
@@ -436,56 +437,71 @@
             draggable="false"
           />
         {/if}
-        <span class="preset-card-icon">{preset.icon}</span>
+        <span class="preset-card-icon w98-emoji">{preset.icon}</span>
+        <span class="preset-family-label">{i18n.t(getPresetFamilyLabelKey(preset.family))}</span>
         <span class="preset-card-name">{i18n.t(preset.labelKey)}</span>
         <span class="preset-card-info">{preset.pixelSize}px</span>
       </button>
     {/each}
   </div>
   <div class="field-row preset-share-row">
-    <button class="preset-share-btn" onclick={exportPreset} title={i18n.t('export_preset')}>📤 {i18n.t('export_btn')}</button>
-    <button class="preset-share-btn" onclick={importPreset} title={i18n.t('import_preset')}>📥 {i18n.t('import_btn')}</button>
+    <button class="preset-share-btn w98-inline-button w98-button--thin" onclick={exportPreset} title={i18n.t('export_preset')}>
+      <span><span class="w98-emoji" aria-hidden="true">📤</span> {i18n.t('export_btn')}</span>
+    </button>
+    <button class="preset-share-btn w98-inline-button w98-button--thin" onclick={importPreset} title={i18n.t('import_preset')}>
+      <span><span class="w98-emoji" aria-hidden="true">📥</span> {i18n.t('import_btn')}</span>
+    </button>
     <button
-      class="preset-share-btn"
+      class="preset-share-btn w98-inline-button w98-button--thin"
       data-testid="preset-share-copy-link"
       onclick={copyShareLink}
       title={i18n.t('copy_share_link')}
-    >🔗 {i18n.t('copy_btn')}</button>
+    >
+      <span><span class="w98-emoji" aria-hidden="true">🔗</span> {i18n.t('copy_btn')}</span>
+    </button>
     <button
-      class="preset-share-btn"
+      class="preset-share-btn w98-inline-button w98-button--thin"
       data-testid="preset-share-open-import"
       onclick={() => { shareImportVisible = !shareImportVisible; }}
       title={i18n.t('import_share_link')}
-    >🧾 {i18n.t('paste_btn')}</button>
+    >
+      <span><span class="w98-emoji" aria-hidden="true">🧾</span> {i18n.t('paste_btn')}</span>
+    </button>
     <button
-      class="preset-share-btn"
+      class="preset-share-btn w98-inline-button w98-button--thin"
       data-testid="preset-cloud-open-publish"
       onclick={() => { cloudPublishVisible = !cloudPublishVisible; cloudPublishName = newPresetName || i18n.t('custom_preset'); }}
       title={i18n.t('publish_cloud_preset')}
-    >☁ {i18n.t('publish_btn')}</button>
+    >
+      <span><span class="w98-emoji" aria-hidden="true">☁️</span> {i18n.t('publish_btn')}</span>
+    </button>
     <input bind:this={presetFileInput} type="file" accept=".json" onchange={handlePresetFile} style="display:none" />
   </div>
   {#if shareImportVisible}
     <div class="field-row preset-share-row">
       <input
         type="text"
-        class="preset-name-input"
+        class="preset-name-input w98-input"
         data-testid="preset-share-import-input"
         bind:value={shareInput}
         placeholder={i18n.t('share_link_placeholder')}
         onkeydown={(e) => { if (e.key === 'Enter') applySharedPreset(); if (e.key === 'Escape') shareImportVisible = false; }}
       />
       <button
-        class="preset-share-btn"
+        class="preset-share-btn w98-inline-button w98-button--thin"
         data-testid="preset-share-apply-import"
         onclick={applySharedPreset}
         aria-label={i18n.t('apply_share_link')}
-      >↩</button>
+      >
+        <span class="w98-structural-glyph" aria-hidden="true">↩</span>
+      </button>
       <button
-        class="preset-share-btn"
+        class="preset-share-btn w98-inline-button w98-button--thin"
         onclick={() => { shareImportVisible = false; shareInput = ''; }}
         aria-label={i18n.t('cancel')}
-      >✕</button>
+      >
+        <span class="w98-structural-glyph" aria-hidden="true">✕</span>
+      </button>
     </div>
   {/if}
   {#if shareStatus}
@@ -496,7 +512,7 @@
     <div class="field-row preset-share-row">
       <input
         type="text"
-        class="preset-name-input"
+        class="preset-name-input w98-input"
         data-testid="preset-cloud-name-input"
         bind:value={cloudPublishName}
         placeholder={i18n.t('preset_name_placeholder')}
@@ -506,24 +522,30 @@
         }}
       />
       <button
-        class="preset-share-btn"
+        class="preset-share-btn w98-inline-button w98-button--thin"
         data-testid="preset-cloud-publish-public"
         onclick={() => void publishToCloud('public')}
         disabled={isPublishingCloudPreset}
         aria-label={i18n.t('publish_public')}
-      >🌐</button>
+      >
+        <span class="w98-emoji" aria-hidden="true">🌐</span>
+      </button>
       <button
-        class="preset-share-btn"
+        class="preset-share-btn w98-inline-button w98-button--thin"
         data-testid="preset-cloud-publish-unlisted"
         onclick={() => void publishToCloud('unlisted')}
         disabled={isPublishingCloudPreset}
         aria-label={i18n.t('publish_unlisted')}
-      >🔒</button>
+      >
+        <span class="w98-emoji" aria-hidden="true">🔒</span>
+      </button>
       <button
-        class="preset-share-btn"
+        class="preset-share-btn w98-inline-button w98-button--thin"
         onclick={() => { cloudPublishVisible = false; }}
         aria-label={i18n.t('cancel')}
-      >✕</button>
+      >
+        <span class="w98-structural-glyph" aria-hidden="true">✕</span>
+      </button>
     </div>
   {/if}
 
@@ -532,7 +554,7 @@
     <div class="field-row preset-grid" data-testid="community-presets">
       {#each communityPresets as preset}
         <button
-          class="preset-btn custom-preset-btn"
+          class="preset-btn custom-preset-btn w98-button w98-button--thin"
           onclick={() => applyCloudPresetRecord(preset)}
           title={preset.name}
         >
@@ -544,7 +566,7 @@
               draggable="false"
             />
           {/if}
-          🌐 {preset.name}
+          <span><span class="w98-emoji" aria-hidden="true">🌐</span> {preset.name}</span>
           <span class="preset-card-info">{preset.applyCount} {i18n.t('uses_label')}</span>
         </button>
       {/each}
@@ -556,7 +578,7 @@
     <div class="field-row preset-grid" data-testid="published-cloud-presets">
       {#each cloudPresets as preset}
         <button
-          class="preset-btn custom-preset-btn"
+          class="preset-btn custom-preset-btn w98-button w98-button--thin"
           onclick={() => applyCloudPresetRecord(preset)}
           title={preset.name}
         >
@@ -568,7 +590,7 @@
               draggable="false"
             />
           {/if}
-          {preset.visibility === 'public' ? '☁️' : '🔒'} {preset.name}
+          <span><span class="w98-emoji" aria-hidden="true">{preset.visibility === 'public' ? '☁️' : '🔒'}</span> {preset.name}</span>
           <span class="preset-card-info">{preset.shortId}</span>
         </button>
       {/each}
@@ -580,7 +602,7 @@
     <div class="field-row preset-grid" data-testid="shared-presets">
       {#each sharedPresets as preset}
         <button
-          class="preset-btn custom-preset-btn"
+          class="preset-btn custom-preset-btn w98-button w98-button--thin"
           onclick={() => applySharedPresetRecord(preset)}
           title={preset.name}
         >
@@ -592,7 +614,7 @@
               draggable="false"
             />
           {/if}
-          🔗 {preset.name}
+          <span><span class="w98-emoji" aria-hidden="true">🔗</span> {preset.name}</span>
           <span class="preset-card-info">{new Date(preset.lastAppliedAt).toLocaleDateString()}</span>
           <!-- svelte-ignore a11y_no_static_element_interactions -->
           <span
@@ -601,7 +623,7 @@
             tabindex="0"
             onclick={(e) => { e.stopPropagation(); removeSharedPreset(preset.id); }}
             onkeydown={(e) => { e.stopPropagation(); if (e.key === 'Enter') removeSharedPreset(preset.id); }}
-          >×</span>
+          ><span class="w98-structural-glyph" aria-hidden="true">✕</span></span>
         </button>
       {/each}
     </div>
@@ -614,7 +636,7 @@
       {#each customPresets as cp}
         <button
           class:preset-active={customPresetMatches(cp)}
-          class="preset-btn custom-preset-btn"
+          class="preset-btn custom-preset-btn w98-button w98-button--thin"
           onclick={() => applyCustomPreset(cp)}
           title={cp.name}
         >
@@ -626,7 +648,7 @@
               draggable="false"
             />
           {/if}
-          ⭐ {cp.name}
+          <span><span class="w98-emoji" aria-hidden="true">⭐</span> {cp.name}</span>
           <!-- svelte-ignore a11y_no_static_element_interactions -->
           <span
             class="preset-delete"
@@ -634,7 +656,7 @@
             tabindex="0"
             onclick={(e) => { e.stopPropagation(); removeCustomPreset(cp.id); }}
             onkeydown={(e) => { e.stopPropagation(); if (e.key === 'Enter') removeCustomPreset(cp.id); }}
-          >×</span>
+          ><span class="w98-structural-glyph" aria-hidden="true">✕</span></span>
         </button>
       {/each}
     </div>
@@ -645,15 +667,21 @@
     {#if showSavePreset}
       <input
         type="text"
-        class="preset-name-input"
+        class="preset-name-input w98-input"
         bind:value={newPresetName}
         placeholder={i18n.t('preset_name_placeholder')}
         onkeydown={(e) => { if (e.key === 'Enter') saveCurrentAsPreset(); if (e.key === 'Escape') showSavePreset = false; }}
       />
-      <button class="preset-share-btn" onclick={saveCurrentAsPreset} aria-label={i18n.t('save_preset')}>✓</button>
-      <button class="preset-share-btn" onclick={() => { showSavePreset = false; }} aria-label={i18n.t('cancel')}>✕</button>
+      <button class="preset-share-btn w98-inline-button w98-button--thin" onclick={saveCurrentAsPreset} aria-label={i18n.t('save_preset')}>
+        <span class="w98-structural-glyph" aria-hidden="true">✓</span>
+      </button>
+      <button class="preset-share-btn w98-inline-button w98-button--thin" onclick={() => { showSavePreset = false; }} aria-label={i18n.t('cancel')}>
+        <span class="w98-structural-glyph" aria-hidden="true">✕</span>
+      </button>
     {:else}
-      <button class="preset-share-btn" onclick={() => { showSavePreset = true; }}>💾 {i18n.t('save_preset')}</button>
+      <button class="preset-share-btn w98-inline-button w98-button--thin" onclick={() => { showSavePreset = true; }}>
+        <span><span class="w98-emoji" aria-hidden="true">💾</span> {i18n.t('save_preset')}</span>
+      </button>
     {/if}
   </div>
 </div>
@@ -682,13 +710,6 @@
   .preset-btn {
     font-size: var(--w98-font-size-base);
     padding: 3px 8px;
-    transition: background 0.1s;
-  }
-  .preset-btn:hover {
-    background: var(--w98-surface-active);
-  }
-  .preset-btn:active {
-    box-shadow: var(--w98-inset-thin);
   }
 
   /* ===== Preset Card ===== */
@@ -696,7 +717,7 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 1px;
+    gap: var(--w98-space-2);
     padding: 4px 6px;
     min-width: 56px;
     position: relative;
@@ -705,10 +726,13 @@
   .preset-card-thumb {
     width: 72px;
     height: 52px;
+    display: block;
+    box-sizing: border-box;
+    padding: var(--w98-space-2);
     object-fit: cover;
-    border: 1px solid var(--w98-shadow-808);
     margin-bottom: 4px;
-    background: #000;
+    background: var(--w98-surface-white);
+    box-shadow: var(--w98-inset-thin);
     image-rendering: pixelated;
     pointer-events: none;
   }
@@ -721,9 +745,16 @@
     line-height: 1.1;
     white-space: nowrap;
   }
+  .preset-family-label {
+    font-size: var(--w98-font-size-micro);
+    line-height: 1;
+    color: var(--w98-highlight);
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
   .preset-card-info {
     font-size: var(--w98-font-size-micro);
-    color: var(--w98-shadow-808);
+    color: var(--w98-text-hint);
     line-height: 1;
   }
   .style-grid {
@@ -736,7 +767,7 @@
   }
   .style-reason {
     font-size: var(--w98-font-size-micro);
-    color: var(--w98-shadow-808);
+    color: var(--w98-text-hint);
     line-height: 1.2;
     white-space: normal;
   }
@@ -747,6 +778,7 @@
     padding-right: 16px;
     display: flex;
     align-items: center;
+    justify-content: flex-start;
     gap: 6px;
   }
   .custom-preset-thumb {
@@ -788,10 +820,5 @@
   }
   .preset-share-btn {
     font-size: var(--w98-font-size-sm);
-    padding: 2px 8px;
-    cursor: pointer;
-  }
-  .preset-share-btn:active {
-    box-shadow: var(--w98-inset-thin);
   }
 </style>

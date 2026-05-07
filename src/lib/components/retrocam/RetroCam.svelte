@@ -2,7 +2,7 @@
   import { onDestroy, onMount } from 'svelte';
   import { i18n } from '$lib/i18n/index.svelte';
   import ContextMenu, { type ContextMenuEntry } from '$lib/components/feedback/ContextMenu.svelte';
-  import { saveImage } from '$lib/services/saveService';
+  import { saveImage, type SaveFormat } from '$lib/services/saveService';
   import { buildOpenWithSection } from '$lib/shell/openWithMenu';
   import {
     retroCamPresets,
@@ -64,6 +64,17 @@
     }
   }
 
+  function getSnapshotSaveFormat(file: File): SaveFormat {
+    switch (file.type) {
+      case 'image/jpeg':
+        return 'jpeg';
+      case 'image/webp':
+        return 'webp';
+      default:
+        return 'png';
+    }
+  }
+
   async function retryCamera() {
     const stream = await retroCamStore.requestCamera();
     if (stream) {
@@ -112,16 +123,27 @@
   }
 
   async function saveSnapshot() {
-    if (!captureCanvas || !retroCamStore.lastSnapshotFile) return;
+    const snapshotFile = retroCamStore.lastSnapshotFile;
+    if (!snapshotFile) return;
+
+    const snapshotUrl = retroCamStore.lastSnapshotUrl ?? URL.createObjectURL(snapshotFile);
+    const shouldRevokeSnapshotUrl = !retroCamStore.lastSnapshotUrl;
     try {
       const message = await saveImage(
-        '',
-        { format: 'png', quality: 0.92, filename: retroCamStore.lastSnapshotFile.name.replace(/\.png$/, '') },
-        captureCanvas,
+        snapshotUrl,
+        {
+          format: getSnapshotSaveFormat(snapshotFile),
+          quality: 0.92,
+          filename: snapshotFile.name.replace(/\.[^.]+$/, ''),
+        },
       );
       if (message) onMessage?.(message);
     } catch (error) {
       reportRetroCamError('retrocam_snapshot_failed', error);
+    } finally {
+      if (shouldRevokeSnapshotUrl) {
+        URL.revokeObjectURL(snapshotUrl);
+      }
     }
   }
 
@@ -155,8 +177,8 @@
 
     const items: ContextMenuEntry[] = [
       {
-        label: `💾 ${i18n.t('retrocam_save_snapshot')}`,
-        icon: '',
+        label: i18n.t('retrocam_save_snapshot'),
+        icon: '💾',
         action: () => {
           void saveSnapshot();
         },
@@ -179,8 +201,8 @@
       ]),
       { separator: true },
       {
-        label: `🗑 ${i18n.t('retrocam_clear_snapshot')}`,
-        icon: '',
+        label: i18n.t('retrocam_clear_snapshot'),
+        icon: '✕',
         action: () => retroCamStore.clearSnapshot(),
       },
     ];
@@ -213,16 +235,20 @@
 </script>
 
 <div class="retrocam-root">
-  <div class="retrocam-toolbar">
-    <div class="retrocam-status">
-      <strong>{i18n.t('win_retrocam')}</strong>
-      <span>{i18n.t(permissionMessageKey())}</span>
+  <div class="retrocam-toolbar w98-toolbar">
+    <div class="retrocam-status w98-status-panel">
+      <div class="retrocam-status-title">
+        <span class="w98-emoji" aria-hidden="true">📷</span>
+        <strong>{i18n.t('win_retrocam')}</strong>
+      </div>
+      <span class="w98-quiet-copy">{i18n.t(permissionMessageKey())}</span>
     </div>
 
-    <div class="retrocam-actions">
-      <label class="retrocam-device-picker">
-        <span>{i18n.t('retrocam_camera_source')}</span>
+    <div class="retrocam-actions w98-toolbar-group">
+      <label class="retrocam-device-picker w98-form-stack">
+        <span class="w98-form-label">{i18n.t('retrocam_camera_source')}</span>
         <select
+          class="w98-select"
           data-testid="retrocam-device-select"
           value={retroCamStore.selectedDeviceId}
           onchange={(event) => handleDeviceChange((event.target as HTMLSelectElement).value as RetroCamDeviceId)}
@@ -234,86 +260,120 @@
           {/each}
         </select>
       </label>
-      <button class="toolbar-btn" onclick={retryCamera} disabled={retroCamStore.permissionState === 'requesting'}>
-        {i18n.t(retroCamStore.permissionState === 'ready' ? 'retrocam_retry_camera' : 'retrocam_start_camera')}
+      <button class="toolbar-btn w98-button" onclick={retryCamera} disabled={retroCamStore.permissionState === 'requesting'}>
+        <span class="w98-emoji" aria-hidden="true">📷</span>
+        <span>{i18n.t(retroCamStore.permissionState === 'ready' ? 'retrocam_retry_camera' : 'retrocam_start_camera')}</span>
       </button>
-      <button class="toolbar-btn" onclick={captureSnapshot} disabled={!retroCamStore.stream}>
-        {i18n.t('retrocam_capture_snapshot')}
+      <button class="toolbar-btn w98-button w98-button--primary" onclick={captureSnapshot} disabled={!retroCamStore.stream}>
+        <span class="w98-emoji" aria-hidden="true">📸</span>
+        <span>{i18n.t('retrocam_capture_snapshot')}</span>
       </button>
-      <button class="toolbar-btn" onclick={saveSnapshot} disabled={!retroCamStore.lastSnapshotFile}>
-        {i18n.t('retrocam_save_snapshot')}
+      <button class="toolbar-btn w98-inline-button w98-button--thin" onclick={saveSnapshot} disabled={!retroCamStore.lastSnapshotFile}>
+        <span class="w98-emoji" aria-hidden="true">💾</span>
+        <span>{i18n.t('retrocam_save_snapshot')}</span>
       </button>
       <button
-        class="toolbar-btn"
+        class="toolbar-btn w98-inline-button w98-button--thin"
         data-testid="retrocam-open-in-pixel-lab-button"
         onclick={openSnapshotInPixelLab}
         disabled={!retroCamStore.lastSnapshotFile}
       >
-        {i18n.t('retrocam_open_in_pixel_lab')}
+        <span class="w98-emoji" aria-hidden="true">🖼️</span>
+        <span>{i18n.t('retrocam_open_in_pixel_lab')}</span>
       </button>
       <button
-        class="toolbar-btn"
+        class="toolbar-btn w98-inline-button w98-button--thin"
         data-testid="retrocam-use-in-poster-maker-button"
         onclick={useSnapshotInPosterMaker}
         disabled={!retroCamStore.lastSnapshotFile}
       >
-        {i18n.t('retrocam_use_in_poster_maker')}
+        <span class="w98-emoji" aria-hidden="true">📰</span>
+        <span>{i18n.t('retrocam_use_in_poster_maker')}</span>
       </button>
-      <button class="toolbar-btn" onclick={() => retroCamStore.clearSnapshot()} disabled={!retroCamStore.lastSnapshotFile}>
-        {i18n.t('retrocam_clear_snapshot')}
+      <button class="toolbar-btn w98-inline-button w98-button--thin" onclick={() => retroCamStore.clearSnapshot()} disabled={!retroCamStore.lastSnapshotFile}>
+        <span class="w98-structural-glyph" aria-hidden="true">✕</span>
+        <span>{i18n.t('retrocam_clear_snapshot')}</span>
       </button>
     </div>
   </div>
 
   <div class="retrocam-layout">
-    <div class="retrocam-preview-shell">
-      <div class="retrocam-preview-label">{i18n.t('retrocam_live_preview')}</div>
-      {#if retroCamStore.stream}
-        <video
-          bind:this={videoEl}
-          class="retrocam-video"
-          autoplay
-          muted
-          playsinline
-          style:filter={currentPreset().filter}
-          data-testid="retrocam-video"
-        ></video>
-      {:else}
-        <div class="retrocam-empty-state" data-testid="retrocam-empty-state">
-          <div class="empty-icon">📷</div>
-          <div>{i18n.t(permissionMessageKey())}</div>
+    <section class="retrocam-panel w98-frame">
+      <div class="retrocam-panel-titlebar w98-panel-titlebar">
+        <strong class="w98-panel-title">
+          <span class="w98-emoji" aria-hidden="true">📷</span>
+          <span>{i18n.t('retrocam_live_preview')}</span>
+        </strong>
+      </div>
+      <div class="retrocam-panel-body">
+        <div class="retrocam-media-frame w98-inset-panel">
+          {#if retroCamStore.stream}
+            <video
+              bind:this={videoEl}
+              class="retrocam-video"
+              autoplay
+              muted
+              playsinline
+              style:filter={currentPreset().filter}
+              data-testid="retrocam-video"
+            ></video>
+          {:else}
+            <div class="retrocam-empty-state w98-note" data-testid="retrocam-empty-state">
+              <div class="empty-icon w98-emoji">📷</div>
+              <div>{i18n.t(permissionMessageKey())}</div>
+            </div>
+          {/if}
         </div>
-      {/if}
-      <canvas bind:this={captureCanvas} class="retrocam-capture-canvas" aria-hidden="true"></canvas>
-    </div>
+        <canvas bind:this={captureCanvas} class="retrocam-capture-canvas" aria-hidden="true"></canvas>
+      </div>
+    </section>
 
     <div class="retrocam-sidebar">
-      <div class="retrocam-preset-strip">
-        {#each retroCamPresets as preset}
-          <button
-            class="preset-btn"
-            class:preset-btn-active={retroCamStore.activePresetId === preset.id}
-            onclick={() => retroCamStore.setPreset(preset.id)}
-          >
-            {i18n.t(preset.labelKey)}
-          </button>
-        {/each}
-      </div>
+      <section class="retrocam-panel w98-frame">
+        <div class="retrocam-panel-titlebar w98-panel-titlebar">
+          <strong class="w98-panel-title">
+            <span class="w98-emoji" aria-hidden="true">🎨</span>
+            <span>{i18n.t('tab_presets')}</span>
+          </strong>
+        </div>
+        <div class="retrocam-panel-body">
+          <div class="retrocam-preset-strip">
+            {#each retroCamPresets as preset}
+              <button
+                class="preset-btn w98-inline-button w98-button--thin"
+                class:w98-inline-button--active={retroCamStore.activePresetId === preset.id}
+                onclick={() => retroCamStore.setPreset(preset.id)}
+              >
+                {i18n.t(preset.labelKey)}
+              </button>
+            {/each}
+          </div>
+        </div>
+      </section>
 
-      <div class="retrocam-snapshot-panel">
-        <div class="retrocam-preview-label">{i18n.t('retrocam_last_snapshot')}</div>
-        {#if retroCamStore.lastSnapshotUrl}
-          <img
-            src={retroCamStore.lastSnapshotUrl}
-            alt={i18n.t('retrocam_last_snapshot')}
-            class="retrocam-snapshot-image"
-            data-testid="retrocam-snapshot-image"
-            oncontextmenu={handleSnapshotContextMenu}
-          />
-        {:else}
-          <div class="retrocam-snapshot-placeholder">{i18n.t('retrocam_no_snapshot')}</div>
-        {/if}
-      </div>
+      <section class="retrocam-panel w98-frame">
+        <div class="retrocam-panel-titlebar w98-panel-titlebar">
+          <strong class="w98-panel-title">
+            <span class="w98-emoji" aria-hidden="true">💾</span>
+            <span>{i18n.t('retrocam_last_snapshot')}</span>
+          </strong>
+        </div>
+        <div class="retrocam-panel-body">
+          <div class="retrocam-media-frame w98-inset-panel">
+            {#if retroCamStore.lastSnapshotUrl}
+              <img
+                src={retroCamStore.lastSnapshotUrl}
+                alt={i18n.t('retrocam_last_snapshot')}
+                class="retrocam-snapshot-image"
+                data-testid="retrocam-snapshot-image"
+                oncontextmenu={handleSnapshotContextMenu}
+              />
+            {:else}
+              <div class="retrocam-snapshot-placeholder w98-note">{i18n.t('retrocam_no_snapshot')}</div>
+            {/if}
+          </div>
+        </div>
+      </section>
     </div>
   </div>
 </div>
@@ -334,72 +394,42 @@
     height: 100%;
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    padding: 10px;
+    gap: var(--w98-space-6);
+    padding: var(--w98-space-4);
     box-sizing: border-box;
-    background:
-      radial-gradient(circle at top left, rgba(255, 255, 255, 0.5), transparent 32%),
-      linear-gradient(180deg, #d7dfef 0%, #b8c4d7 100%);
+    background: var(--w98-surface);
   }
 
   .retrocam-toolbar {
-    display: flex;
-    align-items: center;
     justify-content: space-between;
-    gap: 8px;
     flex-wrap: wrap;
+    align-items: flex-start;
   }
 
   .retrocam-status {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    font-size: 12px;
+    min-width: 180px;
+    padding: var(--w98-space-6);
+  }
+
+  .retrocam-status-title {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--w98-space-4);
   }
 
   .retrocam-actions,
   .retrocam-preset-strip {
     display: flex;
-    gap: 6px;
+    gap: var(--w98-space-4);
     flex-wrap: wrap;
   }
 
   .retrocam-device-picker {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 12px;
-  }
-
-  .retrocam-device-picker select {
     min-width: 150px;
-    height: 24px;
-    border: none;
-    box-shadow: var(--w98-inset-thin);
-    background: #fff;
-    font: inherit;
-    padding: 2px 6px;
   }
 
-  .toolbar-btn,
-  .preset-btn {
-    border: none;
-    box-shadow: var(--w98-outset-thin);
-    background: var(--w98-surface);
-    padding: 4px 10px;
-    cursor: pointer;
-    font: inherit;
-  }
-
-  .toolbar-btn:disabled {
-    cursor: not-allowed;
-    color: var(--w98-text-disabled);
-  }
-
-  .preset-btn-active,
-  .toolbar-btn:active,
-  .preset-btn:active {
-    box-shadow: var(--w98-inset-thin);
+  .toolbar-btn {
+    white-space: nowrap;
   }
 
   .retrocam-layout {
@@ -407,52 +437,64 @@
     min-height: 0;
     display: grid;
     grid-template-columns: minmax(0, 1fr) 260px;
-    gap: 10px;
+    gap: var(--w98-space-6);
   }
 
-  .retrocam-preview-shell,
   .retrocam-sidebar {
-    box-shadow: var(--w98-inset-thin);
-    background: rgba(255, 255, 255, 0.78);
-    padding: 8px;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: var(--w98-space-6);
     min-height: 0;
   }
 
-  .retrocam-preview-label {
-    font-weight: bold;
-    font-size: 12px;
-    letter-spacing: 0.02em;
+  .retrocam-panel {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .retrocam-panel-body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--w98-space-8);
+    min-height: 0;
+    padding: var(--w98-space-8);
+  }
+
+  .retrocam-media-frame {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    align-items: stretch;
+    justify-content: center;
+    padding: var(--w98-space-4);
+    background: var(--w98-surface-white);
   }
 
   .retrocam-video,
-  .retrocam-snapshot-image,
-  .retrocam-empty-state {
+  .retrocam-snapshot-image {
     width: 100%;
     min-height: 0;
     flex: 1;
     object-fit: cover;
-    background: #101218;
+    background: var(--w98-surface-dark);
   }
 
   .retrocam-empty-state,
   .retrocam-snapshot-placeholder {
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
     text-align: center;
-    padding: 16px;
-    color: #1b2b40;
-    background:
-      linear-gradient(135deg, rgba(0, 0, 0, 0.08), transparent),
-      #d7dfef;
+    padding: var(--w98-space-16);
+    width: 100%;
+    min-height: 160px;
   }
 
   .empty-icon {
     font-size: 28px;
-    margin-bottom: 8px;
+    margin-bottom: var(--w98-space-8);
   }
 
   .retrocam-capture-canvas {
@@ -462,6 +504,10 @@
   @media (max-width: 760px) {
     .retrocam-layout {
       grid-template-columns: minmax(0, 1fr);
+    }
+
+    .retrocam-device-picker {
+      min-width: 100%;
     }
   }
 </style>

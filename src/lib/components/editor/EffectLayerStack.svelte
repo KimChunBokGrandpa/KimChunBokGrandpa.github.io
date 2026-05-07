@@ -160,6 +160,7 @@
 <div class="section-label">{i18n.t('crt_scanlines')}:</div>
 <div class="field-row">
   <select
+    class="w98-select"
     id="crt-effect"
     value={settings.crtEffect}
     onchange={(e) => {
@@ -178,7 +179,7 @@
   {#each cssRenderOptions as opt}
     <button
       class:preset-active={settings.renderMode === opt.id}
-      class="render-btn"
+      class="render-btn w98-inline-button w98-button--thin"
       onclick={() => { settings.renderMode = opt.id as RenderMode; onChange(); }}
       title={i18n.t(opt.titleKey)}
     >
@@ -190,7 +191,7 @@
 <!-- Effect Stack -->
 <div class="section-label">{i18n.t('effect_stack')} <span class="section-hint">({i18n.t('effect_stack_hint')})</span></div>
 {#if !settings.effectLayers || settings.effectLayers.length === 0}
-  <div class="no-effects">{i18n.t('no_effects')}</div>
+  <div class="no-effects w98-note">{i18n.t('no_effects')}</div>
 {:else}
   <div class="effect-layer-list">
     {#each settings.effectLayers as layer, idx (layer.id)}
@@ -208,8 +209,9 @@
         role="listitem"
       >
         <button
-          class="layer-toggle"
+          class="layer-toggle w98-inline-button w98-button--thin"
           class:active={layer.enabled}
+          class:w98-inline-button--active={layer.enabled}
           onclick={() => toggleEffectLayer(layer.id)}
           title={layer.enabled ? i18n.t('effect_enabled') : i18n.t('effect_disabled')}
           aria-label={layer.enabled ? i18n.t('effect_enabled') : i18n.t('effect_disabled')}
@@ -222,7 +224,7 @@
             {#each [1, 2, 3] as lv}
               <button
                 class:preset-active={layer.intensity === lv}
-                class="intensity-btn"
+                class="intensity-btn w98-inline-button w98-button--thin"
                 onclick={() => setLayerIntensity(layer.id, lv)}
                 title="{i18n.t('level')} {lv}"
               >{lv}</button>
@@ -231,7 +233,7 @@
         {/if}
 
         <button
-          class="layer-remove"
+          class="layer-remove w98-inline-button w98-button--thin"
           onclick={() => removeEffectLayer(layer.id)}
           title={i18n.t('remove_effect')}
           aria-label={i18n.t('remove_effect')}
@@ -239,14 +241,14 @@
 
         <span class="layer-move-btns">
           <button
-            class="layer-move-btn"
+            class="layer-move-btn w98-inline-button w98-button--thin"
             onclick={() => moveLayer(idx, -1)}
             disabled={idx === 0}
             title={i18n.t('move_up')}
             aria-label={i18n.t('move_up')}
           >▲</button>
           <button
-            class="layer-move-btn"
+            class="layer-move-btn w98-inline-button w98-button--thin"
             onclick={() => moveLayer(idx, 1)}
             disabled={idx === (settings.effectLayers?.length ?? 0) - 1}
             title={i18n.t('move_down')}
@@ -262,23 +264,23 @@
 
 <!-- Glitch seed (shown when any glitch layer exists) -->
 {#if settings.effectLayers?.some(l => l.type === 'glitch' && l.enabled)}
-  <div class="glitch-intensity-panel glitch-seed-panel">
+  <div class="glitch-intensity-panel glitch-seed-panel w98-status-panel">
     <div class="glitch-intensity-row">
       <span class="glitch-intensity-label">🎲 {i18n.t('seed')}</span>
       <div class="glitch-intensity-btns">
         <button
           class:preset-active={settings.glitchSeed === null}
-          class="intensity-btn seed-btn"
+          class="intensity-btn seed-btn w98-inline-button w98-button--thin"
           onclick={() => { settings.glitchSeed = null; onChange(); }}
         >{i18n.t('random')}</button>
         <button
           class:preset-active={settings.glitchSeed !== null}
-          class="intensity-btn seed-btn"
+          class="intensity-btn seed-btn w98-inline-button w98-button--thin"
           onclick={() => { settings.glitchSeed = Math.round(Math.random() * 10000) / 10000; onChange(); }}
         >{settings.glitchSeed !== null ? `${i18n.t('fixed')} (${settings.glitchSeed})` : i18n.t('fix')}</button>
         {#if settings.glitchSeed !== null}
           <button
-            class="intensity-btn"
+            class="intensity-btn w98-inline-button w98-button--thin"
             title={i18n.t('reroll_seed')}
             onclick={() => { settings.glitchSeed = Math.round(Math.random() * 10000) / 10000; onChange(); }}
           >🔄</button>
@@ -291,14 +293,14 @@
 <!-- Add Effect Button -->
 <div class="add-effect-row">
   <div class="add-effect-wrapper" bind:this={addMenuWrapperEl}>
-    <button class="add-effect-btn" onclick={() => { showAddMenu = !showAddMenu; }}>
+    <button class="add-effect-btn w98-button w98-button--thin" onclick={() => { showAddMenu = !showAddMenu; }}>
       + {i18n.t('add_effect')}
     </button>
     {#if showAddMenu}
-      <div class="add-effect-menu">
+      <div class="add-effect-menu w98-menu-surface">
         {#each effectOptions as opt}
           <button
-            class="add-effect-option"
+            class="add-effect-option w98-menu-item"
             onclick={() => { addEffectLayer(opt); showAddMenu = false; }}
           >
             {opt.icon} {i18n.t(opt.labelKey)}
@@ -310,60 +312,68 @@
 </div>
 
 <style>
+  .preset-active {
+    background: var(--w98-surface-active);
+    box-shadow: var(--w98-inset-thin);
+    font-weight: bold;
+  }
+
   .section-label {
-    margin-top: 8px;
-    font-size: var(--w98-font-size-base);
-    margin-bottom: 2px;
+    margin-top: var(--w98-space-8);
+    margin-bottom: var(--w98-space-2);
+    font-size: var(--w98-font-size-caption);
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    color: var(--w98-text-hint);
   }
   .section-hint {
-    color: var(--w98-shadow-808);
+    color: var(--w98-text-hint);
     font-size: var(--w98-font-size-caption);
+    text-transform: none;
   }
 
   /* ===== Render Mode Buttons ===== */
   .render-row {
     display: flex;
     flex-wrap: wrap;
-    gap: 4px;
+    gap: var(--w98-space-4);
   }
   .render-btn {
     font-size: var(--w98-font-size-sm);
-    padding: 3px 6px;
     flex: 1;
     text-align: center;
   }
 
   /* ===== Per-Filter Intensity Panel ===== */
   .glitch-intensity-panel {
-    margin-top: 6px;
+    margin-top: var(--w98-space-6);
     display: flex;
     flex-direction: column;
-    gap: 3px;
-    background: var(--w98-surface-active);
-    border: 1px solid var(--w98-surface);
-    padding: 4px;
+    gap: var(--w98-space-4);
   }
   .glitch-seed-panel {
-    margin-top: 4px;
+    margin-top: var(--w98-space-4);
   }
   .glitch-intensity-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 4px;
+    gap: var(--w98-space-4);
   }
   .glitch-intensity-label {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--w98-space-4);
     font-size: var(--w98-font-size-sm);
     white-space: nowrap;
     min-width: 70px;
   }
   .glitch-intensity-btns {
     display: flex;
-    gap: 2px;
+    gap: var(--w98-space-2);
   }
   .intensity-btn {
     font-size: var(--w98-font-size-caption);
-    padding: 1px 6px;
     min-width: 22px;
     text-align: center;
   }
@@ -375,15 +385,15 @@
   .effect-layer-list {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: var(--w98-space-2);
   }
   .effect-layer-item {
     display: flex;
     align-items: center;
-    gap: 4px;
-    padding: 3px 4px;
-    background: var(--w98-surface-active);
-    border: 1px solid var(--w98-surface);
+    gap: var(--w98-space-4);
+    padding: var(--w98-space-4);
+    background: var(--w98-surface);
+    box-shadow: var(--w98-outset-thin);
     cursor: grab;
   }
   .effect-layer-item:active {
@@ -393,7 +403,8 @@
     background: var(--w98-surface-dim);
   }
   .effect-layer-item.drag-over {
-    border-top: 2px solid var(--w98-highlight);
+    outline: 1px dotted var(--w98-highlight);
+    outline-offset: -2px;
   }
   .effect-layer-item.disabled {
     color: var(--w98-text-disabled);
@@ -422,7 +433,7 @@
   }
   .layer-intensity {
     display: flex;
-    gap: 2px;
+    gap: var(--w98-space-2);
   }
   .layer-remove {
     min-width: 18px;
@@ -432,7 +443,6 @@
     font-size: var(--w98-font-size-action);
     font-weight: bold;
     color: var(--w98-shadow-808);
-    cursor: pointer;
     line-height: 16px;
     text-align: center;
   }
@@ -453,7 +463,6 @@
     line-height: 10px;
     text-align: center;
     color: var(--w98-shadow-808);
-    cursor: pointer;
   }
   .layer-move-btn:hover:not(:disabled) {
     color: #000;
@@ -463,7 +472,7 @@
     cursor: default;
   }
   .drag-handle {
-    font-size: 14px;
+    font-size: var(--w98-font-size-action);
     color: var(--w98-text-disabled);
     cursor: grab;
     user-select: none;
@@ -471,12 +480,12 @@
   }
   .no-effects {
     font-size: var(--w98-font-size-sm);
-    color: var(--w98-shadow-808);
-    padding: 6px 0;
+    color: var(--w98-text-hint);
+    padding: var(--w98-space-6) 0;
     text-align: center;
   }
   .add-effect-row {
-    margin-top: 6px;
+    margin-top: var(--w98-space-6);
   }
   .add-effect-wrapper {
     position: relative;
@@ -484,31 +493,17 @@
   .add-effect-btn {
     width: 100%;
     font-size: var(--w98-font-size-base);
-    padding: 3px 8px;
-    cursor: pointer;
   }
   .add-effect-menu {
     position: absolute;
     bottom: 100%;
     left: 0;
     right: 0;
-    background: var(--w98-surface-white);
-    border: 1px solid var(--w98-shadow-808);
-    box-shadow: 2px 2px 4px rgba(0,0,0,0.2);
     z-index: 10;
     display: flex;
     flex-direction: column;
   }
   .add-effect-option {
-    font-size: var(--w98-font-size-base);
-    padding: 4px 8px;
-    text-align: left;
-    border: none;
-    background: none;
-    cursor: pointer;
-  }
-  .add-effect-option:hover {
-    background: var(--w98-highlight);
-    color: #fff;
+    width: 100%;
   }
 </style>

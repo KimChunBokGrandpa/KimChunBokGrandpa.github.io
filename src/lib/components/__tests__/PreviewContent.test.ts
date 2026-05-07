@@ -111,7 +111,7 @@ describe('PreviewContent', () => {
     render(PreviewContent, { props });
 
     expect(screen.getByAltText('Pixel art preview - gameboy')).toBeTruthy();
-    expect(screen.getByText('12 colors')).toBeTruthy();
+    expect(screen.getAllByText('12 colors').length).toBeGreaterThan(0);
   });
 
   it('shows processing state', () => {
@@ -155,5 +155,6 @@ describe('PreviewContent', () => {
     expect(screen.getByLabelText('btn_grid_toggle')).toBeTruthy();
     expect(screen.getByLabelText('btn_tile_toggle')).toBeTruthy();
     expect(screen.getByLabelText('btn_eyedropper_toggle')).toBeTruthy();
+    expect(screen.getByLabelText('set_zoom')).toBeTruthy();
   });
 });

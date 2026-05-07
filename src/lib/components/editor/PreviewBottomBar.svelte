@@ -1,18 +1,31 @@
 <script lang="ts">
   import { i18n } from '$lib/i18n/index.svelte';
+  import { getPaletteName } from '$lib/utils/palettes';
   import { tooltip } from '$lib/utils/tooltip';
+  import { replacePrimaryModifierShortcutLabel } from '$lib/utils/platformShortcuts';
   import type { createZoomPan } from '$lib/stores/zoomPanStore.svelte';
+  import type { DitherType, ProcessingSettings } from '$lib/types';
+
+  const ditherLabelKeys: Record<DitherType, 'dither_none' | 'dither_fs' | 'dither_ordered' | 'dither_atkinson'> = {
+    none: 'dither_none',
+    floyd_steinberg: 'dither_fs',
+    ordered: 'dither_ordered',
+    atkinson: 'dither_atkinson',
+  };
 
   let {
     zp,
     compareMode = $bindable(false),
     compareVariantIcon,
+    compareVariantUsesEmoji = false,
     cropModeActive = $bindable(false),
     tileMode = $bindable(false),
     eyedropperActive = $bindable(false),
     eyedropperOverlay,
     hasCrop,
     currentRotation,
+    processingSettings,
+    colorCount = 0,
     onRotate,
     onResetTransform,
     cycleCompareVariant,
@@ -21,180 +34,243 @@
     zp: ReturnType<typeof createZoomPan>;
     compareMode: boolean;
     compareVariantIcon: string;
+    compareVariantUsesEmoji?: boolean;
     cropModeActive: boolean;
     tileMode: boolean;
     eyedropperActive: boolean;
     eyedropperOverlay: any;
     hasCrop: boolean;
     currentRotation: number;
+    processingSettings?: ProcessingSettings;
+    colorCount?: number;
     onRotate?: (degrees: 90 | -90 | 180) => void;
     onResetTransform?: () => void;
     cycleCompareVariant: () => void;
     onOpenSettings: () => void;
   } = $props();
 
+  let compareShortcutHint = $derived(replacePrimaryModifierShortcutLabel(i18n.t('shortcut_hint_compare')));
+  let zoomOutShortcutHint = $derived(replacePrimaryModifierShortcutLabel(i18n.t('shortcut_hint_zoom_out')));
+  let zoomInShortcutHint = $derived(replacePrimaryModifierShortcutLabel(i18n.t('shortcut_hint_zoom_in')));
+  let zoomFitShortcutHint = $derived(replacePrimaryModifierShortcutLabel(i18n.t('shortcut_hint_fit')));
+  let outputPaletteName = $derived(processingSettings ? getPaletteName(processingSettings.palette) : '');
+  let outputDitherLabel = $derived(
+    processingSettings ? i18n.t(ditherLabelKeys[processingSettings.ditherType]) : ''
+  );
 </script>
 
-<div class="toolbar">
-  <!-- Pixel Lab controls -->
-  <button
-    class="tb-btn"
-    onclick={(e) => { e.stopPropagation(); onOpenSettings(); }}
-    title={i18n.t('open_settings')}
-    aria-label={i18n.t('btn_open_settings')}
-    use:tooltip>⚙️</button>
-  <span class="tb-sep"></span>
-  <!-- Transform -->
-  <button class="tb-btn" onclick={() => onRotate?.(-90)} title={i18n.t('rotate_left')} aria-label={i18n.t('btn_rotate_left')} use:tooltip>↺</button>
-  <button class="tb-btn" onclick={() => onRotate?.(90)} title={i18n.t('rotate_right')} aria-label={i18n.t('btn_rotate_right')} use:tooltip>↻</button>
-  <button
-    class="tb-btn"
-    class:tb-active={cropModeActive}
-    onclick={() => { cropModeActive = !cropModeActive; if (cropModeActive) { eyedropperActive = false; eyedropperOverlay?.dismiss(); } }}
-    title={cropModeActive ? i18n.t('crop_active') : i18n.t('crop')}
-    aria-label={cropModeActive ? i18n.t('crop_active') : i18n.t('crop')}
-    aria-pressed={cropModeActive}
-    use:tooltip>✂</button>
-  {#if currentRotation !== 0 || hasCrop}
-    <button
-      class="tb-btn"
-      onclick={() => { onResetTransform?.(); cropModeActive = false; }}
-      title={i18n.t('reset_transform')}
-      aria-label={i18n.t('btn_reset_transform')}
-      use:tooltip>⟲</button>
-  {/if}
-  <span class="tb-sep"></span>
-  <!-- Compare -->
-  <button
-    class="tb-btn"
-    data-testid="toggle-compare-button"
-    class:tb-active={compareMode}
-    onclick={() => { compareMode = !compareMode; }}
-    title={compareMode ? i18n.t('exit_compare') : i18n.t('shortcut_hint_compare')}
-    aria-label={i18n.t('btn_compare_toggle')}
-    aria-pressed={compareMode}
-    use:tooltip
-  >⚖️</button>
-  {#if compareMode}
-    <button
-      class="tb-btn"
-      data-testid="cycle-compare-variant-button"
-      onclick={cycleCompareVariant}
-      title="{i18n.t('compare_mode_cycle')}"
-      aria-label={i18n.t('btn_compare_variant')}
-      use:tooltip
-    >{compareVariantIcon}</button>
-  {/if}
-  {#if !compareMode}
-    <span class="tb-sep"></span>
-    <!-- Zoom -->
-    <button class="tb-btn" onclick={zp.zoomOut} title={i18n.t('shortcut_hint_zoom_out')} aria-label={i18n.t('btn_zoom_out')} use:tooltip>−</button>
-    <div class="zoom-input-container">
-      <input
-        type="number"
-        class="zoom-input"
-        min="25"
-        max="800"
-        value={Math.round(zp.zoomLevel * 100)}
-        onchange={(e) => {
-          const val = parseInt(e.currentTarget.value);
-          if (!isNaN(val)) {
-            const clamped = Math.max(25, Math.min(800, val));
-            zp.setZoom(clamped / 100);
-          }
-        }}
-        title={i18n.t('set_zoom')}
-      />
-      <span class="zoom-percent">%</span>
+<div class="preview-bottom-stack">
+  {#if processingSettings}
+    <div
+      class="output-summary w98-floating-surface"
+      data-testid="preview-output-summary"
+      role="status"
+      aria-live="polite"
+      aria-label={i18n.t('preview_output_summary')}
+    >
+      <span class="output-chip w98-readout-chip" title={i18n.t('pixel_size')} use:tooltip>
+        <span class="output-icon w98-structural-glyph" aria-hidden="true">⊡</span>
+        {processingSettings.pixelSize}px
+      </span>
+      <span class="output-chip w98-readout-chip" title={i18n.t('palette')} use:tooltip>
+        <span class="output-icon w98-emoji" aria-hidden="true">🎨</span>
+        {outputPaletteName}
+      </span>
+      <span class="output-chip w98-readout-chip" title={i18n.t('dithering')} use:tooltip>
+        <span class="output-icon w98-structural-glyph" aria-hidden="true">▒</span>
+        {outputDitherLabel}
+      </span>
+      {#if colorCount > 0}
+        <span class="output-chip w98-readout-chip w98-readout-chip--accent" title={i18n.t('unique_colors')} use:tooltip>
+          {i18n.t('gallery_n_colors', colorCount)}
+        </span>
+      {/if}
     </div>
-    <button class="tb-btn" onclick={zp.zoomIn} title={i18n.t('shortcut_hint_zoom_in')} aria-label={i18n.t('btn_zoom_in')} use:tooltip>+</button>
-    <button class="tb-btn" onclick={zp.zoomToFit} title={i18n.t('shortcut_hint_fit')} aria-label={i18n.t('btn_fit_to_window')} use:tooltip>⊡</button>
-    <span class="tb-sep"></span>
-    <!-- View tools -->
-    <button
-      class="tb-btn"
-      class:tb-active={zp.showGrid}
-      onclick={() => { zp.showGrid = !zp.showGrid; }}
-      title={zp.showGrid ? i18n.t('hide_pixel_grid') : i18n.t('show_pixel_grid')}
-      aria-label={i18n.t('btn_grid_toggle')}
-      aria-pressed={zp.showGrid}
-      use:tooltip>#</button>
-    <button
-      class="tb-btn"
-      class:tb-active={tileMode}
-      onclick={() => { tileMode = !tileMode; }}
-      title={tileMode ? i18n.t('exit_tile') : i18n.t('tile_preview')}
-      aria-label={i18n.t('btn_tile_toggle')}
-      aria-pressed={tileMode}
-      use:tooltip>⊞</button>
-    <button
-      class="tb-btn"
-      class:tb-active={eyedropperActive}
-      onclick={() => { eyedropperActive = !eyedropperActive; eyedropperOverlay?.dismiss(); }}
-      title={eyedropperActive ? i18n.t('exit_eyedropper') : i18n.t('eyedropper')}
-      aria-label={i18n.t('btn_eyedropper_toggle')}
-      aria-pressed={eyedropperActive}
-      use:tooltip>💧</button>
   {/if}
+
+  <div class="toolbar w98-floating-surface">
+    <!-- Pixel Lab controls -->
+    <button
+      class="tb-btn w98-inline-button w98-button--thin"
+      onclick={(e) => { e.stopPropagation(); onOpenSettings(); }}
+      title={i18n.t('open_settings')}
+      aria-label={i18n.t('btn_open_settings')}
+      use:tooltip
+    ><span class="toolbar-icon w98-emoji" aria-hidden="true">⚙️</span></button>
+    <span class="tb-sep w98-toolbar-divider"></span>
+    <!-- Transform -->
+    <button class="tb-btn w98-inline-button w98-button--thin" onclick={() => onRotate?.(-90)} title={i18n.t('rotate_left')} aria-label={i18n.t('btn_rotate_left')} use:tooltip
+    ><span class="toolbar-icon w98-structural-glyph" aria-hidden="true">↺</span></button>
+    <button class="tb-btn w98-inline-button w98-button--thin" onclick={() => onRotate?.(90)} title={i18n.t('rotate_right')} aria-label={i18n.t('btn_rotate_right')} use:tooltip
+    ><span class="toolbar-icon w98-structural-glyph" aria-hidden="true">↻</span></button>
+    <button
+      class="tb-btn w98-inline-button w98-button--thin"
+      class:w98-inline-button--active={cropModeActive}
+      onclick={() => { cropModeActive = !cropModeActive; if (cropModeActive) { eyedropperActive = false; eyedropperOverlay?.dismiss(); } }}
+      title={cropModeActive ? i18n.t('crop_active') : i18n.t('crop')}
+      aria-label={cropModeActive ? i18n.t('crop_active') : i18n.t('crop')}
+      aria-pressed={cropModeActive}
+      use:tooltip
+    ><span class="toolbar-icon w98-structural-glyph" aria-hidden="true">✂</span></button>
+    {#if currentRotation !== 0 || hasCrop}
+      <button
+        class="tb-btn w98-inline-button w98-button--thin"
+        onclick={() => { onResetTransform?.(); cropModeActive = false; }}
+        title={i18n.t('reset_transform')}
+        aria-label={i18n.t('btn_reset_transform')}
+        use:tooltip
+      ><span class="toolbar-icon w98-structural-glyph" aria-hidden="true">⟲</span></button>
+    {/if}
+    <span class="tb-sep w98-toolbar-divider"></span>
+    <!-- Compare -->
+    <button
+      class="tb-btn w98-inline-button w98-button--thin"
+      class:w98-inline-button--active={compareMode}
+      data-testid="toggle-compare-button"
+      onclick={() => { compareMode = !compareMode; }}
+      title={compareMode ? i18n.t('exit_compare') : compareShortcutHint}
+      aria-label={i18n.t('btn_compare_toggle')}
+      aria-pressed={compareMode}
+      use:tooltip
+      ><span class="toolbar-icon w98-emoji" aria-hidden="true">⚖️</span></button>
+    {#if compareMode}
+      <button
+        class="tb-btn w98-inline-button w98-button--thin"
+        data-testid="cycle-compare-variant-button"
+        onclick={cycleCompareVariant}
+        title="{i18n.t('compare_mode_cycle')}"
+        aria-label={i18n.t('btn_compare_variant')}
+        use:tooltip
+      ><span class="toolbar-icon" class:w98-emoji={compareVariantUsesEmoji} class:w98-structural-glyph={!compareVariantUsesEmoji} aria-hidden="true">{compareVariantIcon}</span></button>
+    {/if}
+    {#if !compareMode}
+      <span class="tb-sep w98-toolbar-divider"></span>
+      <!-- Zoom -->
+      <button class="tb-btn w98-inline-button w98-button--thin" onclick={zp.zoomOut} title={zoomOutShortcutHint} aria-label={i18n.t('btn_zoom_out')} use:tooltip
+      ><span class="toolbar-icon w98-structural-glyph" aria-hidden="true">−</span></button>
+      <div class="zoom-input-container w98-panel-inset-thin">
+        <input
+          type="number"
+          class="zoom-input"
+          min="25"
+          max="800"
+          aria-label={i18n.t('set_zoom')}
+          value={Math.round(zp.zoomLevel * 100)}
+          onchange={(e) => {
+            const val = parseInt(e.currentTarget.value);
+            if (!isNaN(val)) {
+              const clamped = Math.max(25, Math.min(800, val));
+              zp.setZoom(clamped / 100);
+            }
+          }}
+          title={i18n.t('set_zoom')}
+        />
+        <span class="zoom-percent w98-mono">%</span>
+      </div>
+      <button class="tb-btn w98-inline-button w98-button--thin" onclick={zp.zoomIn} title={zoomInShortcutHint} aria-label={i18n.t('btn_zoom_in')} use:tooltip
+      ><span class="toolbar-icon w98-structural-glyph" aria-hidden="true">+</span></button>
+      <button class="tb-btn w98-inline-button w98-button--thin" onclick={zp.zoomToFit} title={zoomFitShortcutHint} aria-label={i18n.t('btn_fit_to_window')} use:tooltip
+      ><span class="toolbar-icon w98-structural-glyph" aria-hidden="true">⊡</span></button>
+      <span class="tb-sep w98-toolbar-divider"></span>
+      <!-- View tools -->
+      <button
+        class="tb-btn w98-inline-button w98-button--thin"
+        class:w98-inline-button--active={zp.showGrid}
+        onclick={() => { zp.showGrid = !zp.showGrid; }}
+        title={zp.showGrid ? i18n.t('hide_pixel_grid') : i18n.t('show_pixel_grid')}
+        aria-label={i18n.t('btn_grid_toggle')}
+        aria-pressed={zp.showGrid}
+        use:tooltip
+      ><span class="toolbar-icon w98-structural-glyph" aria-hidden="true">#</span></button>
+      <button
+        class="tb-btn w98-inline-button w98-button--thin"
+        class:w98-inline-button--active={tileMode}
+        onclick={() => { tileMode = !tileMode; }}
+        title={tileMode ? i18n.t('exit_tile') : i18n.t('tile_preview')}
+        aria-label={i18n.t('btn_tile_toggle')}
+        aria-pressed={tileMode}
+        use:tooltip
+      ><span class="toolbar-icon w98-structural-glyph" aria-hidden="true">⊞</span></button>
+      <button
+        class="tb-btn w98-inline-button w98-button--thin"
+        class:w98-inline-button--active={eyedropperActive}
+        onclick={() => { eyedropperActive = !eyedropperActive; eyedropperOverlay?.dismiss(); }}
+        title={eyedropperActive ? i18n.t('exit_eyedropper') : i18n.t('eyedropper')}
+        aria-label={i18n.t('btn_eyedropper_toggle')}
+        aria-pressed={eyedropperActive}
+        use:tooltip
+      ><span class="toolbar-icon w98-emoji" aria-hidden="true">💧</span></button>
+    {/if}
+  </div>
 </div>
 
 <style>
-  .toolbar {
+  .preview-bottom-stack {
     position: absolute;
     bottom: 8px;
     left: 50%;
     transform: translateX(-50%);
     display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    z-index: 6;
+    max-width: calc(100% - 16px);
+  }
+  .output-summary {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    max-width: 100%;
+    padding: 2px 4px;
+    overflow: hidden;
+  }
+  .output-chip {
+    flex-shrink: 1;
+    min-width: 0;
+    max-width: 140px;
+    cursor: default;
+  }
+  .output-chip:not(:first-child) {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .output-icon {
+    font-size: var(--w98-font-size-caption);
+    line-height: 1;
+  }
+  .toolbar {
+    display: flex;
     align-items: center;
     gap: 2px;
-    z-index: 6;
-    background: var(--w98-surface);
     padding: 2px 4px;
-    box-shadow: var(--w98-outset);
   }
   .tb-btn {
     min-width: 24px;
     height: 24px;
     padding: 0 4px;
     font-size: var(--w98-font-size-action);
-    font-weight: bold;
-    font-family: inherit;
-    background: var(--w98-surface);
-    border: none;
-    cursor: pointer;
-    box-shadow: var(--w98-outset-thin);
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
   }
-  .tb-btn:hover {
-    background: var(--w98-surface-active);
-  }
-  .tb-btn:active {
-    box-shadow: var(--w98-inset-thin);
-  }
-  .tb-active {
-    background: var(--w98-highlight);
-    color: #fff;
-    box-shadow: var(--w98-inset-thin);
-  }
-  .tb-active:hover {
-    background: color-mix(in srgb, var(--w98-highlight) 80%, #000);
+  .toolbar-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
   }
   .tb-sep {
-    width: 1px;
     height: 18px;
-    background: var(--w98-shadow-808);
     margin: 0 2px;
-    flex-shrink: 0;
   }
 
   .zoom-input-container {
     display: flex;
     align-items: center;
-    background: #fff;
-    border: 1px inset var(--w98-shadow-light);
     height: 22px;
     padding: 0 2px 0 4px;
     flex-shrink: 0;
@@ -217,17 +293,35 @@
   }
   .zoom-percent {
     font-size: var(--w98-font-size-sm);
-    font-family: 'Courier New', monospace;
-    color: #666;
+    color: var(--w98-text-hint);
     margin-left: 1px;
   }
 
   @media (max-width: 550px) {
-    .toolbar {
+    .preview-bottom-stack {
       bottom: 4px;
       left: 4px;
       right: 4px;
       transform: none;
+      align-items: stretch;
+      max-width: none;
+    }
+    .output-summary {
+      justify-content: flex-start;
+      overflow-x: auto;
+      flex-wrap: nowrap;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      padding: 3px 4px;
+    }
+    .output-summary::-webkit-scrollbar {
+      display: none;
+    }
+    .output-chip {
+      flex: 0 0 auto;
+      max-width: none;
+    }
+    .toolbar {
       overflow-x: auto;
       flex-wrap: nowrap;
       -webkit-overflow-scrolling: touch;

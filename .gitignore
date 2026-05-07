@@ -30,3 +30,5 @@ HOURLY_LOG.md
 ACTIVE_ISSUES.md
 ./reports/
 $CODEX_HOME
+./test-results
+/sampleImages/*

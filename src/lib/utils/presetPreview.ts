@@ -1,10 +1,9 @@
-import type { ProcessingSettings, EffectLayer } from '$lib/types';
+import type { ProcessingSettings } from '$lib/types';
 import type { RGB } from './palettes';
-import { applyGlitch } from './glitchEngine';
 import { applyQuantization } from './quantizerBackend';
-import { applyScaling } from './scaleEngine';
 import { applyCrtEffect } from './crtRenderer';
 import { customPaletteStore } from '$lib/stores/customPaletteStore.svelte';
+import { applyEffectLayers, normalizeEffectLayers } from './effectLayers';
 
 export interface PresetPreviewInput {
   id?: string;
@@ -32,28 +31,6 @@ function getCustomPaletteColors(paletteId: string): RGB[] | undefined {
   return paletteId.startsWith('custom_')
     ? customPaletteStore.getPaletteById(paletteId)?.colors
     : undefined;
-}
-
-function normalizeLayers(settings: ProcessingSettings): EffectLayer[] {
-  if (settings.effectLayers && settings.effectLayers.length > 0) {
-    return settings.effectLayers.filter((layer) => layer.enabled);
-  }
-
-  const layers: EffectLayer[] = settings.glitchFilters
-    .filter((filter) => filter.type !== 'none')
-    .map((filter, idx) => ({
-      id: `legacy-${idx}`,
-      type: 'glitch',
-      enabled: true,
-      glitchType: filter.type,
-      intensity: filter.intensity,
-    }));
-
-  if (settings.renderMode === 'hqx') {
-    layers.push({ id: 'legacy-hqx', type: 'hqx', enabled: true });
-  }
-
-  return layers;
 }
 
 function createSampleCanvas(): HTMLCanvasElement {
@@ -123,20 +100,11 @@ function renderPresetPreview(input: PresetPreviewInput): string {
     useOklab: input.settings.useOklab,
   });
 
-  const layers = normalizeLayers(input.settings);
-  for (let i = 0; i < layers.length; i++) {
-    const layer = layers[i];
-    if (layer.type === 'glitch' && layer.glitchType && layer.glitchType !== 'none') {
-      imageData = applyGlitch(
-        imageData,
-        layer.glitchType,
-        layer.intensity || 1,
-        seedBase + i,
-      );
-    } else if (layer.type === 'hqx') {
-      imageData = applyScaling(imageData, 'hqx');
-    }
-  }
+  const layers = normalizeEffectLayers(input.settings);
+  imageData = applyEffectLayers(imageData, {
+    layers,
+    getLayerSeed: (_, index) => seedBase + index,
+  });
 
   const processedCanvas = document.createElement('canvas');
   processedCanvas.width = imageData.width;

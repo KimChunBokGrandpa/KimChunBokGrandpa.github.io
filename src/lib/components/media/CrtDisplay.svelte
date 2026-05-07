@@ -16,7 +16,6 @@
   {@render children()}
   {#if active}
     <div class="scanlines" class:vertical={mode === 'vertical'}></div>
-    <div class="glare"></div>
   {/if}
 </div>
 
@@ -36,15 +35,9 @@
 
   .crt-wrapper.active {
     border-radius: var(--w98-radius-crt, 12px);
-    box-shadow: inset 0 0 calc(20px * var(--crt-intensity)) rgba(0,0,0,0.8);
-    filter: drop-shadow(calc(1px * var(--crt-intensity)) 0 calc(2px * var(--crt-intensity)) rgba(255,0,0,0.3)) drop-shadow(calc(-1px * var(--crt-intensity)) 0 calc(2px * var(--crt-intensity)) rgba(0,0,255,0.3)) contrast(calc(1 + 0.1 * var(--crt-intensity))) brightness(calc(1 + 0.1 * var(--crt-intensity)));
-  }
-
-  @keyframes flicker {
-    0% { opacity: 0.95; }
-    5% { opacity: 0.85; }
-    10% { opacity: 0.95; }
-    100% { opacity: 1; }
+    box-shadow:
+      inset 0 0 0 1px rgba(255, 255, 255, calc(0.18 * var(--crt-intensity))),
+      inset 0 0 calc(10px * var(--crt-intensity)) rgba(0, 0, 0, 0.45);
   }
 
   .scanlines {
@@ -59,9 +52,7 @@
     background-size: 100% 4px;
     pointer-events: none;
     z-index: 10;
-    will-change: opacity;
-    animation: flicker 4s ease-in-out infinite;
-    opacity: var(--crt-intensity);
+    opacity: calc(0.45 * var(--crt-intensity));
   }
 
   .scanlines.vertical {
@@ -75,19 +66,7 @@
 
   @media (prefers-reduced-motion: reduce) {
     .scanlines {
-      animation: none;
-      will-change: auto;
-      opacity: calc(0.5 * var(--crt-intensity));
+      opacity: calc(0.35 * var(--crt-intensity));
     }
-  }
-
-  .glare {
-    position: absolute;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    background: radial-gradient(circle at center, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 60%);
-    pointer-events: none;
-    z-index: 11;
-    opacity: var(--crt-intensity);
   }
 </style>

@@ -249,9 +249,9 @@ describe('PresetManager', () => {
       },
     ]);
 
-    const { findByTestId, findByText } = render(PresetManager, { props: defaultProps() });
+    const { findByRole, findByTestId } = render(PresetManager, { props: defaultProps() });
     await findByTestId('shared-presets');
-    await fireEvent.click(await findByText('🔗 Inbox Item'));
+    await fireEvent.click(await findByRole('button', { name: /Inbox Item/i }));
 
     expect(markSharedPresetApplied).toHaveBeenCalledWith('shared-1');
   });
@@ -286,14 +286,14 @@ describe('PresetManager', () => {
       },
     ]);
 
-    const { findByTestId, findByText } = render(PresetManager, { props: defaultProps() });
+    const { findByRole, findByTestId } = render(PresetManager, { props: defaultProps() });
     await findByTestId('community-presets');
-    await findByText('🌐 Community CRT');
+    await findByRole('button', { name: /Community CRT/i });
   });
 
   it('renders recommended style cards when image source is provided', async () => {
     (recommendStylesFromImage as unknown as ReturnType<typeof vi.fn>).mockResolvedValueOnce([
-      { id: 'gameboy', score: 2.2, reasonKey: 'style_reason_contrast' } satisfies StyleRecommendation,
+      { id: 'gameboy', family: 'classic_pixel', score: 2.2, reasonKey: 'style_reason_contrast' } satisfies StyleRecommendation,
     ]);
 
     const props = { ...defaultProps(), imageSrc: 'blob:style-source' };
@@ -302,6 +302,7 @@ describe('PresetManager', () => {
     });
 
     await findByTestId('style-recommendations');
+    expect(getByTestId('style-recommendation-gameboy').textContent).toContain('preset_family_classic_pixel');
     await fireEvent.click(getByTestId('style-recommendation-gameboy'));
 
     expect(recommendStylesFromImage).toHaveBeenCalledWith('blob:style-source', 3);
@@ -334,7 +335,7 @@ describe('PresetManager', () => {
     await view.rerender({ ...defaultProps(), imageSrc: null });
 
     deferred.resolve([
-      { id: 'gameboy', score: 2.2, reasonKey: 'style_reason_contrast' } satisfies StyleRecommendation,
+      { id: 'gameboy', family: 'classic_pixel', score: 2.2, reasonKey: 'style_reason_contrast' } satisfies StyleRecommendation,
     ]);
 
     await waitFor(() => {

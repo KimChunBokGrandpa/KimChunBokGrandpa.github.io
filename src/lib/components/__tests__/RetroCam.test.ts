@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/svelte';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/svelte';
 
 vi.mock('$lib/i18n/index.svelte', () => ({
   i18n: { t: vi.fn((key: string) => key) },
@@ -11,7 +11,7 @@ vi.mock('$lib/services/saveService', () => ({
 }));
 
 import { saveImage } from '$lib/services/saveService';
-import { resetRetroCamStore } from '$lib/stores/retroCamStore.svelte';
+import { resetRetroCamStore, retroCamStore } from '$lib/stores/retroCamStore.svelte';
 import RetroCam from '../retrocam/RetroCam.svelte';
 
 const OriginalPlay = HTMLMediaElement.prototype.play;
@@ -20,6 +20,8 @@ const OriginalToBlob = HTMLCanvasElement.prototype.toBlob;
 const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
 beforeEach(() => {
+  vi.mocked(saveImage).mockReset();
+  vi.mocked(saveImage).mockResolvedValue('image_downloaded');
   Object.defineProperty(HTMLMediaElement.prototype, 'srcObject', {
     configurable: true,
     writable: true,
@@ -204,6 +206,26 @@ describe('RetroCam', () => {
     await waitFor(() => expect(onError).toHaveBeenCalledWith('retrocam_snapshot_failed'));
   });
 
+  it('saves reopened snapshots from the stored snapshot asset instead of live capture canvas', async () => {
+    resetRetroCamStore(null);
+    retroCamStore.setSnapshot(
+      new File(['snapshot'], 'saved-capture.png', { type: 'image/png' }),
+      'blob:restored-snapshot',
+      'warm_poster',
+    );
+
+    render(RetroCam, { props: {} });
+
+    await fireEvent.click(screen.getByRole('button', { name: /retrocam_save_snapshot/i }));
+
+    await waitFor(() =>
+      expect(saveImage).toHaveBeenCalledWith(
+        'blob:restored-snapshot',
+        { format: 'png', quality: 0.92, filename: 'saved-capture' },
+      ),
+    );
+  });
+
   it('shows a shell-style open-with context menu for the latest snapshot', async () => {
     const onOpenInPixelLab = vi.fn();
     const onUseInPosterMaker = vi.fn();
@@ -219,11 +241,12 @@ describe('RetroCam', () => {
     await fireEvent.click(screen.getByText('retrocam_capture_snapshot'));
     await fireEvent.contextMenu(screen.getByTestId('retrocam-snapshot-image'));
 
-    expect(screen.getByText('open_with')).toBeTruthy();
-    expect(screen.getByText('🖼️ retrocam_open_in_pixel_lab')).toBeTruthy();
-    expect(screen.getByText('📰 retrocam_use_in_poster_maker')).toBeTruthy();
+    const menu = screen.getByRole('menu');
+    expect(within(menu).getByText('open_with')).toBeTruthy();
+    expect(within(menu).getByRole('menuitem', { name: /retrocam_open_in_pixel_lab/ })).toBeTruthy();
+    expect(within(menu).getByRole('menuitem', { name: /retrocam_use_in_poster_maker/ })).toBeTruthy();
 
-    await fireEvent.click(screen.getByText('🖼️ retrocam_open_in_pixel_lab'));
+    await fireEvent.click(within(menu).getByRole('menuitem', { name: /retrocam_open_in_pixel_lab/ }));
     await waitFor(() => expect(onOpenInPixelLab).toHaveBeenCalledTimes(1));
   });
 

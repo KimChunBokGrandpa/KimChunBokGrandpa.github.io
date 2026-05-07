@@ -14,15 +14,18 @@ import { createSettingsStore, defaultProcessingSettings } from '$lib/stores/sett
 import { createTransformStore, type CropRect } from '$lib/stores/transformStore.svelte';
 import {
   createAssetId,
+  createExportHistoryEntry,
   createProjectId,
   createProjectManifest,
   timestampNow,
+  type ExportHistoryEntry,
   type RetroProjectManifestV1,
 } from '$lib/projects/schema';
 import { getProjectStorageAdapter } from '$lib/projects/runtime';
 import type { ProjectStorageAdapter } from '$lib/projects/storageAdapter';
 
 const debounceMs = 150;
+const maxExportHistoryEntries = 20;
 
 function derivePixelLabProjectName(filename: string | null): string {
   const trimmed = filename?.trim();
@@ -43,6 +46,7 @@ export function createImageProcessingStore(
   let currentProjectCreatedAt = $state<string | null>(null);
   let currentSourceAssetId = $state<string | null>(null);
   let currentSourceFilename = $state<string | null>(null);
+  let currentExportHistory = $state<ExportHistoryEntry[]>([]);
 
   // ─── Internal State ───
   let currentObjectUrl: string | null = null;
@@ -143,6 +147,7 @@ export function createImageProcessingStore(
       sourceAssetIds: [currentSourceAssetId],
       primaryAssetId: currentSourceAssetId,
       previewAssetId: currentSourceAssetId,
+      exportHistory: currentExportHistory,
       programState: {
         kind: 'pixel-lab',
         activeSourceAssetId: currentSourceAssetId,
@@ -161,6 +166,21 @@ export function createImageProcessingStore(
     });
     await projectStorage.saveProject(manifest);
     return manifest;
+  }
+
+  async function recordExport(format: SaveFormat, canvas: HTMLCanvasElement | null | undefined) {
+    if (!currentProjectId || !currentProjectCreatedAt || !currentSourceAssetId) return null;
+
+    currentExportHistory = [
+      createExportHistoryEntry({
+        format,
+        width: canvas?.width,
+        height: canvas?.height,
+      }),
+      ...currentExportHistory,
+    ].slice(0, maxExportHistoryEntries);
+
+    return persistCurrentProject();
   }
 
   async function startNewPixelLabProject(file: File) {
@@ -186,6 +206,7 @@ export function createImageProcessingStore(
     currentProjectCreatedAt = createdAt;
     currentSourceAssetId = nextAssetId;
     currentSourceFilename = file.name;
+    currentExportHistory = [];
     await persistCurrentProject();
   }
 
@@ -254,6 +275,7 @@ export function createImageProcessingStore(
       ?? manifest.primaryAssetId
       ?? null;
     currentSourceFilename = file.name;
+    currentExportHistory = manifest.exportHistory.map((entry) => ({ ...entry }));
 
     settingsStore.setSettings(manifest.programState.processingSettings);
     settingsStore.setPostFilters(manifest.programState.postFilters);
@@ -287,6 +309,7 @@ export function createImageProcessingStore(
     currentProjectCreatedAt = null;
     currentSourceAssetId = null;
     currentSourceFilename = null;
+    currentExportHistory = [];
   }
 
   function updateSettings(newSettings: ProcessingSettings) {
@@ -375,12 +398,16 @@ export function createImageProcessingStore(
       canvas = applyCrtEffect(canvas, settingsStore.settings.crtEffect);
     }
     const filterStr = settingsStore.postFilterCss;
-    return saveImage(
+    const result = await saveImage(
       processedImageSrc,
       { format: settingsStore.saveFormat, quality: settingsStore.saveQuality },
       canvas,
       filterStr || undefined,
     );
+    if (result) {
+      await recordExport(settingsStore.saveFormat, canvas);
+    }
+    return result;
   }
 
   async function share(): Promise<string | null> {
@@ -390,12 +417,16 @@ export function createImageProcessingStore(
       canvas = applyCrtEffect(canvas, settingsStore.settings.crtEffect);
     }
     const filterStr = settingsStore.postFilterCss;
-    return shareImage(
+    const result = await shareImage(
       processedImageSrc,
       { format: settingsStore.saveFormat, quality: settingsStore.saveQuality },
       canvas,
       filterStr || undefined,
     );
+    if (result) {
+      await recordExport(settingsStore.saveFormat, canvas);
+    }
+    return result;
   }
 
   async function createTransferFile(filename = 'pixel-lab-transfer'): Promise<File | null> {
@@ -488,6 +519,7 @@ export function createImageProcessingStore(
     get rotation() { return transformStore.rotation; },
     get cropRect() { return transformStore.cropRect; },
     get currentProjectId() { return currentProjectId; },
+    get exportHistory() { return currentExportHistory; },
 
     // GIF state (delegated to gifPlaybackManager)
     get isGif() { return gif.isGif; },

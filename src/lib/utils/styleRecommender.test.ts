@@ -52,6 +52,7 @@ describe('styleRecommender', () => {
 
     expect(recommendations).toHaveLength(3);
     expect(recommendations[0].id).toBe('gameboy');
+    expect(recommendations[0].family).toBe('classic_pixel');
     expect(recommendations[0].reasonKey).toBe('style_reason_palette_match');
   });
 
@@ -64,6 +65,15 @@ describe('styleRecommender', () => {
   it('does not include the original preset in style recommendations', () => {
     const recommendations = recommendStyles(makeImageDataFromPalette('win256'), 5);
     expect(recommendations.some((item) => item.id === 'original')).toBe(false);
+    expect(recommendations.some((item) => item.family === 'reference')).toBe(false);
+  });
+
+  it('attaches preset family metadata to every recommendation', () => {
+    const recommendations = recommendStyles(makeImageDataFromPalette('cyberpunk16'), 4);
+
+    expect(recommendations).toHaveLength(4);
+    expect(recommendations.every((item) => item.family !== undefined)).toBe(true);
+    expect(recommendations.some((item) => item.family === 'retro_treatment')).toBe(true);
   });
 
   it('keeps lower recommendation slots more diverse for broad palettes', () => {

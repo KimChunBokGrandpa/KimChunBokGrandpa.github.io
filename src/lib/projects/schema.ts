@@ -48,12 +48,6 @@ export interface ExportHistoryEntry {
   height?: number;
 }
 
-export interface ProjectShellState {
-  lastWindowLayoutId?: string;
-  preferredWindowMode?: 'windowed' | 'maximized';
-  activeUtilitySurface?: string;
-}
-
 export interface PixelLabTransformStateV1 {
   rotation: number;
   cropRect: CropRect | null;
@@ -66,11 +60,6 @@ export interface PixelLabProjectStateV1 {
   processingSettings: ProcessingSettings;
   postFilters: PostProcessFilters;
   transformState: PixelLabTransformStateV1;
-  selectedPresetId?: string;
-  historySummary?: {
-    undoDepth: number;
-    redoDepth: number;
-  };
   exportDefaults?: {
     format: SaveFormat;
     quality: number;
@@ -140,10 +129,6 @@ export interface PosterMakerProjectStateV1 {
   layers: PosterMakerLayerV1[];
   sourceContext?: ProjectSourceContextV1;
   activeLayerId?: string;
-  exportDefaults?: {
-    format: SaveFormat;
-    quality: number;
-  };
 }
 
 export interface RetroCamProjectStateV1 {
@@ -177,7 +162,6 @@ export interface RetroProjectManifestV1 {
   previewAssetId?: string;
   tags?: string[];
   exportHistory: ExportHistoryEntry[];
-  shellState?: ProjectShellState;
   programState: ProgramStateV1;
 }
 
@@ -199,7 +183,6 @@ export interface CreateProjectManifestInput {
   previewAssetId?: string;
   tags?: string[];
   exportHistory?: ExportHistoryEntry[];
-  shellState?: ProjectShellState;
   programState: ProgramStateV1;
   projectId?: string;
   createdAt?: string;
@@ -277,7 +260,6 @@ function clonePixelLabState(state: PixelLabProjectStateV1): PixelLabProjectState
       rotation: state.transformState.rotation,
       cropRect: cloneCropRect(state.transformState.cropRect),
     },
-    historySummary: state.historySummary ? { ...state.historySummary } : undefined,
     exportDefaults: state.exportDefaults ? { ...state.exportDefaults } : undefined,
   };
 }
@@ -292,7 +274,6 @@ function clonePosterMakerState(state: PosterMakerProjectStateV1): PosterMakerPro
     canvas: { ...state.canvas },
     layers: state.layers.map(clonePosterLayer),
     sourceContext: state.sourceContext ? { ...state.sourceContext } : undefined,
-    exportDefaults: state.exportDefaults ? { ...state.exportDefaults } : undefined,
   };
 }
 
@@ -318,6 +299,19 @@ export function cloneExportHistoryEntry(entry: ExportHistoryEntry): ExportHistor
   return { ...entry };
 }
 
+export function createExportHistoryEntry(
+  input: Omit<ExportHistoryEntry, 'exportId' | 'createdAt'> & {
+    exportId?: string;
+    createdAt?: string;
+  },
+): ExportHistoryEntry {
+  return {
+    ...input,
+    exportId: input.exportId ?? createExportId(),
+    createdAt: input.createdAt ?? timestampNow(),
+  };
+}
+
 export function cloneAssetRef(asset: LocalAssetRefV1): LocalAssetRefV1 {
   return { ...asset };
 }
@@ -329,7 +323,6 @@ export function cloneProjectManifest(manifest: RetroProjectManifestV1): RetroPro
     derivedAssetIds: [...manifest.derivedAssetIds],
     tags: manifest.tags ? [...manifest.tags] : undefined,
     exportHistory: manifest.exportHistory.map(cloneExportHistoryEntry),
-    shellState: manifest.shellState ? { ...manifest.shellState } : undefined,
     programState: cloneProgramState(manifest.programState),
   };
 }
@@ -353,7 +346,6 @@ export function createProjectManifest(input: CreateProjectManifestInput): RetroP
     previewAssetId: input.previewAssetId,
     tags: input.tags ? [...input.tags] : undefined,
     exportHistory: (input.exportHistory ?? []).map(cloneExportHistoryEntry),
-    shellState: input.shellState ? { ...input.shellState } : undefined,
     programState: cloneProgramState(input.programState),
   };
 }

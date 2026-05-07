@@ -1,6 +1,6 @@
 # RetroCam MVP Specification
 
-> Status: historical MVP scope contract for `WP-05 RetroCam MVP`, with current implementation notes synced on 2026-04-16
+> Status: historical MVP scope contract for `WP-05 RetroCam MVP`, re-read under the Pixel Lab-first direction on 2026-05-07
 > Decision date: 2026-04-13
 
 ---
@@ -21,7 +21,7 @@ This document freezes:
 
 ## 2. Product Role
 
-`RetroCam` is the suite's fast, playful, immediate-use program.
+`RetroCam` is a fast, playful, immediate-use supporting program for creating Pixel Lab input assets.
 
 It is not:
 
@@ -34,7 +34,7 @@ Its job is:
 - open quickly
 - show live retro treatment immediately
 - let users capture a still fast
-- route the result into `Pixel Lab` for deeper editing when needed
+- route the result into `Pixel Lab` for deeper classic pixelization or retro treatment
 
 ---
 
@@ -60,7 +60,7 @@ Its job is:
 
 ### Why This Scope
 
-- keeps `RetroCam` meaningfully different from `Pixel Lab`
+- keeps `RetroCam` meaningfully different from Pixel Lab while preserving Pixel Lab as the main editor
 - avoids overloading MVP with multiple capture types and permission branches
 - gives one clean program identity:
   - live preview
@@ -79,7 +79,7 @@ Its job is:
 4. user captures a snapshot
 5. result can be:
    - saved locally
-   - reopened in `Pixel Lab`
+- opened in `Pixel Lab` for deeper editing
 
 ### Secondary Flow
 
@@ -180,13 +180,13 @@ Rules:
 
 Reason:
 
-- `Pixel Lab` is the clearer first destination for capture refinement
+- `Pixel Lab` is the clearer first destination for capture refinement and recommendation-led treatment
 - avoids splitting early QA and UX attention between editor and composition targets
 
 Current implementation note:
 
 - `RetroCam -> Poster Maker` direct handoff is now implemented as a post-MVP continuity slice
-- MVP-required first handoff priority still remains `RetroCam -> Pixel Lab`
+- primary handoff priority still remains `RetroCam -> Pixel Lab`
 
 ---
 

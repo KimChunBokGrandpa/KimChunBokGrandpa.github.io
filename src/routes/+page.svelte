@@ -4,18 +4,20 @@
   import Win98Window from '$lib/components/window/Win98Window.svelte';
   import ControlPanel from '$lib/components/editor/ControlPanel.svelte';
   import Taskbar from '$lib/components/window/Taskbar.svelte';
-  import PaletteGallery from '$lib/components/palette/PaletteGallery.svelte';
   import MessageDialog from '$lib/components/feedback/MessageDialog.svelte';
-  import BatchProcessor from '$lib/components/media/BatchProcessor.svelte';
-  import HistoryPanel from '$lib/components/feedback/HistoryPanel.svelte';
-  import PosterMaker from '$lib/components/poster/PosterMaker.svelte';
-  import RetroCam from '$lib/components/retrocam/RetroCam.svelte';
   import DesktopWorkspace from '$lib/components/window/DesktopWorkspace.svelte';
   import PreviewContent from '$lib/components/editor/PreviewContent.svelte';
   import ToastNotification from '$lib/components/feedback/ToastNotification.svelte';
   import KeyboardShortcuts from '$lib/components/feedback/KeyboardShortcuts.svelte';
   import ContextMenu, { type ContextMenuEntry } from '$lib/components/feedback/ContextMenu.svelte';
-  import { createWindowStore, windowConfigs } from '$lib/stores/windowStore.svelte';
+  import {
+    createWindowStore,
+    desktopWindowConfigs,
+    getShellProgramSummary,
+    getWindowTitle,
+    mobileWindowOrder,
+    windowConfigs,
+  } from '$lib/stores/windowStore.svelte';
   import { createZoomPan } from '$lib/stores/zoomPanStore.svelte';
   import { createImageProcessingStore } from '$lib/stores/imageProcessingStore.svelte';
   import { registerPaletteTranslator } from '$lib/utils/palettes';
@@ -24,7 +26,6 @@
   import type { TaskbarWindowInfo } from '$lib/components/window/Taskbar.svelte';
   import type { ProcessingSettings, WindowId } from '$lib/types';
   import { i18n } from '$lib/i18n/index.svelte';
-  import { getWindowTitle, getShellProgramLaunchLabel } from '$lib/stores/windowStore.svelte';
   import { getMobileWindowSlot, getNextMobileFocusId } from '$lib/utils/mobileWindowLayout';
   import { applyCloudPresetByShortId } from '$lib/services/cloudPresetService';
   import { importSharedPreset } from '$lib/stores/sharedPresetStore.svelte';
@@ -40,6 +41,14 @@
   import { posterMakerStore } from '$lib/stores/posterMakerStore.svelte';
   import { buildPreviewContextMenu } from '$lib/shell/previewContextMenu';
   import { dialogStore } from '$lib/stores/dialogStore.svelte';
+  import { validateImageFile } from '$lib/utils/imageFileValidation';
+  import { canWriteImageToClipboard } from '$lib/utils/clipboardSupport';
+  import { getShellShortcutAction } from '$lib/utils/shellShortcuts';
+  type PaletteGalleryComponent = typeof import('$lib/components/palette/PaletteGallery.svelte').default;
+  type BatchProcessorComponent = typeof import('$lib/components/media/BatchProcessor.svelte').default;
+  type HistoryPanelComponent = typeof import('$lib/components/feedback/HistoryPanel.svelte').default;
+  type PosterMakerComponent = typeof import('$lib/components/poster/PosterMaker.svelte').default;
+  type RetroCamComponent = typeof import('$lib/components/retrocam/RetroCam.svelte').default;
 
   // Register i18n translator for palette names
   registerPaletteTranslator((key) => i18n.t(key));
@@ -50,6 +59,68 @@
   const ip = createImageProcessingStore();
   const projectStorage = getProjectStorageAdapter();
   const handoffBus = getHandoffBus();
+
+  const lazyWindowIds = ['gallery', 'poster_maker', 'retrocam', 'batch', 'history'] as const;
+  type LazyWindowId = (typeof lazyWindowIds)[number];
+  let lazyWindowComponents = $state<{
+    gallery: PaletteGalleryComponent | null;
+    poster_maker: PosterMakerComponent | null;
+    retrocam: RetroCamComponent | null;
+    batch: BatchProcessorComponent | null;
+    history: HistoryPanelComponent | null;
+  }>({
+    gallery: null,
+    poster_maker: null,
+    retrocam: null,
+    batch: null,
+    history: null,
+  });
+  let GalleryWindow = $derived(lazyWindowComponents.gallery);
+  let PosterMakerWindow = $derived(lazyWindowComponents.poster_maker);
+  let RetroCamWindow = $derived(lazyWindowComponents.retrocam);
+  let BatchWindow = $derived(lazyWindowComponents.batch);
+  let HistoryWindow = $derived(lazyWindowComponents.history);
+
+  const lazyWindowLoaders: Record<LazyWindowId, () => Promise<{ default: unknown }>> = {
+    gallery: () => import('$lib/components/palette/PaletteGallery.svelte'),
+    poster_maker: () => import('$lib/components/poster/PosterMaker.svelte'),
+    retrocam: () => import('$lib/components/retrocam/RetroCam.svelte'),
+    batch: () => import('$lib/components/media/BatchProcessor.svelte'),
+    history: () => import('$lib/components/feedback/HistoryPanel.svelte'),
+  };
+
+  async function ensureLazyWindowLoaded(id: LazyWindowId) {
+    if (lazyWindowComponents[id]) return lazyWindowComponents[id];
+
+    const mod = await lazyWindowLoaders[id]();
+    lazyWindowComponents[id] = mod.default as never;
+    return lazyWindowComponents[id];
+  }
+
+  function isLazyWindowId(id: WindowId): id is LazyWindowId {
+    return (lazyWindowIds as readonly WindowId[]).includes(id);
+  }
+
+  function warmWindow(id: WindowId) {
+    if (isLazyWindowId(id)) {
+      void ensureLazyWindowLoaded(id);
+    }
+  }
+
+  function openShellWindow(id: WindowId) {
+    selectedIcon = null;
+    warmWindow(id);
+    wm.openWindow(id);
+  }
+
+  function getWindowLoadingIcon(id: LazyWindowId): string {
+    return windowConfigs.find((config) => config.id === id)?.icon ?? '🖼️';
+  }
+
+  function getWindowLoadingSummary(id: LazyWindowId): string | null {
+    const summary = getShellProgramSummary(id);
+    return summary === getWindowTitle(id) ? null : summary;
+  }
 
   // Toast queue: max 3 items, drop oldest if exceeded
   const toastQueueMax = 3;
@@ -83,13 +154,41 @@
   let tileMode = $state(false);
   let showShortcuts = $state(false);
   let shellRecentProjects = $state<RecentProjectEntryV1[]>([]);
+  let shellRecentProjectsRefreshTimer: ReturnType<typeof setTimeout> | null = null;
 
   // ─── Context Menu ───
-  let ctxMenu = $state<{ x: number; y: number; items: ContextMenuEntry[] } | null>(null);
+  let ctxMenu = $state<{
+    x: number;
+    y: number;
+    items: ContextMenuEntry[];
+    banner?: string | null;
+    kind?: 'context' | 'start';
+  } | null>(null);
+
+  async function handleCopyProcessedImage() {
+    if (!ip.processedImageSrc) return;
+
+    try {
+      if (!canWriteImageToClipboard()) {
+        enqueueToast(i18n.t('copy_failed'), 'error');
+        return;
+      }
+
+      const resp = await fetch(ip.processedImageSrc);
+      const blob = await resp.blob();
+      const ClipboardItemCtor = globalThis.ClipboardItem;
+      if (!ClipboardItemCtor) throw new Error('ClipboardItem unavailable');
+      await navigator.clipboard.write([new ClipboardItemCtor({ [blob.type]: blob })]);
+      enqueueToast(i18n.t('copied_to_clipboard'), 'success');
+    } catch {
+      enqueueToast(i18n.t('copy_failed'), 'error');
+    }
+  }
 
   function handlePreviewContextMenu(e: MouseEvent) {
     if (!ip.processedImageSrc) return;
     e.preventDefault();
+    const canCopyImage = canWriteImageToClipboard();
     const menuItems: ContextMenuEntry[] = buildPreviewContextMenu({
       strings: {
         save: i18n.t('save'),
@@ -102,19 +201,8 @@
         sendToPosterMaker: i18n.t('send_to_poster_maker'),
       },
       actions: {
-        onSave: () => {
-          document.dispatchEvent(new KeyboardEvent('keydown', { key: 's', ctrlKey: true }));
-        },
-        onCopy: async () => {
-          try {
-            const resp = await fetch(ip.processedImageSrc!);
-            const blob = await resp.blob();
-            await navigator.clipboard.write([new ClipboardItem({ [blob.type]: blob })]);
-            enqueueToast(i18n.t('copied_to_clipboard'), 'success');
-          } catch {
-            enqueueToast(i18n.t('copy_failed'), 'error');
-          }
-        },
+        onSave: () => { void handleSave(); },
+        onCopy: () => { void handleCopyProcessedImage(); },
         onToggleCompare: () => {
           compareMode = !compareMode;
         },
@@ -129,8 +217,9 @@
       },
       canUndo: ip.settingsHistory.length > 0,
       canRedo: ip.redoHistory.length > 0,
+      canCopy: canCopyImage,
     });
-    ctxMenu = { x: e.clientX, y: e.clientY, items: menuItems };
+    ctxMenu = { x: e.clientX, y: e.clientY, items: menuItems, banner: null, kind: 'context' };
   }
 
   // ─── Error Handling ───
@@ -185,10 +274,19 @@
   });
 
   // ─── Mobile split layout ───
-  const windowOrder = ['preview', 'poster_maker', 'retrocam', 'settings', 'gallery', 'batch', 'history'] as const;
   let mobileVisibleIds = $derived(
-    windowOrder.filter(id => wm.wins[id].mode !== 'closed' && wm.wins[id].mode !== 'minimized')
+    mobileWindowOrder.filter((id) => wm.wins[id].mode !== 'closed' && wm.wins[id].mode !== 'minimized')
   );
+
+  $effect(() => {
+    if (!browser) return;
+
+    for (const id of lazyWindowIds) {
+      if (wm.wins[id].mode !== 'closed') {
+        void ensureLazyWindowLoaded(id);
+      }
+    }
+  });
 
   function getMobileSlot(id: string): { top: string; height: string } | null {
     return getMobileWindowSlot({
@@ -224,16 +322,24 @@
     ));
   }
 
+  function scheduleShellRecentProjectsRefresh() {
+    if (!browser || shellRecentProjectsRefreshTimer) return;
+    shellRecentProjectsRefreshTimer = setTimeout(() => {
+      shellRecentProjectsRefreshTimer = null;
+      void refreshShellRecentProjects();
+    }, 120);
+  }
+
   $effect(() => {
     if (!browser) return;
     void refreshShellRecentProjects();
   });
 
   $effect(() => {
-    const posterRecentProjects = posterMakerStore.recentProjects;
-    void posterRecentProjects;
-    if (!browser) return;
-    void refreshShellRecentProjects();
+    if (!browser || !projectStorage.subscribe) return;
+    return projectStorage.subscribe(() => {
+      scheduleShellRecentProjectsRefresh();
+    });
   });
 
   // ─── Convenience aliases for template ───
@@ -266,7 +372,7 @@
       enqueueToast(i18n.t('preset_share_imported'));
       url.searchParams.delete('preset');
       window.history.replaceState({}, '', url.toString());
-      wm.openWindow('settings');
+      openShellWindow('settings');
     } catch {
       enqueueToast(i18n.t('preset_error_invalid_share'), 'error');
       url.searchParams.delete('preset');
@@ -298,7 +404,7 @@
       enqueueToast(i18n.t('cloud_preset_applied'));
       url.searchParams.delete('cloudPreset');
       window.history.replaceState({}, '', url.toString());
-      wm.openWindow('settings');
+      openShellWindow('settings');
     } catch {
       enqueueToast(i18n.t('cloud_preset_not_found'), 'error');
       url.searchParams.delete('cloudPreset');
@@ -325,7 +431,7 @@
   // ─── Event Handlers ───
   function handleImageSelected(file: File) {
     ip.loadImage(file);
-    wm.openWindow('preview');
+    openShellWindow('preview');
   }
 
   function handleSettingsChange(newSettings: ProcessingSettings) {
@@ -334,7 +440,7 @@
 
   function handleGallerySelect(paletteId: string) {
     ip.selectPalette(paletteId);
-    wm.openWindow('preview');
+    openShellWindow('preview');
   }
 
   function showDialog(message: string, title = i18n.t('dialog_notice_title')) {
@@ -378,7 +484,7 @@
       },
       projectStorage,
       handoffBus,
-      openPosterMaker: () => wm.openWindow('poster_maker'),
+      openPosterMaker: () => openShellWindow('poster_maker'),
       notify: (message) => enqueueToast(message),
       successMessage: i18n.t('send_to_poster_maker'),
     });
@@ -391,8 +497,8 @@
       projectStorage,
       handoffBus,
       openPixelLab: () => {
-        wm.openWindow('settings');
-        wm.openWindow('preview');
+        openShellWindow('settings');
+        openShellWindow('preview');
       },
       notify: (message) => enqueueToast(message),
       successMessage: i18n.t('retrocam_sent_to_pixel_lab'),
@@ -405,7 +511,7 @@
       activePresetId: presetId,
       projectStorage,
       handoffBus,
-      openPosterMaker: () => wm.openWindow('poster_maker'),
+      openPosterMaker: () => openShellWindow('poster_maker'),
       notify: (message) => enqueueToast(message),
       successMessage: i18n.t('retrocam_sent_to_poster_maker'),
     });
@@ -454,40 +560,53 @@
 
   function handleIconClick(id: WindowId) {
     if (isMobile) {
-      selectedIcon = null;
-      wm.openWindow(id);
+      openShellWindow(id);
     } else {
       selectedIcon = id;
+      warmWindow(id);
     }
   }
-  function handleIconDblClick(id: WindowId) { selectedIcon = null; wm.openWindow(id); }
+  function handleIconDblClick(id: WindowId) { openShellWindow(id); }
   function handleDesktopClick() { selectedIcon = null; }
 
   // ─── Desktop-wide Drop Zone ───
-  const acceptedImageTypes = ['image/png', 'image/jpeg', 'image/gif', 'image/bmp', 'image/webp'];
   function handleDesktopDrop(file: File) {
-    if (acceptedImageTypes.includes(file.type)) {
-      handleImageSelected(file);
-    } else {
-      showErrorDialog(i18n.t('unsupported_format'));
+    const validation = validateImageFile(file);
+    if (!validation.ok) {
+      showErrorDialog(i18n.t(validation.reason === 'size' ? 'image_too_large' : 'unsupported_format'));
+      return;
     }
+
+    handleImageSelected(file);
   }
 
   function handleKeydown(e: KeyboardEvent) {
-    if ((e.ctrlKey || e.metaKey) && e.key === 'z' && e.shiftKey) {
-      e.preventDefault();
-      ip.redo();
-    } else if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
-      e.preventDefault();
-      ip.undo();
-    } else if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-      e.preventDefault();
-      handleSave();
-    } else if (e.key === '?' && !e.ctrlKey && !e.metaKey) {
-      // Don't trigger when typing in input fields or contenteditable elements
-      const target = e.target as HTMLElement;
-      if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement || target.isContentEditable) return;
-      showShortcuts = !showShortcuts;
+    if (dialogStore.currentDialog || showShortcuts || ctxMenu) {
+      return;
+    }
+
+    switch (getShellShortcutAction(e)) {
+      case 'redo':
+        e.preventDefault();
+        ip.redo();
+        return;
+      case 'undo':
+        e.preventDefault();
+        ip.undo();
+        return;
+      case 'save':
+        e.preventDefault();
+        handleSave();
+        return;
+      case 'copy':
+        e.preventDefault();
+        void handleCopyProcessedImage();
+        return;
+      case 'toggleShortcuts':
+        showShortcuts = !showShortcuts;
+        return;
+      default:
+        return;
     }
   }
 
@@ -530,7 +649,7 @@
       },
       loadPosterProject: (projectId) => posterMakerStore.loadProject(projectId),
       loadRetroCamProject: (projectId) => retroCamStore.loadProject(projectId),
-      openWindow: (id) => wm.openWindow(id),
+      openWindow: (id) => openShellWindow(id),
       notifySuccess: (message) => enqueueToast(message),
       notifyError: (message) => enqueueToast(message, 'error'),
       messages: {
@@ -546,36 +665,33 @@
   }
 
   function handleStartClick(event: MouseEvent) {
+    if (ctxMenu?.kind === 'start') {
+      ctxMenu = null;
+      return;
+    }
+
+    for (const config of desktopWindowConfigs) {
+      warmWindow(config.id);
+    }
+
     const button = event.currentTarget as HTMLElement | null;
     const rect = button?.getBoundingClientRect();
     const launchItems: ContextMenuEntry[] = [
       {
         label: i18n.t('start_programs'),
         icon: '⊞',
-        action: () => {},
-        disabled: true,
+        heading: true,
       },
-      {
-        label: getShellProgramLaunchLabel('preview'),
-        icon: '🖼️',
-        action: () => wm.openWindow('preview'),
-      },
-      {
-        label: getShellProgramLaunchLabel('poster_maker'),
-        icon: '📰',
-        action: () => wm.openWindow('poster_maker'),
-      },
-      {
-        label: getShellProgramLaunchLabel('retrocam'),
-        icon: '📷',
-        action: () => wm.openWindow('retrocam'),
-      },
+      ...desktopWindowConfigs.map((config) => ({
+        label: getWindowTitle(config.id),
+        icon: config.icon,
+        action: () => openShellWindow(config.id),
+      })),
       { separator: true },
       {
         label: i18n.t('start_recent_projects'),
-        icon: '🗂️',
-        action: () => {},
-        disabled: true,
+        icon: '📂',
+        heading: true,
       },
     ];
 
@@ -590,7 +706,6 @@
       : [{
           label: i18n.t('start_recent_projects_empty'),
           icon: '·',
-          action: () => {},
           disabled: true,
         }];
 
@@ -600,10 +715,17 @@
       x: rect?.left ?? 4,
       y: Math.max(8, (rect?.top ?? window.innerHeight) - estimatedHeight),
       items: menuItems,
+      banner: 'Retro Pixel',
+      kind: 'start',
     };
   }
 
-  onDestroy(() => { ip.destroy(); });
+  onDestroy(() => {
+    if (shellRecentProjectsRefreshTimer) {
+      clearTimeout(shellRecentProjectsRefreshTimer);
+    }
+    ip.destroy();
+  });
 </script>
 
 <svelte:window onkeydown={handleKeydown} />
@@ -613,6 +735,7 @@
   {selectedIcon}
   onIconClick={handleIconClick}
   onIconDblClick={handleIconDblClick}
+  onIconIntent={warmWindow}
   onDesktopClick={handleDesktopClick}
   onImageDropped={handleDesktopDrop}
 >
@@ -628,9 +751,11 @@
       bind:width={wm.wins.settings.w}
       bind:height={wm.wins.settings.h}
       zIndex={wm.wins.settings.z}
+      isFocused={wm.focusedWindow === 'settings'}
       mobileSlot={getMobileSlot('settings')}
       menuItems={[i18n.t('menu_file'), i18n.t('menu_edit'), i18n.t('menu_view'), i18n.t('menu_help')]}
       onClose={() => wm.close('settings')}
+      onMinimize={() => wm.minimize('settings')}
       onFocus={() => wm.focusWindow('settings')}
       onLayoutChange={wm.persistLayout}
       swipeEnabled={isMobile && mobileVisibleIds.length > 1}
@@ -638,37 +763,42 @@
       onSwipeRight={() => focusAdjacentMobileWindow('prev')}
     >
       <div class="settings-body">
-        <div class="settings-toolbar">
-          <span class="settings-toolbar-label">{i18n.t('pixel_lab_utilities')}</span>
+        <div class="settings-toolbar w98-toolbar">
+          <span class="settings-toolbar-label w98-toolbar-label">{i18n.t('pixel_lab_utilities')}</span>
           <button
-            class="load-new-btn"
+            class="load-new-btn w98-button w98-button--thin"
             onclick={handleLoadNewImage}
           >
-            <span aria-hidden="true">📂</span> {i18n.t('load_new_image')}
+            <span class="w98-emoji" aria-hidden="true">📂</span>
+            {i18n.t('load_new_image')}
           </button>
           <button
-            class="load-new-btn"
-            onclick={(e) => { e.stopPropagation(); wm.openWindow('preview'); }}
+            class="load-new-btn w98-button w98-button--thin"
+            onclick={(e) => { e.stopPropagation(); openShellWindow('preview'); }}
           >
-            <span aria-hidden="true">🖼️</span> {i18n.t('win_preview')}
+            <span class="w98-emoji" aria-hidden="true">🖼️</span>
+            {i18n.t('win_preview')}
           </button>
           <button
-            class="load-new-btn"
-            onclick={(e) => { e.stopPropagation(); wm.openWindow('gallery'); }}
+            class="load-new-btn w98-button w98-button--thin"
+            onclick={(e) => { e.stopPropagation(); openShellWindow('gallery'); }}
           >
-            <span aria-hidden="true">🎨</span> {i18n.t('win_gallery')}
+            <span class="w98-emoji" aria-hidden="true">🎨</span>
+            {i18n.t('win_gallery')}
           </button>
           <button
-            class="load-new-btn"
-            onclick={(e) => { e.stopPropagation(); wm.openWindow('batch'); }}
+            class="load-new-btn w98-button w98-button--thin"
+            onclick={(e) => { e.stopPropagation(); openShellWindow('batch'); }}
           >
-            <span aria-hidden="true">📦</span> {i18n.t('win_batch')}
+            <span class="w98-emoji" aria-hidden="true">📦</span>
+            {i18n.t('win_batch')}
           </button>
           <button
-            class="load-new-btn"
-            onclick={(e) => { e.stopPropagation(); wm.openWindow('history'); }}
+            class="load-new-btn w98-button w98-button--thin"
+            onclick={(e) => { e.stopPropagation(); openShellWindow('history'); }}
           >
-            <span aria-hidden="true">⏱️</span> {i18n.t('win_history')}
+            <span class="w98-emoji" aria-hidden="true">⏱️</span>
+            {i18n.t('win_history')}
           </button>
         </div>
         <ControlPanel
@@ -686,7 +816,7 @@
           onShare={handleShare}
           onExportSvg={handleExportSvg}
           onSendToPosterMaker={handleSendToPosterMaker}
-          onOpenGallery={() => { queueMicrotask(() => wm.openWindow('gallery')); }}
+          onOpenGallery={() => { queueMicrotask(() => openShellWindow('gallery')); }}
           onFormatChange={handleFormatChange}
           onQualityChange={handleQualityChange}
           onApplyNow={() => ip.applyNow()}
@@ -699,7 +829,7 @@
   <!-- ═══ Preview Window ═══ -->
   {#if wm.wins.preview.mode !== 'closed'}
     <Win98Window
-      title="{getWindowTitle('preview')} - {isProcessing ? i18n.t('rendering') : i18n.t('ready')}"
+      title={`${getWindowTitle('preview')} - ${isProcessing ? i18n.t('rendering') : i18n.t('ready')}`}
       icon="🖼️"
       bind:mode={wm.wins.preview.mode}
       bind:x={wm.wins.preview.x}
@@ -707,9 +837,11 @@
       bind:width={wm.wins.preview.w}
       bind:height={wm.wins.preview.h}
       zIndex={wm.wins.preview.z}
+      isFocused={wm.focusedWindow === 'preview'}
       mobileSlot={getMobileSlot('preview')}
       menuItems={[i18n.t('menu_file'), i18n.t('menu_view'), i18n.t('menu_image'), i18n.t('menu_help')]}
       onClose={() => wm.close('preview')}
+      onMinimize={() => wm.minimize('preview')}
       onFocus={() => wm.focusWindow('preview')}
       onLayoutChange={wm.persistLayout}
       swipeEnabled={isMobile && mobileVisibleIds.length > 1}
@@ -732,7 +864,7 @@
         postFilterCss={ip.postFilterCss}
         onImageSelected={handleImageSelected}
         onError={(msg) => showErrorDialog(msg)}
-        onOpenSettings={() => wm.openWindow('settings')}
+        onOpenSettings={() => openShellWindow('settings')}
         isGif={ip.isGif}
         gifCurrentFrame={ip.gifCurrentFrame}
         gifFrameCount={ip.gifFrameCount}
@@ -810,20 +942,33 @@
       bind:width={wm.wins.gallery.w}
       bind:height={wm.wins.gallery.h}
       zIndex={wm.wins.gallery.z}
+      isFocused={wm.focusedWindow === 'gallery'}
       mobileSlot={getMobileSlot('gallery')}
       menuItems={[i18n.t('menu_file'), i18n.t('menu_edit'), i18n.t('menu_view'), i18n.t('menu_help')]}
       onClose={() => wm.close('gallery')}
+      onMinimize={() => wm.minimize('gallery')}
       onFocus={() => wm.focusWindow('gallery')}
       onLayoutChange={wm.persistLayout}
       swipeEnabled={isMobile && mobileVisibleIds.length > 1}
       onSwipeLeft={() => focusAdjacentMobileWindow('next')}
       onSwipeRight={() => focusAdjacentMobileWindow('prev')}
     >
-      <PaletteGallery
-        selectedPaletteId={processingSettings.palette}
-        onSelect={handleGallerySelect}
-        imageSrc={ip.originalImageSrc}
-      />
+      {#if GalleryWindow}
+        <GalleryWindow
+          selectedPaletteId={processingSettings.palette}
+          onSelect={handleGallerySelect}
+          imageSrc={ip.originalImageSrc}
+        />
+      {:else}
+        <div class="window-loading w98-status-panel" role="status" aria-live="polite">
+          <div class="window-loading-icon" aria-hidden="true">{getWindowLoadingIcon('gallery')}</div>
+          <div class="w98-section-title">{i18n.t('loading')}</div>
+          <div class="window-loading-title">{getWindowTitle('gallery')}</div>
+          {#if getWindowLoadingSummary('gallery')}
+            <div class="window-loading-summary w98-quiet-copy">{getWindowLoadingSummary('gallery')}</div>
+          {/if}
+        </div>
+      {/if}
     </Win98Window>
   {/if}
 
@@ -838,35 +983,48 @@
       bind:width={wm.wins.poster_maker.w}
       bind:height={wm.wins.poster_maker.h}
       zIndex={wm.wins.poster_maker.z}
+      isFocused={wm.focusedWindow === 'poster_maker'}
       mobileSlot={getMobileSlot('poster_maker')}
       menuItems={[i18n.t('menu_file'), i18n.t('menu_view'), i18n.t('menu_help')]}
       onClose={() => wm.close('poster_maker')}
+      onMinimize={() => wm.minimize('poster_maker')}
       onFocus={() => wm.focusWindow('poster_maker')}
       onLayoutChange={wm.persistLayout}
       swipeEnabled={isMobile && mobileVisibleIds.length > 1}
       onSwipeLeft={() => focusAdjacentMobileWindow('next')}
       onSwipeRight={() => focusAdjacentMobileWindow('prev')}
     >
-      <PosterMaker
-        onMessage={(msg) => enqueueToast(msg)}
-        onError={(msg) => showErrorDialog(msg)}
-        onSwitchToPixelLab={async () => {
-          const sourceProjectId = posterMakerStore.sourceContext?.sourceProjectId;
-          if (sourceProjectId) {
-            await handleOpenRecentProject({
-              projectId: sourceProjectId,
-              appId: 'pixel-lab',
-              name: posterMakerStore.sourceContext?.sourceLabel ?? 'Pixel Lab Transfer',
-              lastOpenedAt: new Date().toISOString(),
-            });
-            return;
-          }
+      {#if PosterMakerWindow}
+        <PosterMakerWindow
+          onMessage={(msg) => enqueueToast(msg)}
+          onError={(msg) => showErrorDialog(msg)}
+          onSwitchToPixelLab={async () => {
+            const sourceProjectId = posterMakerStore.sourceContext?.sourceProjectId;
+            if (sourceProjectId) {
+              await handleOpenRecentProject({
+                projectId: sourceProjectId,
+                appId: 'pixel-lab',
+                name: posterMakerStore.sourceContext?.sourceLabel ?? 'Pixel Lab Transfer',
+                lastOpenedAt: new Date().toISOString(),
+              });
+              return;
+            }
 
-          wm.openWindow('settings');
-          wm.openWindow('preview');
-          enqueueToast(i18n.t('poster_switch_to_pixel_lab_done'));
-        }}
-      />
+            openShellWindow('settings');
+            openShellWindow('preview');
+            enqueueToast(i18n.t('poster_switch_to_pixel_lab_done'));
+          }}
+        />
+      {:else}
+        <div class="window-loading w98-status-panel" role="status" aria-live="polite">
+          <div class="window-loading-icon" aria-hidden="true">{getWindowLoadingIcon('poster_maker')}</div>
+          <div class="w98-section-title">{i18n.t('loading')}</div>
+          <div class="window-loading-title">{getWindowTitle('poster_maker')}</div>
+          {#if getWindowLoadingSummary('poster_maker')}
+            <div class="window-loading-summary w98-quiet-copy">{getWindowLoadingSummary('poster_maker')}</div>
+          {/if}
+        </div>
+      {/if}
     </Win98Window>
   {/if}
 
@@ -881,21 +1039,34 @@
       bind:width={wm.wins.retrocam.w}
       bind:height={wm.wins.retrocam.h}
       zIndex={wm.wins.retrocam.z}
+      isFocused={wm.focusedWindow === 'retrocam'}
       mobileSlot={getMobileSlot('retrocam')}
       menuItems={[i18n.t('menu_file'), i18n.t('menu_view'), i18n.t('menu_help')]}
       onClose={() => wm.close('retrocam')}
+      onMinimize={() => wm.minimize('retrocam')}
       onFocus={() => wm.focusWindow('retrocam')}
       onLayoutChange={wm.persistLayout}
       swipeEnabled={isMobile && mobileVisibleIds.length > 1}
       onSwipeLeft={() => focusAdjacentMobileWindow('next')}
       onSwipeRight={() => focusAdjacentMobileWindow('prev')}
     >
-      <RetroCam
-        onMessage={(msg) => enqueueToast(msg)}
-        onError={(msg) => showErrorDialog(msg)}
-        onOpenInPixelLab={handleOpenRetroCamSnapshotInPixelLab}
-        onUseInPosterMaker={handleUseRetroCamSnapshotInPosterMaker}
-      />
+      {#if RetroCamWindow}
+        <RetroCamWindow
+          onMessage={(msg) => enqueueToast(msg)}
+          onError={(msg) => showErrorDialog(msg)}
+          onOpenInPixelLab={handleOpenRetroCamSnapshotInPixelLab}
+          onUseInPosterMaker={handleUseRetroCamSnapshotInPosterMaker}
+        />
+      {:else}
+        <div class="window-loading w98-status-panel" role="status" aria-live="polite">
+          <div class="window-loading-icon" aria-hidden="true">{getWindowLoadingIcon('retrocam')}</div>
+          <div class="w98-section-title">{i18n.t('loading')}</div>
+          <div class="window-loading-title">{getWindowTitle('retrocam')}</div>
+          {#if getWindowLoadingSummary('retrocam')}
+            <div class="window-loading-summary w98-quiet-copy">{getWindowLoadingSummary('retrocam')}</div>
+          {/if}
+        </div>
+      {/if}
     </Win98Window>
   {/if}
 
@@ -910,25 +1081,38 @@
       bind:width={wm.wins.batch.w}
       bind:height={wm.wins.batch.h}
       zIndex={wm.wins.batch.z}
+      isFocused={wm.focusedWindow === 'batch'}
       mobileSlot={getMobileSlot('batch')}
       onClose={() => wm.close('batch')}
+      onMinimize={() => wm.minimize('batch')}
       onFocus={() => wm.focusWindow('batch')}
       onLayoutChange={wm.persistLayout}
       swipeEnabled={isMobile && mobileVisibleIds.length > 1}
       onSwipeLeft={() => focusAdjacentMobileWindow('next')}
       onSwipeRight={() => focusAdjacentMobileWindow('prev')}
     >
-      <BatchProcessor
-        settings={processingSettings}
-        saveFormat={saveFormat}
-        saveQuality={saveQuality}
-        onError={(msg) => showErrorDialog(msg)}
-        onMessage={(msg) => enqueueToast(msg)}
-        onItemClick={(file) => {
-          handleImageSelected(file);
-          wm.openWindow('preview');
-        }}
-      />
+      {#if BatchWindow}
+        <BatchWindow
+          settings={processingSettings}
+          saveFormat={saveFormat}
+          saveQuality={saveQuality}
+          onError={(msg) => showErrorDialog(msg)}
+          onMessage={(msg) => enqueueToast(msg)}
+          onItemClick={(file) => {
+            handleImageSelected(file);
+            wm.openWindow('preview');
+          }}
+        />
+      {:else}
+        <div class="window-loading w98-status-panel" role="status" aria-live="polite">
+          <div class="window-loading-icon" aria-hidden="true">{getWindowLoadingIcon('batch')}</div>
+          <div class="w98-section-title">{i18n.t('loading')}</div>
+          <div class="window-loading-title">{getWindowTitle('batch')}</div>
+          {#if getWindowLoadingSummary('batch')}
+            <div class="window-loading-summary w98-quiet-copy">{getWindowLoadingSummary('batch')}</div>
+          {/if}
+        </div>
+      {/if}
     </Win98Window>
   {/if}
 
@@ -943,22 +1127,35 @@
       bind:width={wm.wins.history.w}
       bind:height={wm.wins.history.h}
       zIndex={wm.wins.history.z}
+      isFocused={wm.focusedWindow === 'history'}
       mobileSlot={getMobileSlot('history')}
       onClose={() => wm.close('history')}
+      onMinimize={() => wm.minimize('history')}
       onFocus={() => wm.focusWindow('history')}
       onLayoutChange={wm.persistLayout}
       swipeEnabled={isMobile && mobileVisibleIds.length > 1}
       onSwipeLeft={() => focusAdjacentMobileWindow('next')}
       onSwipeRight={() => focusAdjacentMobileWindow('prev')}
     >
-      <HistoryPanel
-        history={ip.settingsHistory}
-        redoHistory={ip.redoHistory}
-        currentSettings={processingSettings}
-        onJumpToHistory={(index, isRedo) => ip.jumpToHistory(index, isRedo)}
-        onUndo={ip.undo}
-        onRedo={ip.redo}
-      />
+      {#if HistoryWindow}
+        <HistoryWindow
+          history={ip.settingsHistory}
+          redoHistory={ip.redoHistory}
+          currentSettings={processingSettings}
+          onJumpToHistory={(index, isRedo) => ip.jumpToHistory(index, isRedo)}
+          onUndo={ip.undo}
+          onRedo={ip.redo}
+        />
+      {:else}
+        <div class="window-loading w98-status-panel" role="status" aria-live="polite">
+          <div class="window-loading-icon" aria-hidden="true">{getWindowLoadingIcon('history')}</div>
+          <div class="w98-section-title">{i18n.t('loading')}</div>
+          <div class="window-loading-title">{getWindowTitle('history')}</div>
+          {#if getWindowLoadingSummary('history')}
+            <div class="window-loading-summary w98-quiet-copy">{getWindowLoadingSummary('history')}</div>
+          {/if}
+        </div>
+      {/if}
     </Win98Window>
   {/if}
 </DesktopWorkspace>
@@ -966,6 +1163,7 @@
 <!-- ═══ Taskbar ═══ -->
 <Taskbar
   windows={taskbarWindows}
+  startMenuOpen={ctxMenu?.kind === 'start'}
   onWindowClick={wm.handleTaskbarClick}
   onWindowClose={wm.closeAndReset}
   onShowShortcuts={() => { showShortcuts = !showShortcuts; }}
@@ -990,6 +1188,7 @@
     items={ctxMenu.items}
     x={ctxMenu.x}
     y={ctxMenu.y}
+    banner={ctxMenu.banner}
     onClose={() => { ctxMenu = null; }}
   />
 {/if}
@@ -1015,21 +1214,49 @@
 {#if isMobile && ip.originalImageSrc}
   <div class="mobile-undo-redo">
     <button
-      class="mobile-undo-btn"
+      class="mobile-undo-btn w98-inline-button w98-button--thin"
       onclick={() => ip.undo()}
       disabled={ip.settingsHistory.length === 0}
       aria-label={i18n.t('undo')}
-    >↩</button>
+    ><span class="w98-structural-glyph" aria-hidden="true">↺</span></button>
     <button
-      class="mobile-redo-btn"
+      class="mobile-redo-btn w98-inline-button w98-button--thin"
       onclick={() => ip.redo()}
       disabled={ip.redoHistory.length === 0}
       aria-label={i18n.t('redo')}
-    >↪</button>
+    ><span class="w98-structural-glyph" aria-hidden="true">↻</span></button>
   </div>
 {/if}
 
 <style>
+  .window-loading {
+    height: 100%;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: var(--w98-space-8);
+    padding: var(--w98-space-16);
+  }
+
+  .window-loading-icon {
+    width: 40px;
+    height: 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    box-shadow: var(--w98-inset-thin);
+    background: var(--w98-surface);
+  }
+
+  .window-loading-title {
+    max-width: 20ch;
+  }
+
+  .window-loading-summary {
+    max-width: 28ch;
+  }
+
   /* ── Mobile Undo/Redo Floating ── */
   .mobile-undo-redo {
     position: fixed;
@@ -1047,17 +1274,10 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: var(--w98-surface);
-    box-shadow: var(--w98-outset-thin);
-    border: none;
-    cursor: pointer;
   }
   .mobile-undo-redo button:disabled {
-    opacity: 0.4;
+    color: #6d6d6d;
     cursor: default;
-  }
-  .mobile-undo-redo button:active:not(:disabled) {
-    box-shadow: var(--w98-inset-thin);
   }
 
 
@@ -1069,45 +1289,21 @@
     min-height: 0;
   }
   .settings-toolbar {
-    display: flex;
-    align-items: center;
-    gap: 2px;
-    padding: 2px 4px;
-    background: var(--w98-surface);
+    gap: var(--w98-space-4);
+    padding: var(--w98-space-4);
     border-bottom: 1px solid var(--w98-shadow-808);
     flex-shrink: 0;
+    flex-wrap: wrap;
   }
   .settings-toolbar-label {
-    display: inline-flex;
-    align-items: center;
-    align-self: stretch;
-    padding: 0 6px;
-    margin-right: 2px;
-    background: var(--w98-surface-active);
-    color: var(--w98-text-secondary);
-    border-right: 1px solid var(--w98-shadow-808);
-    font-size: var(--w98-font-size-sm);
-    font-weight: bold;
-    white-space: nowrap;
+    margin-right: var(--w98-space-2);
   }
   .settings-toolbar :global(.load-new-btn) {
     display: flex;
     align-items: center;
-    gap: 3px;
-    padding: 2px 6px;
+    gap: var(--w98-space-4);
     font-size: var(--w98-font-size-base);
-    font-family: inherit;
-    background: var(--w98-surface);
-    border: none;
-    box-shadow: none;
-    cursor: pointer;
     white-space: nowrap;
-  }
-  .settings-toolbar :global(.load-new-btn:hover) {
-    box-shadow: var(--w98-outset-thin);
-  }
-  .settings-toolbar :global(.load-new-btn:active) {
-    box-shadow: var(--w98-inset-thin);
   }
   @media (max-width: 700px) {
     .settings-toolbar-label {

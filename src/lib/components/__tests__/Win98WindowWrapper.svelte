@@ -14,6 +14,7 @@
     swipeEnabled = false,
     menuItems = [] as string[],
     onClose,
+    onMinimize,
     onFocus,
     onSwipeLeft,
     onSwipeRight,
@@ -30,6 +31,7 @@
     swipeEnabled?: boolean;
     menuItems?: string[];
     onClose?: () => void;
+    onMinimize?: () => void;
     onFocus?: () => void;
     onSwipeLeft?: () => void;
     onSwipeRight?: () => void;
@@ -49,6 +51,7 @@
   {swipeEnabled}
   {menuItems}
   {onClose}
+  {onMinimize}
   {onFocus}
   {onSwipeLeft}
   {onSwipeRight}

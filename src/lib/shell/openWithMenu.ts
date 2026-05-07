@@ -15,12 +15,19 @@ export function buildOpenWithSection(
 
   return [
     { separator: true },
-    { label: headingLabel, icon: '🗂️', action: () => {}, disabled: true },
-    ...destinations.map((destination) => ({
-      label: destination.icon ? `${destination.icon} ${destination.label}` : destination.label,
-      icon: '',
-      action: destination.action,
-      disabled: destination.disabled,
-    })),
+    { label: headingLabel, icon: '📂', heading: true },
+    ...destinations.map((destination) => (
+      destination.disabled
+        ? {
+            label: destination.label,
+            icon: destination.icon,
+            disabled: true as const,
+          }
+        : {
+            label: destination.label,
+            icon: destination.icon,
+            action: destination.action,
+          }
+    )),
   ];
 }

@@ -6,6 +6,13 @@ import KeyboardShortcuts from '../feedback/KeyboardShortcuts.svelte';
 
 afterEach(() => cleanup());
 
+function mockNavigatorPlatform(platform: string) {
+  Object.defineProperty(window.navigator, 'platform', {
+    configurable: true,
+    value: platform,
+  });
+}
+
 describe('KeyboardShortcuts', () => {
   it('renders with role=dialog', () => {
     const onClose = vi.fn();
@@ -72,5 +79,20 @@ describe('KeyboardShortcuts', () => {
     const { container } = render(KeyboardShortcuts, { props: { onClose } });
     const closeBtn = container.querySelector('.ks-close');
     expect(closeBtn?.getAttribute('aria-label')).toBeTruthy();
+  });
+
+  it('focuses the close button when opened', () => {
+    const onClose = vi.fn();
+    const { container } = render(KeyboardShortcuts, { props: { onClose } });
+    const closeBtn = container.querySelector('.ks-close');
+    expect(document.activeElement).toBe(closeBtn);
+  });
+
+  it('shows Cmd shortcuts on Apple platforms', () => {
+    mockNavigatorPlatform('MacIntel');
+
+    const onClose = vi.fn();
+    const { container } = render(KeyboardShortcuts, { props: { onClose } });
+    expect(container.textContent).toContain('Cmd');
   });
 });
