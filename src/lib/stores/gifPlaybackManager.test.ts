@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { GifManagerDeps } from './gifPlaybackManager.svelte';
 
@@ -28,12 +29,59 @@ vi.mock('$lib/stores/customPaletteStore.svelte', () => ({
   },
 }));
 
+const mockPoolSubmit = vi.hoisted(() => vi.fn(async (message: {
+  width: number;
+  height: number;
+  renderMode?: string;
+  effectLayers?: { type: string; enabled: boolean }[];
+}) => {
+  const hasHqx = message.renderMode === 'hqx'
+    || message.effectLayers?.some((layer) => layer.type === 'hqx' && layer.enabled);
+  const width = hasHqx ? message.width * 2 : message.width;
+  const height = hasHqx ? message.height * 2 : message.height;
+  return new ImageData(new Uint8ClampedArray(width * height * 4), width, height);
+}));
+
+const mockPoolDestroy = vi.hoisted(() => vi.fn());
+
+vi.mock('$lib/utils/workerPool', () => ({
+  ImageWorkerPool: vi.fn().mockImplementation(function ImageWorkerPoolMock() {
+    return {
+    submit: mockPoolSubmit,
+    destroy: mockPoolDestroy,
+    };
+  }),
+}));
+
 // Mock URL
 const revokedUrls: string[] = [];
-vi.stubGlobal('URL', {
-  createObjectURL: vi.fn(() => 'blob:object-url'),
-  revokeObjectURL: vi.fn((url: string) => revokedUrls.push(url)),
+const NativeURL = globalThis.URL;
+class MockURL extends NativeURL {}
+Object.defineProperty(MockURL, 'createObjectURL', {
+  configurable: true,
+  value: vi.fn(() => 'blob:object-url'),
 });
+Object.defineProperty(MockURL, 'revokeObjectURL', {
+  configurable: true,
+  value: vi.fn((url: string) => revokedUrls.push(url)),
+});
+vi.stubGlobal('URL', MockURL);
+
+const gifEncodeMessages: unknown[] = [];
+class MockGifEncodeWorker {
+  onmessage: ((e: MessageEvent) => void) | null = null;
+  onerror: ((e: ErrorEvent) => void) | null = null;
+  terminate = vi.fn();
+  postMessage = vi.fn((message: unknown) => {
+    gifEncodeMessages.push(message);
+    queueMicrotask(() => {
+      this.onmessage?.({
+        data: { gifData: new Uint8Array([71, 73, 70]).buffer },
+      } as MessageEvent);
+    });
+  });
+}
+vi.stubGlobal('Worker', MockGifEncodeWorker);
 
 import { createGifPlaybackManager } from './gifPlaybackManager.svelte';
 import { decodeGif } from '$lib/utils/gifProcessor';
@@ -86,7 +134,12 @@ async function loadMultiFrameGif(manager: ReturnType<typeof createGifPlaybackMan
 describe('gifPlaybackManager', () => {
   beforeEach(() => {
     revokedUrls.length = 0;
+    gifEncodeMessages.length = 0;
     vi.clearAllMocks();
+    Object.defineProperty(HTMLAnchorElement.prototype, 'click', {
+      configurable: true,
+      value: vi.fn(),
+    });
   });
 
   describe('initial state', () => {
@@ -173,6 +226,72 @@ describe('gifPlaybackManager', () => {
       const manager = createGifPlaybackManager(makeDeps());
       const result = await manager.exportGif();
       expect(result).toBeNull();
+    });
+
+    it('exports HQx GIF frames through the same effect-layer resize and worker payload boundary', async () => {
+      const createImageBitmapMock = vi.fn(async (_source: ImageData, options?: ImageBitmapOptions) => ({
+        width: options?.resizeWidth ?? 1,
+        height: options?.resizeHeight ?? 1,
+        close: vi.fn(),
+      }));
+      vi.stubGlobal('createImageBitmap', createImageBitmapMock);
+
+      vi.mocked(decodeGif).mockReturnValue({
+        width: 1501,
+        height: 1,
+        totalDuration: 200,
+        frames: Array.from({ length: 2 }, (_, idx) => ({
+          data: new Uint8ClampedArray(1501 * 4).fill(idx + 1),
+          delay: 100,
+          width: 1501,
+          height: 1,
+        })),
+      });
+
+      const hqxLayer = { id: 'hqx-1', type: 'hqx' as const, enabled: true };
+      const deps = makeDeps({
+        getSettings: vi.fn(() => ({
+          pixelSize: 2,
+          palette: 'win256',
+          crtEffect: 'none' as const,
+          glitchFilters: [],
+          renderMode: 'pixel_perfect' as const,
+          glitchSeed: 0.25,
+          ditherType: 'ordered' as const,
+          useOklab: true,
+          effectLayers: [hqxLayer],
+        })),
+      });
+      const manager = createGifPlaybackManager(deps);
+      const file = new File([new Uint8Array([71, 73, 70])], 'large.gif', { type: 'image/gif' });
+
+      await manager.loadGifFile(file, vi.fn());
+      const result = await manager.exportGif();
+
+      expect(result).toBe('gif_exported');
+      expect(createImageBitmapMock).toHaveBeenCalledWith(
+        expect.any(ImageData),
+        expect.objectContaining({ resizeWidth: 1024, resizeHeight: 1 }),
+      );
+      expect(mockPoolSubmit).toHaveBeenCalledTimes(2);
+
+      const [message] = mockPoolSubmit.mock.calls[0];
+      expect(message).toEqual(expect.objectContaining({
+        width: 1024,
+        height: 1,
+        pixelSize: 2,
+        palette: 'win256',
+        ditherType: 'ordered',
+        useOklab: true,
+        glitchSeed: 0.25,
+        renderMode: 'pixel_perfect',
+        effectLayers: [hqxLayer],
+      }));
+      expect(gifEncodeMessages[0]).toEqual(expect.objectContaining({
+        width: 2048,
+        height: 2,
+      }));
+      expect(mockPoolDestroy).toHaveBeenCalledTimes(1);
     });
   });
 

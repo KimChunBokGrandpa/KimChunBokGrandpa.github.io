@@ -13,6 +13,12 @@ vi.mock('$lib/i18n/index.svelte', () => ({
       shortcut_hint_save: 'Save (Ctrl+S)',
       save_no_image: 'Load an image in Preview to save',
       save_as: 'Save As...',
+      export_btn: 'Export',
+      format: 'Format',
+      quality: 'Quality',
+      share_image: 'Share',
+      export_svg: 'Export SVG',
+      send_to_poster_maker: 'Send to Poster Maker',
     }[key] ?? key)),
   },
 }));
@@ -86,6 +92,21 @@ describe('ControlPanel', () => {
     expect(tabs.length).toBeGreaterThanOrEqual(3);
   });
 
+  it('shows the effects badge from normalized legacy effect fields', () => {
+    const props = {
+      ...defaultProps(),
+      settings: makeSettings({
+        glitchFilters: [{ type: 'noise', intensity: 2 }],
+        renderMode: 'hqx',
+        effectLayers: [],
+      }),
+    };
+    const { container } = render(ControlPanel, { props });
+
+    const effectsBadge = container.querySelector('.cp-tab:nth-child(2) .tab-badge');
+    expect(effectsBadge?.textContent).toBe('2');
+  });
+
   it('lazy-loads preset manager when presets tab opens', async () => {
     const { getByRole, findByTestId } = render(ControlPanel, { props: defaultProps() });
 
@@ -125,6 +146,31 @@ describe('ControlPanel', () => {
     const { getByTestId } = render(ControlPanel, { props: defaultProps() });
     expect(getByTestId('save-image-button')).toBeTruthy();
     expect(getByTestId('share-image-button')).toBeTruthy();
+  });
+
+  it('groups export settings, primary save, and secondary destinations', () => {
+    const { getByTestId } = render(ControlPanel, {
+      props: {
+        ...defaultProps(),
+        saveFormat: 'jpeg',
+        saveQuality: 0.85,
+        hasProcessedImage: true,
+        onExportSvg: vi.fn(),
+        onSendToPosterMaker: vi.fn(),
+      },
+    });
+
+    const primaryRow = getByTestId('export-primary-row');
+    const saveButton = getByTestId('save-image-button');
+    const secondaryActions = getByTestId('export-secondary-actions');
+
+    expect(getByTestId('export-action-bar')).toBeTruthy();
+    expect(primaryRow.contains(saveButton)).toBe(true);
+    expect(getByTestId('export-format-row').textContent).toContain('Format');
+    expect(getByTestId('export-summary-chip').textContent).toContain('JPEG 85%');
+    expect(secondaryActions.contains(getByTestId('share-image-button'))).toBe(true);
+    expect(secondaryActions.textContent).toContain('SVG');
+    expect(secondaryActions.contains(getByTestId('send-to-poster-maker-button'))).toBe(true);
   });
 
   it('renders send to Poster Maker button when provided', () => {

@@ -9,7 +9,6 @@ import { isTauriRuntime } from "../utils/env";
 import {
   applyEffectLayers,
   countVisibleColors,
-  hasActiveHqxLayer,
   normalizeEffectLayers,
 } from "../utils/effectLayers";
 import { invoke } from "@tauri-apps/api/core";
@@ -228,7 +227,13 @@ class ImageProcessorService {
     const requestId = crypto.randomUUID();
     this.currentRequestId = requestId;
     const normalizedPalette = normalizePaletteId(settings.palette);
-    const usesHqxProcessing = hasActiveHqxLayer(settings);
+    const normalizedEffectLayers = normalizeEffectLayers({
+      effectLayers: settings.effectLayers,
+      glitchFilters: settings.glitchFilters,
+      renderMode: settings.renderMode,
+    });
+    const usesEffectProcessing = normalizedEffectLayers.length > 0;
+    const usesHqxProcessing = normalizedEffectLayers.some((layer) => layer.type === 'hqx');
 
     // Cancel previous pending requests — resolve as null (stale)
     if (this.pendingResolvers.size > 0) {
@@ -242,8 +247,7 @@ class ImageProcessorService {
     if (
       settings.pixelSize <= 1 &&
       normalizedPalette === "original" &&
-      settings.glitchFilters.length === 0 &&
-      !usesHqxProcessing &&
+      !usesEffectProcessing &&
       (!settings.ditherType || settings.ditherType === 'none')
     ) {
       return this.processWithoutWorker(imageSrc, requestId);
@@ -318,13 +322,8 @@ class ImageProcessorService {
           );
           onProgress?.(0.4);
 
-          const layers = normalizeEffectLayers({
-            effectLayers: settings.effectLayers,
-            glitchFilters: settings.glitchFilters,
-            renderMode: settings.renderMode,
-          });
           processedData = applyEffectLayers(processedData, {
-            layers,
+            layers: normalizedEffectLayers,
             glitchSeed: settings.glitchSeed,
             onProgress: (layerProgress) => {
               onProgress?.(0.4 + 0.5 * layerProgress);

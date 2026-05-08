@@ -1,5 +1,13 @@
-import type { CrtMode, DitherType, GlitchFilter, RenderMode } from '../types';
+import type {
+  CrtMode,
+  DitherType,
+  EffectLayer,
+  GlitchFilter,
+  ProcessingSettings,
+  RenderMode,
+} from '../types';
 import type { TranslationKey } from '../i18n/en';
+import { normalizeEffectLayers } from './effectLayers';
 
 export interface Preset {
   id: string;
@@ -25,6 +33,73 @@ const presetFamilyLabelKeys: Record<PresetFamily, TranslationKey> = {
 
 export function getPresetFamilyLabelKey(family: PresetFamily): TranslationKey {
   return presetFamilyLabelKeys[family];
+}
+
+export function createPresetEffectLayers(preset: Preset): EffectLayer[] {
+  return [
+    ...preset.glitchFilters
+      .filter((filter) => filter.type !== 'none')
+      .map((filter, index) => ({
+        id: `${preset.id}-glitch-${index}`,
+        type: 'glitch' as const,
+        enabled: true,
+        glitchType: filter.type,
+        intensity: filter.intensity,
+      })),
+    ...(preset.renderMode === 'hqx'
+      ? [{
+          id: `${preset.id}-hqx`,
+          type: 'hqx' as const,
+          enabled: true,
+        }]
+      : []),
+  ];
+}
+
+export function createPresetProcessingSettings(
+  preset: Preset,
+  options: { glitchSeed?: number | null } = {},
+): ProcessingSettings {
+  return {
+    pixelSize: preset.pixelSize,
+    palette: preset.palette,
+    crtEffect: preset.crtEffect,
+    glitchFilters: preset.glitchFilters.map((filter) => ({ ...filter })),
+    renderMode: preset.renderMode === 'hqx' ? 'pixel_perfect' : preset.renderMode,
+    glitchSeed: options.glitchSeed ?? null,
+    ditherType: preset.ditherType,
+    effectLayers: createPresetEffectLayers(preset),
+  };
+}
+
+function layersMatch(expected: EffectLayer[], actual: EffectLayer[]): boolean {
+  if (expected.length !== actual.length) return false;
+  return expected.every((expectedLayer, index) => {
+    const actualLayer = actual[index];
+    if (!actualLayer || expectedLayer.type !== actualLayer.type) return false;
+    if (expectedLayer.type === 'hqx') return true;
+    return (
+      expectedLayer.glitchType === actualLayer.glitchType
+      && (expectedLayer.intensity ?? 1) === (actualLayer.intensity ?? 1)
+    );
+  });
+}
+
+export function presetMatchesSettings(preset: Preset, settings: ProcessingSettings): boolean {
+  if (settings.pixelSize !== preset.pixelSize) return false;
+  if (settings.palette !== preset.palette) return false;
+  if (settings.crtEffect !== preset.crtEffect) return false;
+  if ((settings.ditherType || 'none') !== preset.ditherType) return false;
+
+  const expectedLayers = createPresetEffectLayers(preset);
+  const actualLayers = normalizeEffectLayers(settings);
+  if (!layersMatch(expectedLayers, actualLayers)) return false;
+
+  if (preset.renderMode === 'hqx') {
+    return settings.renderMode === 'pixel_perfect' || settings.renderMode === 'hqx';
+  }
+
+  return settings.renderMode === preset.renderMode;
 }
 
 export const presets: Preset[] = [

@@ -54,6 +54,7 @@ export const ja: Record<TranslationKey, string> = {
   history_pixel: '\u30d4\u30af\u30bb\u30eb: {0}x',
   history_crt: '+CRT',
   history_glitch: '+{0} \u30b0\u30ea\u30c3\u30c1',
+  history_effects: '+{0} \u30a8\u30d5\u30a7\u30af\u30c8',
 
   level: '\u30ec\u30d9\u30eb',
   reroll_seed: '\u30b7\u30fc\u30c9\u518d\u751f\u6210',
@@ -94,6 +95,7 @@ export const ja: Record<TranslationKey, string> = {
 
   image_preview: '\u753b\u50cf\u30d7\u30ec\u30d3\u30e5\u30fc',
   preview_output_summary: '\u51fa\u529b\u30b5\u30de\u30ea\u30fc',
+  preview_compare_summary: '\u6bd4\u8f03\u30e2\u30fc\u30c9',
   processed_preview_alt: '\u30d4\u30af\u30bb\u30eb\u30a2\u30fc\u30c8\u30d7\u30ec\u30d3\u30e5\u30fc - {0}',
   rendering: '\u30ec\u30f3\u30c0\u30ea\u30f3\u30b0\u4e2d...',
   ready: '\u6e96\u5099\u5b8c\u4e86',

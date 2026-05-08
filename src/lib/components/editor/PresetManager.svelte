@@ -1,6 +1,12 @@
 <script lang="ts">
   import { getPaletteName } from '$lib/utils/palettes';
-  import { getPresetFamilyLabelKey, presets, type Preset } from '$lib/utils/presets';
+  import {
+    createPresetProcessingSettings,
+    getPresetFamilyLabelKey,
+    presetMatchesSettings,
+    presets,
+    type Preset,
+  } from '$lib/utils/presets';
   import type { EffectLayer, ProcessingSettings } from '$lib/types';
   import { i18n } from '$lib/i18n/index.svelte';
   import { getCustomPresets, addCustomPreset, removeCustomPreset, type CustomPreset } from '$lib/stores/customPresetStore.svelte';
@@ -41,60 +47,12 @@
 
   // ─── Built-in Presets ───
   function applyPreset(preset: Preset) {
-    // Build effectLayers from preset
-    const layers: EffectLayer[] = [
-      ...preset.glitchFilters
-        .filter(f => f.type !== 'none')
-        .map(f => ({
-          id: crypto.randomUUID(),
-          type: 'glitch' as const,
-          enabled: true,
-          glitchType: f.type,
-          intensity: f.intensity,
-        })),
-      ...(preset.renderMode === 'hqx' ? [{
-        id: crypto.randomUUID(),
-        type: 'hqx' as const,
-        enabled: true,
-      }] : []),
-    ];
-    settings = {
-      pixelSize: preset.pixelSize,
-      palette: preset.palette,
-      crtEffect: preset.crtEffect,
-      glitchFilters: preset.glitchFilters.map(f => ({ ...f })),
-      renderMode: preset.renderMode === 'hqx' ? 'pixel_perfect' : preset.renderMode,
-      glitchSeed: settings.glitchSeed,
-      ditherType: preset.ditherType,
-      effectLayers: layers,
-    };
+    settings = createPresetProcessingSettings(preset, { glitchSeed: settings.glitchSeed });
     onChange();
   }
 
   function matchesPreset(preset: Preset): boolean {
-    if (settings.pixelSize !== preset.pixelSize) return false;
-    if (settings.palette !== preset.palette) return false;
-    if (settings.crtEffect !== preset.crtEffect) return false;
-    if ((settings.ditherType || 'none') !== preset.ditherType) return false;
-
-    // Compare via effectLayers
-    const layers = settings.effectLayers || [];
-    const enabledGlitch = layers.filter(l => l.type === 'glitch' && l.enabled);
-    const hasHqx = layers.some(l => l.type === 'hqx' && l.enabled);
-
-    // Check renderMode: preset hqx should match hqx layer
-    if (preset.renderMode === 'hqx') {
-      if (!hasHqx) return false;
-    } else {
-      if (hasHqx) return false;
-      if (settings.renderMode !== preset.renderMode) return false;
-    }
-
-    // Check glitch filters match
-    if (enabledGlitch.length !== preset.glitchFilters.length) return false;
-    return preset.glitchFilters.every(pf =>
-      enabledGlitch.some(sl => sl.glitchType === pf.type && sl.intensity === pf.intensity)
-    );
+    return presetMatchesSettings(preset, settings);
   }
 
   // ─── Custom Presets ───
@@ -126,16 +84,7 @@
     presets.forEach((preset) => {
       void loadPreview(
         preset.id,
-        {
-          pixelSize: preset.pixelSize,
-          palette: preset.palette,
-          crtEffect: preset.crtEffect,
-          glitchFilters: preset.glitchFilters.map((filter) => ({ ...filter })),
-          renderMode: preset.renderMode,
-          glitchSeed: null,
-          ditherType: preset.ditherType,
-          effectLayers: [],
-        },
+        createPresetProcessingSettings(preset),
       );
     });
 

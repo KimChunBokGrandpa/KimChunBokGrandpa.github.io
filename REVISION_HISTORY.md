@@ -50,6 +50,11 @@
   - `src/lib/i18n/ja.ts`
   - Presets 탭 상단에 `Quick Tune` strip을 추가해 추천 적용 후 픽셀 크기, quick palette, dithering을 바로 조정할 수 있게 정리
   - quick tune 조작과 palette gallery 진입을 ControlPanel 회귀 테스트로 보호
+- **Export action hierarchy first pass**
+  - `src/lib/components/editor/ControlPanel.svelte`
+  - `src/lib/components/__tests__/ControlPanel.test.ts`
+  - sticky export bar를 `Export` summary, primary `Save As`, format/quality controls, secondary Share/SVG/Poster Maker actions로 정리
+  - desktop / 393px mobile Playwright render probe에서 export bar 표시와 모바일 primary action wrapping을 확인
 - **Preview output confidence summary connected**
   - `src/lib/components/editor/PreviewBottomBar.svelte`
   - `src/lib/components/editor/PreviewContent.svelte`
@@ -59,6 +64,44 @@
   - `src/lib/i18n/ko.ts`
   - `src/lib/i18n/ja.ts`
   - Preview 하단 action bar 위에 pixel size, palette, dithering, color count readout을 추가해 조정 결과 판단 근거를 바로 보이게 정리
+  - compare mode 활성화 시 output summary에 slider / side-by-side / onion skin 중 현재 compare variant를 함께 노출
+- **Sample image benchmark fixed**
+  - `sampleImages/`
+  - `docs/sample_image_benchmark.md`
+  - `docs/vnext/15_pm_developer_strategy_2026-05-07.md`
+  - `docs/vnext/16_processing_effect_boundary_inventory_2026-05-07.md`
+  - `docs/vnext/17_request_intake_analysis_2026-05-08.md`
+  - 추가된 샘플을 `retro`, `highQualityPixel`, `oldPaperType`, `doodleType` category 기준으로 정리
+  - `sampleImages/retro/` 5장을 레트로 픽셀화 핵심 reference set으로 고정
+  - category별 cross-style core 5를 Pixel Lab의 Classic Pixel / Retro Treatment 결과 품질 판단 기준으로 사용
+  - PM/developer 관점의 첫 질문, 시작 이슈, 전제, 최근 트렌드 기반 구조, 남은 작업 우선순위를 별도 vNext 문서로 고정
+  - `sampleImages/retro/`와 cross-style core 5의 expected family / preset / pass-fail manual review checklist를 추가
+  - 외부 `request.md` 분석 중 유효한 판단은 vNext intake 문서와 task에 흡수하고, 중복 source인 `request.md`는 삭제
+  - 현재 워크스페이스에 local `sampleImages/` 디렉토리가 없어 첫 결과 품질 스윕은 asset 복구 대기로 기록
+- **Effect-layer boundary first pass**
+  - `src/lib/utils/effectLayers.ts`
+  - `src/lib/services/imageProcessor.ts`
+  - `src/lib/components/feedback/HistoryPanel.svelte`
+  - `src/lib/components/editor/ControlPanel.svelte`
+  - `src/lib/components/editor/PresetManager.svelte`
+  - `src/lib/stores/gifPlaybackManager.svelte.ts`
+  - `src/lib/utils/presets.ts`
+  - `src/lib/i18n/en.ts`
+  - `src/lib/i18n/ko.ts`
+  - `src/lib/i18n/ja.ts`
+  - `src/lib/utils/effectLayers.test.ts`
+  - `src/lib/utils/presets.test.ts`
+  - `src/lib/services/imageProcessor.test.ts`
+  - `src/lib/stores/gifPlaybackManager.test.ts`
+  - `src/lib/components/__tests__/HistoryPanel.test.ts`
+  - `src/lib/components/__tests__/ControlPanel.test.ts`
+  - `effectLayers`가 있는 설정은 enabled layer를 권한 source로 쓰고, legacy `glitchFilters` / `renderMode: hqx`는 effectLayers가 없을 때만 fallback하도록 HQx detection을 정렬
+  - still-image processor가 no-worker fast path를 결정하기 전에 normalized effect layers를 계산하도록 수정
+  - active glitch가 `effectLayers`에만 있고 legacy `glitchFilters`가 비어 있는 imported/shared/custom preset 상태에서도 처리를 건너뛰지 않도록 회귀 테스트 추가
+  - HistoryPanel summary와 ControlPanel effects badge가 effect-layer-only 또는 legacy-only 상태를 덜 세지 않도록 `countActiveEffectLayers(...)` helper로 정렬
+  - built-in preset preview와 실제 preset application이 같은 `createPresetProcessingSettings(...)` helper를 쓰도록 정리하고, legacy HQx preset shape도 계속 matching되도록 보호
+  - GIF export worker payload에 `useOklab`을 전달하고, active HQx layer에서 1024 cap 후 worker output size가 GIF encoder size로 이어지는지 회귀 테스트로 보호
+  - Tauri branch에서 legacy `renderMode: hqx`가 Rust quantize 뒤 shared post-processing으로 확장되는지 회귀 테스트로 보호
 
 ### Verification
 
@@ -69,11 +112,27 @@
 - `npm run check`
   - `0 errors / 0 warnings`
 - `npm test -- src/lib/components/__tests__/ControlPanel.test.ts src/lib/i18n/index.svelte.test.ts`
-  - `14 tests / 2 files` green
+  - latest `16 tests / 2 files` green
 - `npm test -- src/lib/components/__tests__/PreviewBottomBar.test.ts src/lib/components/__tests__/PreviewContent.test.ts src/lib/i18n/index.svelte.test.ts`
-  - `11 tests / 3 files` green
+  - latest `12 tests / 3 files` green
 - `npm run lint`
   - green
+- `npm run build`
+  - green
+- `npm test -- src/lib/utils/effectLayers.test.ts src/lib/services/imageProcessor.test.ts`
+  - `23 tests / 2 files` green
+- `npm test -- src/lib/utils/effectLayers.test.ts src/lib/components/__tests__/HistoryPanel.test.ts src/lib/components/__tests__/ControlPanel.test.ts src/lib/i18n/index.svelte.test.ts`
+  - `33 tests / 4 files` green
+- `npm test -- src/lib/utils/presets.test.ts src/lib/utils/presetPreview.test.ts src/lib/components/__tests__/PresetManager.test.ts src/lib/components/__tests__/ControlPanel.test.ts`
+  - `32 tests / 4 files` green
+- `npm test -- src/lib/utils/effectLayers.test.ts src/lib/services/imageProcessor.test.ts src/lib/utils/presets.test.ts src/lib/utils/presetPreview.test.ts src/lib/components/__tests__/PresetManager.test.ts src/lib/components/__tests__/ControlPanel.test.ts src/lib/components/__tests__/HistoryPanel.test.ts src/lib/i18n/index.svelte.test.ts`
+  - `70 tests / 8 files` green
+- `npm test -- src/lib/stores/gifPlaybackManager.test.ts src/lib/utils/effectLayers.test.ts`
+  - `21 tests / 2 files` green
+- `npm test -- src/lib/services/imageProcessor.test.ts src/lib/stores/gifPlaybackManager.test.ts src/lib/utils/effectLayers.test.ts`
+  - `40 tests / 3 files` green
+- `npm test -- src/lib/utils/effectLayers.test.ts src/lib/services/imageProcessor.test.ts src/lib/stores/gifPlaybackManager.test.ts src/lib/utils/presets.test.ts src/lib/utils/presetPreview.test.ts src/lib/components/__tests__/PresetManager.test.ts src/lib/components/__tests__/ControlPanel.test.ts src/lib/components/__tests__/HistoryPanel.test.ts src/lib/i18n/index.svelte.test.ts`
+  - `86 tests / 9 files` green
 
 ---
 

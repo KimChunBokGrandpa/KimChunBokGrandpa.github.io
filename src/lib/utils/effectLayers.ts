@@ -1,7 +1,6 @@
 import type {
   EffectLayer,
   GlitchFilter,
-  ProcessingSettings,
   RenderMode,
 } from '$lib/types';
 import { applyGlitch } from '$lib/utils/glitchEngine';
@@ -25,11 +24,12 @@ interface ApplyEffectLayersOptions {
 const HQX_EFFECT_WEIGHT = 4;
 const DEFAULT_COLOR_SAMPLE_THRESHOLD = 500_000;
 
-export function hasActiveHqxLayer(
-  settings: Pick<ProcessingSettings, 'renderMode' | 'effectLayers'>,
-): boolean {
-  if (settings.renderMode === 'hqx') return true;
-  return settings.effectLayers?.some((layer) => layer.type === 'hqx' && layer.enabled) ?? false;
+export function hasActiveHqxLayer(settings: EffectLayerSource): boolean {
+  return normalizeEffectLayers(settings).some((layer) => layer.type === 'hqx');
+}
+
+export function countActiveEffectLayers(settings: EffectLayerSource): number {
+  return normalizeEffectLayers(settings).length;
 }
 
 export function normalizeEffectLayers(

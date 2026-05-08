@@ -4,6 +4,7 @@
    * to specific states.
    */
   import { getPaletteName } from '$lib/utils/palettes';
+  import { countActiveEffectLayers } from '$lib/utils/effectLayers';
   import { i18n } from '$lib/i18n/index.svelte';
   import { buildShortcutLabel } from '$lib/utils/platformShortcuts';
   import { tooltip } from '$lib/utils/tooltip';
@@ -45,7 +46,8 @@
     let desc = i18n.t('history_pixel').replace('{0}', String(s.pixelSize)) + ', ';
     desc += getPaletteName(s.palette);
     if (s.crtEffect !== 'none') desc += ' ' + i18n.t('history_crt');
-    if (s.glitchFilters.length > 0) desc += ' ' + i18n.t('history_glitch').replace('{0}', String(s.glitchFilters.length));
+    const effectCount = countActiveEffectLayers(s);
+    if (effectCount > 0) desc += ' ' + i18n.t('history_effects').replace('{0}', String(effectCount));
     return desc;
   }
 

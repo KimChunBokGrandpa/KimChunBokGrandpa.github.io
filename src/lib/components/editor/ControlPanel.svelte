@@ -1,7 +1,8 @@
 <script lang="ts">
   import { browser } from '$app/environment';
   import { getPaletteName } from '$lib/utils/palettes';
-  import { presets, type Preset } from '$lib/utils/presets';
+  import { presetMatchesSettings, presets, type Preset } from '$lib/utils/presets';
+  import { countActiveEffectLayers } from '$lib/utils/effectLayers';
   import type { DitherType, GlitchFilter, ProcessingSettings, PostProcessFilters } from '$lib/types';
   import EffectLayerStack from './EffectLayerStack.svelte';
   import { defaultPostFilters } from '$lib/types';
@@ -99,29 +100,7 @@
   }
 
   function matchesPreset(preset: Preset): boolean {
-    if (settings.pixelSize !== preset.pixelSize) return false;
-    if (settings.palette !== preset.palette) return false;
-    if (settings.crtEffect !== preset.crtEffect) return false;
-    if ((settings.ditherType || 'none') !== preset.ditherType) return false;
-
-    // Compare via effectLayers
-    const layers = settings.effectLayers || [];
-    const enabledGlitch = layers.filter(l => l.type === 'glitch' && l.enabled);
-    const hasHqx = layers.some(l => l.type === 'hqx' && l.enabled);
-
-    // Check renderMode: preset hqx should match hqx layer
-    if (preset.renderMode === 'hqx') {
-      if (!hasHqx) return false;
-    } else {
-      if (hasHqx) return false;
-      if (settings.renderMode !== preset.renderMode) return false;
-    }
-
-    // Check glitch filters match
-    if (enabledGlitch.length !== preset.glitchFilters.length) return false;
-    return preset.glitchFilters.every(pf =>
-      enabledGlitch.some(sl => sl.glitchType === pf.type && sl.intensity === pf.intensity)
-    );
+    return presetMatchesSettings(preset, settings);
   }
 
   // True when current settings don't match any preset
@@ -129,7 +108,7 @@
 
   // ─── Derived: active effect count for section header badge ───
   let activeEffectCount = $derived(
-    (settings.effectLayers || []).filter(l => l.enabled).length
+    countActiveEffectLayers(settings)
   );
   let hasPostFilterChanges = $derived(
     postFilters.brightness !== 100 || postFilters.contrast !== 100 ||
@@ -153,6 +132,10 @@
   let effectsBadge = $derived(activeEffectCount + (settings.crtEffect !== 'none' ? 1 : 0));
   let adjustBadge = $derived(hasPostFilterChanges);
   let saveShortcutHint = $derived(replacePrimaryModifierShortcutLabel(i18n.t('shortcut_hint_save')));
+  let exportFormatLabel = $derived(formatOptions.find((opt) => opt.id === saveFormat)?.label ?? saveFormat.toUpperCase());
+  let exportSummaryLabel = $derived(
+    saveFormat === 'png' ? exportFormatLabel : `${exportFormatLabel} ${Math.round(saveQuality * 100)}%`
+  );
 
   async function ensurePresetManagerLoaded() {
     if (lazyPresetManager) return lazyPresetManager;
@@ -450,16 +433,44 @@
   </div>
 
   <!-- ═══ Sticky Save Bar ═══ -->
-  <div class="cp-save-bar w98-toolbar">
-    <div class="field-row format-row">
-          {#each formatOptions as opt}
+  <div class="cp-save-bar w98-toolbar" data-testid="export-action-bar">
+    <div class="export-primary-row" data-testid="export-primary-row">
+      <div class="export-title-group">
+        <span class="export-heading">{i18n.t('export_btn')}</span>
+        <span
+          class="export-summary w98-chip"
+          data-testid="export-summary-chip"
+          title={i18n.t('format')}
+        >
+          {exportSummaryLabel}
+        </span>
+      </div>
+      <button
+        class="save-btn save-btn--primary w98-button w98-button--primary"
+        data-testid="save-image-button"
+        class:save-ready={hasProcessedImage}
+        onclick={onSave}
+        disabled={!hasImage}
+        title={!hasImage ? i18n.t('save_no_image') : saveShortcutHint}
+      >
+        <span class="w98-emoji" aria-hidden="true">💾</span>
+        <span>{i18n.t('save_as')}</span>
+      </button>
+    </div>
+
+    <div class="field-row format-row" data-testid="export-format-row">
+      <span class="export-field-label">{i18n.t('format')}</span>
+      {#each formatOptions as opt}
         <button
           class:preset-active={saveFormat === opt.id}
           class="format-btn w98-inline-button w98-button--thin"
+          aria-pressed={saveFormat === opt.id}
+          title={`${i18n.t('format')}: ${opt.label}`}
           onclick={() => onFormatChange?.(opt.id as SaveFormat)}
         >{opt.label}</button>
       {/each}
       {#if saveFormat !== 'png'}
+        <span class="export-field-label">{i18n.t('quality')}</span>
         <span class="quality-inline">{Math.round(saveQuality * 100)}%</span>
         <input
           type="range"
@@ -473,18 +484,8 @@
         />
       {/if}
     </div>
-    <div class="field-row save-row">
-      <button
-        class="save-btn w98-button"
-        data-testid="save-image-button"
-        class:save-ready={hasProcessedImage}
-        onclick={onSave}
-        disabled={!hasImage}
-        title={!hasImage ? i18n.t('save_no_image') : saveShortcutHint}
-      >
-        <span class="w98-emoji" aria-hidden="true">💾</span>
-        <span>{i18n.t('save_as')}</span>
-      </button>
+    {#if onShare || onExportSvg || onSendToPosterMaker}
+    <div class="field-row save-row" data-testid="export-secondary-actions">
       {#if onShare}
         <button
           class="save-btn share-btn w98-button"
@@ -521,6 +522,7 @@
         </button>
       {/if}
     </div>
+    {/if}
   </div>
 </div>
 
@@ -798,12 +800,43 @@
     bottom: 0;
     margin-top: 8px;
     z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--w98-space-4);
+  }
+  .export-primary-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--w98-space-6);
+  }
+  .export-title-group {
+    display: flex;
+    align-items: center;
+    gap: var(--w98-space-4);
+    min-width: 0;
+  }
+  .export-heading,
+  .export-field-label {
+    font-size: var(--w98-font-size-caption);
+    font-weight: bold;
+    color: var(--w98-text-hint);
+    line-height: 1;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .export-summary {
+    min-width: 0;
+    max-width: 128px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .format-row {
     display: flex;
     align-items: center;
     gap: 4px;
-    margin-bottom: 4px;
     flex-wrap: wrap;
   }
   .format-btn {
@@ -814,7 +847,6 @@
     font-size: var(--w98-font-size-caption);
     color: var(--w98-text-secondary);
     flex-shrink: 0;
-    margin-left: var(--w98-space-4);
   }
   .quality-slider {
     min-width: 60px;
@@ -831,11 +863,24 @@
   .save-btn:disabled {
     color: #6d6d6d;
   }
+  .save-btn--primary {
+    min-width: 118px;
+    font-weight: bold;
+  }
   .save-btn.save-ready {
     color: var(--w98-highlight);
   }
   .share-btn {
     min-width: 0;
+  }
+  @media (max-width: 420px) {
+    .export-primary-row {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .save-btn--primary {
+      width: 100%;
+      justify-content: center;
+    }
   }
   /* Quick Palette */
   .quick-palette-row {

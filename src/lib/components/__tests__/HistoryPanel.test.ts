@@ -118,4 +118,22 @@ describe('HistoryPanel', () => {
     expect(buttons[0]?.getAttribute('data-tooltip')).toContain('Cmd+Z');
     expect(buttons[1]?.getAttribute('data-tooltip')).toContain('Cmd+Shift+Z');
   });
+
+  it('summarizes effect-layer-only settings as active effects', () => {
+    const { container } = render(HistoryPanel, {
+      props: {
+        ...defaultProps(),
+        history: [],
+        redoHistory: [],
+        currentSettings: makeSettings({
+          effectLayers: [
+            { id: 'noise', type: 'glitch', enabled: true, glitchType: 'noise', intensity: 1 },
+            { id: 'hqx', type: 'hqx', enabled: true },
+          ],
+        }),
+      },
+    });
+
+    expect(container.querySelector('.history-item.current')?.textContent).toContain('+2 effects');
+  });
 });

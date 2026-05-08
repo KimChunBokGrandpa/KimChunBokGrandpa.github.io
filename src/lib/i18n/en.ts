@@ -56,6 +56,7 @@ export const en = {
   history_pixel: 'Pixel: {0}x',
   history_crt: '+CRT',
   history_glitch: '+{0} glitch',
+  history_effects: '+{0} effects',
 
   // ─── Settings ───
   level: 'Level',
@@ -101,6 +102,7 @@ export const en = {
   // ─── Preview ───
   image_preview: 'Image preview',
   preview_output_summary: 'Output summary',
+  preview_compare_summary: 'Compare mode',
   processed_preview_alt: 'Pixel art preview - {0}',
   rendering: 'Rendering...',
   ready: 'Ready',

@@ -225,6 +225,7 @@ Files:
 Tasks:
 
 - [x] Presets 탭에서 pixel size / quick palette / dithering quick tune strip을 제공해 recommendation -> tuning bridge를 1차 연결한다.
+- [x] `ControlPanel.svelte` sticky export bar에서 Save As를 primary action으로, Share/SVG/Poster Maker를 secondary action으로 구분한다.
 - [ ] `ControlPanel.svelte`의 tabs / fieldsets / action bar를 recommendation -> tuning -> export 정보 구조에 맞게 재배치한다.
 - [ ] save/share/apply 액션 우선순위와 버튼 hierarchy를 kit 기준으로 정렬한다.
 - [ ] `PreviewContent.svelte`와 `ImageCanvas.svelte`를 canvas-frame / dropzone / bottom bar 계약에 맞춘다.
@@ -315,9 +316,13 @@ Files:
 - `src/lib/components/__tests__/*`
 - `e2e/*`
 - `.storybook/*`
+- `docs/sample_image_benchmark.md`
+- `sampleImages/*`
 
 Tasks:
 
+- [x] `sampleImages/` category 구조와 `retro/` reference set을 visual benchmark로 고정한다.
+- [x] `sampleImages/retro/`와 cross-style core 5의 expected family / preset / pass-fail manual checklist를 작성한다.
 - [ ] shell / controls / preview / taskbar visual contract를 검증하는 component tests를 보강한다.
 - [ ] aria-label / window title 계약이 바뀐 현재 상태에 맞춰 E2E selector를 안정화한다.
 - [ ] Storybook stories를 design-system 비교 기준으로 보강한다.

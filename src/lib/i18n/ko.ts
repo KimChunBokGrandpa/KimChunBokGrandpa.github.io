@@ -54,6 +54,7 @@ export const ko: Record<TranslationKey, string> = {
   history_pixel: '\ud53d\uc140: {0}x',
   history_crt: '+CRT',
   history_glitch: '+{0} \uae00\ub9ac\uce58',
+  history_effects: '+{0} \ud6a8\uacfc',
 
   level: '\ub808\ubca8',
   reroll_seed: '\uc2dc\ub4dc \ub2e4\uc2dc \uc0dd\uc131',
@@ -94,6 +95,7 @@ export const ko: Record<TranslationKey, string> = {
 
   image_preview: '\uc774\ubbf8\uc9c0 \ubbf8\ub9ac\ubcf4\uae30',
   preview_output_summary: '\uacb0\uacfc \uc694\uc57d',
+  preview_compare_summary: '\ube44\uad50 \ubaa8\ub4dc',
   processed_preview_alt: '\ud53d\uc140 \uc544\ud2b8 \ubbf8\ub9ac\ubcf4\uae30 - {0}',
   rendering: '\ub80c\ub354\ub9c1 \uc911...',
   ready: '\uc900\ube44 \uc644\ub8cc',

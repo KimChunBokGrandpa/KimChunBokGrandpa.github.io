@@ -35,6 +35,12 @@
    Current design-system alignment decisions, shell/UI parity scope, and remaining acceptance cleanup notes.
 14. [14_pm_priority_bundles_2026-04-23.md](14_pm_priority_bundles_2026-04-23.md)
    PM priority bundles, now read through the Pixel Lab-centered recommendation premise.
+15. [15_pm_developer_strategy_2026-05-07.md](15_pm_developer_strategy_2026-05-07.md)
+   PM/developer diagnosis: first question, starting issue, assumptions, trend-informed structure, and remaining priority order.
+16. [16_processing_effect_boundary_inventory_2026-05-07.md](16_processing_effect_boundary_inventory_2026-05-07.md)
+   WP-09 processing boundary inventory for `effectLayers`, legacy `glitchFilters` / `renderMode`, HQx, CRT, and parity risks.
+17. [17_request_intake_analysis_2026-05-08.md](17_request_intake_analysis_2026-05-08.md)
+   External request intake analysis: adopted direction, superseded items, current priority, and source cleanup.
 
 ---
 
@@ -73,8 +79,10 @@ Historical completion detail should live in `REVISION_HISTORY.md`, not in the ac
 For implementation work, the contract stack should be read in this order:
 
 1. `01_product_vision.md`
-2. `02_program_suite.md`
-3. `07_app_taxonomy_spec.md`
-4. `08_project_schema_spec.md`
-5. `09_cross_app_handoff_spec.md`
-6. `10_role_execution_plan.md`
+2. `15_pm_developer_strategy_2026-05-07.md`
+3. `17_request_intake_analysis_2026-05-08.md`
+4. `02_program_suite.md`
+5. `07_app_taxonomy_spec.md`
+6. `08_project_schema_spec.md`
+7. `09_cross_app_handoff_spec.md`
+8. `10_role_execution_plan.md`

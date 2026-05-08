@@ -7,6 +7,7 @@ vi.mock('$lib/i18n/index.svelte', () => ({
   i18n: {
     t: vi.fn((key: string) => ({
       preview_output_summary: 'Output summary',
+      preview_compare_summary: 'Compare mode',
       open_settings: 'Open Settings',
       btn_open_settings: 'Open Settings',
       rotate_left: 'Rotate Left',
@@ -42,6 +43,9 @@ vi.mock('$lib/i18n/index.svelte', () => ({
       dither_atkinson: 'Atkinson',
       unique_colors: 'Unique Colors',
       gallery_n_colors: '12 colors',
+      compare_slider: 'Slider',
+      compare_side_by_side: 'Side by Side',
+      compare_onion: 'Onion Skin',
       compare_mode_cycle: 'Cycle Compare Mode',
     }[key] ?? key)),
   },
@@ -142,5 +146,30 @@ describe('PreviewBottomBar', () => {
     expect(summary.textContent).toContain('NES Standard');
     expect(summary.textContent).toContain('Ordered');
     expect(summary.textContent).toContain('12 colors');
+  });
+
+  it('adds the active compare variant to the output summary in compare mode', () => {
+    const { getByTestId } = render(PreviewBottomBar, {
+      props: {
+        zp: makeZoomPan() as any,
+        compareMode: true,
+        compareVariant: 'side-by-side',
+        compareVariantIcon: '▥',
+        cropModeActive: false,
+        tileMode: false,
+        eyedropperActive: false,
+        eyedropperOverlay: { dismiss: vi.fn() },
+        hasCrop: false,
+        currentRotation: 0,
+        processingSettings: makeSettings(),
+        colorCount: 12,
+        cycleCompareVariant: vi.fn(),
+        onOpenSettings: vi.fn(),
+      },
+    });
+
+    const compareSummary = getByTestId('preview-compare-summary');
+    expect(compareSummary.textContent).toContain('▥');
+    expect(compareSummary.textContent).toContain('Side by Side');
   });
 });

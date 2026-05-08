@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { applyEffectLayers, countVisibleColors, normalizeEffectLayers } from './effectLayers';
+import {
+  applyEffectLayers,
+  countActiveEffectLayers,
+  countVisibleColors,
+  hasActiveHqxLayer,
+  normalizeEffectLayers,
+} from './effectLayers';
 
 describe('normalizeEffectLayers', () => {
   it('prefers enabled effectLayers over legacy fields', () => {
@@ -30,6 +36,38 @@ describe('normalizeEffectLayers', () => {
       { id: 'legacy-0', type: 'glitch', enabled: true, glitchType: 'noise', intensity: 2 },
       { id: 'legacy-hqx', type: 'hqx', enabled: true, intensity: 1 },
     ]);
+  });
+
+  it('uses effectLayers as the authority for HQx detection when present', () => {
+    expect(hasActiveHqxLayer({
+      renderMode: 'hqx',
+      effectLayers: [
+        { id: 'disabled-hqx', type: 'hqx', enabled: false },
+        { id: 'noise', type: 'glitch', enabled: true, glitchType: 'noise', intensity: 1 },
+      ],
+    })).toBe(false);
+
+    expect(hasActiveHqxLayer({
+      renderMode: 'hqx',
+      effectLayers: [],
+    })).toBe(true);
+  });
+
+  it('counts active effect layers through the same normalized boundary', () => {
+    expect(countActiveEffectLayers({
+      renderMode: 'hqx',
+      glitchFilters: [{ type: 'rgb_split', intensity: 2 }],
+      effectLayers: [
+        { id: 'disabled', type: 'glitch', enabled: false, glitchType: 'noise', intensity: 3 },
+        { id: 'enabled', type: 'glitch', enabled: true, glitchType: 'wave', intensity: 1 },
+      ],
+    })).toBe(1);
+
+    expect(countActiveEffectLayers({
+      renderMode: 'hqx',
+      glitchFilters: [{ type: 'rgb_split', intensity: 2 }],
+      effectLayers: [],
+    })).toBe(2);
   });
 });
 

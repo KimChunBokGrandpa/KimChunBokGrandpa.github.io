@@ -3,6 +3,7 @@
   import { getPaletteName } from '$lib/utils/palettes';
   import { tooltip } from '$lib/utils/tooltip';
   import { replacePrimaryModifierShortcutLabel } from '$lib/utils/platformShortcuts';
+  import type { CompareVariant } from './CompareView.svelte';
   import type { createZoomPan } from '$lib/stores/zoomPanStore.svelte';
   import type { DitherType, ProcessingSettings } from '$lib/types';
 
@@ -13,9 +14,16 @@
     atkinson: 'dither_atkinson',
   };
 
+  const compareVariantLabelKeys: Record<CompareVariant, 'compare_slider' | 'compare_side_by_side' | 'compare_onion'> = {
+    slider: 'compare_slider',
+    'side-by-side': 'compare_side_by_side',
+    onion: 'compare_onion',
+  };
+
   let {
     zp,
     compareMode = $bindable(false),
+    compareVariant = 'slider',
     compareVariantIcon,
     compareVariantUsesEmoji = false,
     cropModeActive = $bindable(false),
@@ -33,6 +41,7 @@
   }: {
     zp: ReturnType<typeof createZoomPan>;
     compareMode: boolean;
+    compareVariant?: CompareVariant;
     compareVariantIcon: string;
     compareVariantUsesEmoji?: boolean;
     cropModeActive: boolean;
@@ -57,6 +66,7 @@
   let outputDitherLabel = $derived(
     processingSettings ? i18n.t(ditherLabelKeys[processingSettings.ditherType]) : ''
   );
+  let compareVariantLabel = $derived(i18n.t(compareVariantLabelKeys[compareVariant]));
 </script>
 
 <div class="preview-bottom-stack">
@@ -83,6 +93,22 @@
       {#if colorCount > 0}
         <span class="output-chip w98-readout-chip w98-readout-chip--accent" title={i18n.t('unique_colors')} use:tooltip>
           {i18n.t('gallery_n_colors', colorCount)}
+        </span>
+      {/if}
+      {#if compareMode}
+        <span
+          class="output-chip output-chip--compare w98-readout-chip w98-readout-chip--active"
+          data-testid="preview-compare-summary"
+          title={i18n.t('preview_compare_summary')}
+          use:tooltip
+        >
+          <span
+            class="output-icon"
+            class:w98-emoji={compareVariantUsesEmoji}
+            class:w98-structural-glyph={!compareVariantUsesEmoji}
+            aria-hidden="true"
+          >{compareVariantIcon}</span>
+          {compareVariantLabel}
         </span>
       {/if}
     </div>
@@ -236,6 +262,9 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+  .output-chip--compare {
+    max-width: 128px;
   }
   .output-icon {
     font-size: var(--w98-font-size-caption);

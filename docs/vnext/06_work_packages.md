@@ -53,6 +53,8 @@ Make the main editor easier to scan while preserving serious control depth.
 - [ ] align `ControlPanel.svelte` around recommendation -> tuning -> export hierarchy
 - [x] connect the first `ControlPanel.svelte` recommendation -> quick tuning bridge in the Presets tab
 - [x] expose a compact `PreviewBottomBar.svelte` output summary for pixel size, palette, dithering, and color count
+- [x] expose the active compare variant in `PreviewBottomBar.svelte` while compare mode is active
+- [x] align the `ControlPanel.svelte` sticky export bar around primary Save As, format/quality, and secondary destinations
 - [ ] align `PreviewContent.svelte` / `ImageCanvas.svelte` / `PreviewBottomBar.svelte` around deeper compare and output confidence
 - [ ] align `PresetManager.svelte` and palette surfaces around Classic Pixel / Retro Treatment selection
 - [ ] preserve current save/share/export behavior while UI hierarchy changes land
@@ -75,10 +77,21 @@ Protect the actual output quality across browser, worker, WASM, and Tauri paths.
 
 - `08_project_schema_spec.md`
 - `14_pm_priority_bundles_2026-04-23.md`
+- `16_processing_effect_boundary_inventory_2026-05-07.md`
+- `17_request_intake_analysis_2026-05-08.md`
 - `required.md`
 
 ### Tasks
 
+- [x] fix categorized sample image benchmark groups and set `sampleImages/retro/` as the retro pixelization reference
+- [x] draft manual review checklist for `sampleImages/retro/` and cross-style core 5
+- [x] add first effect/HQx/CRT legacy boundary inventory and fix effect-layer-only fast-path bypass
+- [x] align HistoryPanel and ControlPanel active effect counts with normalized effect-layer boundaries
+- [x] align built-in preset preview/application settings through shared preset conversion helpers
+- [x] guard GIF export HQx dimension parity and Oklab/effect-layer worker payload
+- [x] guard Tauri legacy HQx fallback through shared post-processing after Rust quantization
+- [x] reconcile external `request.md` analysis into vNext docs and delete the source request file
+- [ ] run the first `sampleImages/retro/` and cross-style core 5 result quality sweep once local sample assets are restored
 - [ ] keep Tauri/web effect and HQx parity under watch
 - [ ] keep remaining legacy effect branches bounded to compatibility edges
 - [ ] preserve animated export and batch behavior while Pixel Lab work proceeds
@@ -88,6 +101,13 @@ Protect the actual output quality across browser, worker, WASM, and Tauri paths.
 
 - [ ] Classic Pixel output does not regress into shallow pixelate behavior
 - [ ] Retro Treatment output remains visually readable
+- [x] documented expected family, preset starting points, pass signals, and fail signals exist for the current local benchmark set
+- [x] still-image processor uses normalized effect layers before deciding fast-path and HQx dimension behavior
+- [x] compact UI effect counts use normalized effect boundaries instead of only legacy fields or only effectLayers
+- [x] built-in preset preview and application paths use the same explicit effect-layer settings shape
+- [x] GIF export caps active HQx processing before expansion and encodes the expanded worker output size
+- [x] Tauri legacy HQx fallback expands through the same shared post-processing boundary
+- [ ] `sampleImages/retro/` and cross-style core 5 preserve their documented readability criteria
 - [ ] browser/Tauri differences are either fixed or tracked as manual QA
 
 ---

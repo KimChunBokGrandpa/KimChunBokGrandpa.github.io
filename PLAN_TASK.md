@@ -1,6 +1,6 @@
 # PLAN_TASK — Retro Pixel Converter
 
-> Updated: 2026-05-07.
+> Updated: 2026-05-08.
 > 제품 backlog 및 기능 우선순위는 `docs/vnext/` 문서 세트를 우선 기준으로 운영한다.
 > 제품 전제: Pixel Lab이 메인 편집기이며, 고전 픽셀화(`Classic Pixel`)와 레트로화(`Retro Treatment`)를 모두 수용하고 추천 시스템이 사용자를 좋은 시작점으로 안내한다.
 > 아키텍처 전제: 본 제품은 브라우저/Tauri 로컬 리소스만 사용하는 client-only 앱이며, 별도 서버/백엔드/계정/원격 렌더링/원격 AI 추론을 core scope로 두지 않는다.
@@ -20,12 +20,22 @@
 - `WP-09` Processing quality / runtime parity
   - 실제 결과물 품질이 shell polish보다 우선이다
   - quantizer, palette, dithering, scale, CRT, effectLayers, HQx path를 계속 보호한다
+  - `sampleImages/retro/`를 레트로 픽셀화 핵심 참조군으로 고정하고, category별 cross-style core 5를 정리했다
+  - `sampleImages/retro/`와 cross-style core 5의 expected family / preset / pass-fail 기준을 문서화했다
+  - `request.md` 외부 분석은 `docs/vnext/17_request_intake_analysis_2026-05-08.md`로 흡수하고 원본은 삭제한다
+  - `effectLayers` / legacy `glitchFilters` / `renderMode` / HQx / CRT boundary inventory를 시작했고, effect-layer-only fast path bypass를 수정했다
+  - HistoryPanel summary와 ControlPanel effects badge가 normalized effect boundary 기준으로 효과 개수를 세도록 정리했다
+  - built-in preset preview와 실제 preset apply가 같은 explicit effect-layer settings shape를 쓰도록 공통 helper로 정리했다
+  - GIF export가 active HQx layer에서 still-image와 같은 1024 cap / expanded output size / Oklab payload boundary를 유지하도록 회귀 테스트를 추가했다
+  - Tauri branch의 legacy `renderMode: hqx` fallback이 Rust quantize 뒤 shared post-processing으로 확장되는지 회귀 테스트를 추가했다
   - Tauri/Web Worker/WASM 처리 차이는 가능한 자동 수정하고, 실기기/실런타임만 필요한 것은 `required.md`에 남긴다
   - legacy `glitchFilters` / `renderMode` path는 boundary compatibility로 수렴시킨다
 - `WP-08` Pixel Lab surface alignment
   - upload -> recommendation -> preview/compare -> tune -> export 흐름이 한눈에 읽히도록 ControlPanel/Preview/Preset/Palette surface를 정리한다
   - `ControlPanel` Presets 탭에서 recommendation -> pixel size/palette/dither quick tuning 흐름을 1차 연결했다
   - `PreviewBottomBar`에 output summary를 추가해 픽셀 크기, 팔레트, 디더링, 색상 수를 결과 판단 근거로 노출했다
+  - compare mode에서는 `PreviewBottomBar` output summary에 현재 compare variant를 함께 노출해 preview 판단 맥락을 보강했다
+  - `ControlPanel` sticky export bar에서 primary Save As, format/quality, secondary Share/SVG/Poster Maker action hierarchy를 1차 정렬했다
   - design-system cleanup은 기능 제거가 아니라 Pixel Lab 정보 구조 정렬이어야 한다
 - Supporting surfaces
   - `Poster Maker`는 Pixel Lab 결과물의 composition destination으로 유지한다
@@ -57,6 +67,17 @@
 - style recommendation reason copy를 brightness/contrast/saturation/edge/palette signal에 맞춰 en/ko/ja에서 1차 정리
 - `ControlPanel` Presets 탭에 `Quick Tune` strip을 추가해 추천 적용 후 픽셀 크기, quick palette, dithering을 바로 조정할 수 있게 정리
 - `PreviewBottomBar`에 compact output summary를 추가해 현재 결과의 픽셀 크기, 팔레트, dithering, color count를 하단 action bar와 함께 확인할 수 있게 정리
+- `PreviewBottomBar` compare mode summary를 추가해 slider / side-by-side / onion skin 중 현재 비교 방식을 output summary에서 바로 확인할 수 있게 정리
+- `ControlPanel` sticky export bar를 `Export` summary, primary `Save As`, secondary Share/SVG/Poster Maker actions로 정렬해 저장/공유/전송 우선순위를 1차 명확화
+- `sampleImages/` category 구조를 `docs/sample_image_benchmark.md`에 반영하고, `retro/` 5장을 레트로 픽셀화 reference set으로 고정
+- PM/developer 관점의 첫 질문, 시작 이슈, 전제, 트렌드 기반 구조, 남은 작업 우선순위를 `docs/vnext/15_pm_developer_strategy_2026-05-07.md`에 고정
+- `sampleImages/retro/`와 cross-style core 5의 manual review checklist를 `docs/sample_image_benchmark.md`에 추가
+- `request.md`의 외부 분석을 취사선택해 `docs/vnext/17_request_intake_analysis_2026-05-08.md`에 흡수하고, 현재 우선순위를 sample quality sweep으로 재확정
+- `effectLayers` 중심 processing boundary inventory를 `docs/vnext/16_processing_effect_boundary_inventory_2026-05-07.md`에 추가하고, still-image processor의 effect-layer-only fast path bypass를 회귀 테스트와 함께 수정
+- HistoryPanel / ControlPanel compact effect count를 `normalizeEffectLayers(...)` 기반 helper로 정렬
+- built-in preset preview/application 변환을 `createPresetProcessingSettings(...)` 기준으로 통일
+- GIF export HQx parity와 `useOklab` worker payload를 회귀 테스트로 고정
+- Tauri legacy HQx fallback post-processing boundary를 회귀 테스트로 고정
 
 ---
 
@@ -69,11 +90,20 @@
 - `Pixel Lab / UI`
   - `PresetManager.svelte`에서 recommendation family가 보이는 구조 검토
   - `ControlPanel.svelte`의 recommendation -> tuning bridge는 Presets 탭 quick tune으로 1차 완료
-  - `ControlPanel.svelte`의 broader tuning -> export hierarchy 검토
+  - `ControlPanel.svelte` sticky export hierarchy는 1차 완료
   - Preview bottom bar metrics row는 output summary로 1차 완료
-  - Compare mode confidence와 export hierarchy가 추천 결과 판단을 더 돕는지 확인
+  - Compare mode confidence는 PreviewBottomBar compare variant summary로 1차 보강 완료
+  - broader ControlPanel tabs/fieldsets와 palette surface hierarchy 검토
 - `Processing / legacy`
-  - `effectLayers` 기준으로 남은 legacy branch 목록화
+  - 외부 request intake 결과, 다음 active work는 `sampleImages/retro/` 5장 + cross-style core 5 결과 품질 스윕으로 확정
+  - 현재 워크스페이스에는 `sampleImages/` 디렉토리가 없어 품질 스윕은 local sample asset 복구 뒤 재개한다
+  - `retro/` 5장과 cross-style core 5별 기대 recommendation family / preset / output notes 체크리스트는 1차 작성 완료
+  - `effectLayers` / CRT / glitch / HQx legacy boundary inventory는 1차 시작 완료
+  - `HistoryPanel` / `ControlPanel` compact effect count 정렬 완료
+  - built-in preset preview/application settings shape 정렬 완료
+  - GIF export HQx parity 정렬 완료
+  - Tauri legacy HQx fallback boundary 정렬 완료
+  - 남은 browser/Tauri visual parity는 `sampleImages/retro/` checklist 기반 runtime/manual 확인으로 유지
   - Tauri/web processor parity diff inventory 유지
 - `Manual QA`
   - tall-phone / permission-device / native-save / clipboard-save behavior는 `required.md`에서 추적
@@ -88,6 +118,9 @@
 - taxonomy/schema/handoff 계약은 `docs/vnext/07_app_taxonomy_spec.md`, `08_project_schema_spec.md`, `09_cross_app_handoff_spec.md`를 기준으로 한다.
 - design-system 정렬 기준과 남은 shell/UI parity 범위는 `docs/vnext/13_design_system_alignment_tasks.md`를 함께 본다.
 - 현재 active watchlist는 `docs/vnext/11_status_review.md`를 기준으로 한다.
+- PM/developer 관점의 첫 질문, starting issue, 전제, trend-informed structure, 남은 우선순위는 `docs/vnext/15_pm_developer_strategy_2026-05-07.md`를 기준으로 한다.
+- 외부 분석 흡수 결과와 `request.md` source cleanup 기록은 `docs/vnext/17_request_intake_analysis_2026-05-08.md`를 기준으로 한다.
+- processing effect/HQx/CRT legacy boundary inventory는 `docs/vnext/16_processing_effect_boundary_inventory_2026-05-07.md`를 기준으로 한다.
 
 ---
 
@@ -106,12 +139,13 @@
 |---|------|------|------|
 | 1 | `WP-07` Classic Pixel / Retro Treatment recommendation taxonomy | `presets`, `styleRecommender`, `PresetManager` | 1차 완료 |
 | 2 | recommendation explanation quality | `styleRecommender.ts`, `PresetManager.svelte`, i18n | 1차 완료 |
-| 3 | `WP-09` processing parity / legacy boundary cleanup | `imageProcessor.ts`, `imageWorker.ts`, `effectLayers.ts` | 진행 중 |
-| 4 | `WP-08` Pixel Lab surface alignment | `ControlPanel`, `PreviewContent`, `ImageCanvas`, `PresetManager` | 1차 진행 |
-| 5 | supporting app scope guard | `PosterMaker`, `RetroCam`, handoffs | 유지 |
-| 6 | tall-phone / permission-device / native-save manual QA | `required.md` | 문서상 추적 |
-| 7 | shell split / lazy-load follow-up | `src/routes/+page.svelte`, `windowStore.svelte.ts` | partial complete |
-| 8 | npm audit low-risk dependency follow-up | `package-lock.json` | 보류 |
+| 3 | `WP-09` processing parity / legacy boundary cleanup | `imageProcessor.ts`, `imageWorker.ts`, `effectLayers.ts` | Tauri boundary coverage 추가 / manual parity 남음 |
+| 4 | `WP-08` Pixel Lab surface alignment | `ControlPanel`, `PreviewContent`, `ImageCanvas`, `PresetManager` | export hierarchy 1차 진행 |
+| 5 | categorized visual benchmark checklist | `docs/sample_image_benchmark.md`, `sampleImages/` | `sampleImages/` 복구 대기 |
+| 6 | supporting app scope guard | `PosterMaker`, `RetroCam`, handoffs | 유지 |
+| 7 | tall-phone / permission-device / native-save manual QA | `required.md` | 문서상 추적 |
+| 8 | shell split / lazy-load follow-up | `src/routes/+page.svelte`, `windowStore.svelte.ts` | partial complete |
+| 9 | npm audit low-risk dependency follow-up | `package-lock.json` | 보류 |
 
 ---
 
@@ -129,7 +163,7 @@
 - `RetroCam short-loop export`는 현재 제품 이유가 부족하므로 deferred 유지
 - broader shell-wide reopen/open-with expansion은 새 자산 타입/목적지 전까지 deferred
 - native save runtime detection, Tauri processor parity core bug, RetroCam reopen snapshot save path, export-history weak path는 자동 정리됐고, 남은 큰 런타임 리스크는 manual QA다
-- 다음 schema/legacy cleanup은 HQx/effect-layer legacy boundary inventory에 집중한다
+- 다음 자동 작업은 `WP-08` ControlPanel tabs/fieldsets 또는 palette surface hierarchy 정렬이며, `sampleImages/retro/`와 cross-style core 5 결과 품질 스윕은 local sample asset 복구 뒤 재개한다
 
 ---
 

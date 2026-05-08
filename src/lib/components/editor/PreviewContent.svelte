@@ -143,6 +143,7 @@
     <PreviewBottomBar
       {zp}
       bind:compareMode
+      {compareVariant}
       {compareVariantIcon}
       {compareVariantUsesEmoji}
       bind:cropModeActive

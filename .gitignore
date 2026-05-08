@@ -20,6 +20,7 @@ storybook-static/
 .qwen/
 .agent/
 .claude/
+.kiro/
 !.claude/agents/
 !.claude/skills/
 _workspace/

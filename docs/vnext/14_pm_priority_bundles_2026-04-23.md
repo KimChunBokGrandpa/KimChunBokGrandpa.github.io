@@ -9,11 +9,23 @@ Purpose: 현재 `README.md`, `PLAN_TASK.md`, `required.md`, `docs/vnext/01_produ
 - latest recorded full unit baseline: `671 tests / 93 files`
 - current main client chunk: `345.11 kB`
 - current manual QA authority: `required.md`
+- current PM/developer premise authority: `docs/vnext/15_pm_developer_strategy_2026-05-07.md`
+- current request intake authority: `docs/vnext/17_request_intake_analysis_2026-05-08.md`
 - completed implementation baseline to preserve:
   - built-in preset family taxonomy exposed in recommendation/preset cards
   - recommendation reason copy aligned with current brightness/contrast/saturation/edge/palette signals
   - ControlPanel Presets tab quick tune keeps pixel size, palette, and dithering controls beside recommendations
   - PreviewBottomBar output summary exposes pixel size, palette, dithering, and color count beside preview actions
+  - PreviewBottomBar compare mode now exposes the active compare variant beside output summary context
+  - ControlPanel sticky export bar now separates primary Save As from format/quality controls and secondary Share/SVG/Poster Maker destinations
+  - `sampleImages/retro/` and cross-style core 5 now have manual pass/fail expectations for recommendation family, starting preset, and readability
+  - first `effectLayers` / legacy `glitchFilters` / `renderMode` boundary inventory captured in `docs/vnext/16_processing_effect_boundary_inventory_2026-05-07.md`
+  - still-image processing fast path now checks normalized effect layers before bypassing worker/Tauri processing
+  - HistoryPanel summaries and ControlPanel effect badges now count active effects through the same normalized boundary
+  - built-in preset previews and applied preset settings now share `createPresetProcessingSettings(...)`
+  - GIF export now forwards Oklab settings and has HQx cap/output-size parity coverage
+  - Tauri legacy `renderMode: hqx` fallback now has post-Rust shared post-processing coverage
+  - external `request.md` analysis has been absorbed into vNext docs and removed as a duplicate source
   - secondary windows lazy-load
   - `PresetManager` tab lazy-load
   - Tauri effect/CRT/HQx parity cleanup
@@ -78,7 +90,8 @@ Purpose: 현재 `README.md`, `PLAN_TASK.md`, `required.md`, `docs/vnext/01_produ
 - status
   - first recommendation -> quick tuning bridge is connected in the Presets tab
   - first Preview output summary is connected in the bottom bar
-  - compare confidence / export hierarchy remains open
+  - compare confidence has a first compact summary pass
+  - export action hierarchy has a first sticky-bar pass
 
 ### 4. P2 Supporting Flow Cohesion
 
@@ -121,9 +134,14 @@ Purpose: 현재 `README.md`, `PLAN_TASK.md`, `required.md`, `docs/vnext/01_produ
 
 ## Immediate-Value Items
 
+- use `docs/vnext/15_pm_developer_strategy_2026-05-07.md` as the current first-question / premise / priority authority
+- use `docs/vnext/17_request_intake_analysis_2026-05-08.md` for request-intake decisions and source cleanup history
 - keep the connected `Classic Pixel` / `Retro Treatment` preset taxonomy stable
 - keep current recommendation explanation copy aligned with actual scoring inputs as heuristics evolve
-- continue from the Presets tab quick tune bridge into Preview/compare confidence and export hierarchy
+- run the next processing-quality review against the documented `sampleImages/retro/` and cross-style core 5 checklist once local sample assets are restored
+- continue the `effectLayers` boundary pass from `docs/vnext/16_processing_effect_boundary_inventory_2026-05-07.md`
+- remaining browser/Tauri visual parity for `noise / wave / rgb_split / hqx` is runtime/manual against the sample checklist
+- continue from the Presets tab quick tune bridge into broader ControlPanel and palette surface hierarchy; Preview/compare confidence and sticky export hierarchy now have first compact passes
 - list remaining legacy effect boundary paths after the current `effectLayers` cleanup
 - keep project export-history runtime QA in `required.md`
 

@@ -298,6 +298,7 @@ export function createGifPlaybackManager(deps: GifManagerDeps) {
             renderMode: settings.renderMode,
             glitchSeed: settings.glitchSeed,
             ditherType: settings.ditherType,
+            useOklab: settings.useOklab,
             quantizationBackend: 'wasm',
             customPaletteColors,
             effectLayers: settings.effectLayers?.map(l => ({ ...l })),
