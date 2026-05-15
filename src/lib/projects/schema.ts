@@ -1,26 +1,16 @@
-import { en } from '$lib/i18n/en';
-import { ja } from '$lib/i18n/ja';
-import { ko } from '$lib/i18n/ko';
 import type { SaveFormat } from '$lib/services/saveService';
 import type { PostProcessFilters, ProcessingSettings } from '$lib/types';
 import type { CropRect } from '$lib/stores/transformStore.svelte';
 
 export const retroProjectSchemaVersion = 1 as const;
 
-export type AppId = 'pixel-lab' | 'poster-maker' | 'retrocam';
+export type AppId = 'pixel-lab' | 'retrocam';
 export type ProjectNameLocale = 'en' | 'ko' | 'ja';
-
-const posterProjectDefaults: Record<ProjectNameLocale, string> = {
-  en: en.poster_project_default,
-  ko: ko.poster_project_default,
-  ja: ja.poster_project_default,
-};
 
 export type AssetRole =
   | 'source'
   | 'processed'
   | 'capture'
-  | 'composition-layer'
   | 'export-preview'
   | 'export-final';
 
@@ -66,71 +56,6 @@ export interface PixelLabProjectStateV1 {
   };
 }
 
-export interface PosterMakerCanvasStateV1 {
-  width: number;
-  height: number;
-  backgroundStyleId?: string;
-}
-
-export interface ProjectSourceContextV1 {
-  sourceAppId: AppId;
-  sourceProjectId?: string;
-  sourceLabel?: string;
-  importedAt: string;
-}
-
-export interface BasePosterLayerV1 {
-  layerId: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  rotation?: number;
-  opacity?: number;
-}
-
-export interface PosterImageLayerV1 extends BasePosterLayerV1 {
-  type: 'image';
-  assetId: string;
-}
-
-export interface PosterTextLayerV1 extends BasePosterLayerV1 {
-  type: 'text';
-  text: string;
-  textStyleId: string;
-}
-
-export interface PosterFrameLayerV1 extends BasePosterLayerV1 {
-  type: 'frame';
-  frameStyleId: string;
-}
-
-export interface PosterOverlayLayerV1 extends BasePosterLayerV1 {
-  type: 'overlay';
-  overlayStyleId: string;
-}
-
-export interface PosterStickerLayerV1 extends BasePosterLayerV1 {
-  type: 'sticker';
-  stickerId: string;
-}
-
-export type PosterMakerLayerV1 =
-  | PosterImageLayerV1
-  | PosterTextLayerV1
-  | PosterFrameLayerV1
-  | PosterOverlayLayerV1
-  | PosterStickerLayerV1;
-
-export interface PosterMakerProjectStateV1 {
-  kind: 'poster-maker';
-  documentPresetId: string;
-  canvas: PosterMakerCanvasStateV1;
-  layers: PosterMakerLayerV1[];
-  sourceContext?: ProjectSourceContextV1;
-  activeLayerId?: string;
-}
-
 export interface RetroCamProjectStateV1 {
   kind: 'retrocam';
   inputMode: 'webcam' | 'image-upload' | 'screen-capture';
@@ -145,7 +70,6 @@ export interface RetroCamProjectStateV1 {
 
 export type ProgramStateV1 =
   | PixelLabProjectStateV1
-  | PosterMakerProjectStateV1
   | RetroCamProjectStateV1;
 
 export interface RetroProjectManifestV1 {
@@ -217,8 +141,6 @@ export function getDefaultProjectName(appId: AppId, locale: ProjectNameLocale = 
   switch (appId) {
     case 'pixel-lab':
       return 'Pixel Lab Project';
-    case 'poster-maker':
-      return posterProjectDefaults[locale];
     case 'retrocam':
       return 'RetroCam Capture';
   }
@@ -264,19 +186,6 @@ function clonePixelLabState(state: PixelLabProjectStateV1): PixelLabProjectState
   };
 }
 
-function clonePosterLayer(layer: PosterMakerLayerV1): PosterMakerLayerV1 {
-  return { ...layer };
-}
-
-function clonePosterMakerState(state: PosterMakerProjectStateV1): PosterMakerProjectStateV1 {
-  return {
-    ...state,
-    canvas: { ...state.canvas },
-    layers: state.layers.map(clonePosterLayer),
-    sourceContext: state.sourceContext ? { ...state.sourceContext } : undefined,
-  };
-}
-
 function cloneRetroCamState(state: RetroCamProjectStateV1): RetroCamProjectStateV1 {
   return {
     ...state,
@@ -288,8 +197,6 @@ export function cloneProgramState(programState: ProgramStateV1): ProgramStateV1 
   switch (programState.kind) {
     case 'pixel-lab':
       return clonePixelLabState(programState);
-    case 'poster-maker':
-      return clonePosterMakerState(programState);
     case 'retrocam':
       return cloneRetroCamState(programState);
   }

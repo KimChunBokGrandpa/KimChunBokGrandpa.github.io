@@ -1,7 +1,11 @@
 <script lang="ts">
   import DesktopIcons from './DesktopIcons.svelte';
   import { i18n } from '$lib/i18n/index.svelte';
-  import { desktopWindowConfigs, getDesktopWindowSummary, getWindowTitle } from '$lib/stores/windowStore.svelte';
+  import {
+    desktopWindowConfigs,
+    getDesktopWindowSummary,
+    getWindowTitle,
+  } from '$lib/stores/windowStore.svelte';
   import type { WindowId } from '$lib/types';
   import type { Snippet } from 'svelte';
 
@@ -12,7 +16,7 @@
     onIconDblClick,
     onIconIntent,
     onDesktopClick,
-    onImageDropped
+    onImageDropped,
   }: {
     children: Snippet;
     selectedIcon: WindowId | null;
@@ -26,13 +30,15 @@
   let dragCounter = $state(0);
   let isDraggingOverDesktop = $state(false);
   const desktopGuideKey = 'retropixel_desktop_guide_dismissed';
-  let desktopGuideDismissed = $state((() => {
-    try {
-      return typeof localStorage !== 'undefined' && localStorage.getItem(desktopGuideKey) === '1';
-    } catch {
-      return false;
-    }
-  })());
+  let desktopGuideDismissed = $state(
+    (() => {
+      try {
+        return typeof localStorage !== 'undefined' && localStorage.getItem(desktopGuideKey) === '1';
+      } catch {
+        return false;
+      }
+    })(),
+  );
 
   function dismissDesktopGuide() {
     desktopGuideDismissed = true;
@@ -51,7 +57,10 @@
 
   function handleDesktopDragLeave(e: DragEvent) {
     e.preventDefault();
-    if (e.currentTarget && (e.currentTarget as HTMLElement).contains(e.relatedTarget as Node | null)) {
+    if (
+      e.currentTarget &&
+      (e.currentTarget as HTMLElement).contains(e.relatedTarget as Node | null)
+    ) {
       return;
     }
     dragCounter--;
@@ -76,7 +85,9 @@
   }
 
   let selectedDesktopConfig = $derived(
-    selectedIcon ? desktopWindowConfigs.find((config) => config.id === selectedIcon) ?? null : null,
+    selectedIcon
+      ? (desktopWindowConfigs.find((config) => config.id === selectedIcon) ?? null)
+      : null,
   );
 
   function launchSelectedDesktopProgram() {
@@ -114,12 +125,7 @@
     </div>
   {/if}
 
-  <DesktopIcons
-    {selectedIcon}
-    {onIconClick}
-    onIconDblClick={openDesktopProgram}
-    {onIconIntent}
-  />
+  <DesktopIcons {selectedIcon} {onIconClick} onIconDblClick={openDesktopProgram} {onIconIntent} />
 
   {#if !desktopGuideDismissed}
     <section
@@ -148,9 +154,16 @@
       <div class="desktop-guide-body w98-window-card-body">
         <p class="desktop-guide-intro w98-quiet-copy">{i18n.t('desktop_first_run_intro')}</p>
         <ul class="desktop-guide-list">
-          <li><span class="w98-emoji" aria-hidden="true">🖼️</span><span>{i18n.t('desktop_first_run_step_preview')}</span></li>
-          <li><span class="w98-emoji" aria-hidden="true">📰</span><span>{i18n.t('desktop_first_run_step_poster')}</span></li>
-          <li><span class="w98-emoji" aria-hidden="true">📷</span><span>{i18n.t('desktop_first_run_step_retrocam')}</span></li>
+          <li>
+            <span class="w98-emoji" aria-hidden="true">🖼️</span><span
+              >{i18n.t('desktop_first_run_step_preview')}</span
+            >
+          </li>
+          <li>
+            <span class="w98-emoji" aria-hidden="true">📷</span><span
+              >{i18n.t('desktop_first_run_step_retrocam')}</span
+            >
+          </li>
         </ul>
         <div class="desktop-guide-tip w98-note">{i18n.t('desktop_first_run_tip')}</div>
         <div class="desktop-guide-actions w98-action-row">
@@ -163,7 +176,11 @@
             <span class="w98-emoji" aria-hidden="true">🖼️</span>
             {i18n.t('desktop_first_run_open_pixel_lab')}
           </button>
-          <button type="button" class="desktop-guide-secondary w98-button" onclick={dismissDesktopGuide}>
+          <button
+            type="button"
+            class="desktop-guide-secondary w98-button"
+            onclick={dismissDesktopGuide}
+          >
             {i18n.t('desktop_first_run_dismiss')}
           </button>
         </div>
@@ -186,10 +203,14 @@
         </div>
       </div>
       <div class="desktop-launch-body w98-window-card-body">
-        <div class="desktop-launch-icon w98-inset-panel" aria-hidden="true">{selectedDesktopConfig.icon}</div>
+        <div class="desktop-launch-icon w98-inset-panel" aria-hidden="true">
+          {selectedDesktopConfig.icon}
+        </div>
         <div class="desktop-launch-copy">
           <div class="desktop-launch-title">{getWindowTitle(selectedDesktopConfig.id)}</div>
-          <div class="desktop-launch-summary w98-quiet-copy">{getDesktopWindowSummary(selectedDesktopConfig.id)}</div>
+          <div class="desktop-launch-summary w98-quiet-copy">
+            {getDesktopWindowSummary(selectedDesktopConfig.id)}
+          </div>
           <div class="desktop-launch-hint w98-quiet-copy">{i18n.t('desktop_launch_hint')}</div>
         </div>
         <button

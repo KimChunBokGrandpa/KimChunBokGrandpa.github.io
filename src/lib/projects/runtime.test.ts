@@ -4,7 +4,13 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { defaultPostFilters } from '$lib/types';
 import { defaultProcessingSettings } from '$lib/stores/settingsStore.svelte';
 import { createProjectManifest, type PixelLabProjectStateV1 } from '$lib/projects/schema';
-import { getProjectStorageAdapter, resetProjectStorageAdapter } from '$lib/projects/runtime';
+import {
+  getProjectStorageAdapter,
+  listRecentProjects,
+  loadProject,
+  resetProjectStorageAdapter,
+  setProjectStorageAdapter,
+} from '$lib/projects/runtime';
 
 class FakeRequest<T> {
   onsuccess: ((this: IDBRequest<T>, ev: Event) => unknown) | null = null;
@@ -153,5 +159,99 @@ describe('project storage runtime', () => {
     resetProjectStorageAdapter();
 
     expect((await getProjectStorageAdapter().loadProject(manifest.projectId))?.name).toBe('Persistent Session');
+  });
+
+  it('filters out legacy poster-maker entries from recent projects', async () => {
+    globalThis.indexedDB = undefined as never;
+    resetProjectStorageAdapter();
+
+    const adapter = getProjectStorageAdapter();
+
+    // Save a valid pixel-lab project
+    const pixelLabManifest = createProjectManifest({
+      appId: 'pixel-lab',
+      name: 'My Pixel Lab',
+      programState: makePixelLabState(),
+    });
+    await adapter.saveProject(pixelLabManifest);
+
+    // Save a legacy poster-maker project by bypassing type safety
+    const posterManifest = createProjectManifest({
+      appId: 'pixel-lab' as never,
+      name: 'Legacy Poster',
+      programState: makePixelLabState(),
+    });
+    // Manually override appId to simulate legacy poster-maker record
+    (posterManifest as unknown as { appId: string }).appId = 'poster-maker';
+    await adapter.saveProject(posterManifest as never);
+
+    const recentProjects = await listRecentProjects();
+    expect(recentProjects).toHaveLength(1);
+    expect(recentProjects[0].appId).toBe('pixel-lab');
+    expect(recentProjects[0].name).toBe('My Pixel Lab');
+  });
+
+  it('returns null for poster-maker project on loadProject', async () => {
+    globalThis.indexedDB = undefined as never;
+    resetProjectStorageAdapter();
+
+    const adapter = getProjectStorageAdapter();
+
+    // Save a legacy poster-maker project by bypassing type safety
+    const posterManifest = createProjectManifest({
+      appId: 'pixel-lab' as never,
+      name: 'Legacy Poster',
+      programState: makePixelLabState(),
+    });
+    (posterManifest as unknown as { appId: string }).appId = 'poster-maker';
+    await adapter.saveProject(posterManifest as never);
+
+    // loadProject should return null without throwing
+    const result = await loadProject(posterManifest.projectId);
+    expect(result).toBeNull();
+  });
+
+  it('returns null for project with poster-maker programState.kind', async () => {
+    globalThis.indexedDB = undefined as never;
+    resetProjectStorageAdapter();
+
+    const adapter = getProjectStorageAdapter();
+    const manifest = createProjectManifest({
+      appId: 'pixel-lab',
+      name: 'Sneaky Poster',
+      programState: makePixelLabState(),
+    });
+
+    // Use a custom adapter that returns a record with poster-maker programState.kind
+    setProjectStorageAdapter({
+      ...adapter,
+      async loadProject() {
+        return {
+          ...manifest,
+          programState: { kind: 'poster-maker' },
+        } as never;
+      },
+    } as typeof adapter);
+
+    const result = await loadProject(manifest.projectId);
+    expect(result).toBeNull();
+  });
+
+  it('loadProject returns valid pixel-lab projects normally', async () => {
+    globalThis.indexedDB = undefined as never;
+    resetProjectStorageAdapter();
+
+    const adapter = getProjectStorageAdapter();
+
+    const manifest = createProjectManifest({
+      appId: 'pixel-lab',
+      name: 'Valid Project',
+      programState: makePixelLabState(),
+    });
+    await adapter.saveProject(manifest);
+
+    const result = await loadProject(manifest.projectId);
+    expect(result).not.toBeNull();
+    expect(result?.name).toBe('Valid Project');
   });
 });

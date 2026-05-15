@@ -69,13 +69,10 @@ If any step fails, the source workflow must remain usable.
 ## Envelope Schema
 
 ```ts
-type AppId = 'pixel-lab' | 'poster-maker' | 'retrocam';
+type AppId = 'pixel-lab' | 'retrocam';
 
 type HandoffIntent =
-  | 'place_processed_asset'
-  | 'edit_capture'
-  | 'place_capture_on_canvas'
-  | 'open_export_asset';
+  | 'edit_capture';
 
 type HandoffOpenMode =
   | 'create_project'
@@ -114,33 +111,7 @@ interface CrossAppHandoffEnvelopeV1 {
 
 ## Supported MVP Handoffs
 
-### 1. Pixel Lab -> Poster Maker
-
-Command label:
-
-- `Send to Poster Maker`
-
-Intent:
-
-- `place_processed_asset`
-
-Expected behavior:
-
-- if Poster Maker has no suitable open document, create a new poster project
-- place the processed asset on the canvas as the primary image layer
-- focus Poster Maker after launch
-- preserve Pixel Lab as the source of image refinement
-
-Suggested payload:
-
-```ts
-{
-  preferredDocumentPresetId?: string;
-  placeMode?: 'fit-center' | 'cover' | 'original-size';
-}
-```
-
-### 2. RetroCam -> Pixel Lab
+### 1. RetroCam -> Pixel Lab
 
 Command label:
 
@@ -157,32 +128,10 @@ Expected behavior:
 - load the captured asset as the active source image
 - this is the primary `RetroCam` handoff and the preferred route for deeper editing
 
-### 3. RetroCam -> Poster Maker
-
-Command label:
-
-- `Use in Poster Maker`
-
-Intent:
-
-- `place_capture_on_canvas`
-
-Expected behavior:
-
-- create or reuse an empty poster document
-- place the capture as an image layer
-
-Implementation note:
-
-- valid contract path
-- valid supporting path after `RetroCam -> Pixel Lab`
-- should not become the default route when the capture still needs image treatment
-
 ### Deferred Handoffs
 
 Not required for MVP:
 
-- Poster Maker -> Pixel Lab round-trip editing
 - multi-asset batch handoff
 - shell-wide `Open With` routing for every file type
 - RetroCam video/loop routing
@@ -267,7 +216,6 @@ This information should be accessible for debugging and may later power "Open So
 
 Good:
 
-- `Send to Poster Maker`
 - `Open in Pixel Lab`
 
 Bad:
@@ -313,7 +261,6 @@ The exact runtime mechanism can change, but the contract must remain stable.
 
 ## QA Scenarios
 
-- Pixel Lab processed image successfully opens in Poster Maker
 - RetroCam snapshot successfully opens in Pixel Lab
 - handoff fails gracefully when asset lookup fails
 - repeated handoff does not overwrite unrelated target work
@@ -324,6 +271,6 @@ The exact runtime mechanism can change, but the contract must remain stable.
 ## Acceptance Criteria
 
 - the team can implement a stable envelope type without guessing intent semantics
-- the first Pixel Lab -> Poster Maker flow can ship without reinterpreting product behavior
+- the first RetroCam -> Pixel Lab flow can ship without reinterpreting product behavior
 - source/target ownership is preserved for every successful handoff
 - all handoffs remain fully client-only

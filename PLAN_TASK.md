@@ -1,6 +1,6 @@
 # PLAN_TASK — Retro Pixel Converter
 
-> Updated: 2026-05-08.
+> Updated: 2026-05-13.
 > 제품 backlog 및 기능 우선순위는 `docs/vnext/` 문서 세트를 우선 기준으로 운영한다.
 > 제품 전제: Pixel Lab이 메인 편집기이며, 고전 픽셀화(`Classic Pixel`)와 레트로화(`Retro Treatment`)를 모두 수용하고 추천 시스템이 사용자를 좋은 시작점으로 안내한다.
 > 아키텍처 전제: 본 제품은 브라우저/Tauri 로컬 리소스만 사용하는 client-only 앱이며, 별도 서버/백엔드/계정/원격 렌더링/원격 AI 추론을 core scope로 두지 않는다.
@@ -35,10 +35,21 @@
   - `ControlPanel` Presets 탭에서 recommendation -> pixel size/palette/dither quick tuning 흐름을 1차 연결했다
   - `PreviewBottomBar`에 output summary를 추가해 픽셀 크기, 팔레트, 디더링, 색상 수를 결과 판단 근거로 노출했다
   - compare mode에서는 `PreviewBottomBar` output summary에 현재 compare variant를 함께 노출해 preview 판단 맥락을 보강했다
-  - `ControlPanel` sticky export bar에서 primary Save As, format/quality, secondary Share/SVG/Poster Maker action hierarchy를 1차 정렬했다
+  - `ControlPanel` sticky export bar에서 primary Save As, format/quality, secondary Share/SVG action hierarchy를 1차 정렬했다
+  - `PaletteGallery`가 active palette summary, recommended palette rank, Classic Pixel / Retro Treatment / Hybrid family label을 노출하도록 1차 정렬했다
+  - `ControlPanel` topbar / palette picker도 현재 palette family를 노출해 Gallery를 열기 전에도 방향성이 보이도록 정렬했다
+  - 전역 typography를 `Tahoma/Geneva + locale CJK system sans` 기준으로 바꿔 Win98 테마는 유지하면서 글자 가독성을 높였다
+  - `ControlPanel` 기본 탭과 탭 순서를 Presets-first로 바꿔 recommendation -> quick tune -> export 진입을 먼저 보이게 했다
+  - `ControlPanel` Basic/Effects/Adjust 세부 조정 영역을 fieldset 단위로 재묶어 추천 이후 tuning depth가 더 잘 읽히게 했다
   - design-system cleanup은 기능 제거가 아니라 Pixel Lab 정보 구조 정렬이어야 한다
+  - `pixel-lab-export-hierarchy` spec 진행: requirements.md 확정, design.md 작성 완료, tasks.md/구현 대기
+- Product scope reduction
+  - `Poster Maker`는 실사용 가치와 유지 비용 비례가 맞지 않아 제품에서 제거 방향으로 확정
+  - `poster-maker-removal` spec 진행: requirements.md / design.md 작성 완료, tasks.md/구현 대기
+  - Pixel Lab Export Surface의 `Send to Poster Maker`는 `pixel-lab-export-hierarchy` spec에서 이미 제외됨 (상위 스펙 Requirement 1.9)
+  - `RetroCam → Pixel Lab` capture handoff는 유지, `RetroCam → Poster Maker`만 제거
 - Supporting surfaces
-  - `Poster Maker`는 Pixel Lab 결과물의 composition destination으로 유지한다
+  - `Poster Maker`는 제품에서 제거 완료 (spec `poster-maker-removal`)
   - `RetroCam`은 capture source와 `Open in Pixel Lab` 흐름으로 유지한다
   - shell polish는 Pixel Lab 접근성과 결과물 confidence를 높일 때만 확장한다
 
@@ -61,14 +72,19 @@
 - original/no-worker fast path stale color count와 Tauri pending resolver leak 정리
 - RetroCam snapshot save가 stored snapshot asset/blob URL 기준으로 동작하도록 수정
 - disconnected schema baggage 정리
-- Pixel Lab save/share와 Poster Maker export가 `exportHistory`를 기록하고 later project persist가 보존하도록 정리
+- Pixel Lab save/share가 `exportHistory`를 기록하고 later project persist가 보존하도록 정리
 - current shell/taxonomy/schema docs를 shipped runtime shape에 맞춰 동기화
 - built-in preset family metadata를 `Classic Pixel` / `Retro Treatment` / `Hybrid` / `Reference`로 연결하고, 추천 결과와 PresetManager 카드에 family label을 노출
 - style recommendation reason copy를 brightness/contrast/saturation/edge/palette signal에 맞춰 en/ko/ja에서 1차 정리
 - `ControlPanel` Presets 탭에 `Quick Tune` strip을 추가해 추천 적용 후 픽셀 크기, quick palette, dithering을 바로 조정할 수 있게 정리
 - `PreviewBottomBar`에 compact output summary를 추가해 현재 결과의 픽셀 크기, 팔레트, dithering, color count를 하단 action bar와 함께 확인할 수 있게 정리
 - `PreviewBottomBar` compare mode summary를 추가해 slider / side-by-side / onion skin 중 현재 비교 방식을 output summary에서 바로 확인할 수 있게 정리
-- `ControlPanel` sticky export bar를 `Export` summary, primary `Save As`, secondary Share/SVG/Poster Maker actions로 정렬해 저장/공유/전송 우선순위를 1차 명확화
+- `ControlPanel` sticky export bar를 `Export` summary, primary `Save As`, secondary Share/SVG actions로 정렬해 저장/공유/전송 우선순위를 1차 명확화
+- `PaletteGallery` active summary / recommendation chip / detail panel에 palette family label을 연결해 palette 선택이 Classic Pixel / Retro Treatment / Hybrid 중 어느 시작점인지 보이게 정리
+- `ControlPanel` topbar summary와 basic/preset palette picker에 palette family label을 연결해 palette 방향성을 계속 보이게 정리
+- 전역 font stack을 bitmap 우선에서 readable retro system stack으로 전환하고, typography scale을 9-15px 범위로 올려 한글/일본어/영문 모두 더 읽히게 정리
+- `ControlPanel` 탭 순서를 Presets -> Basic -> Effects -> Adjust로 재정렬하고 Presets를 기본 탭으로 바꿔 추천/프리셋 중심 흐름을 먼저 보여주도록 정리
+- `ControlPanel` Basic의 pixel/color tuning, Effects의 CRT/render/effect stack, Adjust의 post-filter sliders를 fieldset 단위로 그룹화해 detailed tuning density를 정리
 - `sampleImages/` category 구조를 `docs/sample_image_benchmark.md`에 반영하고, `retro/` 5장을 레트로 픽셀화 reference set으로 고정
 - PM/developer 관점의 첫 질문, 시작 이슈, 전제, 트렌드 기반 구조, 남은 작업 우선순위를 `docs/vnext/15_pm_developer_strategy_2026-05-07.md`에 고정
 - `sampleImages/retro/`와 cross-style core 5의 manual review checklist를 `docs/sample_image_benchmark.md`에 추가
@@ -93,7 +109,11 @@
   - `ControlPanel.svelte` sticky export hierarchy는 1차 완료
   - Preview bottom bar metrics row는 output summary로 1차 완료
   - Compare mode confidence는 PreviewBottomBar compare variant summary로 1차 보강 완료
-  - broader ControlPanel tabs/fieldsets와 palette surface hierarchy 검토
+  - ControlPanel과 PaletteGallery palette family hierarchy는 1차 완료
+  - global typography readability pass는 1차 완료
+  - ControlPanel tabs hierarchy는 Presets-first로 1차 완료
+  - ControlPanel fieldsets density / detailed tuning grouping은 1차 완료
+  - 다음 UI 정렬 후보는 PreviewContent / ImageCanvas / PreviewBottomBar의 deeper compare and output confidence
 - `Processing / legacy`
   - 외부 request intake 결과, 다음 active work는 `sampleImages/retro/` 5장 + cross-style core 5 결과 품질 스윕으로 확정
   - 현재 워크스페이스에는 `sampleImages/` 디렉토리가 없어 품질 스윕은 local sample asset 복구 뒤 재개한다
@@ -140,9 +160,11 @@
 | 1 | `WP-07` Classic Pixel / Retro Treatment recommendation taxonomy | `presets`, `styleRecommender`, `PresetManager` | 1차 완료 |
 | 2 | recommendation explanation quality | `styleRecommender.ts`, `PresetManager.svelte`, i18n | 1차 완료 |
 | 3 | `WP-09` processing parity / legacy boundary cleanup | `imageProcessor.ts`, `imageWorker.ts`, `effectLayers.ts` | Tauri boundary coverage 추가 / manual parity 남음 |
-| 4 | `WP-08` Pixel Lab surface alignment | `ControlPanel`, `PreviewContent`, `ImageCanvas`, `PresetManager` | export hierarchy 1차 진행 |
+| 4 | `WP-08` Pixel Lab surface alignment | `ControlPanel`, `PreviewContent`, `ImageCanvas`, `PresetManager`, `PaletteGallery` | ControlPanel hierarchy 1차 진행 |
+| 4a | `WP-08` export hierarchy spec (`.kiro/specs/pixel-lab-export-hierarchy/`) | requirements.md, design.md | tasks.md / 구현 대기 |
+| 4b | Poster Maker removal spec (`.kiro/specs/poster-maker-removal/`) | requirements.md, design.md | 구현 완료 (Phase B~F) |
 | 5 | categorized visual benchmark checklist | `docs/sample_image_benchmark.md`, `sampleImages/` | `sampleImages/` 복구 대기 |
-| 6 | supporting app scope guard | `PosterMaker`, `RetroCam`, handoffs | 유지 |
+| 6 | supporting app scope guard | `RetroCam`, handoffs | Poster Maker 제거 완료 |
 | 7 | tall-phone / permission-device / native-save manual QA | `required.md` | 문서상 추적 |
 | 8 | shell split / lazy-load follow-up | `src/routes/+page.svelte`, `windowStore.svelte.ts` | partial complete |
 | 9 | npm audit low-risk dependency follow-up | `package-lock.json` | 보류 |
@@ -153,17 +175,17 @@
 
 - `npm run lint`: latest recorded baseline green
 - `npm run check`: latest recorded baseline green
-- `npm test`: latest recorded baseline `671 tests / 93 files` green
+- `npm test`: latest recorded baseline `692 tests / 95 files` green
 - `npm run build`: latest recorded baseline green
 - manual QA checklist는 `required.md`를 기준으로 추적
-- current production build main shell chunk는 `345.11 kB`이며 추가 split 필요성은 체감 기준으로만 판단
+- current production build main shell chunk는 `356.55 kB`이며 추가 split 필요성은 체감 기준으로만 판단
 - 프로젝트 runtime storage는 browser/Tauri local 환경에서 `IndexedDB`를 기본 사용하고, unsupported/test 환경은 in-memory fallback을 사용
 - `RetroCam` webcam flow, tall-phone viewport, Tauri native save dialog/path behavior manual QA는 문서상 추적만 유지
 - preview context menu `Copy`는 unsupported clipboard-image runtime에서 disabled로 가드됐지만, secure browser/Tauri 실동작은 manual QA authority(`required.md`) 기준으로만 닫는다
 - `RetroCam short-loop export`는 현재 제품 이유가 부족하므로 deferred 유지
 - broader shell-wide reopen/open-with expansion은 새 자산 타입/목적지 전까지 deferred
 - native save runtime detection, Tauri processor parity core bug, RetroCam reopen snapshot save path, export-history weak path는 자동 정리됐고, 남은 큰 런타임 리스크는 manual QA다
-- 다음 자동 작업은 `WP-08` ControlPanel tabs/fieldsets 또는 palette surface hierarchy 정렬이며, `sampleImages/retro/`와 cross-style core 5 결과 품질 스윕은 local sample asset 복구 뒤 재개한다
+- 다음 자동 작업은 `WP-08` PreviewContent / ImageCanvas / PreviewBottomBar deeper compare and output confidence 또는 `WP-09` processing parity watchlist 점검이며, `sampleImages/retro/`와 cross-style core 5 결과 품질 스윕은 local sample asset 복구 뒤 재개한다
 
 ---
 

@@ -1,5 +1,4 @@
 import type { ContextMenuEntry } from '$lib/components/feedback/ContextMenu.svelte';
-import { buildOpenWithSection } from '$lib/shell/openWithMenu';
 import { buildShortcutLabel } from '$lib/utils/platformShortcuts';
 
 export interface PreviewContextMenuStrings {
@@ -9,8 +8,6 @@ export interface PreviewContextMenuStrings {
   tileMode: string;
   undo: string;
   redo: string;
-  openWith: string;
-  sendToPosterMaker: string;
 }
 
 export interface PreviewContextMenuActions {
@@ -20,7 +17,6 @@ export interface PreviewContextMenuActions {
   onToggleTileMode: () => void;
   onUndo: () => void;
   onRedo: () => void;
-  onSendToPosterMaker?: () => void;
 }
 
 export interface BuildPreviewContextMenuInput {
@@ -44,16 +40,6 @@ export function buildPreviewContextMenu(input: BuildPreviewContextMenuInput): Co
     { label: strings.undo, icon: '↺', shortcut: buildShortcutLabel(['Primary', 'Z']), action: actions.onUndo, disabled: !canUndo },
     { label: strings.redo, icon: '↻', shortcut: buildShortcutLabel(['Primary', 'Shift', 'Z']), action: actions.onRedo, disabled: !canRedo },
   ];
-
-  if (actions.onSendToPosterMaker) {
-    items.push(...buildOpenWithSection(strings.openWith, [
-      {
-        label: strings.sendToPosterMaker,
-        icon: '📰',
-        action: actions.onSendToPosterMaker,
-      },
-    ]));
-  }
 
   return items;
 }

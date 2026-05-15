@@ -11,13 +11,6 @@
     onPlay,
     onPause,
     onSeek,
-    onExport,
-    onCancelExport,
-    onExportSpritesheet,
-    onExportSequence,
-    onExportApng,
-    onExportAnimatedSvg,
-    onExportAnimatedWebp,
     onDeleteFrame,
     onDuplicateFrame,
     onReorderFrame,
@@ -30,13 +23,6 @@
     onPlay: () => void;
     onPause: () => void;
     onSeek: (frame: number) => void;
-    onExport: () => void;
-    onCancelExport?: () => void;
-    onExportSpritesheet?: () => void;
-    onExportSequence?: () => void;
-    onExportApng?: () => void;
-    onExportAnimatedSvg?: () => void;
-    onExportAnimatedWebp?: () => void;
     onDeleteFrame?: (frame: number) => void;
     onDuplicateFrame?: (frame: number) => void;
     onReorderFrame?: (from: number, to: number) => void;
@@ -89,7 +75,7 @@
   <div class="gif-controls-row">
     <button
       class="gif-btn w98-inline-button w98-button--thin"
-      onclick={() => isPlaying ? onPause() : onPlay()}
+      onclick={() => (isPlaying ? onPause() : onPlay())}
       title={isPlaying ? i18n.t('pause') : i18n.t('play')}
       disabled={isExporting}
       use:tooltip
@@ -101,15 +87,15 @@
       onclick={() => onSeek(0)}
       title={i18n.t('first_frame')}
       disabled={isExporting}
-      use:tooltip
-    ><span class="w98-structural-glyph" aria-hidden="true">⏮</span></button>
+      use:tooltip><span class="w98-structural-glyph" aria-hidden="true">⏮</span></button
+    >
     <button
       class="gif-btn w98-inline-button w98-button--thin"
       onclick={() => onSeek(Math.max(0, currentFrame - 1))}
       title={i18n.t('prev_frame')}
       disabled={isExporting}
-      use:tooltip
-    ><span class="w98-structural-glyph" aria-hidden="true">◀</span></button>
+      use:tooltip><span class="w98-structural-glyph" aria-hidden="true">◀</span></button
+    >
     <span class="gif-frame-info w98-chip">{currentFrame + 1}/{frameCount}</span>
     {#if onDeleteFrame}
       <button
@@ -117,8 +103,8 @@
         onclick={() => onDeleteFrame(currentFrame)}
         title={i18n.t('delete_frame')}
         disabled={isExporting || frameCount <= 1}
-        use:tooltip
-      ><span class="w98-emoji" aria-hidden="true">🗑️</span></button>
+        use:tooltip><span class="w98-emoji" aria-hidden="true">🗑️</span></button
+      >
     {/if}
     {#if onDuplicateFrame}
       <button
@@ -126,8 +112,8 @@
         onclick={() => onDuplicateFrame(currentFrame)}
         title={i18n.t('duplicate_frame')}
         disabled={isExporting}
-        use:tooltip
-      ><span class="w98-emoji" aria-hidden="true">📋</span></button>
+        use:tooltip><span class="w98-emoji" aria-hidden="true">📋</span></button
+      >
     {/if}
     {#if onReorderFrame}
       <button
@@ -135,117 +121,30 @@
         onclick={() => onReorderFrame(currentFrame, currentFrame - 1)}
         title={i18n.t('move_frame_left')}
         disabled={isExporting || currentFrame === 0}
-        use:tooltip
-      ><span class="w98-structural-glyph" aria-hidden="true">⬅</span></button>
+        use:tooltip><span class="w98-structural-glyph" aria-hidden="true">⬅</span></button
+      >
       <button
         class="gif-btn w98-inline-button w98-button--thin"
         onclick={() => onReorderFrame(currentFrame, currentFrame + 1)}
         title={i18n.t('move_frame_right')}
         disabled={isExporting || currentFrame >= frameCount - 1}
-        use:tooltip
-      ><span class="w98-structural-glyph" aria-hidden="true">➡</span></button>
+        use:tooltip><span class="w98-structural-glyph" aria-hidden="true">➡</span></button
+      >
     {/if}
     <button
       class="gif-btn w98-inline-button w98-button--thin"
       onclick={() => onSeek(Math.min(frameCount - 1, currentFrame + 1))}
       title={i18n.t('next_frame')}
       disabled={isExporting}
-      use:tooltip
-    ><span class="w98-structural-glyph" aria-hidden="true">▶</span></button>
+      use:tooltip><span class="w98-structural-glyph" aria-hidden="true">▶</span></button
+    >
     <button
       class="gif-btn w98-inline-button w98-button--thin"
       onclick={() => onSeek(frameCount - 1)}
       title={i18n.t('last_frame')}
       disabled={isExporting}
-      use:tooltip
-    ><span class="w98-structural-glyph" aria-hidden="true">⏭</span></button>
-    <div class="gif-sep w98-toolbar-divider"></div>
-    {#if isExporting}
-      <span class="gif-export-status w98-chip">
-        {Math.round(exportProgress * 100)}% ({Math.min(Math.ceil(exportProgress * frameCount), frameCount)}/{frameCount})
-      </span>
-      {#if onCancelExport}
-        <button
-          class="gif-btn gif-cancel-btn w98-inline-button w98-button--thin"
-          onclick={onCancelExport}
-          title={i18n.t('cancel')}
-          aria-label={i18n.t('cancel')}
-          use:tooltip
-        ><span class="w98-structural-glyph" aria-hidden="true">✕</span></button>
-      {/if}
-    {:else}
-      <button
-        class="gif-btn gif-export-btn w98-button"
-        onclick={onExport}
-        title={i18n.t('export_gif')}
-        use:tooltip
-      >
-        <span class="w98-emoji" aria-hidden="true">💾</span>
-        <span>{i18n.t('gif_btn')}</span>
-      </button>
-    {/if}
-    {#if onExportSpritesheet}
-      <button
-        class="gif-btn gif-export-btn w98-inline-button w98-button--thin"
-        onclick={onExportSpritesheet}
-        disabled={isExporting}
-        title={i18n.t('export_spritesheet')}
-        use:tooltip
-      >
-        <span class="w98-emoji" aria-hidden="true">🧩</span>
-      </button>
-    {/if}
-    {#if onExportSequence}
-      <button
-        class="gif-btn gif-export-btn w98-inline-button w98-button--thin"
-        onclick={onExportSequence}
-        disabled={isExporting}
-        title={i18n.t('export_sequence_desc')}
-        aria-label={i18n.t('export_sequence')}
-        use:tooltip
-      >
-        <span class="w98-emoji" aria-hidden="true">📁</span>
-      </button>
-    {/if}
-    {#if onExportApng}
-      <button
-        class="gif-btn gif-export-btn w98-inline-button w98-button--thin"
-        onclick={onExportApng}
-        disabled={isExporting}
-        title={i18n.t('export_apng_desc')}
-        aria-label={i18n.t('export_apng')}
-        use:tooltip
-      >
-        <span class="w98-emoji" aria-hidden="true">🖼️</span>
-        <span>APNG</span>
-      </button>
-    {/if}
-    {#if onExportAnimatedSvg}
-      <button
-        class="gif-btn gif-export-btn w98-inline-button w98-button--thin"
-        onclick={onExportAnimatedSvg}
-        disabled={isExporting}
-        title={i18n.t('export_animated_svg_desc')}
-        aria-label={i18n.t('export_animated_svg')}
-        use:tooltip
-      >
-        <span class="w98-structural-glyph" aria-hidden="true">▦</span>
-        <span>SVG</span>
-      </button>
-    {/if}
-    {#if onExportAnimatedWebp}
-      <button
-        class="gif-btn gif-export-btn w98-inline-button w98-button--thin"
-        onclick={onExportAnimatedWebp}
-        disabled={isExporting}
-        title={i18n.t('export_animated_webp_desc')}
-        aria-label={i18n.t('export_animated_webp')}
-        use:tooltip
-      >
-        <span class="w98-emoji" aria-hidden="true">🎞️</span>
-        <span>WebP</span>
-      </button>
-    {/if}
+      use:tooltip><span class="w98-structural-glyph" aria-hidden="true">⏭</span></button
+    >
   </div>
   <div class="gif-slider-row">
     <input
@@ -330,28 +229,6 @@
     cursor: not-allowed;
   }
 
-  .gif-export-btn {
-    min-width: 0;
-    padding: 0 8px;
-    font-size: var(--w98-font-size-sm);
-    white-space: nowrap;
-  }
-
-  .gif-export-status {
-    font-size: var(--w98-font-size-sm);
-    font-family: 'Courier New', Courier, monospace;
-    font-weight: bold;
-    color: var(--w98-text);
-    white-space: nowrap;
-    font-variant-numeric: tabular-nums;
-  }
-
-  .gif-cancel-btn {
-    color: var(--w98-color-error);
-    font-size: var(--w98-font-size-sm);
-    padding: 0 6px;
-  }
-
   .gif-frame-info {
     font-size: var(--w98-font-size-base);
     font-family: 'Courier New', Courier, monospace;
@@ -362,12 +239,6 @@
     text-align: center;
     white-space: nowrap;
     font-variant-numeric: tabular-nums;
-  }
-
-  .gif-sep {
-    width: 1px;
-    min-height: 18px;
-    margin: 0 2px;
   }
 
   .gif-slider-row {

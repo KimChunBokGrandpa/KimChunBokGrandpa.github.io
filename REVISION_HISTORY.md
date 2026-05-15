@@ -2,6 +2,82 @@
 
 ---
 
+## Unreleased (2026-05-13)
+
+> Pixel Lab export hierarchy를 WP-08 축에서 spec 단계로 올려 requirements를 확정하고 design을 작성했다.
+
+### Export Hierarchy Spec — Design Phase
+
+- **Requirements confirmation and design first pass**
+  - `.kiro/specs/pixel-lab-export-hierarchy/requirements.md`
+  - `.kiro/specs/pixel-lab-export-hierarchy/design.md` (new)
+  - export surface를 `Export` region + PreviewBottomBar primary mirror 구조로 정리하는 view-model SSOT(`src/lib/utils/exportHierarchy.ts`) 도입 설계
+  - `ControlPanel` sticky save bar를 새 `ExportRegion.svelte`로 교체하고 ControlPanel은 snippet slot만 노출하도록 인터페이스 분리
+  - `GifControls`를 transport-only로 축소하고 애니메이션 export variant(APNG / Animated SVG / Animated WebP / sprite-sheet / frame sequence)는 `Export` region `Animation Variants` group으로 이관
+  - export capability gate(`canShareStill`) + media-kind 전환 시 primary focus 재바인딩 + 60초 주기 relative-time readout 규칙 문서화
+  - 신규 i18n 키(`export_section_still`, `export_section_animation`, `export_empty_load_image`, `export_history_empty`) 정의
+  - Export Surface에서 `Send to Poster Maker` handoff는 Requirement 1.9로 제외 (Poster Maker 자체 제거는 별도 spec `poster-maker-removal`로 분리)
+
+### Poster Maker Removal Spec — Requirements + Design
+
+- **Product scope reduction**
+  - `.kiro/specs/poster-maker-removal/requirements.md` (new)
+  - `.kiro/specs/poster-maker-removal/design.md` (new)
+  - Poster Maker 프로그램 본체, 관련 handoff, shell window, manifest appId, i18n, docs를 제품에서 제거하는 단일 스펙으로 정리
+  - 7개 Phase(Guardrails → UI Surface Removal → Handoff Removal → Core/State Removal → Schema + Manifest → i18n & Docs Sync → Verification) 계획
+  - `RetroCam → Pixel Lab` capture handoff는 유지, `RetroCam → Poster Maker`는 함께 제거
+  - Project Manifest schema는 version 1을 유지하되 runtime loader가 legacy Poster record를 silently skip하는 safe-list 필터 도입
+  - Handoff bus persisted intent 중 Poster-bound 항목은 load time에 drop
+
+### Poster Maker Removal — Implementation Complete
+
+- **Files deleted**
+  - `src/lib/components/poster/PosterMaker.svelte` + `src/lib/components/poster/` directory
+  - `src/lib/poster/presets.ts`, `src/lib/poster/styles.ts` + `src/lib/poster/` directory
+  - `src/lib/stores/posterMakerStore.svelte.ts`, `posterMakerStore.test.ts`
+  - `src/lib/handoffs/pixelLabToPosterMaker.ts`, `pixelLabToPosterMakerFlow.ts`, `retroCamToPosterMaker.ts`, `retroCamToPosterMakerFlow.ts` + `*.test.ts`
+  - `src/lib/components/__tests__/PosterMaker.test.ts`
+- **Schema changes**
+  - `AppId` narrowed to `'pixel-lab' | 'retrocam'`
+  - `PosterMakerProjectStateV1`, `PosterMakerLayerV1`, `BasePosterLayerV1`, `PosterImageLayerV1`, `PosterTextLayerV1`, `PosterFrameLayerV1`, `PosterOverlayLayerV1`, `PosterStickerLayerV1`, `ProjectSourceContextV1`, `posterProjectDefaults` removed
+  - Runtime safe-list filter introduced: `listRecentProjects` and `loadProject` skip `poster-maker` records
+- **i18n keys removed**
+  - 53 Poster-specific keys removed from `en.ts`, `ko.ts`, `ja.ts`
+- **Shell surface cleanup**
+  - Window registry: `poster_maker` removed from `windowConfigs`, `desktopWindowConfigs`, `mobileWindowOrder`, `getWindowTitle`, `getShellProgramSummary`
+  - Desktop icons: Poster Maker icon removed
+  - Start menu: Poster Maker entry removed
+  - Context menu: `sendToPosterMaker` action removed from preview context menu
+  - Design system showcase: Poster Maker icon rows, feature surfaces, buttons removed
+- **Handoff bus**
+  - `send_to_poster_maker`, `use_in_poster_maker` intents removed from contracts
+  - Legacy persisted Poster intent dropped at load time
+- **Docs sync**
+  - `README.md`, `PLAN_TASK.md`, `required.md`, `docs/vnext/02_program_suite.md`, `07_app_taxonomy_spec.md`, `08_project_schema_spec.md`, `09_cross_app_handoff_spec.md` updated
+
+### Doc Sync
+
+- `PLAN_TASK.md`
+  - WP-08 Active Focus에 `pixel-lab-export-hierarchy` spec 진행 상태 반영
+  - Task List에 4a / 4b 항목(export hierarchy spec, Poster Maker removal spec) 추가
+  - Supporting surfaces 블록에서 Poster Maker "유지" 문구를 제거 방향으로 교체
+  - Product scope reduction 블록을 Active Focus에 추가해 Poster Maker 제거 방향 명시
+
+### Verification
+
+- `npm run lint`: green (0 errors)
+- `npm run check`: `0 errors / 0 warnings`
+- `npm test`: `669 tests / 89 files` green
+- `npm run build`: green, main client chunk `331.48 kB`
+- `grep -Rni 'poster' src/`: only `warm_poster` preset, `poster.png` sample filenames, legacy safe-list filter code, and regression guards remain — no Poster Maker program identifiers
+
+### Notes
+
+- Poster Maker removal implementation is complete (Phase B~G)
+- manual QA authority는 계속 `required.md`
+
+---
+
 ## Unreleased (2026-05-07)
 
 > Product planning has been recentered around Pixel Lab as the main recommendation-led editor for both classic pixelization and broader retro treatment.
@@ -65,6 +141,39 @@
   - `src/lib/i18n/ja.ts`
   - Preview 하단 action bar 위에 pixel size, palette, dithering, color count readout을 추가해 조정 결과 판단 근거를 바로 보이게 정리
   - compare mode 활성화 시 output summary에 slider / side-by-side / onion skin 중 현재 compare variant를 함께 노출
+- **Palette surface family hierarchy connected**
+  - `src/lib/utils/palettes.ts`
+  - `src/lib/utils/palettes.test.ts`
+  - `src/lib/components/editor/ControlPanel.svelte`
+  - `src/lib/components/palette/PaletteGallery.svelte`
+  - `src/lib/components/palette/PaletteList.svelte`
+  - `src/lib/components/palette/PaletteDetail.svelte`
+  - `src/lib/components/__tests__/ControlPanel.test.ts`
+  - `src/lib/components/__tests__/PaletteGallery.test.ts`
+  - built-in palette theme을 `Classic Pixel` / `Retro Treatment` / `Hybrid` / `Reference` family로 분류하는 helper를 추가
+  - Palette Gallery 상단 active summary, 추천 palette chip, detail panel에 family label을 노출해 추천/quick tune 이후 palette 선택 방향이 계속 보이도록 정리
+  - ControlPanel 상단 summary와 palette picker 버튼에도 active palette family를 표시해 Gallery를 열기 전에도 방향성을 확인할 수 있게 정리
+  - 추천 palette chip은 rank와 family를 함께 보여주고, recommendation loading 상태도 같은 surface 안에서 드러나도록 정리
+- **Readable retro typography pass**
+  - `src/lib/styles/theme.css`
+  - `src/app.css`
+  - `src/routes/design-system/+page.svelte`
+  - 전역 UI font를 bitmap 우선에서 `Tahoma/Geneva + locale CJK system sans`로 전환
+  - base typography를 12px / 600 weight / antialiased rendering으로 정리하고, bitmap font는 `--w98-font-family-retro` accent stack으로 보존
+  - Korean desktop/mobile Playwright render probe로 적용 font stack과 export bar wrapping을 확인
+- **ControlPanel recommendation-first tab hierarchy**
+  - `src/lib/components/editor/ControlPanel.svelte`
+  - `src/lib/components/__tests__/ControlPanel.test.ts`
+  - ControlPanel 기본 탭을 `Presets`로 바꾸고 탭 순서를 `Presets -> Basic -> Effects -> Adjust`로 재정렬
+  - Presets 탭의 quick tune strip이 기본 진입 surface로 보이는지 회귀 테스트와 desktop/mobile Playwright render probe로 확인
+- **ControlPanel detailed tuning fieldset grouping**
+  - `src/lib/components/editor/ControlPanel.svelte`
+  - `src/lib/components/editor/EffectLayerStack.svelte`
+  - `src/lib/components/editor/PostProcessFilters.svelte`
+  - `src/lib/components/__tests__/ControlPanel.test.ts`
+  - Basic 탭의 pixel size와 color quantization controls를 dense fieldset grid로 묶고, color space toggle을 color quantization 그룹 안으로 편입
+  - Effects 탭의 CRT scanlines / CSS render mode / effect stack을 별도 fieldset으로 정리하고, Adjust 탭의 post-filter sliders를 하나의 fieldset grid로 정렬
+  - ControlPanel 회귀 테스트에 Basic / Effects / Adjust fieldset grouping expectation을 추가
 - **Sample image benchmark fixed**
   - `sampleImages/`
   - `docs/sample_image_benchmark.md`
@@ -112,7 +221,9 @@
 - `npm run check`
   - `0 errors / 0 warnings`
 - `npm test -- src/lib/components/__tests__/ControlPanel.test.ts src/lib/i18n/index.svelte.test.ts`
-  - latest `16 tests / 2 files` green
+  - latest `18 tests / 2 files` green
+- `npm test -- src/lib/components/__tests__/ControlPanel.test.ts`
+  - latest `18 tests / 1 file` green
 - `npm test -- src/lib/components/__tests__/PreviewBottomBar.test.ts src/lib/components/__tests__/PreviewContent.test.ts src/lib/i18n/index.svelte.test.ts`
   - latest `12 tests / 3 files` green
 - `npm run lint`
@@ -133,6 +244,23 @@
   - `40 tests / 3 files` green
 - `npm test -- src/lib/utils/effectLayers.test.ts src/lib/services/imageProcessor.test.ts src/lib/stores/gifPlaybackManager.test.ts src/lib/utils/presets.test.ts src/lib/utils/presetPreview.test.ts src/lib/components/__tests__/PresetManager.test.ts src/lib/components/__tests__/ControlPanel.test.ts src/lib/components/__tests__/HistoryPanel.test.ts src/lib/i18n/index.svelte.test.ts`
   - `86 tests / 9 files` green
+- `npm test -- src/lib/utils/palettes.test.ts src/lib/components/__tests__/PaletteGallery.test.ts`
+  - `15 tests / 2 files` green
+- `npm test -- src/lib/components/__tests__/ControlPanel.test.ts src/lib/utils/palettes.test.ts`
+  - `18 tests / 2 files` green
+- `npm run lint`
+  - green
+- `npm run check`
+  - `0 errors / 0 warnings`
+- Playwright render probe at `1280×900 ko` and `393×852 ko`
+  - typography stack applied as locale CJK system sans; export bar remains readable and wrapped
+- Playwright render probe at `1280×900 ko` and `393×852 ko`
+  - ControlPanel Basic / Effects / Adjust fieldsets render with `0` detected internal overflow
+- `npm test`
+  - `692 tests / 95 files` green
+- `npm run build`
+  - green
+  - main client chunk: `356.55 kB`
 
 ---
 

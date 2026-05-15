@@ -6,15 +6,22 @@
   import type { CompareVariant } from './CompareView.svelte';
   import type { createZoomPan } from '$lib/stores/zoomPanStore.svelte';
   import type { DitherType, ProcessingSettings } from '$lib/types';
+  import type { ExportPrimaryAction } from '$lib/utils/exportHierarchy';
 
-  const ditherLabelKeys: Record<DitherType, 'dither_none' | 'dither_fs' | 'dither_ordered' | 'dither_atkinson'> = {
+  const ditherLabelKeys: Record<
+    DitherType,
+    'dither_none' | 'dither_fs' | 'dither_ordered' | 'dither_atkinson'
+  > = {
     none: 'dither_none',
     floyd_steinberg: 'dither_fs',
     ordered: 'dither_ordered',
     atkinson: 'dither_atkinson',
   };
 
-  const compareVariantLabelKeys: Record<CompareVariant, 'compare_slider' | 'compare_side_by_side' | 'compare_onion'> = {
+  const compareVariantLabelKeys: Record<
+    CompareVariant,
+    'compare_slider' | 'compare_side_by_side' | 'compare_onion'
+  > = {
     slider: 'compare_slider',
     'side-by-side': 'compare_side_by_side',
     onion: 'compare_onion',
@@ -34,10 +41,12 @@
     currentRotation,
     processingSettings,
     colorCount = 0,
+    exportPrimary = null,
+    onInvokeExportPrimary,
     onRotate,
     onResetTransform,
     cycleCompareVariant,
-    onOpenSettings
+    onOpenSettings,
   }: {
     zp: ReturnType<typeof createZoomPan>;
     compareMode: boolean;
@@ -52,19 +61,31 @@
     currentRotation: number;
     processingSettings?: ProcessingSettings;
     colorCount?: number;
+    exportPrimary?: ExportPrimaryAction | null;
+    onInvokeExportPrimary?: () => void;
     onRotate?: (degrees: 90 | -90 | 180) => void;
     onResetTransform?: () => void;
     cycleCompareVariant: () => void;
     onOpenSettings: () => void;
   } = $props();
 
-  let compareShortcutHint = $derived(replacePrimaryModifierShortcutLabel(i18n.t('shortcut_hint_compare')));
-  let zoomOutShortcutHint = $derived(replacePrimaryModifierShortcutLabel(i18n.t('shortcut_hint_zoom_out')));
-  let zoomInShortcutHint = $derived(replacePrimaryModifierShortcutLabel(i18n.t('shortcut_hint_zoom_in')));
-  let zoomFitShortcutHint = $derived(replacePrimaryModifierShortcutLabel(i18n.t('shortcut_hint_fit')));
-  let outputPaletteName = $derived(processingSettings ? getPaletteName(processingSettings.palette) : '');
+  let compareShortcutHint = $derived(
+    replacePrimaryModifierShortcutLabel(i18n.t('shortcut_hint_compare')),
+  );
+  let zoomOutShortcutHint = $derived(
+    replacePrimaryModifierShortcutLabel(i18n.t('shortcut_hint_zoom_out')),
+  );
+  let zoomInShortcutHint = $derived(
+    replacePrimaryModifierShortcutLabel(i18n.t('shortcut_hint_zoom_in')),
+  );
+  let zoomFitShortcutHint = $derived(
+    replacePrimaryModifierShortcutLabel(i18n.t('shortcut_hint_fit')),
+  );
+  let outputPaletteName = $derived(
+    processingSettings ? getPaletteName(processingSettings.palette) : '',
+  );
   let outputDitherLabel = $derived(
-    processingSettings ? i18n.t(ditherLabelKeys[processingSettings.ditherType]) : ''
+    processingSettings ? i18n.t(ditherLabelKeys[processingSettings.ditherType]) : '',
   );
   let compareVariantLabel = $derived(i18n.t(compareVariantLabelKeys[compareVariant]));
 </script>
@@ -91,7 +112,11 @@
         {outputDitherLabel}
       </span>
       {#if colorCount > 0}
-        <span class="output-chip w98-readout-chip w98-readout-chip--accent" title={i18n.t('unique_colors')} use:tooltip>
+        <span
+          class="output-chip w98-readout-chip w98-readout-chip--accent"
+          title={i18n.t('unique_colors')}
+          use:tooltip
+        >
           {i18n.t('gallery_n_colors', colorCount)}
         </span>
       {/if}
@@ -106,8 +131,8 @@
             class="output-icon"
             class:w98-emoji={compareVariantUsesEmoji}
             class:w98-structural-glyph={!compareVariantUsesEmoji}
-            aria-hidden="true"
-          >{compareVariantIcon}</span>
+            aria-hidden="true">{compareVariantIcon}</span
+          >
           {compareVariantLabel}
         </span>
       {/if}
@@ -118,34 +143,60 @@
     <!-- Pixel Lab controls -->
     <button
       class="tb-btn w98-inline-button w98-button--thin"
-      onclick={(e) => { e.stopPropagation(); onOpenSettings(); }}
+      onclick={(e) => {
+        e.stopPropagation();
+        onOpenSettings();
+      }}
       title={i18n.t('open_settings')}
       aria-label={i18n.t('btn_open_settings')}
-      use:tooltip
-    ><span class="toolbar-icon w98-emoji" aria-hidden="true">⚙️</span></button>
+      use:tooltip><span class="toolbar-icon w98-emoji" aria-hidden="true">⚙️</span></button
+    >
     <span class="tb-sep w98-toolbar-divider"></span>
     <!-- Transform -->
-    <button class="tb-btn w98-inline-button w98-button--thin" onclick={() => onRotate?.(-90)} title={i18n.t('rotate_left')} aria-label={i18n.t('btn_rotate_left')} use:tooltip
-    ><span class="toolbar-icon w98-structural-glyph" aria-hidden="true">↺</span></button>
-    <button class="tb-btn w98-inline-button w98-button--thin" onclick={() => onRotate?.(90)} title={i18n.t('rotate_right')} aria-label={i18n.t('btn_rotate_right')} use:tooltip
-    ><span class="toolbar-icon w98-structural-glyph" aria-hidden="true">↻</span></button>
+    <button
+      class="tb-btn w98-inline-button w98-button--thin"
+      onclick={() => onRotate?.(-90)}
+      title={i18n.t('rotate_left')}
+      aria-label={i18n.t('btn_rotate_left')}
+      use:tooltip
+      ><span class="toolbar-icon w98-structural-glyph" aria-hidden="true">↺</span></button
+    >
+    <button
+      class="tb-btn w98-inline-button w98-button--thin"
+      onclick={() => onRotate?.(90)}
+      title={i18n.t('rotate_right')}
+      aria-label={i18n.t('btn_rotate_right')}
+      use:tooltip
+      ><span class="toolbar-icon w98-structural-glyph" aria-hidden="true">↻</span></button
+    >
     <button
       class="tb-btn w98-inline-button w98-button--thin"
       class:w98-inline-button--active={cropModeActive}
-      onclick={() => { cropModeActive = !cropModeActive; if (cropModeActive) { eyedropperActive = false; eyedropperOverlay?.dismiss(); } }}
+      onclick={() => {
+        cropModeActive = !cropModeActive;
+        if (cropModeActive) {
+          eyedropperActive = false;
+          eyedropperOverlay?.dismiss();
+        }
+      }}
       title={cropModeActive ? i18n.t('crop_active') : i18n.t('crop')}
       aria-label={cropModeActive ? i18n.t('crop_active') : i18n.t('crop')}
       aria-pressed={cropModeActive}
       use:tooltip
-    ><span class="toolbar-icon w98-structural-glyph" aria-hidden="true">✂</span></button>
+      ><span class="toolbar-icon w98-structural-glyph" aria-hidden="true">✂</span></button
+    >
     {#if currentRotation !== 0 || hasCrop}
       <button
         class="tb-btn w98-inline-button w98-button--thin"
-        onclick={() => { onResetTransform?.(); cropModeActive = false; }}
+        onclick={() => {
+          onResetTransform?.();
+          cropModeActive = false;
+        }}
         title={i18n.t('reset_transform')}
         aria-label={i18n.t('btn_reset_transform')}
         use:tooltip
-      ><span class="toolbar-icon w98-structural-glyph" aria-hidden="true">⟲</span></button>
+        ><span class="toolbar-icon w98-structural-glyph" aria-hidden="true">⟲</span></button
+      >
     {/if}
     <span class="tb-sep w98-toolbar-divider"></span>
     <!-- Compare -->
@@ -153,27 +204,41 @@
       class="tb-btn w98-inline-button w98-button--thin"
       class:w98-inline-button--active={compareMode}
       data-testid="toggle-compare-button"
-      onclick={() => { compareMode = !compareMode; }}
+      onclick={() => {
+        compareMode = !compareMode;
+      }}
       title={compareMode ? i18n.t('exit_compare') : compareShortcutHint}
       aria-label={i18n.t('btn_compare_toggle')}
       aria-pressed={compareMode}
-      use:tooltip
-      ><span class="toolbar-icon w98-emoji" aria-hidden="true">⚖️</span></button>
+      use:tooltip><span class="toolbar-icon w98-emoji" aria-hidden="true">⚖️</span></button
+    >
     {#if compareMode}
       <button
         class="tb-btn w98-inline-button w98-button--thin"
         data-testid="cycle-compare-variant-button"
         onclick={cycleCompareVariant}
-        title="{i18n.t('compare_mode_cycle')}"
+        title={i18n.t('compare_mode_cycle')}
         aria-label={i18n.t('btn_compare_variant')}
         use:tooltip
-      ><span class="toolbar-icon" class:w98-emoji={compareVariantUsesEmoji} class:w98-structural-glyph={!compareVariantUsesEmoji} aria-hidden="true">{compareVariantIcon}</span></button>
+        ><span
+          class="toolbar-icon"
+          class:w98-emoji={compareVariantUsesEmoji}
+          class:w98-structural-glyph={!compareVariantUsesEmoji}
+          aria-hidden="true">{compareVariantIcon}</span
+        ></button
+      >
     {/if}
     {#if !compareMode}
       <span class="tb-sep w98-toolbar-divider"></span>
       <!-- Zoom -->
-      <button class="tb-btn w98-inline-button w98-button--thin" onclick={zp.zoomOut} title={zoomOutShortcutHint} aria-label={i18n.t('btn_zoom_out')} use:tooltip
-      ><span class="toolbar-icon w98-structural-glyph" aria-hidden="true">−</span></button>
+      <button
+        class="tb-btn w98-inline-button w98-button--thin"
+        onclick={zp.zoomOut}
+        title={zoomOutShortcutHint}
+        aria-label={i18n.t('btn_zoom_out')}
+        use:tooltip
+        ><span class="toolbar-icon w98-structural-glyph" aria-hidden="true">−</span></button
+      >
       <div class="zoom-input-container w98-panel-inset-thin">
         <input
           type="number"
@@ -193,39 +258,75 @@
         />
         <span class="zoom-percent w98-mono">%</span>
       </div>
-      <button class="tb-btn w98-inline-button w98-button--thin" onclick={zp.zoomIn} title={zoomInShortcutHint} aria-label={i18n.t('btn_zoom_in')} use:tooltip
-      ><span class="toolbar-icon w98-structural-glyph" aria-hidden="true">+</span></button>
-      <button class="tb-btn w98-inline-button w98-button--thin" onclick={zp.zoomToFit} title={zoomFitShortcutHint} aria-label={i18n.t('btn_fit_to_window')} use:tooltip
-      ><span class="toolbar-icon w98-structural-glyph" aria-hidden="true">⊡</span></button>
+      <button
+        class="tb-btn w98-inline-button w98-button--thin"
+        onclick={zp.zoomIn}
+        title={zoomInShortcutHint}
+        aria-label={i18n.t('btn_zoom_in')}
+        use:tooltip
+        ><span class="toolbar-icon w98-structural-glyph" aria-hidden="true">+</span></button
+      >
+      <button
+        class="tb-btn w98-inline-button w98-button--thin"
+        onclick={zp.zoomToFit}
+        title={zoomFitShortcutHint}
+        aria-label={i18n.t('btn_fit_to_window')}
+        use:tooltip
+        ><span class="toolbar-icon w98-structural-glyph" aria-hidden="true">⊡</span></button
+      >
       <span class="tb-sep w98-toolbar-divider"></span>
       <!-- View tools -->
       <button
         class="tb-btn w98-inline-button w98-button--thin"
         class:w98-inline-button--active={zp.showGrid}
-        onclick={() => { zp.showGrid = !zp.showGrid; }}
+        onclick={() => {
+          zp.showGrid = !zp.showGrid;
+        }}
         title={zp.showGrid ? i18n.t('hide_pixel_grid') : i18n.t('show_pixel_grid')}
         aria-label={i18n.t('btn_grid_toggle')}
         aria-pressed={zp.showGrid}
         use:tooltip
-      ><span class="toolbar-icon w98-structural-glyph" aria-hidden="true">#</span></button>
+        ><span class="toolbar-icon w98-structural-glyph" aria-hidden="true">#</span></button
+      >
       <button
         class="tb-btn w98-inline-button w98-button--thin"
         class:w98-inline-button--active={tileMode}
-        onclick={() => { tileMode = !tileMode; }}
+        onclick={() => {
+          tileMode = !tileMode;
+        }}
         title={tileMode ? i18n.t('exit_tile') : i18n.t('tile_preview')}
         aria-label={i18n.t('btn_tile_toggle')}
         aria-pressed={tileMode}
         use:tooltip
-      ><span class="toolbar-icon w98-structural-glyph" aria-hidden="true">⊞</span></button>
+        ><span class="toolbar-icon w98-structural-glyph" aria-hidden="true">⊞</span></button
+      >
       <button
         class="tb-btn w98-inline-button w98-button--thin"
         class:w98-inline-button--active={eyedropperActive}
-        onclick={() => { eyedropperActive = !eyedropperActive; eyedropperOverlay?.dismiss(); }}
+        onclick={() => {
+          eyedropperActive = !eyedropperActive;
+          eyedropperOverlay?.dismiss();
+        }}
         title={eyedropperActive ? i18n.t('exit_eyedropper') : i18n.t('eyedropper')}
         aria-label={i18n.t('btn_eyedropper_toggle')}
         aria-pressed={eyedropperActive}
-        use:tooltip
-      ><span class="toolbar-icon w98-emoji" aria-hidden="true">💧</span></button>
+        use:tooltip><span class="toolbar-icon w98-emoji" aria-hidden="true">💧</span></button
+      >
+    {/if}
+    {#if exportPrimary}
+      <span class="tb-sep w98-toolbar-divider"></span>
+      <button
+        class="tb-btn export-primary-mirror w98-button w98-button--primary"
+        data-testid="preview-export-primary-action"
+        aria-label={exportPrimary.ariaLabel}
+        aria-busy={exportPrimary.busy}
+        disabled={exportPrimary.busy}
+        title={exportPrimary.tooltip}
+        onclick={onInvokeExportPrimary}
+      >
+        <span class="w98-emoji" aria-hidden="true">{exportPrimary.icon}</span>
+        <span>{i18n.t(exportPrimary.labelKey)}</span>
+      </button>
     {/if}
   </div>
 </div>
@@ -326,6 +427,10 @@
     margin-left: 1px;
   }
 
+  .export-primary-mirror {
+    flex-shrink: 0;
+  }
+
   @media (max-width: 550px) {
     .preview-bottom-stack {
       bottom: 4px;
@@ -370,6 +475,10 @@
     }
     .zoom-input-container {
       display: none;
+    }
+    .export-primary-mirror {
+      position: sticky;
+      right: 0;
     }
   }
 </style>

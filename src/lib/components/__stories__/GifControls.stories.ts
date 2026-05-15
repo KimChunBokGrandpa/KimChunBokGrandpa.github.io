@@ -33,7 +33,6 @@ export const Paused: Story = {
     onPlay: () => {},
     onPause: () => {},
     onSeek: () => {},
-    onExport: () => {},
   },
 };
 

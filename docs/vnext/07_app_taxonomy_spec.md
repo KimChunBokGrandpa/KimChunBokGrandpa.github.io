@@ -51,7 +51,6 @@ A first-party program that can be launched directly but primarily supports Pixel
 
 Current supporting programs:
 
-- `Poster Maker`
 - `RetroCam`
 
 Rules:
@@ -73,7 +72,6 @@ Rules:
 Examples:
 
 - `Pixel Lab`
-- `Poster Maker`
 - `RetroCam`
 
 ### 4. Program Utility Window
@@ -124,19 +122,17 @@ These must stay out of scope unless they solve proven Pixel Lab workflow frictio
 | Program | Role | Launch Surface | Current Status |
 |---|---|---|---|
 | `Pixel Lab` | primary recommendation-led image editor | desktop icon + taskbar | shipped |
-| `Poster Maker` | supporting composition destination | desktop icon + taskbar | shipped |
 | `RetroCam` | supporting capture source | desktop icon + taskbar | shipped |
 
 ---
 
 ## Current Runtime Mapping
 
-The current codebase exposes seven runtime window IDs.
+The current codebase exposes six runtime window IDs.
 
-Three map to launchable program windows:
+Two map to launchable program windows:
 
 - `preview`
-- `poster_maker`
 - `retrocam`
 
 Four remain internal `Pixel Lab` utility surfaces:
@@ -149,7 +145,6 @@ Four remain internal `Pixel Lab` utility surfaces:
 | Current Runtime ID | Current Meaning | Classification | Shell Name |
 |---|---|---|---|
 | `preview` | processed image preview | `Pixel Lab` primary editor window | `Pixel Lab` |
-| `poster_maker` | poster composition workspace | supporting program primary window | `Poster Maker` |
 | `retrocam` | webcam capture workspace | supporting program primary window | `RetroCam` |
 | `settings` | processing controls | `Pixel Lab` utility window | `Pixel Lab - Controls` |
 | `gallery` | palette/preset browsing surface | `Pixel Lab` utility window | `Pixel Lab - Presets` |
@@ -169,13 +164,12 @@ Four remain internal `Pixel Lab` utility surfaces:
 Current shipped desktop icons:
 
 - `Pixel Lab`
-- `Poster Maker`
 - `RetroCam`
 
 Priority rule:
 
 - Pixel Lab should be visually and copy-wise understood as the default start
-- Poster Maker and RetroCam may remain desktop entries, but should read as supporting software
+- RetroCam may remain a desktop entry, but should read as supporting software
 
 Do not pin these as peer apps on the desktop:
 
@@ -221,7 +215,6 @@ Bad:
 Use:
 
 - `Pixel Lab`
-- `Poster Maker`
 - `RetroCam`
 
 ### Program Utility Window
@@ -258,11 +251,6 @@ Examples:
 - utility windows open from Pixel Lab menus, toolbar actions, or context actions
 - re-opening Pixel Lab from the desktop should focus the primary window first
 
-### Poster Maker
-
-- desktop launch opens a new or last-opened poster document
-- if opened from a handoff, the incoming Pixel Lab asset takes focus immediately
-
 ### RetroCam
 
 - desktop launch opens capture-ready state when permissions allow
@@ -284,13 +272,6 @@ Examples:
 - batch conversion
 - processing history
 - advanced export controls
-
-### Poster Maker Owns
-
-- canvas/document presets
-- text blocks and layout
-- frames, stickers, overlays
-- poster-focused export workflow
 
 ### RetroCam Owns
 
@@ -327,7 +308,7 @@ If the answer remains fuzzy, do not promote it to a desktop icon yet.
 
 - `Pixel Lab` is visibly the first product surface
 - Classic Pixel / Retro Treatment recommendation work clearly belongs to Pixel Lab
-- `Poster Maker` and `RetroCam` read as useful supporting programs, not roadmap peers
+- `RetroCam` reads as a useful supporting program, not a roadmap peer
 - current generic utility window labels stop appearing as top-level desktop peers
 - Start menu / desktop / taskbar all agree on the same taxonomy
 - the team can classify every new UI surface as `Pixel Lab core`, `Pixel Lab utility`, `supporting program`, or `shared shell`

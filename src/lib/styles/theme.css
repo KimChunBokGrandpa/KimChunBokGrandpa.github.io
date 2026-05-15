@@ -84,22 +84,21 @@
   --w98-desktop-card-shadow: 2px 2px 0 rgba(0, 0, 0, 0.25);
 
   /* ── Typography ── */
-  --w98-font-family-latin: "Pixelated MS Sans Serif", "Microsoft Sans Serif",
-    "MS Sans Serif", "Segoe UI", Roboto, sans-serif;
-  /* Keep the bitmap shell font first even in KO/JA so locale changes do not
-     switch the whole chrome to a modern system UI. */
-  --w98-font-family-cjk: "Pixelated MS Sans Serif", "Apple SD Gothic Neo",
-    "Malgun Gothic", "Noto Sans KR", "Yu Gothic UI", "Yu Gothic",
-    "Hiragino Sans", "Meiryo", "Microsoft Sans Serif", "MS Sans Serif",
-    "Segoe UI", Roboto, sans-serif;
+  --w98-font-family-retro: "Pixelated MS Sans Serif", "Microsoft Sans Serif",
+    "MS Sans Serif", sans-serif;
+  --w98-font-family-latin: Tahoma, Geneva, "Microsoft Sans Serif",
+    "MS Sans Serif", "Segoe UI", Arial, sans-serif;
+  --w98-font-family-cjk: "Apple SD Gothic Neo", "Malgun Gothic",
+    "Noto Sans KR", "Yu Gothic UI", "Yu Gothic", "Hiragino Sans", Meiryo,
+    Tahoma, "Segoe UI", sans-serif;
   --w98-font-family: var(--w98-font-family-latin);
-  --w98-font-size-micro: 8px;
-  --w98-font-size-caption: 9px;
-  --w98-font-size-sm: 10px;
-  --w98-font-size-base: 11px;
-  --w98-font-size-action: 12px;
-  --w98-font-size-icon: 13px;
-  --w98-font-size-heading: 14px;
+  --w98-font-size-micro: 9px;
+  --w98-font-size-caption: 10px;
+  --w98-font-size-sm: 11px;
+  --w98-font-size-base: 12px;
+  --w98-font-size-action: 13px;
+  --w98-font-size-icon: 14px;
+  --w98-font-size-heading: 15px;
   --w98-emoji-font: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji",
     sans-serif;
 

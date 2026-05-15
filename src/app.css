@@ -3,12 +3,11 @@ body {
   margin: 0;
   padding: 0;
   font-family: var(--w98-font-family);
-  font-weight: bold;
+  font-weight: 600;
   font-size: var(--w98-font-size-base);
   color: var(--w98-text);
-  -webkit-font-smoothing: none;
-  -moz-osx-font-smoothing: unset;
-  font-smooth: never;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   background-color: var(--w98-desktop-bg);
   overflow: hidden;
 }
@@ -26,7 +25,7 @@ textarea {
 }
 
 .w98-structural-glyph {
-  font-family: var(--w98-font-family);
+  font-family: var(--w98-font-family-retro), var(--w98-font-family);
   line-height: 1;
 }
 

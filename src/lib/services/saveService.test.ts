@@ -9,7 +9,7 @@ vi.mock('$lib/i18n/index.svelte', () => ({
   i18n: { t: vi.fn((key: string) => key) },
 }));
 
-const { createExportFile, saveImage } = await import('./saveService');
+const { saveImage } = await import('./saveService');
 const { shareImage, shareImageFiles } = await import('./saveService');
 
 describe('saveImage', () => {
@@ -96,18 +96,6 @@ describe('saveImage', () => {
 
     expect(result).toBe('image_downloaded');
     expect(clickSpy).toHaveBeenCalled();
-  });
-
-  it('creates export files with requested filename and mime type', async () => {
-    const mockCanvas = document.createElement('canvas');
-    const file = await createExportFile(
-      'blob:src',
-      { format: 'webp', quality: 0.9, filename: 'poster-draft' },
-      mockCanvas,
-    );
-
-    expect(file.name).toBe('poster-draft.webp');
-    expect(file.type).toBe('image/webp');
   });
 
   it('revokes blob URL after download', async () => {

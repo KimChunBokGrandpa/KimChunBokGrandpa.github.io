@@ -6,8 +6,8 @@ Purpose: 현재 `README.md`, `PLAN_TASK.md`, `required.md`, `docs/vnext/01_produ
 
 - `npm run verify:client` green in latest recorded baseline
 - `npm run build` green
-- latest recorded full unit baseline: `671 tests / 93 files`
-- current main client chunk: `345.11 kB`
+- latest recorded full unit baseline: `692 tests / 95 files`
+- current main client chunk: `356.55 kB`
 - current manual QA authority: `required.md`
 - current PM/developer premise authority: `docs/vnext/15_pm_developer_strategy_2026-05-07.md`
 - current request intake authority: `docs/vnext/17_request_intake_analysis_2026-05-08.md`
@@ -18,6 +18,11 @@ Purpose: 현재 `README.md`, `PLAN_TASK.md`, `required.md`, `docs/vnext/01_produ
   - PreviewBottomBar output summary exposes pixel size, palette, dithering, and color count beside preview actions
   - PreviewBottomBar compare mode now exposes the active compare variant beside output summary context
   - ControlPanel sticky export bar now separates primary Save As from format/quality controls and secondary Share/SVG/Poster Maker destinations
+  - PaletteGallery now exposes active palette summary, recommended palette rank, and Classic Pixel / Retro Treatment / Hybrid family labels
+  - ControlPanel now repeats the active palette family in its topbar summary and palette picker buttons
+  - global typography now uses a readable retro system stack with larger 9-15px tokens while preserving Win98 chrome
+  - ControlPanel now opens on Presets and orders tabs as Presets -> Basic -> Effects -> Adjust
+  - ControlPanel Basic / Effects / Adjust detailed tuning controls are now grouped into denser fieldset sections
   - `sampleImages/retro/` and cross-style core 5 now have manual pass/fail expectations for recommendation family, starting preset, and readability
   - first `effectLayers` / legacy `glitchFilters` / `renderMode` boundary inventory captured in `docs/vnext/16_processing_effect_boundary_inventory_2026-05-07.md`
   - still-image processing fast path now checks normalized effect layers before bypassing worker/Tauri processing
@@ -92,6 +97,10 @@ Purpose: 현재 `README.md`, `PLAN_TASK.md`, `required.md`, `docs/vnext/01_produ
   - first Preview output summary is connected in the bottom bar
   - compare confidence has a first compact summary pass
   - export action hierarchy has a first sticky-bar pass
+  - ControlPanel and PaletteGallery palette hierarchy have a first family-label pass
+  - global typography readability has a first token pass
+  - ControlPanel tab hierarchy has a recommendation-first pass
+  - ControlPanel detailed tuning fieldsets have a first density/grouping pass
 
 ### 4. P2 Supporting Flow Cohesion
 
@@ -141,7 +150,7 @@ Purpose: 현재 `README.md`, `PLAN_TASK.md`, `required.md`, `docs/vnext/01_produ
 - run the next processing-quality review against the documented `sampleImages/retro/` and cross-style core 5 checklist once local sample assets are restored
 - continue the `effectLayers` boundary pass from `docs/vnext/16_processing_effect_boundary_inventory_2026-05-07.md`
 - remaining browser/Tauri visual parity for `noise / wave / rgb_split / hqx` is runtime/manual against the sample checklist
-- continue from the Presets tab quick tune bridge into broader ControlPanel and palette surface hierarchy; Preview/compare confidence and sticky export hierarchy now have first compact passes
+- continue from the completed ControlPanel fieldset density pass into PreviewContent / ImageCanvas / PreviewBottomBar compare and output-confidence alignment; typography, tab order, PaletteGallery, Preview/compare summary, and sticky export hierarchy now have first compact passes
 - list remaining legacy effect boundary paths after the current `effectLayers` cleanup
 - keep project export-history runtime QA in `required.md`
 

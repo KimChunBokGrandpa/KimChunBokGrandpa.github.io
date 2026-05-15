@@ -8,13 +8,12 @@
 
   const wm = createWindowStore();
   wm.close('settings');
-  wm.openWindow('poster_maker');
   wm.openWindow('history');
   wm.focusWindow('preview');
 
-  const windowOrder: WindowId[] = ['preview', 'poster_maker', 'settings', 'gallery', 'batch', 'history'];
+  const windowOrder: WindowId[] = ['preview', 'settings', 'gallery', 'batch', 'history'];
   let visibleIds = $derived(
-    windowOrder.filter((id) => wm.wins[id].mode !== 'closed' && wm.wins[id].mode !== 'minimized')
+    windowOrder.filter((id) => wm.wins[id].mode !== 'closed' && wm.wins[id].mode !== 'minimized'),
   );
 
   function getSlot(id: WindowId) {
@@ -34,7 +33,7 @@
       icon: config.icon,
       mode: wm.wins[config.id].mode,
       focused: wm.focusedWindow === config.id,
-    }))
+    })),
   );
 </script>
 
@@ -61,25 +60,6 @@
       onFocus={() => wm.focusWindow('preview')}
     >
       <div>Preview Content</div>
-    </Win98Window>
-  {/if}
-
-  {#if wm.wins.poster_maker.mode !== 'closed'}
-    <Win98Window
-      title={getWindowTitle('poster_maker')}
-      icon="📰"
-      bind:mode={wm.wins.poster_maker.mode}
-      bind:x={wm.wins.poster_maker.x}
-      bind:y={wm.wins.poster_maker.y}
-      bind:width={wm.wins.poster_maker.w}
-      bind:height={wm.wins.poster_maker.h}
-      zIndex={wm.wins.poster_maker.z}
-      mobileSlot={getSlot('poster_maker')}
-      menuItems={['File', 'Poster', 'View']}
-      onClose={() => wm.close('poster_maker')}
-      onFocus={() => wm.focusWindow('poster_maker')}
-    >
-      <div>Poster Content</div>
     </Win98Window>
   {/if}
 

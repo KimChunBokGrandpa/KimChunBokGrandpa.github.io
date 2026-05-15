@@ -16,12 +16,6 @@ function getContextMenuItem(entry: ContextMenuEntry | undefined): ContextMenuIte
   return entry as ContextMenuItem;
 }
 
-function getActionItem(entry: ContextMenuEntry | undefined): ContextMenuActionItem {
-  const item = getContextMenuItem(entry);
-  expect('action' in item).toBe(true);
-  return item as ContextMenuActionItem;
-}
-
 function getNonHeadingItem(entry: ContextMenuEntry | undefined): ContextMenuActionItem | ContextMenuPassiveItem {
   const item = getContextMenuItem(entry);
   expect(item.heading).not.toBe(true);
@@ -47,8 +41,6 @@ describe('buildPreviewContextMenu', () => {
         tileMode: 'Tile Mode',
         undo: 'Undo',
         redo: 'Redo',
-        openWith: 'Open With',
-        sendToPosterMaker: 'Send to Poster Maker',
       },
       actions,
       canUndo: false,
@@ -76,46 +68,6 @@ describe('buildPreviewContextMenu', () => {
     expect(getNonHeadingItem(items[7]).disabled).toBe(false);
   });
 
-  it('adds an Open With section when poster-maker routing is available', () => {
-    const onSendToPosterMaker = vi.fn();
-
-    const items = buildPreviewContextMenu({
-      strings: {
-        save: 'Save',
-        copy: 'Copy',
-        compare: 'Compare',
-        tileMode: 'Tile Mode',
-        undo: 'Undo',
-        redo: 'Redo',
-        openWith: 'Open With',
-        sendToPosterMaker: 'Send to Poster Maker',
-      },
-      actions: {
-        onSave: vi.fn(),
-        onCopy: vi.fn(),
-        onToggleCompare: vi.fn(),
-        onToggleTileMode: vi.fn(),
-        onUndo: vi.fn(),
-        onRedo: vi.fn(),
-        onSendToPosterMaker,
-      },
-      canUndo: true,
-      canRedo: true,
-      canCopy: true,
-    });
-
-    expect(items).toHaveLength(11);
-    expect(items[8]?.separator).toBe(true);
-    expect(getContextMenuItem(items[9]).label).toBe('Open With');
-    expect(getContextMenuItem(items[9]).icon).toBe('📂');
-    expect(getContextMenuItem(items[9]).heading).toBe(true);
-    expect(getContextMenuItem(items[10]).label).toBe('Send to Poster Maker');
-    expect(getContextMenuItem(items[10]).icon).toBe('📰');
-
-    getActionItem(items[10]).action();
-    expect(onSendToPosterMaker).toHaveBeenCalledTimes(1);
-  });
-
   it('disables Copy when image clipboard support is unavailable', () => {
     const items = buildPreviewContextMenu({
       strings: {
@@ -125,8 +77,6 @@ describe('buildPreviewContextMenu', () => {
         tileMode: 'Tile Mode',
         undo: 'Undo',
         redo: 'Redo',
-        openWith: 'Open With',
-        sendToPosterMaker: 'Send to Poster Maker',
       },
       actions: {
         onSave: vi.fn(),

@@ -48,29 +48,6 @@ describe('Desktop shell flow', () => {
     expect(previewTaskbar.className).toContain('tb-active');
   }, 15000);
 
-  it('launches Poster Maker from desktop icon and drives taskbar focus/minimize/restore flow', async () => {
-    render(DesktopShellFlowWrapper);
-
-    await fireEvent.dblClick(screen.getByRole('button', { name: /open win_poster_maker/i }));
-
-    const posterTaskbar = screen.getByRole('button', { name: /taskbar_.*win_poster_maker/i });
-    expect(posterTaskbar.className).toContain('tb-active');
-    expect(screen.getByText('Poster Content')).toBeTruthy();
-
-    const previewTaskbar = screen.getByRole('button', { name: /taskbar_.*win_preview/i });
-    await fireEvent.click(previewTaskbar);
-    expect(previewTaskbar.className).toContain('tb-active');
-    expect(posterTaskbar.className).not.toContain('tb-active');
-
-    await fireEvent.click(previewTaskbar);
-    expect(previewTaskbar.className).toContain('tb-dim');
-    expect(previewTaskbar.className).not.toContain('tb-active');
-
-    await fireEvent.click(previewTaskbar);
-    expect(previewTaskbar.className).toContain('tb-active');
-    expect(previewTaskbar.className).not.toContain('tb-dim');
-  }, 15000);
-
   it('shows a launch strip for the selected desktop shortcut and opens from its button', async () => {
     render(DesktopShellFlowWrapper);
 
@@ -103,9 +80,8 @@ describe('Desktop shell flow', () => {
   it('hides the first-run guide after launching a desktop program from an icon', async () => {
     render(DesktopShellFlowWrapper);
 
-    await fireEvent.dblClick(screen.getByRole('button', { name: /open win_poster_maker/i }));
+    await fireEvent.dblClick(screen.getByRole('button', { name: /open win_retrocam/i }));
 
-    expect(screen.getByText('Poster Content')).toBeTruthy();
     expect(screen.queryByTestId('desktop-first-run-guide')).toBeNull();
   }, 15000);
 

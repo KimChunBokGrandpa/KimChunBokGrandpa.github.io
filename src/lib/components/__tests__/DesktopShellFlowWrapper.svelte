@@ -29,7 +29,7 @@
       icon: config.icon,
       mode: wm.wins[config.id].mode,
       focused: wm.focusedWindow === config.id,
-    }))
+    })),
   );
 </script>
 
@@ -54,23 +54,6 @@
       onFocus={() => wm.focusWindow('preview')}
     >
       <div>Preview Content</div>
-    </Win98Window>
-  {/if}
-
-  {#if wm.wins.poster_maker.mode !== 'closed'}
-    <Win98Window
-      title={getWindowTitle('poster_maker')}
-      icon="📰"
-      bind:mode={wm.wins.poster_maker.mode}
-      bind:x={wm.wins.poster_maker.x}
-      bind:y={wm.wins.poster_maker.y}
-      bind:width={wm.wins.poster_maker.w}
-      bind:height={wm.wins.poster_maker.h}
-      zIndex={wm.wins.poster_maker.z}
-      onClose={() => wm.close('poster_maker')}
-      onFocus={() => wm.focusWindow('poster_maker')}
-    >
-      <div>Poster Content</div>
     </Win98Window>
   {/if}
 </DesktopWorkspace>

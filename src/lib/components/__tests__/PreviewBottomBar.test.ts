@@ -47,6 +47,8 @@ vi.mock('$lib/i18n/index.svelte', () => ({
       compare_side_by_side: 'Side by Side',
       compare_onion: 'Onion Skin',
       compare_mode_cycle: 'Cycle Compare Mode',
+      save_as: 'Save As',
+      export_gif: 'Export GIF',
     }[key] ?? key)),
   },
 }));
@@ -57,6 +59,7 @@ vi.mock('$lib/utils/palettes', () => ({
 
 import PreviewBottomBar from '../editor/PreviewBottomBar.svelte';
 import type { ProcessingSettings } from '$lib/types';
+import type { ExportPrimaryAction } from '$lib/utils/exportHierarchy';
 
 afterEach(() => cleanup());
 
@@ -171,5 +174,96 @@ describe('PreviewBottomBar', () => {
     const compareSummary = getByTestId('preview-compare-summary');
     expect(compareSummary.textContent).toContain('▥');
     expect(compareSummary.textContent).toContain('Side by Side');
+  });
+
+  describe('Export Primary Action', () => {
+    function makeExportPrimary(overrides?: Partial<ExportPrimaryAction>): ExportPrimaryAction {
+      return {
+        id: 'save-still',
+        labelKey: 'save_as',
+        subLabel: 'PNG',
+        icon: '💾',
+        testId: 'save-image-button',
+        busy: false,
+        blocked: false,
+        tooltip: 'Save (Ctrl+S)',
+        ariaLabel: 'Save As · PNG',
+        ...overrides,
+      };
+    }
+
+    it('does not render export primary button when exportPrimary is null', () => {
+      const { queryByTestId } = render(PreviewBottomBar, {
+        props: {
+          zp: makeZoomPan() as any,
+          compareMode: false,
+          compareVariantIcon: '↔',
+          cropModeActive: false,
+          tileMode: false,
+          eyedropperActive: false,
+          eyedropperOverlay: { dismiss: vi.fn() },
+          hasCrop: false,
+          currentRotation: 0,
+          exportPrimary: null,
+          onInvokeExportPrimary: vi.fn(),
+          cycleCompareVariant: vi.fn(),
+          onOpenSettings: vi.fn(),
+        },
+      });
+
+      expect(queryByTestId('preview-export-primary-action')).toBeNull();
+    });
+
+    it('renders export_gif label when animation kind primary is provided', () => {
+      const { getByTestId } = render(PreviewBottomBar, {
+        props: {
+          zp: makeZoomPan() as any,
+          compareMode: false,
+          compareVariantIcon: '↔',
+          cropModeActive: false,
+          tileMode: false,
+          eyedropperActive: false,
+          eyedropperOverlay: { dismiss: vi.fn() },
+          hasCrop: false,
+          currentRotation: 0,
+          exportPrimary: makeExportPrimary({
+            id: 'export-gif',
+            labelKey: 'export_gif',
+            icon: '🎞️',
+            ariaLabel: 'Export GIF',
+          }),
+          onInvokeExportPrimary: vi.fn(),
+          cycleCompareVariant: vi.fn(),
+          onOpenSettings: vi.fn(),
+        },
+      });
+
+      const btn = getByTestId('preview-export-primary-action');
+      expect(btn.textContent).toContain('Export GIF');
+    });
+
+    it('sets aria-busy="true" and disabled when exportPrimary is busy', () => {
+      const { getByTestId } = render(PreviewBottomBar, {
+        props: {
+          zp: makeZoomPan() as any,
+          compareMode: false,
+          compareVariantIcon: '↔',
+          cropModeActive: false,
+          tileMode: false,
+          eyedropperActive: false,
+          eyedropperOverlay: { dismiss: vi.fn() },
+          hasCrop: false,
+          currentRotation: 0,
+          exportPrimary: makeExportPrimary({ busy: true }),
+          onInvokeExportPrimary: vi.fn(),
+          cycleCompareVariant: vi.fn(),
+          onOpenSettings: vi.fn(),
+        },
+      });
+
+      const btn = getByTestId('preview-export-primary-action');
+      expect(btn.getAttribute('aria-busy')).toBe('true');
+      expect((btn as HTMLButtonElement).disabled).toBe(true);
+    });
   });
 });

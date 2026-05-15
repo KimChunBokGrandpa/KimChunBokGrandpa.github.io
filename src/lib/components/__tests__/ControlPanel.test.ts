@@ -18,7 +18,6 @@ vi.mock('$lib/i18n/index.svelte', () => ({
       quality: 'Quality',
       share_image: 'Share',
       export_svg: 'Export SVG',
-      send_to_poster_maker: 'Send to Poster Maker',
     }[key] ?? key)),
   },
 }));
@@ -30,6 +29,10 @@ vi.mock('$lib/stores/customPresetStore.svelte', () => ({
     addPreset: vi.fn(),
     removePreset: vi.fn(),
   },
+  getCustomPresets: vi.fn(() => []),
+  addCustomPreset: vi.fn(),
+  removeCustomPreset: vi.fn(),
+  renameCustomPreset: vi.fn(),
 }));
 
 // Mock customPaletteStore
@@ -44,17 +47,15 @@ vi.mock('../editor/PresetManager.svelte', async () => ({
   default: (await import('./PresetManagerLazyStub.svelte')).default,
 }));
 
+vi.mock('$lib/components/editor/PresetManager.svelte', async () => ({
+  default: (await import('./PresetManagerLazyStub.svelte')).default,
+}));
+
 import ControlPanel from '../editor/ControlPanel.svelte';
 import type { ProcessingSettings } from '$lib/types';
+import type { Snippet } from 'svelte';
 
 afterEach(() => cleanup());
-
-function mockNavigatorPlatform(platform: string) {
-  Object.defineProperty(window.navigator, 'platform', {
-    configurable: true,
-    value: platform,
-  });
-}
 
 function makeSettings(overrides?: Partial<ProcessingSettings>): ProcessingSettings {
   return {
@@ -74,10 +75,17 @@ function defaultProps() {
   return {
     settings: makeSettings(),
     onChange: vi.fn(),
-    onSave: vi.fn(),
-    onShare: vi.fn(),
     onOpenGallery: vi.fn(),
   };
+}
+
+// Helper to create a simple snippet for Svelte 5
+function createSnippet(text: string): Snippet {
+  return ((anchor: Node) => {
+    const node = document.createTextNode(text);
+    anchor.parentNode?.insertBefore(node, anchor);
+    return () => node.remove();
+  }) as unknown as Snippet;
 }
 
 describe('ControlPanel', () => {
@@ -92,6 +100,32 @@ describe('ControlPanel', () => {
     expect(tabs.length).toBeGreaterThanOrEqual(3);
   });
 
+  it('renders export snippet slot when provided', () => {
+    const props = {
+      ...defaultProps(),
+      export: createSnippet('export-slot-content'),
+    };
+    const { container } = render(ControlPanel, { props });
+    expect(container.textContent).toContain('export-slot-content');
+  });
+
+  it('renders without error when no export snippet is provided', () => {
+    const { container } = render(ControlPanel, { props: defaultProps() });
+    expect(container.querySelector('.cp-root')).toBeTruthy();
+    // No export snippet content should be present
+    expect(container.textContent).not.toContain('export-slot-content');
+  });
+
+  it('uses presets as the recommendation-first default tab', () => {
+    const { getAllByRole, getByTestId } = render(ControlPanel, { props: defaultProps() });
+    const tabs = getAllByRole('tab');
+
+    expect(tabs[0]?.textContent).toContain('tab_presets');
+    expect(tabs[1]?.textContent).toContain('tab_basic');
+    expect(tabs[0]?.getAttribute('aria-selected')).toBe('true');
+    expect(getByTestId('preset-tune-strip')).toBeTruthy();
+  });
+
   it('shows the effects badge from normalized legacy effect fields', () => {
     const props = {
       ...defaultProps(),
@@ -103,16 +137,32 @@ describe('ControlPanel', () => {
     };
     const { container } = render(ControlPanel, { props });
 
-    const effectsBadge = container.querySelector('.cp-tab:nth-child(2) .tab-badge');
+    const effectsTab = Array.from(container.querySelectorAll('[role="tab"]'))
+      .find((tab) => tab.getAttribute('aria-label') === 'tab_effects');
+    const effectsBadge = effectsTab?.querySelector('.tab-badge');
     expect(effectsBadge?.textContent).toBe('2');
   });
 
-  it('lazy-loads preset manager when presets tab opens', async () => {
-    const { getByRole, findByTestId } = render(ControlPanel, { props: defaultProps() });
+  it('shows the current palette family in the panel summary and picker', () => {
+    const { container, getByTestId } = render(ControlPanel, {
+      props: {
+        ...defaultProps(),
+        settings: makeSettings({ palette: 'cyberpunk16' }),
+      },
+    });
 
+    expect(getByTestId('palette-family-summary').textContent).toContain('preset_family_retro_treatment');
+    expect(container.querySelector('.palette-btn')?.textContent).toContain('preset_family_retro_treatment');
+  });
+
+  it('keeps the preset manager slot on the presets tab', async () => {
+    const { getByRole, getByTestId, queryByTestId } = render(ControlPanel, { props: defaultProps() });
+
+    await fireEvent.click(getByRole('tab', { name: 'tab_basic' }));
     await fireEvent.click(getByRole('tab', { name: 'tab_presets' }));
 
-    expect(await findByTestId('mock-preset-manager')).toBeTruthy();
+    expect(getByTestId('preset-tune-strip')).toBeTruthy();
+    expect(queryByTestId('mock-preset-manager') ?? queryByTestId('preset-manager-loading')).toBeTruthy();
   });
 
   it('keeps quick tuning controls on the presets tab', async () => {
@@ -136,52 +186,42 @@ describe('ControlPanel', () => {
     expect(props.onOpenGallery).toHaveBeenCalledTimes(1);
   });
 
-  it('renders save button', () => {
+  it('groups detailed Basic tuning into compact fieldsets', async () => {
+    const { getByRole, getByTestId } = render(ControlPanel, { props: defaultProps() });
+
+    await fireEvent.click(getByRole('tab', { name: 'tab_basic' }));
+
+    const tuningGrid = getByTestId('basic-tuning-grid');
+    const pixelFieldset = getByTestId('basic-pixel-fieldset');
+    const colorFieldset = getByTestId('basic-color-fieldset');
+    const colorSpaceRow = getByTestId('basic-color-space-row');
+
+    expect(tuningGrid.contains(pixelFieldset)).toBe(true);
+    expect(tuningGrid.contains(colorFieldset)).toBe(true);
+    expect(colorFieldset.contains(colorSpaceRow)).toBe(true);
+  });
+
+  it('groups effects and post filters into detailed tuning fieldsets', async () => {
+    const { getByRole, getByTestId } = render(ControlPanel, { props: defaultProps() });
+
+    await fireEvent.click(getByRole('tab', { name: 'tab_effects' }));
+    expect(getByTestId('effect-display-fieldset')).toBeTruthy();
+    expect(getByTestId('effect-render-fieldset')).toBeTruthy();
+    expect(getByTestId('effect-stack-fieldset')).toBeTruthy();
+
+    await fireEvent.click(getByRole('tab', { name: 'tab_adjust' }));
+    expect(getByTestId('adjust-filter-fieldset')).toBeTruthy();
+  });
+
+  it('renders buttons', () => {
     const { container } = render(ControlPanel, { props: defaultProps() });
     const allButtons = container.querySelectorAll('button');
     expect(allButtons.length).toBeGreaterThan(0);
   });
 
-  it('renders a separate share button when provided', () => {
-    const { getByTestId } = render(ControlPanel, { props: defaultProps() });
-    expect(getByTestId('save-image-button')).toBeTruthy();
-    expect(getByTestId('share-image-button')).toBeTruthy();
-  });
-
-  it('groups export settings, primary save, and secondary destinations', () => {
-    const { getByTestId } = render(ControlPanel, {
-      props: {
-        ...defaultProps(),
-        saveFormat: 'jpeg',
-        saveQuality: 0.85,
-        hasProcessedImage: true,
-        onExportSvg: vi.fn(),
-        onSendToPosterMaker: vi.fn(),
-      },
-    });
-
-    const primaryRow = getByTestId('export-primary-row');
-    const saveButton = getByTestId('save-image-button');
-    const secondaryActions = getByTestId('export-secondary-actions');
-
-    expect(getByTestId('export-action-bar')).toBeTruthy();
-    expect(primaryRow.contains(saveButton)).toBe(true);
-    expect(getByTestId('export-format-row').textContent).toContain('Format');
-    expect(getByTestId('export-summary-chip').textContent).toContain('JPEG 85%');
-    expect(secondaryActions.contains(getByTestId('share-image-button'))).toBe(true);
-    expect(secondaryActions.textContent).toContain('SVG');
-    expect(secondaryActions.contains(getByTestId('send-to-poster-maker-button'))).toBe(true);
-  });
-
-  it('renders send to Poster Maker button when provided', () => {
-    const { getByTestId } = render(ControlPanel, {
-      props: { ...defaultProps(), onSendToPosterMaker: vi.fn(), hasProcessedImage: true },
-    });
-    expect(getByTestId('send-to-poster-maker-button')).toBeTruthy();
-  });
-
-  it('shows pixel size control', () => {
-    const { container } = render(ControlPanel, { props: defaultProps() });
+  it('shows pixel size control', async () => {
+    const { container, getByRole } = render(ControlPanel, { props: defaultProps() });
+    await fireEvent.click(getByRole('tab', { name: 'tab_basic' }));
     // Look for range input or pixel size related element
     const ranges = container.querySelectorAll('input[type="range"]');
     expect(ranges.length).toBeGreaterThan(0);
@@ -204,15 +244,5 @@ describe('ControlPanel', () => {
     const props = { ...defaultProps(), autoProcess: false, hasUnappliedChanges: true, onApplyNow: vi.fn() };
     const { container } = render(ControlPanel, { props });
     expect(container.innerHTML).toBeTruthy();
-  });
-
-  it('shows a platform-aware save tooltip on Apple platforms', async () => {
-    mockNavigatorPlatform('MacIntel');
-
-    const { getByTestId } = render(ControlPanel, { props: defaultProps() });
-    const saveButton = getByTestId('save-image-button');
-    await fireEvent.mouseEnter(saveButton);
-
-    expect(saveButton.getAttribute('title')).toContain('Cmd+S');
   });
 });

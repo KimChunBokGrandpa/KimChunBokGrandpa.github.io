@@ -156,160 +156,164 @@
   });
 </script>
 
-<!-- CRT Scanline Mode -->
-<div class="section-label">{i18n.t('crt_scanlines')}:</div>
-<div class="field-row">
-  <select
-    class="w98-select"
-    id="crt-effect"
-    value={settings.crtEffect}
-    onchange={(e) => {
-      settings.crtEffect = (e.currentTarget as HTMLSelectElement).value as ProcessingSettings['crtEffect'];
-      onChange();
-    }}
-  >
-    <option value="none">{i18n.t('crt_none')}</option>
-    <option value="horizontal">{i18n.t('crt_horizontal')}</option>
-    <option value="vertical">{i18n.t('crt_vertical')}</option>
-  </select>
-</div>
-
-<div class="section-label">{i18n.t('css_render_mode')}:</div>
-<div class="field-row render-row">
-  {#each cssRenderOptions as opt}
-    <button
-      class:preset-active={settings.renderMode === opt.id}
-      class="render-btn w98-inline-button w98-button--thin"
-      onclick={() => { settings.renderMode = opt.id as RenderMode; onChange(); }}
-      title={i18n.t(opt.titleKey)}
+<fieldset class="effect-section w98-fieldset" data-testid="effect-display-fieldset">
+  <legend>{i18n.t('crt_scanlines')}</legend>
+  <div class="field-row">
+    <select
+      class="w98-select"
+      id="crt-effect"
+      value={settings.crtEffect}
+      onchange={(e) => {
+        settings.crtEffect = (e.currentTarget as HTMLSelectElement).value as ProcessingSettings['crtEffect'];
+        onChange();
+      }}
     >
-      {i18n.t(opt.labelKey)}
-    </button>
-  {/each}
-</div>
+      <option value="none">{i18n.t('crt_none')}</option>
+      <option value="horizontal">{i18n.t('crt_horizontal')}</option>
+      <option value="vertical">{i18n.t('crt_vertical')}</option>
+    </select>
+  </div>
+</fieldset>
 
-<!-- Effect Stack -->
-<div class="section-label">{i18n.t('effect_stack')} <span class="section-hint">({i18n.t('effect_stack_hint')})</span></div>
-{#if !settings.effectLayers || settings.effectLayers.length === 0}
-  <div class="no-effects w98-note">{i18n.t('no_effects')}</div>
-{:else}
-  <div class="effect-layer-list">
-    {#each settings.effectLayers as layer, idx (layer.id)}
-      <div
-        class="effect-layer-item"
-        class:drag-over={dragOverIdx === idx}
-        class:dragging={dragIdx === idx}
-        class:disabled={!layer.enabled}
-        draggable="true"
-        ondragstart={(e) => onDragStart(idx, e)}
-        ondragover={(e) => onDragOver(idx, e)}
-        ondragleave={onDragLeave}
-        ondrop={(e) => onDrop(idx, e)}
-        ondragend={onDragEnd}
-        role="listitem"
+<fieldset class="effect-section w98-fieldset" data-testid="effect-render-fieldset">
+  <legend>{i18n.t('css_render_mode')}</legend>
+  <div class="field-row render-row">
+    {#each cssRenderOptions as opt}
+      <button
+        class:preset-active={settings.renderMode === opt.id}
+        class="render-btn w98-inline-button w98-button--thin"
+        onclick={() => { settings.renderMode = opt.id as RenderMode; onChange(); }}
+        title={i18n.t(opt.titleKey)}
       >
-        <button
-          class="layer-toggle w98-inline-button w98-button--thin"
-          class:active={layer.enabled}
-          class:w98-inline-button--active={layer.enabled}
-          onclick={() => toggleEffectLayer(layer.id)}
-          title={layer.enabled ? i18n.t('effect_enabled') : i18n.t('effect_disabled')}
-          aria-label={layer.enabled ? i18n.t('effect_enabled') : i18n.t('effect_disabled')}
-        >{layer.enabled ? '✓' : '○'}</button>
-
-        <span class="layer-label">{getEffectLabel(layer)}</span>
-
-        {#if layer.type === 'glitch'}
-          <div class="layer-intensity">
-            {#each [1, 2, 3] as lv}
-              <button
-                class:preset-active={layer.intensity === lv}
-                class="intensity-btn w98-inline-button w98-button--thin"
-                onclick={() => setLayerIntensity(layer.id, lv)}
-                title="{i18n.t('level')} {lv}"
-              >{lv}</button>
-            {/each}
-          </div>
-        {/if}
-
-        <button
-          class="layer-remove w98-inline-button w98-button--thin"
-          onclick={() => removeEffectLayer(layer.id)}
-          title={i18n.t('remove_effect')}
-          aria-label={i18n.t('remove_effect')}
-        >×</button>
-
-        <span class="layer-move-btns">
-          <button
-            class="layer-move-btn w98-inline-button w98-button--thin"
-            onclick={() => moveLayer(idx, -1)}
-            disabled={idx === 0}
-            title={i18n.t('move_up')}
-            aria-label={i18n.t('move_up')}
-          >▲</button>
-          <button
-            class="layer-move-btn w98-inline-button w98-button--thin"
-            onclick={() => moveLayer(idx, 1)}
-            disabled={idx === (settings.effectLayers?.length ?? 0) - 1}
-            title={i18n.t('move_down')}
-            aria-label={i18n.t('move_down')}
-          >▼</button>
-        </span>
-
-        <span class="drag-handle" aria-hidden="true">≡</span>
-      </div>
+        {i18n.t(opt.labelKey)}
+      </button>
     {/each}
   </div>
-{/if}
+</fieldset>
 
-<!-- Glitch seed (shown when any glitch layer exists) -->
-{#if settings.effectLayers?.some(l => l.type === 'glitch' && l.enabled)}
-  <div class="glitch-intensity-panel glitch-seed-panel w98-status-panel">
-    <div class="glitch-intensity-row">
-      <span class="glitch-intensity-label">🎲 {i18n.t('seed')}</span>
-      <div class="glitch-intensity-btns">
-        <button
-          class:preset-active={settings.glitchSeed === null}
-          class="intensity-btn seed-btn w98-inline-button w98-button--thin"
-          onclick={() => { settings.glitchSeed = null; onChange(); }}
-        >{i18n.t('random')}</button>
-        <button
-          class:preset-active={settings.glitchSeed !== null}
-          class="intensity-btn seed-btn w98-inline-button w98-button--thin"
-          onclick={() => { settings.glitchSeed = Math.round(Math.random() * 10000) / 10000; onChange(); }}
-        >{settings.glitchSeed !== null ? `${i18n.t('fixed')} (${settings.glitchSeed})` : i18n.t('fix')}</button>
-        {#if settings.glitchSeed !== null}
+<fieldset class="effect-section effect-section--stack w98-fieldset" data-testid="effect-stack-fieldset">
+  <legend>{i18n.t('effect_stack')}</legend>
+  <div class="effect-stack-hint section-hint">({i18n.t('effect_stack_hint')})</div>
+
+  {#if !settings.effectLayers || settings.effectLayers.length === 0}
+    <div class="no-effects w98-note">{i18n.t('no_effects')}</div>
+  {:else}
+    <div class="effect-layer-list">
+      {#each settings.effectLayers as layer, idx (layer.id)}
+        <div
+          class="effect-layer-item"
+          class:drag-over={dragOverIdx === idx}
+          class:dragging={dragIdx === idx}
+          class:disabled={!layer.enabled}
+          draggable="true"
+          ondragstart={(e) => onDragStart(idx, e)}
+          ondragover={(e) => onDragOver(idx, e)}
+          ondragleave={onDragLeave}
+          ondrop={(e) => onDrop(idx, e)}
+          ondragend={onDragEnd}
+          role="listitem"
+        >
           <button
-            class="intensity-btn w98-inline-button w98-button--thin"
-            title={i18n.t('reroll_seed')}
+            class="layer-toggle w98-inline-button w98-button--thin"
+            class:active={layer.enabled}
+            class:w98-inline-button--active={layer.enabled}
+            onclick={() => toggleEffectLayer(layer.id)}
+            title={layer.enabled ? i18n.t('effect_enabled') : i18n.t('effect_disabled')}
+            aria-label={layer.enabled ? i18n.t('effect_enabled') : i18n.t('effect_disabled')}
+          >{layer.enabled ? '✓' : '○'}</button>
+
+          <span class="layer-label">{getEffectLabel(layer)}</span>
+
+          {#if layer.type === 'glitch'}
+            <div class="layer-intensity">
+              {#each [1, 2, 3] as lv}
+                <button
+                  class:preset-active={layer.intensity === lv}
+                  class="intensity-btn w98-inline-button w98-button--thin"
+                  onclick={() => setLayerIntensity(layer.id, lv)}
+                  title="{i18n.t('level')} {lv}"
+                >{lv}</button>
+              {/each}
+            </div>
+          {/if}
+
+          <button
+            class="layer-remove w98-inline-button w98-button--thin"
+            onclick={() => removeEffectLayer(layer.id)}
+            title={i18n.t('remove_effect')}
+            aria-label={i18n.t('remove_effect')}
+          >×</button>
+
+          <span class="layer-move-btns">
+            <button
+              class="layer-move-btn w98-inline-button w98-button--thin"
+              onclick={() => moveLayer(idx, -1)}
+              disabled={idx === 0}
+              title={i18n.t('move_up')}
+              aria-label={i18n.t('move_up')}
+            >▲</button>
+            <button
+              class="layer-move-btn w98-inline-button w98-button--thin"
+              onclick={() => moveLayer(idx, 1)}
+              disabled={idx === (settings.effectLayers?.length ?? 0) - 1}
+              title={i18n.t('move_down')}
+              aria-label={i18n.t('move_down')}
+            >▼</button>
+          </span>
+
+          <span class="drag-handle" aria-hidden="true">≡</span>
+        </div>
+      {/each}
+    </div>
+  {/if}
+
+  {#if settings.effectLayers?.some(l => l.type === 'glitch' && l.enabled)}
+    <div class="glitch-intensity-panel glitch-seed-panel w98-status-panel">
+      <div class="glitch-intensity-row">
+        <span class="glitch-intensity-label">🎲 {i18n.t('seed')}</span>
+        <div class="glitch-intensity-btns">
+          <button
+            class:preset-active={settings.glitchSeed === null}
+            class="intensity-btn seed-btn w98-inline-button w98-button--thin"
+            onclick={() => { settings.glitchSeed = null; onChange(); }}
+          >{i18n.t('random')}</button>
+          <button
+            class:preset-active={settings.glitchSeed !== null}
+            class="intensity-btn seed-btn w98-inline-button w98-button--thin"
             onclick={() => { settings.glitchSeed = Math.round(Math.random() * 10000) / 10000; onChange(); }}
-          >🔄</button>
-        {/if}
+          >{settings.glitchSeed !== null ? `${i18n.t('fixed')} (${settings.glitchSeed})` : i18n.t('fix')}</button>
+          {#if settings.glitchSeed !== null}
+            <button
+              class="intensity-btn w98-inline-button w98-button--thin"
+              title={i18n.t('reroll_seed')}
+              onclick={() => { settings.glitchSeed = Math.round(Math.random() * 10000) / 10000; onChange(); }}
+            >🔄</button>
+          {/if}
+        </div>
       </div>
     </div>
-  </div>
-{/if}
+  {/if}
 
-<!-- Add Effect Button -->
-<div class="add-effect-row">
-  <div class="add-effect-wrapper" bind:this={addMenuWrapperEl}>
-    <button class="add-effect-btn w98-button w98-button--thin" onclick={() => { showAddMenu = !showAddMenu; }}>
-      + {i18n.t('add_effect')}
-    </button>
-    {#if showAddMenu}
-      <div class="add-effect-menu w98-menu-surface">
-        {#each effectOptions as opt}
-          <button
-            class="add-effect-option w98-menu-item"
-            onclick={() => { addEffectLayer(opt); showAddMenu = false; }}
-          >
-            {opt.icon} {i18n.t(opt.labelKey)}
-          </button>
-        {/each}
-      </div>
-    {/if}
+  <div class="add-effect-row">
+    <div class="add-effect-wrapper" bind:this={addMenuWrapperEl}>
+      <button class="add-effect-btn w98-button w98-button--thin" onclick={() => { showAddMenu = !showAddMenu; }}>
+        + {i18n.t('add_effect')}
+      </button>
+      {#if showAddMenu}
+        <div class="add-effect-menu w98-menu-surface">
+          {#each effectOptions as opt}
+            <button
+              class="add-effect-option w98-menu-item"
+              onclick={() => { addEffectLayer(opt); showAddMenu = false; }}
+            >
+              {opt.icon} {i18n.t(opt.labelKey)}
+            </button>
+          {/each}
+        </div>
+      {/if}
+    </div>
   </div>
-</div>
+</fieldset>
 
 <style>
   .preset-active {
@@ -318,14 +322,18 @@
     font-weight: bold;
   }
 
-  .section-label {
-    margin-top: var(--w98-space-8);
-    margin-bottom: var(--w98-space-2);
-    font-size: var(--w98-font-size-caption);
-    letter-spacing: 0.4px;
-    text-transform: uppercase;
-    color: var(--w98-text-hint);
+  .effect-section {
+    margin: 0 0 var(--w98-space-6);
   }
+
+  .effect-section:last-of-type {
+    margin-bottom: 0;
+  }
+
+  .effect-stack-hint {
+    margin-bottom: var(--w98-space-4);
+  }
+
   .section-hint {
     color: var(--w98-text-hint);
     font-size: var(--w98-font-size-caption);
@@ -340,7 +348,8 @@
   }
   .render-btn {
     font-size: var(--w98-font-size-sm);
-    flex: 1;
+    flex: 1 1 88px;
+    min-width: 88px;
     text-align: center;
   }
 

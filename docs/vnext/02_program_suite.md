@@ -9,9 +9,10 @@ vNext is a Pixel Lab-centered product with a small set of supporting first-party
 The suite can still appear as a Win98-style desktop, but roadmap weight is intentionally uneven:
 
 1. `Pixel Lab` is the main product.
-2. `Poster Maker` is an output/composition destination.
-3. `RetroCam` is an input/capture source.
-4. `Shared Shell` keeps launch, windowing, recent projects, and handoff behavior coherent.
+2. `RetroCam` is an input/capture source.
+3. `Shared Shell` keeps launch, windowing, recent projects, and handoff behavior coherent.
+
+> Note: `Poster Maker` was previously an output/composition destination but has been removed from the product (see REVISION_HISTORY.md).
 
 ---
 
@@ -23,7 +24,6 @@ The suite can still appear as a Win98-style desktop, but roadmap weight is inten
 
 ### Supporting
 
-- `Poster Maker`
 - `RetroCam`
 
 ### Shared Infrastructure
@@ -126,45 +126,10 @@ The main recommendation-led pixel/retro image editor.
 - animated output
 - preset bundle
 - reusable effect recipe
-- asset for Poster Maker
 
 ---
 
-## Program 2: Poster Maker
-
-### Role
-
-A supporting composition destination for finished or near-finished Pixel Lab assets.
-
-### Purpose
-
-- combine processed images with text, frames, stickers, panels, and retro templates
-- create social cards, game covers, profile cards, posters, banners, and title screens
-
-### MVP Scope
-
-- canvas/document presets
-- background panel styles
-- text blocks with retro style presets
-- sticker/frame overlays
-- one imported image slot from filesystem or Pixel Lab
-- export as image
-
-### Product Guard
-
-Poster Maker should not become the roadmap center unless the product need is specifically about using Pixel Lab outputs in finished layouts.
-
-### Output Types
-
-- poster
-- thumbnail
-- banner
-- profile card
-- meme card
-
----
-
-## Program 3: RetroCam
+## Program 2: RetroCam
 
 ### Role
 
@@ -204,23 +169,11 @@ RetroCam should stay lightweight. Its strongest value is a fast path from live c
 
 ## Cross-Program Flows
 
-### Flow A: Pixel Lab -> Poster Maker
-
-1. User processes image in Pixel Lab.
-2. User chooses `Send to Poster Maker`.
-3. Poster Maker opens with the processed asset placed on canvas.
-
-### Flow B: RetroCam -> Pixel Lab
+### Flow A: RetroCam -> Pixel Lab
 
 1. User captures a snapshot in RetroCam.
 2. User chooses `Open in Pixel Lab`.
 3. Pixel Lab opens the captured asset for deeper recommendation-led editing.
-
-### Flow C: Poster Maker -> Export
-
-1. User assembles composition.
-2. User exports to local file.
-3. Export summary is preserved in local project history where available.
 
 ---
 
@@ -259,7 +212,6 @@ The desktop should show product flavor plus app-specific utility names while pre
 ### Recommended App Names
 
 - `Pixel Lab`
-- `Poster Maker`
 - `RetroCam`
 
 ### Optional Supporting Utilities Later
@@ -278,6 +230,6 @@ The suite direction is healthy only if:
 
 - Pixel Lab is clearly the primary product surface
 - Classic Pixel and Retro Treatment recommendations are both available and understandable
-- Poster Maker and RetroCam support Pixel Lab rather than competing with it
+- RetroCam supports Pixel Lab rather than competing with it
 - shell behavior makes local editing feel playful without hiding core actions
 - export/save/share flows remain reliable in browser and Tauri local runtimes
