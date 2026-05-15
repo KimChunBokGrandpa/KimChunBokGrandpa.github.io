@@ -1,6 +1,7 @@
 <script lang="ts">
-  import { paletteThemes, paletteGroups, palettes, getPaletteName } from '$lib/utils/palettes';
+  import { paletteThemes, paletteGroups, palettes, getPaletteFamily, getPaletteName } from '$lib/utils/palettes';
   import type { RGB } from '$lib/utils/palettes';
+  import { getPresetFamilyLabelKey } from '$lib/utils/presets';
   import { customPaletteStore } from '$lib/stores/customPaletteStore.svelte';
   import CustomPaletteEditor from './CustomPaletteEditor.svelte';
   import { parsePaletteFile, exportAsHex, exportAsGpl, downloadFile } from '$lib/utils/paletteIO';
@@ -259,6 +260,11 @@
     return getPaletteName(id);
   }
 
+  let selectedPaletteName = $derived(getDisplayPaletteName(selectedPaletteId));
+  let selectedPaletteFamilyLabel = $derived(
+    i18n.t(getPresetFamilyLabelKey(getPaletteFamily(selectedPaletteId)))
+  );
+
   function getColorsForId(id: string): RGB[] {
     if (id === 'original') return [];
     if (id.startsWith('custom_')) {
@@ -433,6 +439,14 @@
       }}
     />
   {:else}
+    <div class="pg-current-bar w98-toolbar" data-testid="palette-current-summary">
+      <span class="pg-current-label">{i18n.t('gallery_active')}</span>
+      <span class="pg-current-name w98-chip w98-chip--active" title={selectedPaletteName}>
+        {selectedPaletteName}
+      </span>
+      <span class="pg-current-family w98-chip">{selectedPaletteFamilyLabel}</span>
+    </div>
+
     <PaletteToolbar
       bind:groupMode
       bind:activeThemeId
@@ -544,7 +558,7 @@
         {activeThemeName} — {i18n.t('gallery_variants').replace('{0}', String(activeVariants.length))}
       </p>
       <p class="status-bar-field">
-        {i18n.t('gallery_active')}: {selectedPaletteId}
+        {i18n.t('gallery_active')}: {selectedPaletteName} · {selectedPaletteFamilyLabel}
       </p>
     </div>
   {/if}
@@ -574,6 +588,39 @@
   .pg-status {
     margin: 0 3px 3px 3px;
     flex-shrink: 0;
+  }
+
+  .pg-current-bar {
+    gap: var(--w98-space-4);
+    flex-wrap: nowrap;
+    margin: 0 3px 3px;
+    min-width: 0;
+  }
+
+  .pg-current-label {
+    flex-shrink: 0;
+    color: var(--w98-text-hint);
+    font-size: var(--w98-font-size-caption);
+    font-weight: bold;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  .pg-current-name,
+  .pg-current-family {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .pg-current-name {
+    flex: 1;
+  }
+
+  .pg-current-family {
+    flex-shrink: 0;
+    max-width: 116px;
   }
 
   /* ── Blend Panel ── */

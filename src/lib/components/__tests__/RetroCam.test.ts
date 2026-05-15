@@ -168,26 +168,6 @@ describe('RetroCam', () => {
     expect(presetId).toBe('clean_pixel');
   });
 
-  it('calls the poster maker handoff callback with the latest snapshot', async () => {
-    const onUseInPosterMaker = vi.fn();
-    resetRetroCamStore({
-      getUserMedia: vi.fn().mockResolvedValue({
-        getTracks: () => [{ stop: vi.fn() }],
-      } as unknown as MediaStream),
-    });
-
-    render(RetroCam, { props: { onUseInPosterMaker } });
-
-    await screen.findByTestId('retrocam-video');
-    await fireEvent.click(screen.getByText('retrocam_capture_snapshot'));
-    await fireEvent.click(screen.getByTestId('retrocam-use-in-poster-maker-button'));
-
-    await waitFor(() => expect(onUseInPosterMaker).toHaveBeenCalledTimes(1));
-    const [file, presetId] = onUseInPosterMaker.mock.calls[0] as [File, string];
-    expect(file.name).toMatch(/^retrocam_snapshot_/);
-    expect(presetId).toBe('clean_pixel');
-  });
-
   it('shows shell copy instead of raw save errors when snapshot saving fails', async () => {
     const onError = vi.fn();
     vi.mocked(saveImage).mockRejectedValueOnce(new Error('native path panic'));
@@ -228,14 +208,13 @@ describe('RetroCam', () => {
 
   it('shows a shell-style open-with context menu for the latest snapshot', async () => {
     const onOpenInPixelLab = vi.fn();
-    const onUseInPosterMaker = vi.fn();
     resetRetroCamStore({
       getUserMedia: vi.fn().mockResolvedValue({
         getTracks: () => [{ stop: vi.fn() }],
       } as unknown as MediaStream),
     });
 
-    render(RetroCam, { props: { onOpenInPixelLab, onUseInPosterMaker } });
+    render(RetroCam, { props: { onOpenInPixelLab } });
 
     await screen.findByTestId('retrocam-video');
     await fireEvent.click(screen.getByText('retrocam_capture_snapshot'));
@@ -244,7 +223,6 @@ describe('RetroCam', () => {
     const menu = screen.getByRole('menu');
     expect(within(menu).getByText('open_with')).toBeTruthy();
     expect(within(menu).getByRole('menuitem', { name: /retrocam_open_in_pixel_lab/ })).toBeTruthy();
-    expect(within(menu).getByRole('menuitem', { name: /retrocam_use_in_poster_maker/ })).toBeTruthy();
 
     await fireEvent.click(within(menu).getByRole('menuitem', { name: /retrocam_open_in_pixel_lab/ }));
     await waitFor(() => expect(onOpenInPixelLab).toHaveBeenCalledTimes(1));

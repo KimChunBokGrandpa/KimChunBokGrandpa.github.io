@@ -50,14 +50,17 @@ Make the main editor easier to scan while preserving serious control depth.
 
 ### Tasks
 
-- [ ] align `ControlPanel.svelte` around recommendation -> tuning -> export hierarchy
+- [x] align `ControlPanel.svelte` around recommendation -> tuning -> export hierarchy
 - [x] connect the first `ControlPanel.svelte` recommendation -> quick tuning bridge in the Presets tab
 - [x] expose a compact `PreviewBottomBar.svelte` output summary for pixel size, palette, dithering, and color count
 - [x] expose the active compare variant in `PreviewBottomBar.svelte` while compare mode is active
 - [x] align the `ControlPanel.svelte` sticky export bar around primary Save As, format/quality, and secondary destinations
+- [x] switch global typography to a more readable retro system stack without changing the Win98 chrome recipe
+- [x] make `ControlPanel.svelte` recommendation-first by ordering/defaulting tabs to Presets -> Basic -> Effects -> Adjust
+- [x] group `ControlPanel.svelte` Basic / Effects / Adjust detailed tuning controls into denser fieldset sections
 - [ ] align `PreviewContent.svelte` / `ImageCanvas.svelte` / `PreviewBottomBar.svelte` around deeper compare and output confidence
 - [ ] align `PresetManager.svelte` and palette surfaces around Classic Pixel / Retro Treatment selection
-- [ ] preserve current save/share/export behavior while UI hierarchy changes land
+- [x] preserve current save/share/export behavior while UI hierarchy changes land
 
 ### Acceptance
 

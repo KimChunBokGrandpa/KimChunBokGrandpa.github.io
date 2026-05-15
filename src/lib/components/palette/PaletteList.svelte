@@ -1,6 +1,7 @@
 <script lang="ts">
   import { i18n } from '$lib/i18n/index.svelte';
-  import { getPaletteName } from '$lib/utils/palettes';
+  import { getPaletteFamily, getPaletteName } from '$lib/utils/palettes';
+  import { getPresetFamilyLabelKey } from '$lib/utils/presets';
   import type { VariantItem } from './types';
   import type { PaletteRecommendation } from '$lib/utils/paletteRecommender';
 
@@ -65,21 +66,31 @@
     </div>
   {/if}
   
-  {#if recommendations.length > 0 && activeThemeId !== '_custom'}
+  {#if (isRecommending || recommendations.length > 0) && activeThemeId !== '_custom'}
     <div class="pg-recommend-bar w98-status-panel">
       <span class="pg-recommend-label w98-kicker">
         <span class="w98-emoji" aria-hidden="true">{isRecommending ? '⏳' : '✨'}</span>
         <span>{i18n.t('recommended_palettes')}</span>
       </span>
       <div class="pg-recommend-list">
-        {#each recommendations as rec}
-          <button
-            class="pg-recommend-chip w98-inline-button w98-button--thin"
-            class:w98-inline-button--active={selectedPaletteId === rec.id}
-            onclick={() => onSelect(rec.id)}
-            title={getPaletteName(rec.id)}
-          >{getPaletteName(rec.id)}</button>
-        {/each}
+        {#if recommendations.length > 0}
+          {#each recommendations as rec, index}
+            <button
+              class="pg-recommend-chip w98-inline-button w98-button--thin"
+              class:w98-inline-button--active={selectedPaletteId === rec.id}
+              onclick={() => onSelect(rec.id)}
+              title={`${getPaletteName(rec.id)} - ${i18n.t(getPresetFamilyLabelKey(getPaletteFamily(rec.id)))}`}
+            >
+              <span class="pg-recommend-rank">#{index + 1}</span>
+              <span class="pg-recommend-name">{getPaletteName(rec.id)}</span>
+              <span class="pg-recommend-family w98-chip">
+                {i18n.t(getPresetFamilyLabelKey(getPaletteFamily(rec.id)))}
+              </span>
+            </button>
+          {/each}
+        {:else}
+          <span class="pg-recommend-loading w98-note">{i18n.t('loading')}</span>
+        {/if}
       </div>
     </div>
   {/if}
@@ -192,7 +203,29 @@
     gap: 2px;
   }
   .pg-recommend-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--w98-space-4);
+    min-width: 0;
     white-space: nowrap;
+  }
+  .pg-recommend-rank {
+    color: var(--w98-highlight);
+    flex-shrink: 0;
+  }
+  .pg-recommend-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .pg-recommend-family {
+    flex-shrink: 0;
+    max-width: 96px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .pg-recommend-loading {
+    min-height: 18px;
   }
 
   .pg-list-panel {

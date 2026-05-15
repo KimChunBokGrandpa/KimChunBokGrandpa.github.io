@@ -5,7 +5,7 @@
 Purpose: Pixel Lab-first product direction에 맞춰, `.agents/skills/designSystem/`의 확정 샘플과 현재 Svelte 구현을 비교하고 실제 앱을 design system 기준으로 정렬하기 위한 작업 단위를 정의한다.
 
 Status: active Pixel Lab acceptance cleanup
-Updated: 2026-05-07
+Updated: 2026-05-12
 
 ---
 
@@ -50,7 +50,7 @@ Updated: 2026-05-07
 남아 있는 일은 “새 디자인 입히기”보다 “Pixel Lab 중심 정보 구조 정리”에 가깝다. 즉, 이미 정해진 토큰/recipe를 유지하면서 사용자가 추천을 적용하고 결과를 판단하고 세밀하게 조정하는 루프를 더 잘 보이게 해야 한다.
 
 - source of truth 정리
-  - typography source of truth는 `.agents/skills/designSystem/README.md` 우선으로 고정했다.
+  - typography source of truth는 사용자 가독성 피드백을 반영한 `src/lib/styles/theme.css` / `src/app.css` 현재 구현 기준을 우선한다.
   - 현재 구현 기준 토큰은 `src/lib/styles/theme.css`와 `src/app.css`다.
 - shell component contract 정리
   - shell metadata(start menu / desktop / mobile order)는 `windowStore` SSOT로 모아 disconnected launch wiring을 줄였다.
@@ -67,16 +67,17 @@ Updated: 2026-05-07
 이번 패스에서는 typography와 shell chrome의 기준을 아래처럼 유지한다.
 
 - typography source of truth
-  - `.agents/skills/designSystem/README.md` 우선
+  - 사용자 피드백 이후의 구현 기준: readable retro system sans
 - implementation source of truth
   - `src/lib/styles/theme.css`
   - `src/app.css`
   - shell / feedback / editor 컴포넌트는 위 토큰과 공용 `w98-*` recipe를 사용한다.
 - decision
-  - `DS-00`는 `A: bitmap "Pixelated MS Sans Serif" 유지`로 고정
+  - 전역 UI font는 `Tahoma / Geneva / locale CJK system sans`를 우선한다
+  - bitmap `Pixelated MS Sans Serif`는 `--w98-font-family-retro`로 보존해 구조 glyph나 era accent에만 남긴다
   - emoji fallback은 별도 `--w98-emoji-font` 체인을 유지
 
-이 결정에 따라 현재 앱은 `11px` base, 전역 bold, anti-aliased modern UI 제거, bevel-first chrome을 기본값으로 사용한다.
+이 결정에 따라 현재 앱은 `12px` base, `600` weight, antialiased system rendering, bevel-first chrome을 기본값으로 사용한다. 테마 정체성은 색상, bevel, title bar, taskbar, iconography로 유지한다.
 
 ---
 
@@ -156,8 +157,9 @@ Goal: typography와 토큰 기준을 확정한다.
 
 Tasks:
 
-- [x] typography source of truth를 `.agents/skills/designSystem/README.md` 우선으로 고정했다.
-- [x] `A`: bitmap `Pixelated MS Sans Serif` 유지로 freeze했다.
+- [x] typography source of truth를 `src/lib/styles/theme.css` / `src/app.css` 구현 기준으로 재고정했다.
+- [x] 사용자 가독성 피드백에 따라 전역 UI font를 readable retro system stack으로 전환했다.
+- [x] bitmap `Pixelated MS Sans Serif`는 `--w98-font-family-retro` accent stack으로 보존했다.
 - [x] 확정 결과를 `src/lib/styles/theme.css`와 `src/app.css` 기준으로 문서화했다.
 - [x] icon/emoji font fallback rule을 `--w98-emoji-font` 체인으로 고정했다.
 
@@ -175,6 +177,7 @@ Files:
 Tasks:
 
 - [x] typography scale, font stack, font weight, focus ring 규칙을 정렬했다.
+- [x] typography scale을 9-15px로 상향하고 system font antialiasing을 허용해 가독성을 높였다.
 - [x] bevel recipe, semantic colors, tooltip recipe, disabled contrast 기준을 일원화했다.
 - [x] 공용 utility recipe를 `w98-*` 계열로 정리했다.
 - [ ] supporting surface에서 토큰 우회 스타일이 다시 생기지 않도록 잔여 spot-check를 유지한다.
@@ -226,7 +229,9 @@ Tasks:
 
 - [x] Presets 탭에서 pixel size / quick palette / dithering quick tune strip을 제공해 recommendation -> tuning bridge를 1차 연결한다.
 - [x] `ControlPanel.svelte` sticky export bar에서 Save As를 primary action으로, Share/SVG/Poster Maker를 secondary action으로 구분한다.
-- [ ] `ControlPanel.svelte`의 tabs / fieldsets / action bar를 recommendation -> tuning -> export 정보 구조에 맞게 재배치한다.
+- [x] `ControlPanel.svelte` 탭 순서와 기본 탭을 Presets-first로 바꿔 recommendation -> tuning 흐름을 먼저 노출한다.
+- [x] `ControlPanel.svelte`의 tabs / fieldsets / action bar를 recommendation -> tuning -> export 정보 구조에 맞게 재배치한다.
+- [x] `ControlPanel.svelte` Basic / Effects / Adjust 세부 조정 컨트롤을 dense fieldset 그룹으로 정리한다.
 - [ ] save/share/apply 액션 우선순위와 버튼 hierarchy를 kit 기준으로 정렬한다.
 - [ ] `PreviewContent.svelte`와 `ImageCanvas.svelte`를 canvas-frame / dropzone / bottom bar 계약에 맞춘다.
 - [ ] empty state drop zone copy, hierarchy, CTA placement를 sample 기준으로 정리한다.

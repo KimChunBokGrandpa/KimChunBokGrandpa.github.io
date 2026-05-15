@@ -19,7 +19,6 @@ vi.mock('$lib/services/imageProcessor', () => ({
 }));
 
 vi.mock('$lib/services/saveService', () => ({
-  createExportFile: vi.fn().mockResolvedValue(new File(['transfer'], 'pixel-lab-transfer.png', { type: 'image/png' })),
   saveImage: vi.fn().mockResolvedValue('saved-file.png'),
   shareImage: vi.fn().mockResolvedValue('shared-file.png'),
 }));
@@ -57,7 +56,7 @@ globalThis.URL.createObjectURL = vi.fn(() => `blob:mock-${++objectUrlCounter}`);
 globalThis.URL.revokeObjectURL = vi.fn();
 
 const { createImageProcessingStore } = await import('./imageProcessingStore.svelte');
-const { saveImage, shareImage, createExportFile } = await import('$lib/services/saveService');
+const { saveImage, shareImage } = await import('$lib/services/saveService');
 const { applyCrtEffect } = await import('$lib/utils/crtRenderer');
 
 function makeSettings(overrides?: Partial<ProcessingSettings>): ProcessingSettings {
@@ -80,6 +79,7 @@ describe('createImageProcessingStore', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockProcessorService.getLastCanvas.mockReturnValue(null);
+    mockGifManager.gifIsExporting = false;
     objectUrlCounter = 0;
     store = createImageProcessingStore();
   });
@@ -344,21 +344,6 @@ describe('createImageProcessingStore', () => {
       );
     });
 
-    it('createTransferFile builds png export file for handoff', async () => {
-      mockProcessorService.getLastCanvas.mockReturnValue(null);
-      await loadProcessedImage();
-      store.setQuality(0.81);
-
-      const file = await store.createTransferFile('poster-input');
-
-      expect(file?.name).toBe('pixel-lab-transfer.png');
-      expect(createExportFile).toHaveBeenCalledWith(
-        'blob:processed',
-        { format: 'png', quality: 0.81, filename: 'poster-input' },
-        null,
-        undefined,
-      );
-    });
   });
 
   describe('loadPixelLabProject', () => {
@@ -546,6 +531,96 @@ describe('createImageProcessingStore', () => {
 
     it('delegates gifFrameCount from gif manager', () => {
       expect(store.gifFrameCount).toBe(0);
+    });
+  });
+
+  // ─── Media-kind transition cancel guard (Requirement 4.7) ───
+
+  describe('media-kind transition cancel guard', () => {
+    it('loadImage cancels in-flight gif export before proceeding', () => {
+      mockGifManager.gifIsExporting = true;
+
+      store.loadImage(new File(['pixels'], 'new.png', { type: 'image/png' }));
+
+      expect(mockGifManager.cancelExport).toHaveBeenCalled();
+      // Verify cancelExport was called before cleanup (order matters)
+      const cancelOrder = mockGifManager.cancelExport.mock.invocationCallOrder[0];
+      const cleanupOrder = mockGifManager.cleanup.mock.invocationCallOrder[0];
+      expect(cancelOrder).toBeLessThan(cleanupOrder);
+    });
+
+    it('loadImage does not call cancelExport when not exporting', () => {
+      mockGifManager.gifIsExporting = false;
+
+      store.loadImage(new File(['pixels'], 'new.png', { type: 'image/png' }));
+
+      expect(mockGifManager.cancelExport).not.toHaveBeenCalled();
+    });
+
+    it('loadNewImage cancels in-flight gif export before proceeding', () => {
+      mockGifManager.gifIsExporting = true;
+
+      store.loadNewImage();
+
+      expect(mockGifManager.cancelExport).toHaveBeenCalled();
+    });
+
+    it('loadNewImage does not call cancelExport when not exporting', () => {
+      mockGifManager.gifIsExporting = false;
+
+      store.loadNewImage();
+
+      expect(mockGifManager.cancelExport).not.toHaveBeenCalled();
+    });
+
+    it('loadPixelLabProject cancels in-flight gif export before proceeding', async () => {
+      mockGifManager.gifIsExporting = true;
+
+      const manifest = createProjectManifest({
+        appId: 'pixel-lab',
+        name: 'Test Project',
+        programState: {
+          kind: 'pixel-lab',
+          activeSourceAssetId: 'asset-1',
+          lastProcessedAssetId: 'asset-1',
+          processingSettings: makeSettings(),
+          postFilters: { brightness: 100, contrast: 100, saturation: 100, hueRotate: 0 },
+          transformState: { rotation: 0, cropRect: null },
+          exportDefaults: { format: 'png', quality: 0.92 },
+        },
+      });
+
+      await store.loadPixelLabProject(
+        manifest,
+        new File(['pixels'], 'project.png', { type: 'image/png' }),
+      );
+
+      expect(mockGifManager.cancelExport).toHaveBeenCalled();
+    });
+
+    it('loadPixelLabProject does not call cancelExport when not exporting', async () => {
+      mockGifManager.gifIsExporting = false;
+
+      const manifest = createProjectManifest({
+        appId: 'pixel-lab',
+        name: 'Test Project',
+        programState: {
+          kind: 'pixel-lab',
+          activeSourceAssetId: 'asset-1',
+          lastProcessedAssetId: 'asset-1',
+          processingSettings: makeSettings(),
+          postFilters: { brightness: 100, contrast: 100, saturation: 100, hueRotate: 0 },
+          transformState: { rotation: 0, cropRect: null },
+          exportDefaults: { format: 'png', quality: 0.92 },
+        },
+      });
+
+      await store.loadPixelLabProject(
+        manifest,
+        new File(['pixels'], 'project.png', { type: 'image/png' }),
+      );
+
+      expect(mockGifManager.cancelExport).not.toHaveBeenCalled();
     });
   });
 

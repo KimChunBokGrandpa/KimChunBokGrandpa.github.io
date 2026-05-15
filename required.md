@@ -29,7 +29,7 @@ Updated: 2026-04-24 16:42 KST
 - 이번 run에서 original/no-worker fast path color count stale 가능성과 successful Tauri request 뒤 `pendingResolvers` 누수도 자동 정리 완료
 - 이번 run에서 RetroCam snapshot save는 live capture canvas가 아니라 stored snapshot asset/blob URL 기준으로 저장하도록 자동 수정 완료
 - 이번 run에서 `PresetManager`는 settings 초기 번들에서 분리되고 `Presets` tab first-open/hover/idle warm 기준으로 lazy-load되도록 자동 수정 완료
-- 이번 run에서 Pixel Lab save/share와 Poster Maker export가 project manifest `exportHistory`를 기록하고, 이후 저장이 기록을 지우지 않도록 자동 수정 완료
+- 이번 run에서 Pixel Lab save/share가 project manifest `exportHistory`를 기록하고, 이후 저장이 기록을 지우지 않도록 자동 수정 완료
 
 ## Required Checks
 
@@ -37,7 +37,7 @@ Updated: 2026-04-24 16:42 KST
   - first-run guide, launch strip, taskbar, mobile swipe focus, floating preview toolbar 겹침/가독성 확인
   - 이번 run의 guide max-height/overflow 방어가 실제 tall-phone에서 충분한지 확인
   - desktop icon launch 후 guide auto-dismiss와 condensed Start footprint가 실제 clutter 완화에 충분한지 확인
-  - first open 시 `Poster Maker` / `RetroCam` / `Gallery` / `Batch` / `History` / `Pixel Lab > Presets` loading placeholder가 어색하지 않은지 확인
+  - first open 시 `RetroCam` / `Gallery` / `Batch` / `History` / `Pixel Lab > Presets` loading placeholder가 어색하지 않은지 확인
 - [ ] RetroCam permission/device runtime
   - permission `denied / busy / unavailable`, device switch, snapshot handoff 확인
   - reopen 뒤 snapshot save/handoff가 fixed stored-snapshot path로 stale canvas나 빈 이미지 없이 동작하는지 확인
@@ -54,7 +54,6 @@ Updated: 2026-04-24 16:42 KST
   - dialog / shortcuts / context menu overlay가 열린 상태에서는 shell shortcut이 뒤 preview/save/undo로 새지 않는지 확인
 - [ ] Project export history runtime
   - Pixel Lab save/share 뒤 project reopen/save-format 변경을 해도 `exportHistory`가 유지되는지 확인
-  - Poster Maker export 뒤 title/style 변경과 reopen을 해도 export summary가 유지되는지 확인
   - 실제 browser download cancel 불가 path와 Tauri save cancel path에서 빈 export 기록이 생기지 않는지 확인
 
 ## Close Rule

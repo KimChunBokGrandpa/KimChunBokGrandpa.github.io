@@ -94,6 +94,16 @@ describe('PaletteGallery', () => {
     expect(container.innerHTML).toBeTruthy();
   });
 
+  it('shows the active palette name and family in the gallery summary', () => {
+    render(PaletteGallery, {
+      props: { ...defaultProps(), selectedPaletteId: 'nes' },
+    });
+
+    const summary = screen.getByTestId('palette-current-summary');
+    expect(summary.textContent).toContain('NES Standard');
+    expect(summary.textContent).toContain('preset_family_classic_pixel');
+  });
+
   it('calls onSelect when palette is clicked', async () => {
     const props = defaultProps();
     const { container } = render(PaletteGallery, { props });
@@ -118,6 +128,23 @@ describe('PaletteGallery', () => {
 
     await waitFor(() => {
       expect(container.querySelectorAll('.pg-recommend-chip').length).toBe(2);
+    });
+  });
+
+  it('labels recommended palette chips with rank and family', async () => {
+    recommendPalettesFromImage.mockResolvedValueOnce([
+      { id: 'cyberpunk16', score: 5 },
+    ]);
+
+    const { container } = render(PaletteGallery, {
+      props: { ...defaultProps(), imageSrc: 'blob:image' },
+    });
+
+    await waitFor(() => {
+      const chip = container.querySelector('.pg-recommend-chip');
+      expect(chip?.textContent).toContain('#1');
+      expect(chip?.textContent).toContain('Cyberpunk City (48)');
+      expect(chip?.textContent).toContain('preset_family_retro_treatment');
     });
   });
 

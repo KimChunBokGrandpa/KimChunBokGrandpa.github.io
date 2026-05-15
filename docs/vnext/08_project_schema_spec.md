@@ -69,7 +69,7 @@ A lightweight record used by the shell to show recently opened work.
 ### Top-Level Shape
 
 ```ts
-type AppId = 'pixel-lab' | 'poster-maker' | 'retrocam';
+type AppId = 'pixel-lab' | 'retrocam';
 
 interface RetroProjectManifestV1 {
   schemaVersion: 1;
@@ -105,7 +105,7 @@ interface RetroProjectManifestV1 {
 | `exportHistory` | summary only, not full binary export contents |
 | `programState` | app-specific payload |
 
-`exportHistory` currently has connected writers for successful Pixel Lab save/share and Poster Maker PNG export. Runtime cancel paths must not append empty history entries.
+`exportHistory` currently has connected writers for successful Pixel Lab save/share. Runtime cancel paths must not append empty history entries.
 
 ---
 
@@ -116,7 +116,6 @@ type AssetRole =
   | 'source'
   | 'processed'
   | 'capture'
-  | 'composition-layer'
   | 'export-preview'
   | 'export-final';
 
@@ -165,7 +164,6 @@ interface ExportHistoryEntry {
 ```ts
 type ProgramStateV1 =
   | PixelLabProjectStateV1
-  | PosterMakerProjectStateV1
   | RetroCamProjectStateV1;
 ```
 
@@ -190,77 +188,6 @@ interface PixelLabProjectStateV1 {
 
 - `processingSettings` must contain the app’s serializable image-processing state
 - undo/redo stack contents do not need to be fully persisted in MVP
-
-### Poster Maker State
-
-```ts
-interface PosterMakerProjectStateV1 {
-  kind: 'poster-maker';
-  documentPresetId: string;
-  canvas: {
-    width: number;
-    height: number;
-    backgroundStyleId?: string;
-  };
-  layers: PosterMakerLayerV1[];
-  sourceContext?: ProjectSourceContextV1;
-  activeLayerId?: string;
-}
-
-interface ProjectSourceContextV1 {
-  sourceAppId: AppId;
-  sourceProjectId?: string;
-  sourceLabel?: string;
-  importedAt: string;
-}
-
-type PosterMakerLayerV1 =
-  | PosterImageLayerV1
-  | PosterTextLayerV1
-  | PosterFrameLayerV1
-  | PosterOverlayLayerV1
-  | PosterStickerLayerV1;
-```
-
-### Poster Maker Layer Shapes
-
-```ts
-interface BasePosterLayerV1 {
-  layerId: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  rotation?: number;
-  opacity?: number;
-}
-
-interface PosterImageLayerV1 extends BasePosterLayerV1 {
-  type: 'image';
-  assetId: string;
-}
-
-interface PosterTextLayerV1 extends BasePosterLayerV1 {
-  type: 'text';
-  text: string;
-  textStyleId: string;
-}
-
-interface PosterFrameLayerV1 extends BasePosterLayerV1 {
-  type: 'frame';
-  frameStyleId: string;
-}
-
-interface PosterOverlayLayerV1 extends BasePosterLayerV1 {
-  type: 'overlay';
-  overlayStyleId: string;
-}
-
-interface PosterStickerLayerV1 extends BasePosterLayerV1 {
-  type: 'sticker';
-  stickerId: string;
-}
-```
 
 ### RetroCam State
 
@@ -340,9 +267,7 @@ Rules:
 
 Examples:
 
-- Pixel Lab processed image can seed a new Poster Maker project
 - RetroCam capture can open a new Pixel Lab project
-- Poster Maker export may create a new asset without becoming a Pixel Lab project
 
 ---
 
@@ -375,6 +300,6 @@ Portable project packaging can be added later as a separate layer on top of this
 ## Acceptance Criteria
 
 - the team can define a concrete `projectStorageAdapter` from this document
-- Pixel Lab and Poster Maker can both persist meaningful local project state
+- Pixel Lab and RetroCam can both persist meaningful local project state
 - cross-app handoff can reference shared assets without remote services
 - no future project work requires reinterpretation of ownership or persistence scope

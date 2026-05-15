@@ -15,12 +15,10 @@
     onMessage,
     onError,
     onOpenInPixelLab,
-    onUseInPosterMaker,
   }: {
     onMessage?: (message: string) => void;
     onError?: (message: string) => void;
     onOpenInPixelLab?: (file: File, presetId: RetroCamPresetId) => void | Promise<void>;
-    onUseInPosterMaker?: (file: File, presetId: RetroCamPresetId) => void | Promise<void>;
   } = $props();
 
   let videoEl = $state<HTMLVideoElement | null>(null);
@@ -28,14 +26,14 @@
   let ctxMenu = $state<{ x: number; y: number; items: ContextMenuEntry[] } | null>(null);
 
   function currentPreset() {
-    return retroCamPresets.find((preset) => preset.id === retroCamStore.activePresetId) ?? retroCamPresets[0];
+    return (
+      retroCamPresets.find((preset) => preset.id === retroCamStore.activePresetId) ??
+      retroCamPresets[0]
+    );
   }
 
   function reportRetroCamError(
-    fallbackKey:
-      | 'retrocam_snapshot_failed'
-      | 'retrocam_open_in_pixel_lab_failed'
-      | 'retrocam_use_in_poster_maker_failed',
+    fallbackKey: 'retrocam_snapshot_failed' | 'retrocam_open_in_pixel_lab_failed',
     error?: unknown,
   ) {
     if (error) {
@@ -129,14 +127,11 @@
     const snapshotUrl = retroCamStore.lastSnapshotUrl ?? URL.createObjectURL(snapshotFile);
     const shouldRevokeSnapshotUrl = !retroCamStore.lastSnapshotUrl;
     try {
-      const message = await saveImage(
-        snapshotUrl,
-        {
-          format: getSnapshotSaveFormat(snapshotFile),
-          quality: 0.92,
-          filename: snapshotFile.name.replace(/\.[^.]+$/, ''),
-        },
-      );
+      const message = await saveImage(snapshotUrl, {
+        format: getSnapshotSaveFormat(snapshotFile),
+        quality: 0.92,
+        filename: snapshotFile.name.replace(/\.[^.]+$/, ''),
+      });
       if (message) onMessage?.(message);
     } catch (error) {
       reportRetroCamError('retrocam_snapshot_failed', error);
@@ -159,18 +154,6 @@
     }
   }
 
-  async function useSnapshotInPosterMaker() {
-    if (!retroCamStore.lastSnapshotFile || !onUseInPosterMaker) return;
-    try {
-      await onUseInPosterMaker(
-        retroCamStore.lastSnapshotFile,
-        retroCamStore.lastSnapshotPresetId ?? retroCamStore.activePresetId,
-      );
-    } catch (error) {
-      reportRetroCamError('retrocam_use_in_poster_maker_failed', error);
-    }
-  }
-
   function handleSnapshotContextMenu(event: MouseEvent) {
     if (!retroCamStore.lastSnapshotFile) return;
     event.preventDefault();
@@ -189,13 +172,6 @@
           icon: '🖼️',
           action: () => {
             void openSnapshotInPixelLab();
-          },
-        },
-        {
-          label: i18n.t('retrocam_use_in_poster_maker'),
-          icon: '📰',
-          action: () => {
-            void useSnapshotInPosterMaker();
           },
         },
       ]),
@@ -251,8 +227,10 @@
           class="w98-select"
           data-testid="retrocam-device-select"
           value={retroCamStore.selectedDeviceId}
-          onchange={(event) => handleDeviceChange((event.target as HTMLSelectElement).value as RetroCamDeviceId)}
-          disabled={retroCamStore.permissionState === 'requesting' || retroCamStore.availableDevices.length === 0}
+          onchange={(event) =>
+            handleDeviceChange((event.target as HTMLSelectElement).value as RetroCamDeviceId)}
+          disabled={retroCamStore.permissionState === 'requesting' ||
+            retroCamStore.availableDevices.length === 0}
         >
           <option value="auto">{i18n.t('retrocam_camera_auto')}</option>
           {#each retroCamStore.availableDevices as device}
@@ -260,15 +238,33 @@
           {/each}
         </select>
       </label>
-      <button class="toolbar-btn w98-button" onclick={retryCamera} disabled={retroCamStore.permissionState === 'requesting'}>
+      <button
+        class="toolbar-btn w98-button"
+        onclick={retryCamera}
+        disabled={retroCamStore.permissionState === 'requesting'}
+      >
         <span class="w98-emoji" aria-hidden="true">📷</span>
-        <span>{i18n.t(retroCamStore.permissionState === 'ready' ? 'retrocam_retry_camera' : 'retrocam_start_camera')}</span>
+        <span
+          >{i18n.t(
+            retroCamStore.permissionState === 'ready'
+              ? 'retrocam_retry_camera'
+              : 'retrocam_start_camera',
+          )}</span
+        >
       </button>
-      <button class="toolbar-btn w98-button w98-button--primary" onclick={captureSnapshot} disabled={!retroCamStore.stream}>
+      <button
+        class="toolbar-btn w98-button w98-button--primary"
+        onclick={captureSnapshot}
+        disabled={!retroCamStore.stream}
+      >
         <span class="w98-emoji" aria-hidden="true">📸</span>
         <span>{i18n.t('retrocam_capture_snapshot')}</span>
       </button>
-      <button class="toolbar-btn w98-inline-button w98-button--thin" onclick={saveSnapshot} disabled={!retroCamStore.lastSnapshotFile}>
+      <button
+        class="toolbar-btn w98-inline-button w98-button--thin"
+        onclick={saveSnapshot}
+        disabled={!retroCamStore.lastSnapshotFile}
+      >
         <span class="w98-emoji" aria-hidden="true">💾</span>
         <span>{i18n.t('retrocam_save_snapshot')}</span>
       </button>
@@ -283,14 +279,9 @@
       </button>
       <button
         class="toolbar-btn w98-inline-button w98-button--thin"
-        data-testid="retrocam-use-in-poster-maker-button"
-        onclick={useSnapshotInPosterMaker}
+        onclick={() => retroCamStore.clearSnapshot()}
         disabled={!retroCamStore.lastSnapshotFile}
       >
-        <span class="w98-emoji" aria-hidden="true">📰</span>
-        <span>{i18n.t('retrocam_use_in_poster_maker')}</span>
-      </button>
-      <button class="toolbar-btn w98-inline-button w98-button--thin" onclick={() => retroCamStore.clearSnapshot()} disabled={!retroCamStore.lastSnapshotFile}>
         <span class="w98-structural-glyph" aria-hidden="true">✕</span>
         <span>{i18n.t('retrocam_clear_snapshot')}</span>
       </button>
@@ -324,7 +315,8 @@
             </div>
           {/if}
         </div>
-        <canvas bind:this={captureCanvas} class="retrocam-capture-canvas" aria-hidden="true"></canvas>
+        <canvas bind:this={captureCanvas} class="retrocam-capture-canvas" aria-hidden="true"
+        ></canvas>
       </div>
     </section>
 
@@ -369,7 +361,9 @@
                 oncontextmenu={handleSnapshotContextMenu}
               />
             {:else}
-              <div class="retrocam-snapshot-placeholder w98-note">{i18n.t('retrocam_no_snapshot')}</div>
+              <div class="retrocam-snapshot-placeholder w98-note">
+                {i18n.t('retrocam_no_snapshot')}
+              </div>
             {/if}
           </div>
         </div>

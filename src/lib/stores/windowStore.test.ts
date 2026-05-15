@@ -34,7 +34,6 @@ describe('windowStore', () => {
     it('should create store with default window states', () => {
       const store = createWindowStore();
       expect(store.wins.preview).toBeDefined();
-      expect(store.wins.poster_maker).toBeDefined();
       expect(store.wins.retrocam).toBeDefined();
       expect(store.wins.settings).toBeDefined();
       expect(store.wins.gallery).toBeDefined();
@@ -129,8 +128,8 @@ describe('windowStore', () => {
 
     it('should move focus to the next visible window when closing and resetting the focused window', () => {
       const store = createWindowStore();
-      store.openWindow('poster_maker');
-      store.closeAndReset('poster_maker');
+      store.openWindow('gallery');
+      store.closeAndReset('gallery');
       expect(store.focusedWindow).toBe('preview');
     });
   });
@@ -179,13 +178,13 @@ describe('windowStore', () => {
   describe('shell program copy helpers', () => {
     it('should return the shell summary key for desktop programs', () => {
       expect(getShellProgramSummary('preview')).toBe('desktop_summary_preview');
-      expect(getShellProgramSummary('poster_maker')).toBe('desktop_summary_poster_maker');
+      expect(getShellProgramSummary('retrocam')).toBe('desktop_summary_retrocam');
     });
   });
 
   describe('windowConfigs', () => {
-    it('should define 7 windows', () => {
-      expect(windowConfigs).toHaveLength(7);
+    it('should define 6 windows', () => {
+      expect(windowConfigs).toHaveLength(6);
     });
 
     it('should have unique ids', () => {
@@ -195,11 +194,18 @@ describe('windowStore', () => {
 
     it('should expose the shell programs as desktop shortcuts', () => {
       const desktopIds = desktopWindowConfigs.map((config) => config.id);
-      expect(desktopIds).toEqual(['preview', 'poster_maker', 'retrocam']);
+      expect(desktopIds).toEqual(['preview', 'retrocam']);
     });
 
     it('should reuse window config order as the mobile shell order', () => {
       expect(mobileWindowOrder).toEqual(windowConfigs.map((config) => config.id));
+    });
+
+    it('does not include poster_maker in window configs', () => {
+      const ids = windowConfigs.map(c => c.id);
+      expect(ids).not.toContain('poster_maker');
+      expect(desktopWindowConfigs.map(c => c.id)).not.toContain('poster_maker');
+      expect(mobileWindowOrder).not.toContain('poster_maker');
     });
   });
 
@@ -208,7 +214,6 @@ describe('windowStore', () => {
       const saved = {
         settings: { x: 100, y: 200, w: 300, h: 400 },
         preview: { x: 500, y: 600, w: 700, h: 800 },
-        poster_maker: { x: 140, y: 160, w: 780, h: 600 },
         retrocam: { x: 180, y: 120, w: 760, h: 520 },
         gallery: { x: 10, y: 20, w: 30, h: 40 },
         batch: { x: 50, y: 60, w: 70, h: 80 },

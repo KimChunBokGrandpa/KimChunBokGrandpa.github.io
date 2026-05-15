@@ -2,7 +2,7 @@
 
 이미지를 `고전 픽셀풍` 또는 `레트로화` 결과물로 빠르게 변환하고 세밀하게 편집하는 client-only 이미지 편집기입니다.
 
-`Pixel Lab`이 제품의 메인 프로그램이며, `Poster Maker`, `RetroCam`, Windows 98 스타일 shell은 Pixel Lab의 입력/활용/브랜드 경험을 보강하는 supporting surface입니다.
+`Pixel Lab`이 제품의 메인 프로그램이며, `RetroCam`, Windows 98 스타일 shell은 Pixel Lab의 입력/브랜드 경험을 보강하는 supporting surface입니다.
 
 > 아키텍처 전제: 핵심 이미지 처리, 추천, 저장, 공유, 발행 흐름은 브라우저 또는 Tauri 앱의 로컬 리소스만으로 동작합니다.
 > 별도 서버/백엔드/API, 계정, 원격 렌더링, 원격 AI 추론은 core scope의 전제가 아닙니다.
@@ -12,14 +12,13 @@
 - **메인 가치**: 기존 이미지를 보기 좋은 레트로 필터로만 덮는 것이 아니라, 팔레트/디더링/픽셀 크기/CRT/effect/export까지 조정해 고전 기기 감성과 레트로 무드를 모두 만들 수 있게 한다.
 - **추천 방향**: 업로드 이미지의 색, 대비, 피사체, 질감을 보고 `Classic Pixel` 계열과 `Retro Treatment` 계열 프리셋을 함께 추천한다.
 - **편집 루프**: 사용자는 추천 프리셋으로 빠르게 시작하고, Pixel Lab의 세부 컨트롤로 결과를 조정한 뒤 로컬로 저장/export한다.
-- **보조 앱의 역할**: Poster Maker는 완성 이미지를 포스터/카드로 활용하는 목적지이고, RetroCam은 캡처 이미지를 Pixel Lab로 보내는 빠른 입력 경로다.
+- **보조 앱의 역할**: RetroCam은 캡처 이미지를 Pixel Lab로 보내는 빠른 입력 경로다.
 - **Win98 shell의 역할**: 제품 정체성과 작업 재미를 만드는 shell이지만, shell 자체가 메인 제품 목표가 되지는 않는다.
 
 ## 현재 프로그램 구성
 
 - **Pixel Lab**: 이미지 픽셀화, 팔레트 적용, 디더링/CRT/effect stack, GIF 편집, export, preset/share 흐름을 담당하는 메인 편집 프로그램
-- **Poster Maker**: Pixel Lab 결과물 또는 로컬 이미지를 포스터/카드/레이아웃으로 활용하는 supporting composition 프로그램
-- **RetroCam**: 웹캠 스냅샷을 빠르게 찍고 Pixel Lab / Poster Maker로 넘기는 capture-first supporting 프로그램
+- **RetroCam**: 웹캠 스냅샷을 빠르게 찍고 Pixel Lab로 넘기는 capture-first supporting 프로그램
 - **Shared Shell**: Windows 98 데스크탑, Start 메뉴, taskbar, recent project, toast/dialog, cross-app handoff를 담당하는 공통 shell
 
 ## 핵심 기능
@@ -52,7 +51,7 @@
   - Web Worker / Tauri / WASM quantizer 결과 차이 축소
   - effectLayers 중심으로 legacy 경로를 boundary-only로 수렴
 - `P2` supporting surfaces 정리
-  - Poster Maker / RetroCam은 Pixel Lab 중심 흐름을 보조하는 input/output 경로로 유지
+  - RetroCam은 Pixel Lab 중심 흐름을 보조하는 input 경로로 유지
   - shell polish는 Pixel Lab 접근성과 결과물 완성도를 해치지 않는 범위로 제한
 
 ## 다음 작업

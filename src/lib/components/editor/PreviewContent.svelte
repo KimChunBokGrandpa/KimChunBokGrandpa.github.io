@@ -6,6 +6,7 @@
   import type { CompareVariant } from './CompareView.svelte';
   import type { createZoomPan } from '$lib/stores/zoomPanStore.svelte';
   import type { ProcessingSettings } from '$lib/types';
+  import type { ExportPrimaryAction } from '$lib/utils/exportHierarchy';
 
   let {
     zp,
@@ -29,13 +30,6 @@
     onGifPlay,
     onGifPause,
     onGifSeek,
-    onGifExport,
-    onGifCancelExport,
-    onGifExportSpritesheet,
-    onGifExportSequence,
-    onGifExportApng,
-    onGifExportAnimatedSvg,
-    onGifExportAnimatedWebp,
     onGifDeleteFrame,
     onGifDuplicateFrame,
     onGifReorderFrame,
@@ -51,6 +45,9 @@
     onCrop,
     currentRotation = 0,
     hasCrop = false,
+    // Export primary (threaded to PreviewBottomBar)
+    exportPrimary = null,
+    onInvokeExportPrimary,
   }: {
     zp: ReturnType<typeof createZoomPan>;
     originalImageSrc: string | null;
@@ -73,13 +70,6 @@
     onGifPlay?: () => void;
     onGifPause?: () => void;
     onGifSeek?: (frame: number) => void;
-    onGifExport?: () => void;
-    onGifCancelExport?: () => void;
-    onGifExportSpritesheet?: () => void;
-    onGifExportSequence?: () => void;
-    onGifExportApng?: () => void;
-    onGifExportAnimatedSvg?: () => void;
-    onGifExportAnimatedWebp?: () => void;
     onGifDeleteFrame?: (frame: number) => void;
     onGifDuplicateFrame?: (frame: number) => void;
     onGifReorderFrame?: (from: number, to: number) => void;
@@ -95,6 +85,9 @@
     onCrop?: (rect: { x: number; y: number; w: number; h: number } | null) => void;
     currentRotation?: number;
     hasCrop?: boolean;
+    // Export primary
+    exportPrimary?: ExportPrimaryAction | null;
+    onInvokeExportPrimary?: () => void;
   } = $props();
 
   // ─── Crop Mode ───
@@ -114,7 +107,7 @@
   }
 
   let compareVariantIcon = $derived(
-    compareVariant === 'slider' ? '↔' : compareVariant === 'side-by-side' ? '▥' : '🧅'
+    compareVariant === 'slider' ? '↔' : compareVariant === 'side-by-side' ? '▥' : '🧅',
   );
   let compareVariantUsesEmoji = $derived(compareVariant === 'onion');
 </script>
@@ -154,6 +147,8 @@
       {currentRotation}
       {processingSettings}
       {colorCount}
+      {exportPrimary}
+      {onInvokeExportPrimary}
       {onRotate}
       {onResetTransform}
       {cycleCompareVariant}
@@ -168,7 +163,7 @@
       isPanning={zp.isPanning}
     />
     <!-- GIF Frame Controls -->
-    {#if isGif && gifFrameCount > 1 && onGifPlay && onGifPause && onGifSeek && onGifExport}
+    {#if isGif && gifFrameCount > 1 && onGifPlay && onGifPause && onGifSeek}
       <GifControls
         currentFrame={gifCurrentFrame}
         frameCount={gifFrameCount}
@@ -178,13 +173,6 @@
         onPlay={onGifPlay}
         onPause={onGifPause}
         onSeek={onGifSeek}
-        onExport={onGifExport}
-        onCancelExport={onGifCancelExport}
-        onExportSpritesheet={onGifExportSpritesheet}
-        onExportSequence={onGifExportSequence}
-        onExportApng={onGifExportApng}
-        onExportAnimatedSvg={onGifExportAnimatedSvg}
-        onExportAnimatedWebp={onGifExportAnimatedWebp}
         onDeleteFrame={onGifDeleteFrame}
         onDuplicateFrame={onGifDuplicateFrame}
         onReorderFrame={onGifReorderFrame}

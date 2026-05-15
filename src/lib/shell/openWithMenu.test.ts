@@ -26,7 +26,7 @@ describe('buildOpenWithSection', () => {
 
     const items = buildOpenWithSection('Open With', [
       { label: 'Open in Pixel Lab', icon: '🖼️', action },
-      { label: 'Use in Poster Maker', icon: '📰', action: vi.fn() },
+      { label: 'Open in RetroCam', icon: '📷', action: vi.fn() },
     ]);
 
     expect(items).toHaveLength(4);
@@ -37,8 +37,8 @@ describe('buildOpenWithSection', () => {
     expect('action' in getMenuItem(items[1])).toBe(false);
     expect(getMenuItem(items[2]).label).toBe('Open in Pixel Lab');
     expect(getMenuItem(items[2]).icon).toBe('🖼️');
-    expect(getMenuItem(items[3]).label).toBe('Use in Poster Maker');
-    expect(getMenuItem(items[3]).icon).toBe('📰');
+    expect(getMenuItem(items[3]).label).toBe('Open in RetroCam');
+    expect(getMenuItem(items[3]).icon).toBe('📷');
 
     getActionItem(items[2]).action();
     expect(action).toHaveBeenCalledTimes(1);

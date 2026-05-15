@@ -1,5 +1,6 @@
 import { paletteHexData } from "./paletteData";
 import type { TranslationKey } from '../i18n/en';
+import type { PresetFamily } from './presets';
 import { hexToRgb } from './colorUtils';
 
 export type RGB = { r: number; g: number; b: number };
@@ -388,6 +389,32 @@ export function getPaletteName(id: string): string {
   const info = _paletteIdLookup.get(normalizedId);
   if (info) return `${info.theme} (${info.colorCount})`;
   return normalizedId;
+}
+
+const classicPaletteThemes = new Set([
+  'Gameboy',
+  'Monochrome',
+  'Retro Console',
+  'Retro PC',
+  '★ Windows 256',
+]);
+
+const retroTreatmentPaletteThemes = new Set([
+  'Cyberpunk',
+  'Neon Glow',
+  'Vintage Film',
+]);
+
+export function getPaletteFamily(id: string): PresetFamily {
+  const normalizedId = normalizePaletteId(id);
+  if (normalizedId === 'original') return 'reference';
+
+  const info = _paletteIdLookup.get(normalizedId);
+  if (!info) return 'hybrid';
+
+  if (classicPaletteThemes.has(info.theme)) return 'classic_pixel';
+  if (retroTreatmentPaletteThemes.has(info.theme)) return 'retro_treatment';
+  return 'hybrid';
 }
 
 // ─── Theme-based palette grouping (auto-built from paletteGroups) ───

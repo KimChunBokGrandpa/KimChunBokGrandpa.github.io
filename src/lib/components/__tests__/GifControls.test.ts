@@ -16,15 +16,12 @@ function defaultProps() {
     onPlay: vi.fn(),
     onPause: vi.fn(),
     onSeek: vi.fn(),
-    onExport: vi.fn(),
   };
 }
 
 function reorderProps() {
   return {
     ...defaultProps(),
-    onExportAnimatedSvg: vi.fn(),
-    onExportAnimatedWebp: vi.fn(),
     onDeleteFrame: vi.fn(),
     onDuplicateFrame: vi.fn(),
     onReorderFrame: vi.fn(),
@@ -58,7 +55,6 @@ describe('GifControls', () => {
     const props = defaultProps();
     const { container } = render(GifControls, { props });
     const buttons = container.querySelectorAll('.gif-btn');
-    // buttons: play, first, prev, next, last, export
     await fireEvent.click(buttons[1]); // ⏮ first frame
     expect(props.onSeek).toHaveBeenCalledWith(0);
   });
@@ -87,28 +83,25 @@ describe('GifControls', () => {
     expect(props.onSeek).toHaveBeenCalledWith(9);
   });
 
-  it('calls onExport when export button is clicked', async () => {
-    const props = defaultProps();
-    const { container } = render(GifControls, { props });
-    const exportBtn = container.querySelector('.gif-export-btn')!;
-    await fireEvent.click(exportBtn);
-    expect(props.onExport).toHaveBeenCalledOnce();
+  it('does not render any export buttons', () => {
+    const { container } = render(GifControls, { props: defaultProps() });
+    const exportBtn = container.querySelector('.gif-export-btn');
+    expect(exportBtn).toBeNull();
+  });
+
+  it('does not render export buttons even with reorder props', () => {
+    const { container } = render(GifControls, { props: reorderProps() });
+    const exportBtns = container.querySelectorAll('.gif-export-btn');
+    expect(exportBtns).toHaveLength(0);
   });
 
   it('disables buttons when exporting', () => {
     const props = { ...defaultProps(), isExporting: true, exportProgress: 0.5 };
     const { container } = render(GifControls, { props });
-    const buttons = container.querySelectorAll('.gif-btn:not(.gif-cancel-btn)');
+    const buttons = container.querySelectorAll('.gif-btn');
     buttons.forEach((btn) => {
       expect((btn as HTMLButtonElement).disabled).toBe(true);
     });
-  });
-
-  it('shows export progress when exporting', () => {
-    const props = { ...defaultProps(), isExporting: true, exportProgress: 0.75 };
-    const { container } = render(GifControls, { props });
-    const exportStatus = container.querySelector('.gif-export-status');
-    expect(exportStatus?.textContent).toContain('75%');
   });
 
   it('renders progress bar when exporting', () => {
@@ -156,39 +149,5 @@ describe('GifControls', () => {
     const chips = container.querySelectorAll('.gif-frame-chip');
     await fireEvent.click(chips[4]);
     expect(props.onSeek).toHaveBeenCalledWith(4);
-  });
-
-  it('calls animated SVG export callback when button is clicked', async () => {
-    const props = reorderProps();
-    const { container } = render(GifControls, { props });
-    const buttons = Array.from(container.querySelectorAll('.gif-export-btn'));
-    const animatedSvgBtn = buttons.at(-2) as HTMLButtonElement;
-    await fireEvent.click(animatedSvgBtn);
-    expect(props.onExportAnimatedSvg).toHaveBeenCalledOnce();
-  });
-
-  it('calls animated WebP export callback when button is clicked', async () => {
-    const props = reorderProps();
-    const { container } = render(GifControls, { props });
-    const buttons = Array.from(container.querySelectorAll('.gif-export-btn'));
-    const animatedWebpBtn = buttons.at(-1) as HTMLButtonElement;
-    await fireEvent.click(animatedWebpBtn);
-    expect(props.onExportAnimatedWebp).toHaveBeenCalledOnce();
-  });
-
-  it('exposes export aria labels for sequence, APNG, animated SVG, and animated WebP actions', () => {
-    const props = {
-      ...reorderProps(),
-      onExportSequence: vi.fn(),
-      onExportApng: vi.fn(),
-    };
-    const { container } = render(GifControls, { props });
-    const buttons = Array.from(container.querySelectorAll('.gif-export-btn'));
-    const labeledButtons = buttons
-      .map((button) => button.getAttribute('aria-label'))
-      .filter((label): label is string => !!label);
-
-    expect(labeledButtons).toHaveLength(4);
-    labeledButtons.forEach((label) => expect(label.length).toBeGreaterThan(0));
   });
 });

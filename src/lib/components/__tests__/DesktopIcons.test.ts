@@ -9,7 +9,6 @@ vi.mock('$lib/i18n/index.svelte', () => ({
       if (key === 'desktop_shortcuts') return 'Desktop Programs';
       if (key === 'desktop_open_program') return `Open ${args[0]}`;
       if (key === 'win_preview') return 'Pixel Lab';
-      if (key === 'win_poster_maker') return 'Poster Maker';
       if (key === 'win_retrocam') return 'RetroCam';
       return key;
     }),
@@ -35,10 +34,10 @@ describe('DesktopIcons', () => {
     expect(toolbar).toBeTruthy();
   });
 
-  it('renders Pixel Lab, Poster Maker, and RetroCam desktop icons', () => {
+  it('renders Pixel Lab and RetroCam desktop icons', () => {
     const { container } = render(DesktopIcons, { props: defaultProps() });
     const buttons = container.querySelectorAll('.desktop-icon');
-    expect(buttons.length).toBe(3);
+    expect(buttons.length).toBe(2);
   });
 
   it('calls onIconClick when icon is clicked', async () => {
@@ -100,7 +99,7 @@ describe('DesktopIcons', () => {
     await fireEvent.focus(buttons[1]);
     await fireEvent.mouseEnter(buttons[1]);
 
-    expect(props.onIconIntent).toHaveBeenCalledWith('poster_maker');
+    expect(props.onIconIntent).toHaveBeenCalledWith('retrocam');
     expect(props.onIconIntent).toHaveBeenCalledTimes(2);
   });
 });

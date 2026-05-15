@@ -2,11 +2,7 @@ import type { AppId } from '$lib/projects/schema';
 
 export const crossAppHandoffVersion = 1 as const;
 
-export type HandoffIntent =
-  | 'place_processed_asset'
-  | 'edit_capture'
-  | 'place_capture_on_canvas'
-  | 'open_export_asset';
+export type HandoffIntent = 'edit_capture';
 
 export type HandoffOpenMode =
   | 'create_project'

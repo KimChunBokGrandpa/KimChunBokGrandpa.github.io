@@ -1,13 +1,46 @@
 <script lang="ts">
-  import { buildShortcutLabel, replacePrimaryModifierShortcutLabel } from '$lib/utils/platformShortcuts';
+  import {
+    buildShortcutLabel,
+    replacePrimaryModifierShortcutLabel,
+  } from '$lib/utils/platformShortcuts';
 
   const typeScale = [
-    { name: 'Heading', token: '--w98-font-size-heading', size: '14px', sample: 'Desktop Notice / Program Title' },
-    { name: 'Action', token: '--w98-font-size-action', size: '12px', sample: 'Open Image / Save As' },
-    { name: 'Base', token: '--w98-font-size-base', size: '11px', sample: 'Default UI copy and controls' },
-    { name: 'Small', token: '--w98-font-size-sm', size: '10px', sample: 'Helper text and secondary controls' },
-    { name: 'Caption', token: '--w98-font-size-caption', size: '9px', sample: 'Format lists and tiny labels' },
-    { name: 'Micro', token: '--w98-font-size-micro', size: '8px', sample: 'Dense badges and compact utility copy' },
+    {
+      name: 'Heading',
+      token: '--w98-font-size-heading',
+      size: '15px',
+      sample: 'Desktop Notice / Program Title',
+    },
+    {
+      name: 'Action',
+      token: '--w98-font-size-action',
+      size: '13px',
+      sample: 'Open Image / Save As',
+    },
+    {
+      name: 'Base',
+      token: '--w98-font-size-base',
+      size: '12px',
+      sample: 'Default UI copy and controls',
+    },
+    {
+      name: 'Small',
+      token: '--w98-font-size-sm',
+      size: '11px',
+      sample: 'Helper text and secondary controls',
+    },
+    {
+      name: 'Caption',
+      token: '--w98-font-size-caption',
+      size: '10px',
+      sample: 'Format lists and tiny labels',
+    },
+    {
+      name: 'Micro',
+      token: '--w98-font-size-micro',
+      size: '9px',
+      sample: 'Dense badges and compact utility copy',
+    },
   ];
 
   const spacingScale = [
@@ -21,7 +54,6 @@
 
   const iconography = [
     { emoji: '🖼️', label: 'Pixel Lab' },
-    { emoji: '📰', label: 'Poster Maker' },
     { emoji: '📷', label: 'RetroCam' },
     { emoji: '⚙️', label: 'Controls' },
     { emoji: '🎨', label: 'Palette Gallery' },
@@ -60,7 +92,10 @@
     { label: 'Desktop', detail: 'Shortcut tile, selected label, guide card, launch strip' },
     { label: 'Forms', detail: 'Buttons, fieldsets, input surfaces, dialog actions' },
     { label: 'Feedback', detail: 'Context menu, dialogs, toast chrome, drop overlay' },
-    { label: 'Feature Surfaces', detail: 'Palette list, Poster Maker stage, RetroCam capture shell' },
+    {
+      label: 'Feature Surfaces',
+      detail: 'Palette list, RetroCam capture shell',
+    },
   ];
 
   const appliedUpdates = [
@@ -77,7 +112,6 @@
     'palette swatch bevel recipe',
     'compare slider + onion utility chrome',
     'preset thumbnail inset shell',
-    'poster maker preview shell',
     'retrocam action/icon cleanup',
   ];
 
@@ -111,7 +145,9 @@
   <main class="ds-grid">
     <section class="ds-card w98-desktop-card" id="audit">
       <div class="w98-window-card-titlebar">
-        <div class="w98-window-card-title"><span class="w98-emoji">🧭</span><span>Audit Targets</span></div>
+        <div class="w98-window-card-title">
+          <span class="w98-emoji">🧭</span><span>Audit Targets</span>
+        </div>
       </div>
       <div class="w98-window-card-body">
         <div class="audit-grid">
@@ -132,7 +168,9 @@
 
     <section class="ds-card w98-desktop-card" id="identity">
       <div class="w98-window-card-titlebar">
-        <div class="w98-window-card-title"><span class="w98-emoji">📌</span><span>Identity</span></div>
+        <div class="w98-window-card-title">
+          <span class="w98-emoji">📌</span><span>Identity</span>
+        </div>
       </div>
       <div class="w98-window-card-body">
         <div class="identity-row">
@@ -141,7 +179,10 @@
           </div>
           <div class="identity-copy">
             <div class="w98-section-title">Logo Rule</div>
-            <p class="w98-quiet-copy">로고는 앱 아이콘과 시스템 정체성에만 사용하고, 제품 chrome 내부는 이모지 프로그램 아이콘이 담당합니다.</p>
+            <p class="w98-quiet-copy">
+              로고는 앱 아이콘과 시스템 정체성에만 사용하고, 제품 chrome 내부는 이모지 프로그램
+              아이콘이 담당합니다.
+            </p>
           </div>
         </div>
         <div class="icon-grid">
@@ -165,7 +206,9 @@
 
     <section class="ds-card w98-desktop-card" id="colors">
       <div class="w98-window-card-titlebar">
-        <div class="w98-window-card-title"><span class="w98-emoji">🎛️</span><span>Color Structure</span></div>
+        <div class="w98-window-card-title">
+          <span class="w98-emoji">🎛️</span><span>Color Structure</span>
+        </div>
       </div>
       <div class="w98-window-card-body">
         <div class="color-grid">
@@ -180,13 +223,18 @@
             </div>
           {/each}
         </div>
-        <p class="w98-quiet-copy">UI chrome는 teal desktop, grey surface, navy highlight, white inset field의 네 축으로 고정합니다. hover는 색을 바꾸지 않고 pressed 상태에서 bevel만 뒤집습니다.</p>
+        <p class="w98-quiet-copy">
+          UI chrome는 teal desktop, grey surface, navy highlight, white inset field의 네 축으로
+          고정합니다. hover는 색을 바꾸지 않고 pressed 상태에서 bevel만 뒤집습니다.
+        </p>
       </div>
     </section>
 
     <section class="ds-card w98-desktop-card" id="type">
       <div class="w98-window-card-titlebar">
-        <div class="w98-window-card-title"><span class="w98-emoji">🔤</span><span>Type Scale</span></div>
+        <div class="w98-window-card-title">
+          <span class="w98-emoji">🔤</span><span>Type Scale</span>
+        </div>
       </div>
       <div class="w98-window-card-body">
         <div class="type-list">
@@ -214,7 +262,9 @@
 
     <section class="ds-card w98-desktop-card" id="spacing">
       <div class="w98-window-card-titlebar">
-        <div class="w98-window-card-title"><span class="w98-emoji">📏</span><span>Spacing And Bevels</span></div>
+        <div class="w98-window-card-title">
+          <span class="w98-emoji">📏</span><span>Spacing And Bevels</span>
+        </div>
       </div>
       <div class="w98-window-card-body">
         <div class="spacing-list">
@@ -237,7 +287,9 @@
 
     <section class="ds-card w98-desktop-card" id="controls">
       <div class="w98-window-card-titlebar">
-        <div class="w98-window-card-title"><span class="w98-emoji">🧰</span><span>Buttons, Form Fields</span></div>
+        <div class="w98-window-card-title">
+          <span class="w98-emoji">🧰</span><span>Buttons, Form Fields</span>
+        </div>
       </div>
       <div class="w98-window-card-body">
         <div class="control-row">
@@ -247,9 +299,12 @@
           <button class="w98-button" disabled>Apply Now</button>
         </div>
         <div class="control-row">
-          <button class="w98-button w98-button--primary"><span class="w98-emoji">📂</span> Open Image</button>
-          <button class="w98-button w98-button--primary"><span class="w98-emoji">💾</span> Save As</button>
-          <button class="w98-button w98-button--primary"><span class="w98-emoji">📰</span> Send To Poster Maker</button>
+          <button class="w98-button w98-button--primary"
+            ><span class="w98-emoji">📂</span> Open Image</button
+          >
+          <button class="w98-button w98-button--primary"
+            ><span class="w98-emoji">💾</span> Save As</button
+          >
         </div>
         <div class="field-grid">
           <label class="field w98-form-stack">
@@ -270,7 +325,9 @@
           </label>
           <label class="field w98-form-stack">
             <span class="w98-form-label">Notes</span>
-            <textarea class="w98-textarea" rows="3">No rounded corners. No blur. No modern hover.</textarea>
+            <textarea class="w98-textarea" rows="3"
+              >No rounded corners. No blur. No modern hover.</textarea
+            >
           </label>
         </div>
       </div>
@@ -278,7 +335,9 @@
 
     <section class="ds-card w98-desktop-card" id="shell">
       <div class="w98-window-card-titlebar">
-        <div class="w98-window-card-title"><span class="w98-emoji">🖥️</span><span>Desktop, Window, Taskbar</span></div>
+        <div class="w98-window-card-title">
+          <span class="w98-emoji">🖥️</span><span>Desktop, Window, Taskbar</span>
+        </div>
       </div>
       <div class="w98-window-card-body">
         <div class="desktop-specimen">
@@ -288,20 +347,20 @@
               <span class="w98-desktop-shortcut-label">Pixel Lab</span>
             </div>
             <div class="desktop-icon w98-desktop-shortcut">
-              <span class="w98-emoji w98-desktop-shortcut-icon">📰</span>
-              <span class="w98-desktop-shortcut-label">Poster Maker</span>
-            </div>
-            <div class="desktop-icon w98-desktop-shortcut">
               <span class="w98-emoji w98-desktop-shortcut-icon">📷</span>
               <span class="w98-desktop-shortcut-label">RetroCam</span>
             </div>
           </div>
           <div class="window specimen-window window">
             <div class="title-bar w98-shell-titlebar">
-              <div class="title-bar-text w98-shell-title"><span class="w98-emoji">🖼️</span> Pixel Lab - Preview</div>
+              <div class="title-bar-text w98-shell-title">
+                <span class="w98-emoji">🖼️</span> Pixel Lab - Preview
+              </div>
               <div class="title-bar-controls">
-                <button type="button" class="w98-window-control-button" aria-label="Minimize"></button>
-                <button type="button" class="w98-window-control-button" aria-label="Maximize"></button>
+                <button type="button" class="w98-window-control-button" aria-label="Minimize"
+                ></button>
+                <button type="button" class="w98-window-control-button" aria-label="Maximize"
+                ></button>
                 <button type="button" class="w98-window-control-button" aria-label="Close"></button>
               </div>
             </div>
@@ -315,21 +374,37 @@
             </div>
           </div>
           <div class="taskbar-specimen">
-            <button type="button" class="start-btn w98-taskbar-button"><span class="w98-structural-glyph">⊞</span><span>Start</span></button>
+            <button type="button" class="start-btn w98-taskbar-button"
+              ><span class="w98-structural-glyph">⊞</span><span>Start</span></button
+            >
             <span class="w98-taskbar-grip"></span>
-            <div class="task-item w98-taskbar-button w98-taskbar-button--active active"><span class="w98-emoji">🖼️</span><span>Pixel Lab</span></div>
-            <div class="task-item w98-taskbar-button"><span class="w98-emoji">⚙️</span><span>Controls</span></div>
-            <div class="tray w98-taskbar-tray"><span class="w98-emoji">🔊</span><span>11:24 AM</span></div>
+            <div class="task-item w98-taskbar-button w98-taskbar-button--active active">
+              <span class="w98-emoji">🖼️</span><span>Pixel Lab</span>
+            </div>
+            <div class="task-item w98-taskbar-button">
+              <span class="w98-emoji">⚙️</span><span>Controls</span>
+            </div>
+            <div class="tray w98-taskbar-tray">
+              <span class="w98-emoji">🔊</span><span>11:24 AM</span>
+            </div>
           </div>
           <div class="start-launcher-specimen w98-menu-surface">
             <div class="w98-start-menu-banner">Retro Pixel</div>
             <div class="start-launcher-items">
-              <button class="menu-item w98-menu-item ctx-heading" disabled><span class="w98-structural-glyph">⊞</span><span>Programs</span></button>
-              <button class="menu-item w98-menu-item"><span class="w98-emoji">🖼️</span><span>Open Pixel Lab</span></button>
-              <button class="menu-item w98-menu-item"><span class="w98-emoji">📰</span><span>Open Poster Maker</span></button>
+              <button class="menu-item w98-menu-item ctx-heading" disabled
+                ><span class="w98-structural-glyph">⊞</span><span>Programs</span></button
+              >
+              <button class="menu-item w98-menu-item"
+                ><span class="w98-emoji">🖼️</span><span>Open Pixel Lab</span></button
+              >
+
               <div class="menu-sep w98-menu-divider"></div>
-              <button class="menu-item w98-menu-item ctx-heading" disabled><span class="w98-emoji">📂</span><span>Recent Projects</span></button>
-              <button class="menu-item w98-menu-item"><span class="w98-emoji">📷</span><span>RetroCam Capture</span></button>
+              <button class="menu-item w98-menu-item ctx-heading" disabled
+                ><span class="w98-emoji">📂</span><span>Recent Projects</span></button
+              >
+              <button class="menu-item w98-menu-item"
+                ><span class="w98-emoji">📷</span><span>RetroCam Capture</span></button
+              >
             </div>
           </div>
         </div>
@@ -338,22 +413,37 @@
 
     <section class="ds-card w98-desktop-card" id="feedback">
       <div class="w98-window-card-titlebar">
-        <div class="w98-window-card-title"><span class="w98-emoji">💬</span><span>Dialogs, Toasts, Context Menu</span></div>
+        <div class="w98-window-card-title">
+          <span class="w98-emoji">💬</span><span>Dialogs, Toasts, Context Menu</span>
+        </div>
       </div>
       <div class="w98-window-card-body">
         <div class="feedback-grid">
           <div class="context-menu w98-menu-surface">
-            <button class="menu-item w98-menu-item"><span class="w98-emoji">💾</span><span>Save</span><span class="w98-menu-shortcut">{saveShortcut}</span></button>
-            <button class="menu-item w98-menu-item active"><span class="w98-emoji">📋</span><span>Copy</span><span class="w98-menu-shortcut">{copyShortcut}</span></button>
-            <button class="menu-item w98-menu-item"><span class="w98-emoji">🔀</span><span>Compare</span></button>
-            <div class="menu-sep w98-menu-divider"></div>
-            <button class="menu-item w98-menu-item"><span class="w98-emoji">📰</span><span>Send To Poster Maker...</span></button>
+            <button class="menu-item w98-menu-item"
+              ><span class="w98-emoji">💾</span><span>Save</span><span class="w98-menu-shortcut"
+                >{saveShortcut}</span
+              ></button
+            >
+            <button class="menu-item w98-menu-item active"
+              ><span class="w98-emoji">📋</span><span>Copy</span><span class="w98-menu-shortcut"
+                >{copyShortcut}</span
+              ></button
+            >
+            <button class="menu-item w98-menu-item"
+              ><span class="w98-emoji">🔀</span><span>Compare</span></button
+            >
           </div>
           <div class="dialog-stack">
             <div class="window toast-dialog">
               <div class="title-bar w98-shell-titlebar">
-                <div class="title-bar-text w98-shell-title"><span class="w98-emoji">ℹ️</span> Desktop Notice</div>
-                <div class="title-bar-controls"><button type="button" class="w98-window-control-button" aria-label="Close"></button></div>
+                <div class="title-bar-text w98-shell-title">
+                  <span class="w98-emoji">ℹ️</span> Desktop Notice
+                </div>
+                <div class="title-bar-controls">
+                  <button type="button" class="w98-window-control-button" aria-label="Close"
+                  ></button>
+                </div>
               </div>
               <div class="window-body toast-dialog-body">
                 <div class="dialog-message-row">
@@ -364,8 +454,12 @@
               </div>
             </div>
             <div class="toast-row">
-              <div class="toast-specimen w98-floating-surface"><span class="w98-emoji">ℹ️</span><span>Saved poster.png</span></div>
-              <div class="toast-specimen w98-floating-surface"><span class="w98-emoji">💡</span><span>Image resized. Undo</span></div>
+              <div class="toast-specimen w98-floating-surface">
+                <span class="w98-emoji">ℹ️</span><span>Saved poster.png</span>
+              </div>
+              <div class="toast-specimen w98-floating-surface">
+                <span class="w98-emoji">💡</span><span>Image resized. Undo</span>
+              </div>
             </div>
           </div>
         </div>
@@ -431,7 +525,7 @@
   }
 
   .mono {
-    font-family: "Courier New", Courier, monospace;
+    font-family: 'Courier New', Courier, monospace;
   }
 
   .ds-meta {
@@ -634,7 +728,7 @@
     gap: var(--w98-space-4);
   }
 
-  .field input[type="text"],
+  .field input[type='text'],
   .field select,
   .field textarea {
     width: 100%;

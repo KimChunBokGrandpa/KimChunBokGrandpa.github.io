@@ -32,33 +32,27 @@ describe('Mobile shell flow', () => {
     cleanup();
   });
 
-  it('renders stacked mobile windows with compact strips around focused window', () => {
+  it('renders stacked mobile windows with equal height when only two are visible', () => {
     const { container } = render(MobileShellFlowWrapper);
 
     const previewWindow = screen.getByRole('group', { name: 'win_preview' });
-    const posterWindow = screen.getByRole('group', { name: 'win_poster_maker' });
     const historyWindow = screen.getByRole('group', { name: 'win_history' });
 
     expect(previewWindow.getAttribute('style')).toContain('--mobile-t: 0px');
-    expect(previewWindow.getAttribute('style')).toContain('--mobile-h: calc(100dvh - var(--taskbar-h) - 68px)');
-    expect(posterWindow.getAttribute('style')).toContain('--mobile-h: 34px');
-    expect(historyWindow.getAttribute('style')).toContain('--mobile-h: 34px');
-    expect(container.querySelectorAll('.compact-expand-arrow')).toHaveLength(3);
-    expect(container.querySelectorAll('.win98-menubar')).toHaveLength(3);
+    expect(previewWindow.getAttribute('style')).toContain('--mobile-h: calc((100dvh - var(--taskbar-h)) / 2)');
+    expect(historyWindow.getAttribute('style')).toContain('--mobile-h: calc((100dvh - var(--taskbar-h)) / 2)');
+    expect(container.querySelectorAll('.win98-menubar')).toHaveLength(2);
   }, 15000);
 
-  it('recomputes mobile slot placement when taskbar focus changes', async () => {
+  it('maintains equal slot placement regardless of taskbar focus with two windows', async () => {
     render(MobileShellFlowWrapper);
 
     const previewWindow = screen.getByRole('group', { name: 'win_preview' });
-    const posterWindow = screen.getByRole('group', { name: 'win_poster_maker' });
     const historyWindow = screen.getByRole('group', { name: 'win_history' });
 
-    await fireEvent.click(screen.getByRole('button', { name: /taskbar_switch_to_window: win_poster_maker/i }));
+    await fireEvent.click(screen.getByRole('button', { name: /taskbar_switch_to_window: win_history/i }));
 
-    expect(previewWindow.getAttribute('style')).toContain('--mobile-h: 34px');
-    expect(posterWindow.getAttribute('style')).toContain('--mobile-t: 34px');
-    expect(posterWindow.getAttribute('style')).toContain('--mobile-h: calc(100dvh - var(--taskbar-h) - 68px)');
-    expect(historyWindow.getAttribute('style')).toContain('--mobile-h: 34px');
+    expect(previewWindow.getAttribute('style')).toContain('--mobile-h: calc((100dvh - var(--taskbar-h)) / 2)');
+    expect(historyWindow.getAttribute('style')).toContain('--mobile-h: calc((100dvh - var(--taskbar-h)) / 2)');
   }, 15000);
 });

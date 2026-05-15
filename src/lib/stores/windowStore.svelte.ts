@@ -8,13 +8,11 @@ const titleKeys: Record<WindowId, TranslationKey> = {
   gallery: 'win_gallery',
   batch: 'win_batch',
   history: 'win_history',
-  poster_maker: 'win_poster_maker',
   retrocam: 'win_retrocam',
 };
 
 const shellProgramSummaryKeys: Partial<Record<WindowId, TranslationKey>> = {
   preview: 'desktop_summary_preview',
-  poster_maker: 'desktop_summary_poster_maker',
   retrocam: 'desktop_summary_retrocam',
 };
 
@@ -33,7 +31,6 @@ export function getDesktopWindowSummary(id: WindowId): string {
 /** Desktop window definitions */
 export const windowConfigs: WindowConfig[] = [
   { id: 'preview', icon: '🖼️', desktop: true },
-  { id: 'poster_maker', icon: '📰', desktop: true },
   { id: 'retrocam', icon: '📷', desktop: true },
   { id: 'settings', icon: '⚙️', desktop: false },
   { id: 'gallery', icon: '🎨', desktop: false },
@@ -118,15 +115,6 @@ export function createWindowStore() {
       h: saved?.preview?.h ?? 500,
       z: 10,
       defaults: { x: 400, y: 30, w: 600, h: 500 },
-    },
-    poster_maker: {
-      mode: 'closed',
-      x: saved?.poster_maker?.x ?? 160,
-      y: saved?.poster_maker?.y ?? 70,
-      w: saved?.poster_maker?.w ?? 760,
-      h: saved?.poster_maker?.h ?? 560,
-      z: 8,
-      defaults: { x: 160, y: 70, w: 760, h: 560 },
     },
     retrocam: {
       mode: 'closed',

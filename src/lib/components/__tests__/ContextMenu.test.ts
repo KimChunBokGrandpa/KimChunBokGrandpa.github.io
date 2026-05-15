@@ -25,7 +25,7 @@ function renderMenu(onClose = vi.fn()) {
           { label: 'Open Pixel Lab', icon: '🖼️', action: vi.fn() },
           { separator: true },
           { label: 'Unavailable', icon: '·', disabled: true },
-          { label: 'Open Poster Maker', icon: '📰', action: vi.fn() },
+          { label: 'Open RetroCam', icon: '📷', action: vi.fn() },
         ],
         x: 20,
         y: 24,
@@ -47,7 +47,7 @@ describe('ContextMenu', () => {
     renderMenu();
 
     const firstAction = screen.getByText('Open Pixel Lab').closest('button');
-    const lastAction = screen.getByText('Open Poster Maker').closest('button');
+    const lastAction = screen.getByText('Open RetroCam').closest('button');
 
     expect(document.activeElement).toBe(firstAction);
 

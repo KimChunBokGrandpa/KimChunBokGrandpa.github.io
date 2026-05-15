@@ -62,25 +62,6 @@ export function getMobileWindowSlot(params: {
     }
   }
 
-  if (count === 2 && visibleIds.includes('poster_maker')) {
-    const focusedIdx = visibleIds.indexOf(currentFocusedId);
-    const isFocused = currentFocusedId === id;
-
-    if (isFocused) {
-      return {
-        top: `${focusedIdx === 0 ? 0 : mobileCompactHeight}px`,
-        height: `calc(100dvh - var(--taskbar-h) - ${mobileCompactHeight}px)`,
-      };
-    }
-
-    return idx < focusedIdx
-      ? { top: '0px', height: `${mobileCompactHeight}px` }
-      : {
-          top: `calc(100dvh - var(--taskbar-h) - ${mobileCompactHeight}px)`,
-          height: `${mobileCompactHeight}px`,
-        };
-  }
-
   if (count <= 2) {
     const slotHeight = `calc((100dvh - var(--taskbar-h)) / ${count})`;
     const slotTop = idx === 0 ? '0px' : `calc((100dvh - var(--taskbar-h)) / ${count} * ${idx})`;
